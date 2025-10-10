@@ -51,16 +51,28 @@ Visual mode provides a **3-pane layout** for maximum productivity:
 
 **Auto-refreshes every 5 seconds** to show real-time progress!
 
-### Pane 3: File Explorer (Bottom-Right, 25%)
+### Pane 3: Interactive File Manager (Bottom-Right, 25%)
 
-**Live file tree showing:**
-- Color-coded files by type (JS/TS, Python, configs, tests)
-- Smart filtering (excludes node_modules, .git, build dirs)
-- `.yoyo-dev` directory highlighted
-- File counts for each directory
-- Current project structure
+**Full-featured file browser with:**
+- **Navigate files**: Use j/k (vim keys) or arrow keys
+- **Preview files**: Automatic file preview while browsing
+- **Open files**: Press Enter to view/edit
+- **Search files**: / to search, n/N to navigate results
+- **Go up/down**: h to go up, l to enter directory
+- **Quit**: q to close file manager
 
-**Auto-refreshes every 2 seconds** to reflect file changes!
+**🔒 Security: Restricted to Project Directory**
+- File manager is **locked to the current project directory**
+- Cannot navigate to parent directories or other parts of filesystem
+- Ensures you only browse files within your current project
+
+**Supported file managers** (auto-detected):
+1. **ranger** (Recommended) - Python-based, vim-like, file preview
+2. **lf** (Lightweight) - Go-based, fast and minimal
+3. **nnn** (Ultra-fast) - C-based, powerful filtering
+4. **Fallback** - Basic fzf browser if none installed
+
+**First run**: If no file manager installed, you'll see installation options. Choose ranger for best experience.
 
 ## Usage
 
@@ -168,34 +180,48 @@ readonly ACCENT_COLOR="#63b3ed"    # Your accent color
 
 Color picker: https://htmlcolorcodes.com/
 
-### File Explorer Settings
+### File Manager Settings
 
-Configure file explorer behavior with environment variables (add to `~/.bashrc` or `~/.zshrc`):
+**Choose your preferred file manager** (add to `~/.bashrc` or `~/.zshrc`):
 
 ```bash
-# Maximum tree depth (default: 3)
-export FILE_EXPLORER_DEPTH=4
+# Set preferred file manager (auto-detects by default)
+export YOYO_FILE_MANAGER=ranger  # or: lf, nnn, vifm, broot
 
-# Refresh interval in seconds (default: 2)
-export FILE_EXPLORER_WATCH_INTERVAL=5
+# File manager will auto-detect in this order:
+# 1. ranger (best for beginners)
+# 2. lf (fastest)
+# 3. nnn (most powerful)
+# 4. fzf fallback (if no manager installed)
+```
 
-# Show hidden files (default: false)
-export FILE_EXPLORER_SHOW_HIDDEN=true
+**Install a file manager**:
+
+```bash
+# Recommended: ranger (full-featured, vim-like)
+sudo apt install ranger
+
+# Alternative: lf (lightweight, fast)
+sudo apt install lf
+
+# Alternative: nnn (ultra-fast, minimal)
+sudo apt install nnn
 ```
 
 ### Pane Layout
 
-Edit `~/.yoyo-dev/setup/yoyo-tmux.sh` to adjust pane sizes (line 277-279):
+Edit `~/.yoyo-dev/setup/yoyo-tmux.sh` to adjust pane sizes (line 279-282):
 
 ```bash
-# Current layout: Main 50% | Status 25% | Files 25%
+# Current layout: Main 50% | Status 25% | File Manager 25%
 tmux -f "$TMUX_CONFIG" new-session -s "$SESSION_NAME" -n "Yoyo Dev" "$STARTUP_SCRIPT" \; \
     split-window -h -p 50 "$HOME/.yoyo-dev/lib/yoyo-status.sh" \; \
-    split-window -v -p 50 "$HOME/.yoyo-dev/lib/file-explorer.sh watch ." \; \
+    split-window -v -p 50 "$HOME/.yoyo-dev/lib/file-manager.sh ." \; \
     select-pane -t 0
 
 # To make right side larger (40%): change -p 50 to -p 40
 # To swap panes: change order of split-window commands
+# To disable file manager: remove the second split-window line
 ```
 
 ## Requirements
