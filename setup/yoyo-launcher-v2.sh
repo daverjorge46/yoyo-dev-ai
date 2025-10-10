@@ -326,20 +326,20 @@ main() {
             start_monitor "$2"
             ;;
         --visual|-V)
-            # This is the fallback launcher - visual mode not available
-            echo ""
-            echo "⚠️  Visual mode not available (tmux/TTY required)"
-            echo "   Launching standard mode..."
-            echo ""
-            launch_claude
+            # Launch visual mode with tmux colors
+            exec ~/.yoyo-dev/setup/yoyo-tmux.sh
             ;;
         --standard|--normal|-n)
-            # Launch standard mode
+            # Launch standard mode (opt-out of visual mode)
             launch_claude
             ;;
         launch|*)
-            # This is the simple fallback launcher - always use standard mode
-            launch_claude
+            # Default to visual mode, unless YOYO_VISUAL_MODE=false
+            if [[ "${YOYO_VISUAL_MODE:-}" == "false" ]]; then
+                launch_claude
+            else
+                exec ~/.yoyo-dev/setup/yoyo-tmux.sh
+            fi
             ;;
     esac
 }
