@@ -42,6 +42,7 @@ Visual mode provides a **3-pane layout** for maximum productivity:
 - Completed vs total tasks count
 - Next incomplete subtasks (up to 5)
 - Suggested next action
+- Last update timestamp
 
 **When starting a new project:**
 - Getting started guide
@@ -49,7 +50,18 @@ Visual mode provides a **3-pane layout** for maximum productivity:
 - Next roadmap item (if configured)
 - Setup instructions
 
-**Auto-refreshes every 5 seconds** to show real-time progress!
+**🔄 Auto-Refresh:**
+- **Automatically updates every 5 seconds** to show real-time progress
+- No need to close and reopen - just keeps running!
+- Shows latest task completions as they happen
+- Press `Ctrl+B r` to force refresh immediately
+- Press `Ctrl+C` in status pane to stop auto-refresh (optional)
+
+**Configure refresh rate:**
+```bash
+# Add to ~/.bashrc or ~/.zshrc (default: 5 seconds)
+export YOYO_STATUS_REFRESH=3  # Refresh every 3 seconds
+```
 
 ### Pane 3: Interactive File Manager (Bottom-Right, 25%)
 
@@ -153,6 +165,7 @@ For advanced users who want to copy text within tmux:
 | Key | Action |
 |-----|--------|
 | `Ctrl+B` then arrows | Navigate between panes |
+| `Ctrl+B` then `r` | **Force refresh status pane (NEW!)** |
 | `Ctrl+B` then `z` | Toggle pane full-screen |
 | `Ctrl+B` then `x` | Close current pane |
 | `Ctrl+B` then `Alt` + arrows | Resize panes |

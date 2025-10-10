@@ -2,6 +2,7 @@
 
 # Yoyo Dev Status Display
 # Shows current project status, tasks, or getting started guide
+# Auto-refreshes every 5 seconds to show real-time progress
 
 set -uo pipefail
 
@@ -16,35 +17,51 @@ readonly BOLD='\033[1m'
 readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
-# Clear and setup
-clear
+# Refresh interval in seconds
+readonly REFRESH_INTERVAL="${YOYO_STATUS_REFRESH:-5}"
 
-# Header
-echo ""
-echo -e "${BOLD}${CYAN}┌─────────────────────────────────────────┐${RESET}"
-echo -e "${BOLD}${CYAN}│${RESET}     ${BOLD}YOYO DEV - PROJECT STATUS${RESET}        ${BOLD}${CYAN}│${RESET}"
-echo -e "${BOLD}${CYAN}└─────────────────────────────────────────┘${RESET}"
-echo ""
+# Function to clear screen properly
+clear_screen() {
+    clear
+    # Move cursor to top-left
+    printf '\033[H'
+}
 
-# Find active tasks
-ACTIVE_TASKS=()
-ACTIVE_SPECS=()
-ACTIVE_FIXES=()
+# Function to find active tasks
+find_active_tasks() {
+    ACTIVE_TASKS=()
+    ACTIVE_SPECS=()
+    ACTIVE_FIXES=()
 
-if [ -d "./.yoyo-dev" ]; then
-    # Find most recent spec with tasks
-    if [ -d "./.yoyo-dev/specs" ]; then
-        ACTIVE_SPECS=($(find ./.yoyo-dev/specs -name "tasks.md" -o -name "MASTER-TASKS.md" 2>/dev/null | sort -r))
+    if [ -d "./.yoyo-dev" ]; then
+        # Find most recent spec with tasks
+        if [ -d "./.yoyo-dev/specs" ]; then
+            ACTIVE_SPECS=($(find ./.yoyo-dev/specs -name "tasks.md" -o -name "MASTER-TASKS.md" 2>/dev/null | sort -r))
+        fi
+
+        # Find most recent fix with tasks
+        if [ -d "./.yoyo-dev/fixes" ]; then
+            ACTIVE_FIXES=($(find ./.yoyo-dev/fixes -name "tasks.md" -o -name "MASTER-TASKS.md" 2>/dev/null | sort -r))
+        fi
+
+        # Combine all tasks
+        ACTIVE_TASKS=("${ACTIVE_SPECS[@]}" "${ACTIVE_FIXES[@]}")
     fi
+}
 
-    # Find most recent fix with tasks
-    if [ -d "./.yoyo-dev/fixes" ]; then
-        ACTIVE_FIXES=($(find ./.yoyo-dev/fixes -name "tasks.md" -o -name "MASTER-TASKS.md" 2>/dev/null | sort -r))
-    fi
+# Function to display header
+display_header() {
+    echo ""
+    echo -e "${BOLD}${CYAN}┌─────────────────────────────────────────┐${RESET}"
+    echo -e "${BOLD}${CYAN}│${RESET}     ${BOLD}YOYO DEV - PROJECT STATUS${RESET}        ${BOLD}${CYAN}│${RESET}"
+    echo -e "${BOLD}${CYAN}└─────────────────────────────────────────┘${RESET}"
+    echo ""
 
-    # Combine all tasks
-    ACTIVE_TASKS=("${ACTIVE_SPECS[@]}" "${ACTIVE_FIXES[@]}")
-fi
+    # Show last update time
+    local current_time=$(date '+%H:%M:%S')
+    echo -e "${DIM}Last updated: $current_time (refreshes every ${REFRESH_INTERVAL}s)${RESET}"
+    echo ""
+}
 
 # Function to display task status
 show_task_status() {
@@ -209,29 +226,44 @@ show_spec_status() {
     fi
 }
 
-# Main display logic
-if [ ${#ACTIVE_TASKS[@]} -gt 0 ]; then
-    # Show most recent active task
-    show_task_status "${ACTIVE_TASKS[0]}"
+# Function to display footer
+display_footer() {
     echo ""
     echo "─────────────────────────────────────────"
     echo ""
-    show_spec_status
-else
-    # Show getting started guide
-    show_getting_started
-fi
+    echo -e "${DIM}Press ${CYAN}Ctrl+B${RESET}${DIM} then arrows to switch panes${RESET}"
+    echo -e "${DIM}Press ${CYAN}Ctrl+B${RESET}${DIM} then ${CYAN}r${RESET}${DIM} to refresh now${RESET}"
+    echo -e "${DIM}Press ${CYAN}Ctrl+C${RESET}${DIM} to stop auto-refresh${RESET}"
+    echo ""
+}
 
-# Footer
-echo ""
-echo "─────────────────────────────────────────"
-echo ""
-echo -e "${DIM}Press ${CYAN}Ctrl+B${RESET}${DIM} then arrows to switch panes${RESET}"
-echo -e "${DIM}Press ${CYAN}Ctrl+B${RESET}${DIM} then ${CYAN}x${RESET}${DIM} to close this pane${RESET}"
-echo -e "${DIM}Type ${CYAN}/yoyo-help${RESET}${DIM} for complete reference${RESET}"
-echo ""
-echo -e "${DIM}Run ${CYAN}yoyo --visual${RESET}${DIM} again to refresh status${RESET}"
-echo ""
+# Main display function
+render_status() {
+    clear_screen
+    display_header
+    find_active_tasks
 
-# Keep pane alive - wait for user input
-read -r -d '' _ </dev/tty || true
+    # Main display logic
+    if [ ${#ACTIVE_TASKS[@]} -gt 0 ]; then
+        # Show most recent active task
+        show_task_status "${ACTIVE_TASKS[0]}"
+        echo ""
+        echo "─────────────────────────────────────────"
+        echo ""
+        show_spec_status
+    else
+        # Show getting started guide
+        show_getting_started
+    fi
+
+    display_footer
+}
+
+# Trap Ctrl+C to exit gracefully
+trap 'echo ""; echo "Status monitor stopped."; exit 0' INT TERM
+
+# Main loop - auto-refresh
+while true; do
+    render_status
+    sleep "$REFRESH_INTERVAL"
+done

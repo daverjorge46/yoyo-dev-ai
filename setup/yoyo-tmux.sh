@@ -192,6 +192,10 @@ set -sg escape-time 0
 
 # Increase scrollback
 set -g history-limit 50000
+
+# Custom keybindings
+# Ctrl+B r - Force refresh status pane (send Ctrl+C then restart script)
+bind-key r run-shell "tmux send-keys -t 1 C-c && tmux respawn-pane -t 1 -k '$HOME/.yoyo-dev/lib/yoyo-status.sh'"
 EOF
 
 # Create startup script that displays header and launches Claude
@@ -255,9 +259,9 @@ echo ""
 echo -e " ${DIM}Run ${CYAN}/yoyo-help${RESET}${DIM} for complete command reference${RESET}"
 echo -e " ${DIM}Docs: ${CYAN}.yoyo-dev/COMMAND-REFERENCE.md${RESET}"
 echo ""
-echo -e " ${DIM}Tmux Layout: Main (left) | Status (top-right) | File Manager (bottom-right)${RESET}"
-echo -e " ${DIM}Copy text: Hold ${CYAN}Shift${RESET}${DIM} + click and drag | Switch panes: ${CYAN}Ctrl+B${RESET}${DIM} + arrows${RESET}"
-echo -e " ${DIM}File Manager: Interactive browser with vim keys (j/k navigate, Enter open)${RESET}"
+echo -e " ${DIM}Tmux Layout: Main (left) | Task Status (top-right) | File Manager (bottom-right)${RESET}"
+echo -e " ${DIM}Task Status: Auto-refreshes every 5s | ${CYAN}Ctrl+B r${RESET}${DIM} to refresh now${RESET}"
+echo -e " ${DIM}Switch panes: ${CYAN}Ctrl+B${RESET}${DIM} + arrows | Copy: Hold ${CYAN}Shift${RESET}${DIM} + click & drag${RESET}"
 echo ""
 echo -e " ${YELLOW}Launching Claude Code...${RESET}"
 echo ""
