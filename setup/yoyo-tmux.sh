@@ -259,8 +259,10 @@ sed -i "s|__TECH_STACK__|$tech_stack|g" "$STARTUP_SCRIPT"
 
 chmod +x "$STARTUP_SCRIPT"
 
-# Launch tmux session with Yoyo Dev colors
+# Launch tmux session with Yoyo Dev colors and status pane
 tmux -f "$TMUX_CONFIG" new-session -s "$SESSION_NAME" -n "Yoyo Dev" "$STARTUP_SCRIPT" \; \
+    split-window -h -p 35 "$HOME/.yoyo-dev/lib/yoyo-status.sh" \; \
+    select-pane -t 0 \; \
     set-option -t "$SESSION_NAME" destroy-unattached on
 
 # Cleanup

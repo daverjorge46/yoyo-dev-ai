@@ -5,11 +5,30 @@ Yoyo Dev Visual Mode provides a branded, consistent visual experience using tmux
 ## Features
 
 ✨ **Branded Color Scheme** - Beautiful grey-blue theme with cyan accents
+✨ **Auto Status Monitor** - Right pane shows tasks, progress, or getting started guide
 ✨ **Consistent Experience** - Same look across all terminals
 ✨ **Enhanced Status Bar** - Project name and Yoyo Dev branding
 ✨ **Customizable** - Edit colors in `setup/yoyo-tmux.sh`
 ✨ **Mouse Support** - Click to switch panes, scroll through history
 ✨ **Full tmux Power** - Split panes, multiple windows, detach/reattach
+
+### Auto Status Monitor
+
+Visual mode automatically displays a status pane on the right showing:
+
+**When you have active tasks:**
+- Current task name and progress bar
+- Completed vs total tasks count
+- Next incomplete subtasks (up to 5)
+- Suggested next action
+
+**When starting a new project:**
+- Getting started guide
+- Quick command reference
+- Next roadmap item (if configured)
+- Setup instructions
+
+The status pane **auto-refreshes every 5 seconds** to show real-time progress!
 
 ## Usage
 

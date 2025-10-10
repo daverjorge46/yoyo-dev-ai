@@ -108,10 +108,12 @@ yoyo --visual
 
 **Features:**
 - 🎨 Custom grey-blue color scheme (#2d3748 background)
+- 📊 **Auto status monitor** - Shows tasks, progress, or getting started guide
 - 🖼️ Branded status bar with project name
 - 🖱️ Mouse support (click to switch panes, scroll history)
 - 📐 Full tmux capabilities (split panes, detach/reattach)
 - ✨ Consistent appearance across all terminal emulators
+- ⚡ Real-time progress updates (refreshes every 5 seconds)
 
 **Make it default:**
 ```bash
