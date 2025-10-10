@@ -5,16 +5,37 @@ Yoyo Dev Visual Mode provides a branded, consistent visual experience using tmux
 ## Features
 
 ✨ **Branded Color Scheme** - Beautiful grey-blue theme with cyan accents
-✨ **Auto Status Monitor** - Right pane shows tasks, progress, or getting started guide
+✨ **3-Pane Layout** - Main terminal + Task monitor + File explorer
+✨ **Auto Status Monitor** - Top-right pane shows tasks and progress
+✨ **Live File Explorer** - Bottom-right pane shows project file tree
 ✨ **Consistent Experience** - Same look across all terminals
 ✨ **Enhanced Status Bar** - Project name and Yoyo Dev branding
 ✨ **Customizable** - Edit colors in `setup/yoyo-tmux.sh`
 ✨ **Mouse Support** - Click to switch panes, scroll through history
 ✨ **Full tmux Power** - Split panes, multiple windows, detach/reattach
 
-### Auto Status Monitor
+## Visual Mode Layout
 
-Visual mode automatically displays a status pane on the right showing:
+Visual mode provides a **3-pane layout** for maximum productivity:
+
+```
+┌─────────────────────┬─────────────────┐
+│                     │                 │
+│                     │  Task Status    │
+│   Claude Code       │  Monitor        │
+│   (Main Terminal)   ├─────────────────┤
+│                     │                 │
+│      50% width      │  File Explorer  │
+│                     │                 │
+└─────────────────────┴─────────────────┘
+```
+
+### Pane 1: Main Terminal (Left, 50%)
+- Claude Code interactive session
+- Your primary work area
+- Full keyboard input
+
+### Pane 2: Task Status Monitor (Top-Right, 25%)
 
 **When you have active tasks:**
 - Current task name and progress bar
@@ -28,7 +49,18 @@ Visual mode automatically displays a status pane on the right showing:
 - Next roadmap item (if configured)
 - Setup instructions
 
-The status pane **auto-refreshes every 5 seconds** to show real-time progress!
+**Auto-refreshes every 5 seconds** to show real-time progress!
+
+### Pane 3: File Explorer (Bottom-Right, 25%)
+
+**Live file tree showing:**
+- Color-coded files by type (JS/TS, Python, configs, tests)
+- Smart filtering (excludes node_modules, .git, build dirs)
+- `.yoyo-dev` directory highlighted
+- File counts for each directory
+- Current project structure
+
+**Auto-refreshes every 2 seconds** to reflect file changes!
 
 ## Usage
 
@@ -108,19 +140,22 @@ For advanced users who want to copy text within tmux:
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+B` then `d` | Detach from session (keeps it running) |
+| `Ctrl+B` then arrows | Navigate between panes |
+| `Ctrl+B` then `z` | Toggle pane full-screen |
 | `Ctrl+B` then `x` | Close current pane |
+| `Ctrl+B` then `Alt` + arrows | Resize panes |
+| `Ctrl+B` then `d` | Detach from session (keeps it running) |
 | `Ctrl+B` then `c` | Create new window |
 | `Ctrl+B` then `n` | Next window |
 | `Ctrl+B` then `p` | Previous window |
 | `Ctrl+B` then `%` | Split pane vertically |
 | `Ctrl+B` then `"` | Split pane horizontally |
-| `Ctrl+B` then arrows | Navigate between panes |
-| `Ctrl+B` then `z` | Toggle pane full-screen |
 | `Ctrl+B` then `[` | Enter copy mode |
 | `Ctrl+B` then `?` | Show all keybindings |
 
 ## Customization
+
+### Color Scheme
 
 Edit `~/.yoyo-dev/setup/yoyo-tmux.sh` to customize colors:
 
@@ -132,6 +167,36 @@ readonly ACCENT_COLOR="#63b3ed"    # Your accent color
 ```
 
 Color picker: https://htmlcolorcodes.com/
+
+### File Explorer Settings
+
+Configure file explorer behavior with environment variables (add to `~/.bashrc` or `~/.zshrc`):
+
+```bash
+# Maximum tree depth (default: 3)
+export FILE_EXPLORER_DEPTH=4
+
+# Refresh interval in seconds (default: 2)
+export FILE_EXPLORER_WATCH_INTERVAL=5
+
+# Show hidden files (default: false)
+export FILE_EXPLORER_SHOW_HIDDEN=true
+```
+
+### Pane Layout
+
+Edit `~/.yoyo-dev/setup/yoyo-tmux.sh` to adjust pane sizes (line 277-279):
+
+```bash
+# Current layout: Main 50% | Status 25% | Files 25%
+tmux -f "$TMUX_CONFIG" new-session -s "$SESSION_NAME" -n "Yoyo Dev" "$STARTUP_SCRIPT" \; \
+    split-window -h -p 50 "$HOME/.yoyo-dev/lib/yoyo-status.sh" \; \
+    split-window -v -p 50 "$HOME/.yoyo-dev/lib/file-explorer.sh watch ." \; \
+    select-pane -t 0
+
+# To make right side larger (40%): change -p 50 to -p 40
+# To swap panes: change order of split-window commands
+```
 
 ## Requirements
 

@@ -255,7 +255,9 @@ echo ""
 echo -e " ${DIM}Run ${CYAN}/yoyo-help${RESET}${DIM} for complete command reference${RESET}"
 echo -e " ${DIM}Docs: ${CYAN}.yoyo-dev/COMMAND-REFERENCE.md${RESET}"
 echo ""
+echo -e " ${DIM}Tmux Layout: Main (left) | Status (top-right) | Files (bottom-right)${RESET}"
 echo -e " ${DIM}Copy text: Hold ${CYAN}Shift${RESET}${DIM} + click and drag | Tmux: ${CYAN}Ctrl+B${RESET}${DIM} then ? for help${RESET}"
+echo -e " ${DIM}Switch panes: ${CYAN}Ctrl+B${RESET}${DIM} + arrow keys | Resize: ${CYAN}Ctrl+B${RESET}${DIM} + Alt + arrow keys${RESET}"
 echo ""
 echo -e " ${YELLOW}Launching Claude Code...${RESET}"
 echo ""
@@ -272,9 +274,11 @@ sed -i "s|__TECH_STACK__|$tech_stack|g" "$STARTUP_SCRIPT"
 
 chmod +x "$STARTUP_SCRIPT"
 
-# Launch tmux session with Yoyo Dev colors and status pane
+# Launch tmux session with Yoyo Dev colors, status pane, and file explorer
+# Layout: Main (left 50%) | Status (top-right 25%) + File Explorer (bottom-right 25%)
 tmux -f "$TMUX_CONFIG" new-session -s "$SESSION_NAME" -n "Yoyo Dev" "$STARTUP_SCRIPT" \; \
-    split-window -h -p 35 "$HOME/.yoyo-dev/lib/yoyo-status.sh" \; \
+    split-window -h -p 50 "$HOME/.yoyo-dev/lib/yoyo-status.sh" \; \
+    split-window -v -p 50 "$HOME/.yoyo-dev/lib/file-explorer.sh watch ." \; \
     select-pane -t 0 \; \
     set-option -t "$SESSION_NAME" destroy-unattached on
 
