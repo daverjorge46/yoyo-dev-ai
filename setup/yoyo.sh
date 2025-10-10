@@ -83,12 +83,15 @@ show_help() {
     echo ""
     echo -e "${BOLD}Yoyo Launcher:${RESET}"
     echo ""
-    echo -e "  ${GREEN}yoyo${RESET}                    Launch Claude Code normally"
-    echo -e "  ${GREEN}yoyo --visual${RESET}           Launch with branded visual mode (tmux)"
+    echo -e "  ${GREEN}yoyo${RESET}                    Launch with visual mode (default)"
+    echo -e "  ${GREEN}yoyo --standard${RESET}         Launch standard mode (no tmux split)"
     echo -e "  ${GREEN}yoyo --help${RESET}             Show this reference"
     echo -e "  ${GREEN}yoyo --version${RESET}          Show version"
     echo -e "  ${GREEN}yoyo --commands${RESET}         List all commands"
     echo -e "  ${GREEN}yoyo --monitor${RESET} ${YELLOW}[task]${RESET}   Start task monitor"
+    echo ""
+    echo -e "  ${DIM}Visual mode shows project status in split pane (tmux)${RESET}"
+    echo -e "  ${DIM}Set YOYO_VISUAL_MODE=false to disable visual mode by default${RESET}"
     echo ""
     echo -e "${BOLD}Task Monitor:${RESET}"
     echo ""
@@ -288,7 +291,9 @@ launch_claude() {
     echo -e " ${DIM}Run ${CYAN}/yoyo-help${RESET}${DIM} for complete command reference${RESET}"
     echo -e " ${DIM}Docs: ${CYAN}.yoyo-dev/COMMAND-REFERENCE.md${RESET}"
     echo ""
-    echo -e " ${YELLOW}Launching Claude Code...${RESET}"
+    echo -e " ${DIM}💡 Tip: Use ${CYAN}yoyo${RESET}${DIM} (no flags) for visual mode with split-pane status monitor${RESET}"
+    echo ""
+    echo -e " ${YELLOW}Launching Claude Code (standard mode)...${RESET}"
     echo ""
 
     # Launch Claude Code
@@ -324,12 +329,16 @@ main() {
             # Launch visual mode with tmux colors
             exec ~/.yoyo-dev/setup/yoyo-tmux.sh
             ;;
+        --standard|--normal|-n)
+            # Launch standard mode (opt-out of visual mode)
+            launch_claude
+            ;;
         launch|*)
-            # Check if YOYO_VISUAL_MODE is set
-            if [[ "${YOYO_VISUAL_MODE:-}" == "true" ]]; then
-                exec ~/.yoyo-dev/setup/yoyo-tmux.sh
-            else
+            # Default to visual mode, unless YOYO_VISUAL_MODE=false
+            if [[ "${YOYO_VISUAL_MODE:-}" == "false" ]]; then
                 launch_claude
+            else
+                exec ~/.yoyo-dev/setup/yoyo-tmux.sh
             fi
             ;;
     esac

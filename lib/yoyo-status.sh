@@ -56,13 +56,13 @@ show_task_status() {
     echo ""
 
     # Count total and completed tasks
-    local total_tasks=$(grep -c "^##\s*Task" "$task_file" 2>/dev/null || echo "0")
-    local completed_tasks=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo "0")
-    local total_subtasks=$(grep -c "^- \[" "$task_file" 2>/dev/null || echo "0")
-    local completed_subtasks=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo "0")
+    local total_tasks=$(grep -c "^##\s*Task" "$task_file" 2>/dev/null || echo 0)
+    local completed_tasks=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo 0)
+    local total_subtasks=$(grep -c "^- \[" "$task_file" 2>/dev/null || echo 0)
+    local completed_subtasks=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo 0)
 
     # Progress bar
-    if [ "$total_subtasks" -gt 0 ]; then
+    if [ $total_subtasks -gt 0 ]; then
         local progress=$(( (completed_subtasks * 100) / total_subtasks ))
         local bar_filled=$(( progress / 5 ))
         local bar_empty=$(( 20 - bar_filled ))
@@ -92,7 +92,7 @@ show_task_status() {
         done
         echo ""
 
-        local remaining=$(grep -c "^- \[ \]" "$task_file" 2>/dev/null || echo "0")
+        local remaining=$(grep -c "^- \[ \]" "$task_file" 2>/dev/null || echo 0)
         if [ "$remaining" -gt 5 ]; then
             echo -e "${DIM}  ... and $((remaining - 5)) more${RESET}"
             echo ""
@@ -217,11 +217,5 @@ echo -e "${DIM}Press ${CYAN}Ctrl+B${RESET}${DIM} then arrows to switch panes${RE
 echo -e "${DIM}Press ${CYAN}Ctrl+C${RESET}${DIM} then ${CYAN}Ctrl+D${RESET}${DIM} to close this pane${RESET}"
 echo -e "${DIM}Type ${CYAN}/yoyo-help${RESET}${DIM} for complete reference${RESET}"
 echo ""
-
-# Keep monitoring (refresh every 5 seconds)
-while true; do
-    sleep 5
-
-    # Re-run this script to refresh
-    exec "$0"
-done
+echo -e "${DIM}Run ${CYAN}yoyo --visual${RESET}${DIM} again to refresh status${RESET}"
+echo ""
