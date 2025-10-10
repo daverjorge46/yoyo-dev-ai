@@ -41,8 +41,16 @@ curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/pr
 Once installed, launch Yoyo Dev with the `yoyo` command:
 
 ```bash
+# Standard mode (uses terminal's default colors)
 yoyo
+
+# Visual mode (branded grey-blue theme with tmux)
+yoyo --visual
 ```
+
+**Visual Mode** provides a consistent, branded experience with custom colors regardless of your terminal settings. Powered by tmux with mouse support and enhanced controls.
+
+### Standard Mode
 
 You'll see a branded startup screen with your project context:
 
@@ -89,6 +97,31 @@ Launching Claude Code...
 ```
 
 Then Claude Code launches normally, and you can start using Yoyo Dev commands!
+
+### Visual Mode (NEW!)
+
+For a branded, consistent experience with custom colors:
+
+```bash
+yoyo --visual
+```
+
+**Features:**
+- 🎨 Custom grey-blue color scheme (#2d3748 background)
+- 🖼️ Branded status bar with project name
+- 🖱️ Mouse support (click to switch panes, scroll history)
+- 📐 Full tmux capabilities (split panes, detach/reattach)
+- ✨ Consistent appearance across all terminal emulators
+
+**Make it default:**
+```bash
+# Add to ~/.bashrc or ~/.zshrc
+export YOYO_VISUAL_MODE=true
+```
+
+**Requirements:** `tmux` (falls back to standard mode if not installed)
+
+See [docs/VISUAL-MODE.md](docs/VISUAL-MODE.md) for complete documentation and customization options.
 
 ---
 
