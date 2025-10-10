@@ -37,6 +37,13 @@ if ! command -v tmux &> /dev/null; then
     exec ~/.yoyo-dev/setup/yoyo.sh "$@"
 fi
 
+# Check if we have a TTY (required for tmux)
+if ! tty -s; then
+    # No TTY available (running in background, via script, etc)
+    # Fall back to standard mode
+    exec ~/.yoyo-dev/setup/yoyo.sh "$@"
+fi
+
 # Check if we're in a Yoyo Dev project
 if [ ! -d "./.yoyo-dev" ]; then
     echo ""
