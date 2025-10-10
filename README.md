@@ -36,6 +36,62 @@ curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/pr
 
 ---
 
+## Getting Started
+
+Once installed, launch Yoyo Dev with the `yoyo` command:
+
+```bash
+yoyo
+```
+
+You'll see a branded startup screen with your project context:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                                                                     │
+│   ██╗   ██╗ ██████╗ ██╗   ██╗ ██████╗       ██████╗ ███████╗██╗   ██╗ │
+│   ╚██╗ ██╔╝██╔═══██╗╚██╗ ██╔╝██╔═══██╗      ██╔══██╗██╔════╝██║   ██║ │
+│    ╚████╔╝ ██║   ██║ ╚████╔╝ ██║   ██║█████╗██║  ██║█████╗  ██║   ██║ │
+│     ╚██╔╝  ██║   ██║  ╚██╔╝  ██║   ██║╚════╝██║  ██║██╔══╝  ╚██╗ ██╔╝ │
+│      ██║   ╚██████╔╝   ██║   ╚██████╔╝      ██████╔╝███████╗ ╚████╔╝  │
+│      ╚═╝    ╚═════╝    ╚═╝    ╚═════╝       ╚═════╝ ╚══════╝  ╚═══╝   │
+│                                                                     │
+│              v2.0.0 - AI-Assisted Development Framework             │
+│          "Powerful when you need it. Invisible when you don't."     │
+└─────────────────────────────────────────────────────────────────────┘
+
+📁 Project: bank-statement-app
+📍 Location: /home/user/PROJECTS/bank-statement-app
+🎯 Mission: AI-assisted development workflow
+
+🛠️  Stack: **React 18.3.1** - Modern React with concurrent features and
+           automatic batching + **Convex React SDK 1.26.2** - Real-time
+           database with optimistic updates
+
+──────────────────────────────────────────────────────────────────────
+
+Quick Start:
+  • /create-new "feature name" --lite --monitor  # Fast feature creation
+  • /create-fix "problem" --monitor              # Fix bugs systematically
+  • /execute-tasks                               # Build (interactive by default)
+
+New in v2.0:
+  ✨  Interactive mode by default (pause after each subtask)
+  ✨  MASTER-TASKS.md (single source of truth)
+  ✨  Task monitor with tmux split-pane
+  ✨  Lite mode for fast iteration
+  ✨  Comprehensive flag documentation
+
+Run /yoyo-help for complete command reference
+Docs: .yoyo-dev/COMMAND-REFERENCE.md
+
+Launching Claude Code...
+```
+
+Then Claude Code launches normally, and you can start using Yoyo Dev commands!
+
+---
+
 ## Core Workflow
 
 ### 1. Plan Your Product
