@@ -146,22 +146,28 @@ set -g status-right-length 50
 # Center window list
 set -g status-justify centre
 
-# Enable mouse support (with copy/paste workaround)
+# Enable mouse support
 set -g mouse on
-
-# Allow text selection with Shift+Click (bypasses tmux mouse mode)
-# This lets you select and copy text normally using Shift key
-# - Normal click: tmux actions (switch panes, scroll)
-# - Shift+click and drag: terminal text selection
 
 # Use 256 colors
 set -g default-terminal "screen-256color"
 
+# Enable true color if available
+set -ga terminal-overrides ",*256col*:Tc"
+
 # Copy mode settings for better text selection
 setw -g mode-keys vi
+
+# Vi-style copy/paste bindings
 bind-key -T copy-mode-vi v send-keys -X begin-selection
 bind-key -T copy-mode-vi y send-keys -X copy-selection-and-cancel
 bind-key -T copy-mode-vi r send-keys -X rectangle-toggle
+
+# Allow xterm-style function key sequences
+setw -g xterm-keys on
+
+# Don't rename windows automatically
+set -g allow-rename off
 
 # Visual bell
 set -g visual-bell off

@@ -3,7 +3,7 @@
 # Yoyo Dev Status Display
 # Shows current project status, tasks, or getting started guide
 
-set -euo pipefail
+set -uo pipefail
 
 # Color codes
 readonly CYAN='\033[0;36m'
@@ -63,9 +63,9 @@ show_task_status() {
 
     # Progress bar
     if [ "$total_subtasks" -gt 0 ]; then
-        local progress=$((completed_subtasks * 100 / total_subtasks))
-        local bar_filled=$((progress / 5))
-        local bar_empty=$((20 - bar_filled))
+        local progress=$(( (completed_subtasks * 100) / total_subtasks ))
+        local bar_filled=$(( progress / 5 ))
+        local bar_empty=$(( 20 - bar_filled ))
 
         echo -e "${BOLD}Progress:${RESET}"
         echo -n "["
