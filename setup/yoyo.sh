@@ -84,6 +84,7 @@ show_help() {
     echo -e "${BOLD}Yoyo Launcher:${RESET}"
     echo ""
     echo -e "  ${GREEN}yoyo${RESET}                    Launch Claude Code normally"
+    echo -e "  ${GREEN}yoyo --visual${RESET}           Launch with branded visual mode (tmux)"
     echo -e "  ${GREEN}yoyo --help${RESET}             Show this reference"
     echo -e "  ${GREEN}yoyo --version${RESET}          Show version"
     echo -e "  ${GREEN}yoyo --commands${RESET}         List all commands"
@@ -319,8 +320,17 @@ main() {
             fi
             start_monitor "$2"
             ;;
+        --visual|-V)
+            # Launch visual mode with tmux colors
+            exec ~/.yoyo-dev/setup/yoyo-tmux.sh
+            ;;
         launch|*)
-            launch_claude
+            # Check if YOYO_VISUAL_MODE is set
+            if [[ "${YOYO_VISUAL_MODE:-}" == "true" ]]; then
+                exec ~/.yoyo-dev/setup/yoyo-tmux.sh
+            else
+                launch_claude
+            fi
             ;;
     esac
 }
