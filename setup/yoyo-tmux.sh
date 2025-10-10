@@ -146,11 +146,22 @@ set -g status-right-length 50
 # Center window list
 set -g status-justify centre
 
-# Enable mouse support
+# Enable mouse support (with copy/paste workaround)
 set -g mouse on
+
+# Allow text selection with Shift+Click (bypasses tmux mouse mode)
+# This lets you select and copy text normally using Shift key
+# - Normal click: tmux actions (switch panes, scroll)
+# - Shift+click and drag: terminal text selection
 
 # Use 256 colors
 set -g default-terminal "screen-256color"
+
+# Copy mode settings for better text selection
+setw -g mode-keys vi
+bind-key -T copy-mode-vi v send-keys -X begin-selection
+bind-key -T copy-mode-vi y send-keys -X copy-selection-and-cancel
+bind-key -T copy-mode-vi r send-keys -X rectangle-toggle
 
 # Visual bell
 set -g visual-bell off
@@ -231,7 +242,7 @@ echo ""
 echo -e " ${DIM}Run ${CYAN}/yoyo-help${RESET}${DIM} for complete command reference${RESET}"
 echo -e " ${DIM}Docs: ${CYAN}.yoyo-dev/COMMAND-REFERENCE.md${RESET}"
 echo ""
-echo -e " ${DIM}Tmux controls: ${CYAN}Ctrl+B${RESET}${DIM} then ? for help | ${CYAN}d${RESET}${DIM} to detach | ${CYAN}x${RESET}${DIM} to close pane${RESET}"
+echo -e " ${DIM}Copy text: Hold ${CYAN}Shift${RESET}${DIM} + click and drag | Tmux: ${CYAN}Ctrl+B${RESET}${DIM} then ? for help${RESET}"
 echo ""
 echo -e " ${YELLOW}Launching Claude Code...${RESET}"
 echo ""

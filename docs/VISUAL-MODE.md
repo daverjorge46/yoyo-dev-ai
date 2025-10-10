@@ -50,6 +50,41 @@ The default Yoyo Dev visual mode uses:
 | Warning | Orange | `#f6ad55` |
 | Error | Red | `#fc8181` |
 
+## Copy/Paste Text
+
+Visual mode supports text selection and copying:
+
+### Method 1: Using Shift Key (Recommended)
+
+**Hold `Shift` while selecting text** - This bypasses tmux mouse mode and uses your terminal's native selection:
+
+1. **Hold Shift**
+2. **Click and drag** to select text
+3. **Release** - Text is automatically copied to clipboard
+4. **Paste** with your terminal's paste command (usually `Ctrl+Shift+V` or right-click)
+
+### Method 2: Using Tmux Copy Mode
+
+For advanced users who want to copy text within tmux:
+
+1. Press `Ctrl+B` then `[` to enter copy mode
+2. Press `v` to start selection
+3. Move cursor with arrow keys to select text
+4. Press `y` to copy selection (exits copy mode)
+5. Press `Ctrl+B` then `]` to paste within tmux
+
+### Quick Reference
+
+| Action | Method |
+|--------|--------|
+| **Select text** | `Shift` + Click and drag |
+| **Copy selected** | Release mouse (auto-copies) |
+| **Paste** | `Ctrl+Shift+V` or right-click |
+| **Tmux copy mode** | `Ctrl+B` then `[` |
+| **Start selection** | `v` (in copy mode) |
+| **Copy selection** | `y` (in copy mode) |
+| **Paste tmux buffer** | `Ctrl+B` then `]` |
+
 ## Tmux Controls
 
 | Key | Action |
@@ -63,6 +98,7 @@ The default Yoyo Dev visual mode uses:
 | `Ctrl+B` then `"` | Split pane horizontally |
 | `Ctrl+B` then arrows | Navigate between panes |
 | `Ctrl+B` then `z` | Toggle pane full-screen |
+| `Ctrl+B` then `[` | Enter copy mode |
 | `Ctrl+B` then `?` | Show all keybindings |
 
 ## Customization
