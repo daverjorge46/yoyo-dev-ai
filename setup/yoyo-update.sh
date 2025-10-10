@@ -213,34 +213,40 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     # Update yoyo command launcher
     echo ""
     echo "  📂 CLI Launcher:"
-    if [ -f "$BASE_AGENT_OS/setup/yoyo.sh" ]; then
-        # Create setup directory if it doesn't exist
-        mkdir -p "./.yoyo-dev/setup"
+    if [ -f "$BASE_AGENT_OS/setup/yoyo-launcher-v2.sh" ]; then
+        # Update global yoyo command if it exists
+        if [ -L "/usr/local/bin/yoyo" ] || [ -f "/usr/local/bin/yoyo" ]; then
+            echo "  → Updating global 'yoyo' command (visual mode enabled)..."
+            if sudo cp "$BASE_AGENT_OS/setup/yoyo-launcher-v2.sh" /usr/local/bin/yoyo 2>/dev/null && sudo chmod +x /usr/local/bin/yoyo 2>/dev/null; then
+                echo "  ✓ yoyo command updated globally"
+            else
+                echo "  ⚠️  Could not update global command (sudo required)"
+                echo "     Run manually: sudo cp ~/.yoyo-dev/setup/yoyo-launcher-v2.sh /usr/local/bin/yoyo"
+            fi
+        else
+            echo "  → Creating global 'yoyo' command (visual mode enabled)..."
+            if sudo cp "$BASE_AGENT_OS/setup/yoyo-launcher-v2.sh" /usr/local/bin/yoyo 2>/dev/null && sudo chmod +x /usr/local/bin/yoyo 2>/dev/null; then
+                echo "  ✓ yoyo command installed globally"
+            else
+                echo "  ⚠️  Could not create global command (sudo required)"
+                echo "     Run manually: sudo cp ~/.yoyo-dev/setup/yoyo-launcher-v2.sh /usr/local/bin/yoyo"
+            fi
+        fi
 
+        # Update fallback launcher in project (used by yoyo-tmux.sh)
+        mkdir -p "./.yoyo-dev/setup"
         copy_file "$BASE_AGENT_OS/setup/yoyo.sh" \
             "./.yoyo-dev/setup/yoyo.sh" \
             "true" \
-            "setup/yoyo.sh"
+            "setup/yoyo.sh (fallback)"
         chmod +x "./.yoyo-dev/setup/yoyo.sh"
 
-        # Update global symlink if it exists
-        if [ -L "/usr/local/bin/yoyo" ] || [ -f "/usr/local/bin/yoyo" ]; then
-            echo "  → Updating global 'yoyo' command..."
-            if sudo ln -sf "$HOME/.yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
-                echo "  ✓ yoyo command updated globally"
-            else
-                echo "  ⚠️  Could not update global symlink (sudo required)"
-                echo "     Run manually: sudo ln -sf ~/.yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
-            fi
-        else
-            echo "  → Creating global 'yoyo' command..."
-            if sudo ln -sf "$HOME/.yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
-                echo "  ✓ yoyo command installed globally"
-            else
-                echo "  ⚠️  Could not create global symlink (sudo required)"
-                echo "     Run manually: sudo ln -sf ~/.yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
-            fi
-        fi
+        # Update tmux launcher in project
+        copy_file "$BASE_AGENT_OS/setup/yoyo-tmux.sh" \
+            "./.yoyo-dev/setup/yoyo-tmux.sh" \
+            "true" \
+            "setup/yoyo-tmux.sh (visual mode)"
+        chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
 
         # Install/update yoyo-update command
         if [ -f "$BASE_AGENT_OS/setup/yoyo-update-wrapper.sh" ]; then
@@ -263,7 +269,8 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
             fi
         fi
     else
-        echo "  ⚠️  Warning: yoyo.sh not found in base installation"
+        echo "  ⚠️  Warning: yoyo-launcher-v2.sh not found in base installation"
+        echo "     Visual mode will not be available"
     fi
 
     # Update v2.0 support files
@@ -281,6 +288,12 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     if [ -f "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" ]; then
         copy_file "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" "./.yoyo-dev/lib/task-monitor-tmux.sh" "true" "lib/task-monitor-tmux.sh"
         chmod +x "./.yoyo-dev/lib/task-monitor-tmux.sh"
+    fi
+
+    # Update status display script (visual mode)
+    if [ -f "$BASE_AGENT_OS/lib/yoyo-status.sh" ]; then
+        copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./.yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh"
+        chmod +x "./.yoyo-dev/lib/yoyo-status.sh"
     fi
 
     # Update MASTER-TASKS template (always, to get latest improvements)
