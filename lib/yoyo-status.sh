@@ -214,8 +214,11 @@ echo ""
 echo "─────────────────────────────────────────"
 echo ""
 echo -e "${DIM}Press ${CYAN}Ctrl+B${RESET}${DIM} then arrows to switch panes${RESET}"
-echo -e "${DIM}Press ${CYAN}Ctrl+C${RESET}${DIM} then ${CYAN}Ctrl+D${RESET}${DIM} to close this pane${RESET}"
+echo -e "${DIM}Press ${CYAN}Ctrl+B${RESET}${DIM} then ${CYAN}x${RESET}${DIM} to close this pane${RESET}"
 echo -e "${DIM}Type ${CYAN}/yoyo-help${RESET}${DIM} for complete reference${RESET}"
 echo ""
 echo -e "${DIM}Run ${CYAN}yoyo --visual${RESET}${DIM} again to refresh status${RESET}"
 echo ""
+
+# Keep pane alive - wait for user input
+read -r -d '' _ </dev/tty || true
