@@ -484,7 +484,7 @@ yoyo --monitor [task]   # Launch with task monitor
 - **Documentation:** `.yoyo-dev/CLAUDE.md`
 - **Standards:** `.yoyo-dev/standards/`
 - **Instructions:** `.yoyo-dev/instructions/core/`
-- **GitHub:** [Yoyo Dev Repository](https://github.com/yourusername/yoyo-dev)
+- **GitHub:** [Yoyo Dev Repository](https://github.com/daverjorge46/yoyo-dev-ai)
 
 ---
 

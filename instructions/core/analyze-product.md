@@ -199,7 +199,7 @@ Verify installation completeness and provide clear next steps for the user to st
 
   1. Review the generated documentation in `.yoyo-dev/product/`
   2. Make any necessary adjustments to reflect your vision
-  3. See the Yoyo Dev README for usage instructions: https://github.com/daverjorge46/yoyo-dev
+  3. See the Yoyo Dev README for usage instructions: https://github.com/daverjorge46/yoyo-dev-ai
   4. Start using Yoyo Dev for your next feature:
      ```
      @.yoyo-dev/instructions/core/create-spec.md

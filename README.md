@@ -22,7 +22,7 @@ AI-assisted development workflow for building products with Claude Code.
 ### Install from GitHub (No Base Installation)
 
 ```bash
-curl -L https://raw.githubusercontent.com/YOUR_REPO/yoyo-dev/main/setup/project.sh | bash -s -- --no-base --claude-code
+curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/project.sh | bash -s -- --no-base --claude-code
 ```
 
 ### Installation Options
