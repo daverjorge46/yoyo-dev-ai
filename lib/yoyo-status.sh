@@ -61,11 +61,17 @@ show_task_status() {
     local total_subtasks=$(grep -c "^- \[" "$task_file" 2>/dev/null || echo 0)
     local completed_subtasks=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo 0)
 
-    # Ensure numeric values
-    total_tasks=${total_tasks:-0}
-    completed_tasks=${completed_tasks:-0}
-    total_subtasks=${total_subtasks:-0}
-    completed_subtasks=${completed_subtasks:-0}
+    # Ensure numeric values and strip any whitespace
+    total_tasks=$(echo "${total_tasks:-0}" | tr -d '[:space:]')
+    completed_tasks=$(echo "${completed_tasks:-0}" | tr -d '[:space:]')
+    total_subtasks=$(echo "${total_subtasks:-0}" | tr -d '[:space:]')
+    completed_subtasks=$(echo "${completed_subtasks:-0}" | tr -d '[:space:]')
+
+    # Validate numeric (set to 0 if not a number)
+    [[ "$total_tasks" =~ ^[0-9]+$ ]] || total_tasks=0
+    [[ "$completed_tasks" =~ ^[0-9]+$ ]] || completed_tasks=0
+    [[ "$total_subtasks" =~ ^[0-9]+$ ]] || total_subtasks=0
+    [[ "$completed_subtasks" =~ ^[0-9]+$ ]] || completed_subtasks=0
 
     # Progress bar
     if [[ $total_subtasks -gt 0 ]]; then
