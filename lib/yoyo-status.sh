@@ -61,8 +61,14 @@ show_task_status() {
     local total_subtasks=$(grep -c "^- \[" "$task_file" 2>/dev/null || echo 0)
     local completed_subtasks=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo 0)
 
+    # Ensure numeric values
+    total_tasks=${total_tasks:-0}
+    completed_tasks=${completed_tasks:-0}
+    total_subtasks=${total_subtasks:-0}
+    completed_subtasks=${completed_subtasks:-0}
+
     # Progress bar
-    if [ $total_subtasks -gt 0 ]; then
+    if [[ $total_subtasks -gt 0 ]]; then
         local progress=$(( (completed_subtasks * 100) / total_subtasks ))
         local bar_filled=$(( progress / 5 ))
         local bar_empty=$(( 20 - bar_filled ))
@@ -93,7 +99,8 @@ show_task_status() {
         echo ""
 
         local remaining=$(grep -c "^- \[ \]" "$task_file" 2>/dev/null || echo 0)
-        if [ "$remaining" -gt 5 ]; then
+        remaining=${remaining:-0}
+        if [[ $remaining -gt 5 ]]; then
             echo -e "${DIM}  ... and $((remaining - 5)) more${RESET}"
             echo ""
         fi
