@@ -55,7 +55,7 @@ def check_dependencies():
 check_dependencies()
 
 # Now safe to import
-from rich.console import Console
+from rich.console import Console, Group
 from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel
@@ -488,8 +488,6 @@ class YoyoDashboard:
 
     def _create_layout(self):
         """Create complete dashboard layout."""
-        from rich.console import Group
-
         # Build all panels
         header = self._render_header()
         task_panel = self._render_task_panel()
