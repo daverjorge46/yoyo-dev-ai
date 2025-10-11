@@ -382,6 +382,70 @@ if [ "$CURSOR" = true ]; then
     fi
 fi
 
+# Handle MCP installation (optional)
+if [ "$CLAUDE_CODE" = true ]; then
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "🔌 MCP Server Installation (Optional)"
+    echo ""
+    echo "Model Context Protocol (MCP) servers extend Claude Code with powerful capabilities:"
+    echo "  • Context7: Intelligent context loading (30%+ token reduction)"
+    echo "  • Memory: Pattern persistence across sessions"
+    echo "  • Playwright: Browser automation and testing"
+    echo "  • Chrome DevTools: Performance profiling"
+    echo "  • Shadcn: Component scaffolding"
+    echo "  • Containerization: Docker generation"
+    echo ""
+    read -p "Install MCP servers now? [Y/n] " -n 1 -r
+    echo ""
+
+    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+        # Determine path to MCP scripts
+        if [ "$IS_FROM_BASE" = true ]; then
+            MCP_PREREQUISITES="$BASE_AGENT_OS/setup/mcp-prerequisites.sh"
+            MCP_INSTALLER="$BASE_AGENT_OS/setup/mcp-installer.sh"
+        else
+            # Download from GitHub when using --no-base
+            MCP_PREREQUISITES="/tmp/mcp-prerequisites-$$.sh"
+            MCP_INSTALLER="/tmp/mcp-installer-$$.sh"
+
+            curl -sSL "${BASE_URL}/setup/mcp-prerequisites.sh" -o "$MCP_PREREQUISITES"
+            curl -sSL "${BASE_URL}/setup/mcp-installer.sh" -o "$MCP_INSTALLER"
+            chmod +x "$MCP_PREREQUISITES" "$MCP_INSTALLER"
+        fi
+
+        # Run prerequisite check
+        if bash "$MCP_PREREQUISITES"; then
+            # Prerequisites met, run installer
+            bash "$MCP_INSTALLER" prompt --config "$INSTALL_DIR/config.yml"
+            MCP_STATUS=$?
+        else
+            echo ""
+            echo "⚠️  MCP prerequisite check failed"
+            echo "You can install MCPs later by running: yoyo --install-mcps"
+            MCP_STATUS=1
+        fi
+
+        # Cleanup temp files if downloaded
+        if [ "$IS_FROM_BASE" = false ]; then
+            rm -f "$MCP_PREREQUISITES" "$MCP_INSTALLER"
+        fi
+
+        if [ $MCP_STATUS -eq 0 ]; then
+            echo ""
+            echo "✅ MCP installation complete"
+        fi
+    else
+        echo ""
+        echo "⏭️  Skipping MCP installation"
+        echo "You can install MCPs later by running: yoyo --install-mcps"
+    fi
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+fi
+
 # Success message
 echo ""
 echo "✅ Yoyo Dev has been installed in your project ($PROJECT_NAME)!"

@@ -1,0 +1,708 @@
+# ═══════════════════════════════════════════════════════════════════════
+# MCP Server Configuration Template
+# ═══════════════════════════════════════════════════════════════════════
+#
+# This file defines the configuration for Model Context Protocol (MCP)
+# server integration in Yoyo Dev. MCPs extend Claude Code with specialized
+# capabilities like browser testing, context management, and deployment automation.
+#
+# USAGE:
+#   - Copy this template to your project's config.yml
+#   - Uncomment and modify settings as needed
+#   - Use environment profiles to control which MCPs are active
+#   - Set YOYO_ENV to switch profiles (dev/staging/prod)
+#
+# REFERENCE:
+#   Documentation: ~/.yoyo-dev/.yoyo-dev/docs/MCP-GUIDE.md
+#   Check status:  yoyo --mcp-status
+#   View metrics:  yoyo --mcp-report
+#
+# ═══════════════════════════════════════════════════════════════════════
+
+mcp:
+  # ─────────────────────────────────────────────────────────────────────
+  # Global MCP Settings
+  # ─────────────────────────────────────────────────────────────────────
+
+  # Master enable/disable switch for all MCP functionality
+  # Set to false to completely disable MCP integration
+  enabled: true
+
+  # Default environment profile to use when YOYO_ENV is not set
+  # Options: dev | staging | prod
+  # Override with: export YOYO_ENV=staging
+  default_profile: dev
+
+  # Startup behavior
+  startup:
+    # When to start MCP servers
+    # - lazy: Start on first use (recommended, saves resources)
+    # - eager: Start all enabled MCPs on Yoyo Dev launch
+    mode: lazy
+
+    # Timeout for MCP server startup (seconds)
+    timeout: 10
+
+    # Number of startup retries on failure
+    max_retries: 3
+
+  # Health monitoring
+  health_check:
+    # Enable periodic health checks
+    enabled: true
+
+    # Interval between health checks (seconds)
+    interval: 30
+
+    # Restart unhealthy MCPs automatically
+    auto_restart: true
+
+    # Max restarts before giving up
+    max_restarts: 3
+
+  # Communication settings
+  protocol:
+    # Default transport protocol for MCP communication
+    # Options: stdio | http
+    transport: stdio
+
+    # Request timeout (seconds)
+    timeout: 5
+
+    # Number of retries on timeout/failure
+    max_retries: 2
+
+    # Retry backoff strategy
+    # Options: linear | exponential
+    backoff: exponential
+
+  # Resource limits
+  resources:
+    # Maximum memory per MCP server (MB)
+    # 0 = no limit
+    max_memory_mb: 512
+
+    # Maximum CPU usage per MCP server (%)
+    # 0 = no limit
+    max_cpu_percent: 50
+
+    # Kill MCP servers that exceed resource limits
+    enforce_limits: true
+
+  # Metrics collection
+  metrics:
+    # Enable usage tracking and performance metrics
+    enabled: true
+
+    # Retention period for metrics (days)
+    retention_days: 30
+
+    # Auto-generate session summary on exit
+    session_summary: true
+
+    # Report slow MCPs (response time > threshold ms)
+    slow_threshold_ms: 3000
+
+  # ─────────────────────────────────────────────────────────────────────
+  # Environment Profiles
+  # ─────────────────────────────────────────────────────────────────────
+  #
+  # Profiles control which MCPs are active in different environments.
+  # Use profiles to:
+  #   - Enable all MCPs in development for full features
+  #   - Use subset in staging for faster iterations
+  #   - Minimize MCPs in production for stability
+  #
+  # Switch profiles with: export YOYO_ENV=staging
+  # ─────────────────────────────────────────────────────────────────────
+
+  profiles:
+    # Development Profile (default)
+    # All 6 MCPs enabled for full development experience
+    dev:
+      enabled_mcps:
+        - context7
+        - memory
+        - playwright
+        - chrome-devtools
+        - shadcn
+        - containerization
+
+      # Development-specific settings
+      settings:
+        # More verbose logging in dev
+        log_level: debug
+
+        # Skip resource limits in dev
+        enforce_resource_limits: false
+
+    # Staging Profile
+    # Essential MCPs for testing and validation
+    staging:
+      enabled_mcps:
+        - context7          # Smart context loading
+        - playwright        # Browser testing
+        - containerization  # Deployment prep
+
+      settings:
+        log_level: info
+        enforce_resource_limits: true
+
+    # Production Profile
+    # Minimal MCPs for deployment only
+    prod:
+      enabled_mcps:
+        - containerization  # Docker generation only
+
+      settings:
+        log_level: warn
+        enforce_resource_limits: true
+
+        # Production safety: no auto-restart
+        auto_restart: false
+
+  # ─────────────────────────────────────────────────────────────────────
+  # MCP Server Configurations
+  # ─────────────────────────────────────────────────────────────────────
+  #
+  # Individual settings for each of the 6 MCP servers.
+  # Each server can be enabled/disabled independently and has its own
+  # configuration options.
+  # ─────────────────────────────────────────────────────────────────────
+
+  servers:
+    # ───────────────────────────────────────────────────────────────────
+    # Context7 MCP - Enhanced Context Management
+    # ───────────────────────────────────────────────────────────────────
+    # Provides intelligent context loading with relevance scoring to
+    # reduce token usage by 30%+ while maintaining context quality.
+    #
+    # Features:
+    #   - Semantic search across codebase
+    #   - Relevance scoring for context chunks
+    #   - Incremental index updates
+    #   - Token usage tracking
+    # ───────────────────────────────────────────────────────────────────
+
+    context7:
+      # Enable/disable this MCP (overrides profile setting)
+      enabled: true
+
+      # Installation path (relative to ~/.yoyo-dev)
+      install_path: .yoyo-dev/mcp/servers/context7
+
+      # npm package identifier
+      package: npm:@context7/mcp-server
+
+      # Version constraint (empty = latest)
+      version: ""
+
+      # Settings
+      settings:
+        # Path to context index (relative to project root)
+        index_path: .yoyo-dev/mcp/context7-index
+
+        # Maximum number of context chunks to load
+        max_contexts: 10
+
+        # Minimum relevance score (0.0-1.0)
+        min_relevance: 0.6
+
+        # Index update strategy
+        # Options: auto | manual | interval
+        index_update: auto
+
+        # Re-index interval (minutes, for interval strategy)
+        reindex_interval: 60
+
+        # Files to exclude from indexing (glob patterns)
+        exclude_patterns:
+          - node_modules/**
+          - .git/**
+          - dist/**
+          - build/**
+          - coverage/**
+          - "*.log"
+
+        # Enable token usage tracking
+        track_tokens: true
+
+        # Cache index in memory
+        cache_index: true
+
+        # Cache TTL (minutes)
+        cache_ttl: 60
+
+    # ───────────────────────────────────────────────────────────────────
+    # Memory MCP - Persistent Pattern Storage
+    # ───────────────────────────────────────────────────────────────────
+    # Stores successful patterns, solutions, and code snippets for
+    # cross-session recall and reuse.
+    #
+    # Features:
+    #   - Pattern storage with keywords and tags
+    #   - Semantic pattern search
+    #   - Confidence scoring based on usage
+    #   - Local-only storage (privacy-first)
+    # ───────────────────────────────────────────────────────────────────
+
+    memory:
+      enabled: true
+      install_path: .yoyo-dev/mcp/servers/memory
+      package: npm:@memory/mcp-server
+      version: ""
+
+      settings:
+        # Path to memory storage (relative to project root)
+        storage_path: .yoyo-dev/mcp/memory
+
+        # Sync with pattern library
+        # If true, syncs .yoyo-dev/patterns/ with Memory MCP storage
+        sync_pattern_library: true
+
+        # Auto-store patterns after successful task completion
+        auto_store: true
+
+        # Minimum confidence threshold for pattern recommendations
+        min_confidence: 0.5
+
+        # Maximum patterns to return in search
+        max_results: 5
+
+        # Enable cross-project pattern sharing
+        # If true, shares patterns across all projects in ~/.yoyo-dev
+        cross_project: false
+
+        # Encryption
+        # Encrypt stored patterns at rest
+        encrypt_storage: false
+
+        # Encryption key (leave empty to auto-generate)
+        # WARNING: Never commit encryption keys to git
+        encryption_key: ""
+
+    # ───────────────────────────────────────────────────────────────────
+    # Playwright MCP - Browser Automation & E2E Testing
+    # ───────────────────────────────────────────────────────────────────
+    # Generates and executes end-to-end tests for UI components across
+    # Chromium, Firefox, and WebKit browsers.
+    #
+    # Features:
+    #   - Automatic E2E test generation for UI components
+    #   - Cross-browser testing (3 browsers)
+    #   - Screenshot capture on failures
+    #   - Visual regression testing
+    # ───────────────────────────────────────────────────────────────────
+
+    playwright:
+      enabled: true
+      install_path: .yoyo-dev/mcp/servers/playwright
+      package: npm:@playwright/mcp-server
+      version: ""
+
+      settings:
+        # Browsers to test
+        # Options: chromium | firefox | webkit
+        browsers:
+          - chromium
+          - firefox
+          - webkit
+
+        # Test output directory (relative to project root)
+        test_output_dir: .yoyo-dev/tests/e2e
+
+        # Screenshot directory for failures
+        screenshot_dir: .yoyo-dev/tests/e2e/screenshots
+
+        # Visual regression baseline directory
+        baseline_dir: .yoyo-dev/tests/e2e/baselines
+
+        # Enable visual regression testing
+        # Requires baseline screenshots to exist
+        visual_regression: false
+
+        # Pixel difference threshold for visual regression (%)
+        visual_threshold: 0.1
+
+        # Test generation strategy
+        # Options: auto | manual
+        # auto: Generate tests automatically for UI components
+        # manual: Only run manually created tests
+        test_generation: auto
+
+        # Headless mode
+        # true = no browser UI (faster, CI-friendly)
+        # false = show browser window (debugging)
+        headless: true
+
+        # Test timeout (ms)
+        timeout: 30000
+
+        # Parallel test execution
+        parallel: true
+
+        # Max parallel workers
+        max_workers: 3
+
+        # Retry failed tests
+        retries: 2
+
+        # Generate HTML test report
+        generate_report: true
+
+        # Report output path
+        report_path: .yoyo-dev/tests/e2e/report.html
+
+    # ───────────────────────────────────────────────────────────────────
+    # Chrome DevTools MCP - Performance Profiling & Debugging
+    # ───────────────────────────────────────────────────────────────────
+    # Provides Chrome DevTools Protocol integration for performance
+    # profiling, network inspection, and runtime debugging.
+    #
+    # Features:
+    #   - Performance profiling during tests
+    #   - Network request/response inspection
+    #   - Console error detection
+    #   - Lighthouse score generation
+    #   - Memory leak detection
+    # ───────────────────────────────────────────────────────────────────
+
+    chrome-devtools:
+      enabled: true
+      install_path: .yoyo-dev/mcp/servers/chrome-devtools
+      package: npm:@chrome-devtools/mcp-server
+      version: ""
+
+      settings:
+        # DevTools output directory
+        output_dir: .yoyo-dev/devtools
+
+        # Performance profiling
+        performance:
+          # Enable performance profiling
+          enabled: true
+
+          # Metrics to collect
+          metrics:
+            - FCP    # First Contentful Paint
+            - LCP    # Largest Contentful Paint
+            - TTI    # Time to Interactive
+            - TBT    # Total Blocking Time
+            - CLS    # Cumulative Layout Shift
+
+          # Performance budget (milliseconds)
+          budget:
+            FCP: 1800
+            LCP: 2500
+            TTI: 3800
+            TBT: 300
+            CLS: 0.1
+
+          # Fail task if budget exceeded
+          enforce_budget: false
+
+        # Network inspection
+        network:
+          # Enable network monitoring
+          enabled: true
+
+          # Capture request/response bodies
+          capture_bodies: false
+
+          # Max body size to capture (KB)
+          max_body_size: 100
+
+          # Flag slow requests (ms)
+          slow_threshold: 1000
+
+        # Console monitoring
+        console:
+          # Capture console messages
+          enabled: true
+
+          # Message levels to capture
+          levels:
+            - error
+            - warning
+
+          # Fail task on console errors
+          fail_on_errors: false
+
+        # Lighthouse
+        lighthouse:
+          # Run Lighthouse audits
+          enabled: true
+
+          # Audit categories
+          categories:
+            - performance
+            - accessibility
+            - best-practices
+            - seo
+
+          # Minimum scores (0-100)
+          min_scores:
+            performance: 75
+            accessibility: 90
+            best-practices: 80
+            seo: 80
+
+          # Fail task if scores below minimum
+          enforce_scores: false
+
+        # Memory profiling
+        memory:
+          # Enable memory leak detection
+          enabled: false
+
+          # Test duration for leak detection (seconds)
+          test_duration: 60
+
+          # Heap snapshot interval (seconds)
+          snapshot_interval: 10
+
+          # Memory growth threshold (MB)
+          # Alert if memory grows by more than threshold
+          growth_threshold: 50
+
+    # ───────────────────────────────────────────────────────────────────
+    # Shadcn MCP - Component Library Integration
+    # ───────────────────────────────────────────────────────────────────
+    # Provides integration with Shadcn UI component library for rapid
+    # component scaffolding with design system compliance.
+    #
+    # Features:
+    #   - Component scaffolding from Shadcn library
+    #   - Automatic design token application
+    #   - Variant and state generation
+    #   - Pattern library integration
+    # ───────────────────────────────────────────────────────────────────
+
+    shadcn:
+      enabled: true
+      install_path: .yoyo-dev/mcp/servers/shadcn
+      package: npm:@shadcn/mcp-server
+      version: ""
+
+      settings:
+        # Component output directory
+        components_dir: src/components/ui
+
+        # Design system integration
+        design_system:
+          # Apply Yoyo Dev design tokens automatically
+          apply_tokens: true
+
+          # Path to design tokens file
+          tokens_path: .yoyo-dev/design/tokens.json
+
+          # Tailwind config path
+          tailwind_config: tailwind.config.js
+
+        # Component generation
+        generation:
+          # Generate all variants (sizes, colors, etc.)
+          all_variants: true
+
+          # Generate all states (hover, focus, active, disabled)
+          all_states: true
+
+          # Include TypeScript types
+          typescript: true
+
+          # Include component stories (Storybook)
+          stories: false
+
+          # Include component tests
+          tests: true
+
+          # Test framework
+          # Options: jest | vitest | playwright
+          test_framework: vitest
+
+        # Customization
+        customization:
+          # Allow manual customization after scaffolding
+          allow_custom: true
+
+          # CSS framework
+          # Options: tailwind | css-modules | styled-components
+          css_framework: tailwind
+
+          # Icon library
+          # Options: lucide | heroicons | phosphor
+          icon_library: lucide
+
+        # Pattern library
+        pattern_library:
+          # Add scaffolded components to pattern library
+          auto_add: true
+
+          # Pattern library path
+          library_path: .yoyo-dev/design/component-patterns
+
+    # ───────────────────────────────────────────────────────────────────
+    # Containerization MCP - Docker Deployment Automation
+    # ───────────────────────────────────────────────────────────────────
+    # Automatically generates optimized Docker configurations for
+    # deployment with security best practices.
+    #
+    # Features:
+    #   - Auto-detect project type (Node.js, Python, Java, Go)
+    #   - Multi-stage build optimization
+    #   - Security best practices (non-root, minimal base)
+    #   - docker-compose.yml generation
+    # ───────────────────────────────────────────────────────────────────
+
+    containerization:
+      enabled: true
+      install_path: .yoyo-dev/mcp/servers/containerization
+      package: npm:@containerization/mcp-server
+      version: ""
+
+      settings:
+        # Docker output directory
+        output_dir: .
+
+        # Project type auto-detection
+        auto_detect: true
+
+        # Manual project type override
+        # Options: nodejs | python | java | go | rust | php
+        # Leave empty for auto-detection
+        project_type: ""
+
+        # Dockerfile generation
+        dockerfile:
+          # Use multi-stage builds
+          multi_stage: true
+
+          # Base image strategy
+          # Options: official | alpine | distroless
+          base_image_strategy: alpine
+
+          # Include development dependencies
+          # true: Full image with dev tools
+          # false: Minimal production image
+          dev_dependencies: false
+
+          # Security hardening
+          security:
+            # Run as non-root user
+            non_root_user: true
+
+            # User/group ID for non-root user
+            uid: 1000
+            gid: 1000
+
+            # Scan for vulnerabilities after build
+            vulnerability_scan: true
+
+            # Vulnerability scanner
+            # Options: trivy | snyk | grype
+            scanner: trivy
+
+            # Fail build on critical vulnerabilities
+            fail_on_critical: false
+
+        # .dockerignore generation
+        dockerignore:
+          # Auto-generate .dockerignore
+          generate: true
+
+          # Include common patterns
+          # (node_modules, .git, .env, etc.)
+          use_defaults: true
+
+          # Additional patterns to exclude
+          additional_patterns:
+            - "*.md"
+            - ".vscode"
+            - ".idea"
+
+        # docker-compose.yml generation
+        docker_compose:
+          # Generate docker-compose.yml
+          generate: true
+
+          # Include services
+          services:
+            # Main application service
+            app: true
+
+            # Database service (auto-detect from dependencies)
+            database: auto
+
+            # Redis cache
+            redis: false
+
+            # Nginx reverse proxy
+            nginx: false
+
+          # Networking
+          network:
+            # Network name
+            name: yoyo-dev-network
+
+            # Driver
+            driver: bridge
+
+          # Volumes
+          volumes:
+            # Persist data directories
+            persist:
+              - data
+              - logs
+
+        # Build optimization
+        optimization:
+          # Layer caching strategy
+          # Options: aggressive | balanced | minimal
+          caching: balanced
+
+          # Compress image layers
+          compression: true
+
+          # Remove build artifacts
+          cleanup: true
+
+        # Post-build actions
+        post_build:
+          # Run container tests after build
+          test: true
+
+          # Tag image with version
+          tag_version: true
+
+          # Push to registry
+          push: false
+
+          # Registry URL (if push enabled)
+          registry: ""
+
+          # Repository name
+          repository: ""
+
+# ═══════════════════════════════════════════════════════════════════════
+# End of MCP Configuration Template
+# ═══════════════════════════════════════════════════════════════════════
+#
+# NEXT STEPS:
+#   1. Copy relevant sections to your project's config.yml
+#   2. Customize settings for your use case
+#   3. Run installation: yoyo --install-mcps
+#   4. Check status: yoyo --mcp-status
+#   5. Read guide: ~/.yoyo-dev/.yoyo-dev/docs/MCP-GUIDE.md
+#
+# TROUBLESHOOTING:
+#   - Installation issues: Check ~/.yoyo-dev/.yoyo-dev/mcp/install.log
+#   - Runtime errors: Check ~/.yoyo-dev/.yoyo-dev/mcp/logs/*.log
+#   - Performance issues: Run yoyo --mcp-report
+#   - Configuration errors: Validate YAML syntax (yamllint config.yml)
+#
+# SUPPORT:
+#   - Documentation: ~/.yoyo-dev/.yoyo-dev/docs/MCP-GUIDE.md
+#   - Troubleshooting: ~/.yoyo-dev/.yoyo-dev/docs/MCP-TROUBLESHOOTING.md
+#   - Issues: https://github.com/your-org/yoyo-dev/issues
+#
+# ═══════════════════════════════════════════════════════════════════════

@@ -89,6 +89,7 @@ show_help() {
     echo -e "  ${GREEN}yoyo --version${RESET}          Show version"
     echo -e "  ${GREEN}yoyo --commands${RESET}         List all commands"
     echo -e "  ${GREEN}yoyo --monitor${RESET} ${YELLOW}[task]${RESET}   Start task monitor"
+    echo -e "  ${GREEN}yoyo --install-mcps${RESET}     Install MCP servers"
     echo ""
     echo -e "  ${DIM}Visual mode shows project status in split pane (tmux)${RESET}"
     echo -e "  ${DIM}Set YOYO_VISUAL_MODE=false to disable visual mode by default${RESET}"
@@ -169,6 +170,57 @@ start_monitor() {
     fi
 
     ~/.yoyo-dev/lib/task-monitor-tmux.sh split "$task_file"
+}
+
+# Install MCP servers
+install_mcps() {
+    echo ""
+    echo -e "${BOLD}${CYAN}🔌 MCP Server Installation${RESET}"
+    echo ""
+
+    # Check if Yoyo Dev is installed
+    if [ ! -d "./.yoyo-dev" ]; then
+        echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
+        echo ""
+        echo "Please run this command from a project with Yoyo Dev installed."
+        echo ""
+        exit 1
+    fi
+
+    # Check if base Yoyo Dev installation exists
+    if [ ! -f ~/.yoyo-dev/setup/mcp-prerequisites.sh ] || [ ! -f ~/.yoyo-dev/setup/mcp-installer.sh ]; then
+        echo -e "${RED}ERROR: MCP installation scripts not found${RESET}"
+        echo ""
+        echo "Please ensure Yoyo Dev base installation is up to date."
+        echo "Run: yoyo-update"
+        echo ""
+        exit 1
+    fi
+
+    # Run prerequisite check
+    echo "Checking prerequisites..."
+    echo ""
+    if bash ~/.yoyo-dev/setup/mcp-prerequisites.sh; then
+        # Prerequisites met, run installer
+        bash ~/.yoyo-dev/setup/mcp-installer.sh prompt --config ./.yoyo-dev/config.yml
+
+        if [ $? -eq 0 ]; then
+            echo ""
+            echo -e "${GREEN}✅ MCP installation complete${RESET}"
+            echo ""
+        else
+            echo ""
+            echo -e "${YELLOW}⚠️  MCP installation was cancelled or failed${RESET}"
+            echo ""
+        fi
+    else
+        echo ""
+        echo -e "${RED}✗ MCP prerequisite check failed${RESET}"
+        echo ""
+        echo "Please resolve the issues above before installing MCPs."
+        echo ""
+        exit 1
+    fi
 }
 
 # Display branded header and launch
@@ -324,6 +376,9 @@ main() {
                 exit 1
             fi
             start_monitor "$2"
+            ;;
+        --install-mcps)
+            install_mcps
             ;;
         --visual|-V)
             # This is the fallback launcher - visual mode not available
