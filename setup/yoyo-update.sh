@@ -305,6 +305,26 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     if [ -f "$BASE_AGENT_OS/COMMAND-REFERENCE.md" ]; then
         copy_file "$BASE_AGENT_OS/COMMAND-REFERENCE.md" "./.yoyo-dev/COMMAND-REFERENCE.md" "true" "COMMAND-REFERENCE.md"
     fi
+
+    # Update MCP installation scripts (always, to get latest MCP features)
+    echo ""
+    echo "  📂 MCP Installation Scripts:"
+    mkdir -p "./.yoyo-dev/setup"
+
+    if [ -f "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" ]; then
+        copy_file "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" "./.yoyo-dev/setup/mcp-prerequisites.sh" "true" "setup/mcp-prerequisites.sh"
+        chmod +x "./.yoyo-dev/setup/mcp-prerequisites.sh"
+    fi
+
+    if [ -f "$BASE_AGENT_OS/setup/mcp-installer.sh" ]; then
+        copy_file "$BASE_AGENT_OS/setup/mcp-installer.sh" "./.yoyo-dev/setup/mcp-installer.sh" "true" "setup/mcp-installer.sh"
+        chmod +x "./.yoyo-dev/setup/mcp-installer.sh"
+    fi
+
+    # Update parse-utils.sh if it exists (needed by yoyo.sh)
+    if [ -f "$BASE_AGENT_OS/setup/parse-utils.sh" ]; then
+        copy_file "$BASE_AGENT_OS/setup/parse-utils.sh" "./.yoyo-dev/setup/parse-utils.sh" "true" "setup/parse-utils.sh"
+    fi
 fi
 
 # Update Cursor files if installed

@@ -349,6 +349,46 @@ if [ "$CLAUDE_CODE" = true ]; then
             "true" \
             "COMMAND-REFERENCE.md"
     fi
+
+    # Copy MCP installation scripts to project (for yoyo --install-mcps)
+    echo ""
+    echo "  📂 MCP Installation Scripts:"
+    mkdir -p "./.yoyo-dev/setup"
+
+    if [ "$IS_FROM_BASE" = true ]; then
+        if [ -f "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" ]; then
+            copy_file "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" "./.yoyo-dev/setup/mcp-prerequisites.sh" "true" "setup/mcp-prerequisites.sh"
+            chmod +x "./.yoyo-dev/setup/mcp-prerequisites.sh"
+        fi
+
+        if [ -f "$BASE_AGENT_OS/setup/mcp-installer.sh" ]; then
+            copy_file "$BASE_AGENT_OS/setup/mcp-installer.sh" "./.yoyo-dev/setup/mcp-installer.sh" "true" "setup/mcp-installer.sh"
+            chmod +x "./.yoyo-dev/setup/mcp-installer.sh"
+        fi
+
+        # Copy parse-utils.sh (needed by yoyo.sh for project context parsing)
+        if [ -f "$BASE_AGENT_OS/setup/parse-utils.sh" ]; then
+            copy_file "$BASE_AGENT_OS/setup/parse-utils.sh" "./.yoyo-dev/setup/parse-utils.sh" "true" "setup/parse-utils.sh"
+        fi
+    else
+        # Download from GitHub when using --no-base
+        download_file "${BASE_URL}/setup/mcp-prerequisites.sh" \
+            "./.yoyo-dev/setup/mcp-prerequisites.sh" \
+            "true" \
+            "setup/mcp-prerequisites.sh"
+        chmod +x "./.yoyo-dev/setup/mcp-prerequisites.sh"
+
+        download_file "${BASE_URL}/setup/mcp-installer.sh" \
+            "./.yoyo-dev/setup/mcp-installer.sh" \
+            "true" \
+            "setup/mcp-installer.sh"
+        chmod +x "./.yoyo-dev/setup/mcp-installer.sh"
+
+        download_file "${BASE_URL}/setup/parse-utils.sh" \
+            "./.yoyo-dev/setup/parse-utils.sh" \
+            "true" \
+            "setup/parse-utils.sh"
+    fi
 fi
 
 # Handle Cursor installation for project
@@ -401,19 +441,9 @@ if [ "$CLAUDE_CODE" = true ]; then
     echo ""
 
     if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-        # Determine path to MCP scripts
-        if [ "$IS_FROM_BASE" = true ]; then
-            MCP_PREREQUISITES="$BASE_AGENT_OS/setup/mcp-prerequisites.sh"
-            MCP_INSTALLER="$BASE_AGENT_OS/setup/mcp-installer.sh"
-        else
-            # Download from GitHub when using --no-base
-            MCP_PREREQUISITES="/tmp/mcp-prerequisites-$$.sh"
-            MCP_INSTALLER="/tmp/mcp-installer-$$.sh"
-
-            curl -sSL "${BASE_URL}/setup/mcp-prerequisites.sh" -o "$MCP_PREREQUISITES"
-            curl -sSL "${BASE_URL}/setup/mcp-installer.sh" -o "$MCP_INSTALLER"
-            chmod +x "$MCP_PREREQUISITES" "$MCP_INSTALLER"
-        fi
+        # Use the local copied MCP scripts from project .yoyo-dev/setup/
+        MCP_PREREQUISITES="$INSTALL_DIR/setup/mcp-prerequisites.sh"
+        MCP_INSTALLER="$INSTALL_DIR/setup/mcp-installer.sh"
 
         # Run prerequisite check
         if bash "$MCP_PREREQUISITES"; then
@@ -425,11 +455,6 @@ if [ "$CLAUDE_CODE" = true ]; then
             echo "⚠️  MCP prerequisite check failed"
             echo "You can install MCPs later by running: yoyo --install-mcps"
             MCP_STATUS=1
-        fi
-
-        # Cleanup temp files if downloaded
-        if [ "$IS_FROM_BASE" = false ]; then
-            rm -f "$MCP_PREREQUISITES" "$MCP_INSTALLER"
         fi
 
         if [ $MCP_STATUS -eq 0 ]; then
