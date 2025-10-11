@@ -163,8 +163,8 @@ set -g history-limit 50000
 
 # Custom keybindings
 # Ctrl+B r - Force refresh status pane (send Ctrl+C then restart)
-# Note: Will use venv Python > system Python > Bash fallback
-bind-key r run-shell "tmux send-keys -t 1 C-c && tmux respawn-pane -t 1 -k 'if [ -f ~/.yoyo-dev/venv/bin/python3 ] && ~/.yoyo-dev/venv/bin/python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then ~/.yoyo-dev/venv/bin/python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; elif command -v python3 >/dev/null && python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; else ~/.yoyo-dev/lib/yoyo-status.sh; fi'"
+# Note: Will use Python dashboard if available, otherwise falls back to Bash
+bind-key r run-shell "tmux send-keys -t 1 C-c && tmux respawn-pane -t 1 -k 'if command -v python3 >/dev/null && python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; else ~/.yoyo-dev/lib/yoyo-status.sh; fi'"
 EOF
 
 # Create startup script that displays header and launches Claude
@@ -249,19 +249,10 @@ chmod +x "$STARTUP_SCRIPT"
 # Determine which dashboard to use (Python with fallback to Bash)
 DASHBOARD_CMD="$HOME/.yoyo-dev/lib/yoyo-status.sh"
 
-# Check for venv Python first (if installed via venv method)
-VENV_PYTHON="$HOME/.yoyo-dev/venv/bin/python3"
-
-if [ -f "$VENV_PYTHON" ]; then
-    # Check if Python dashboard dependencies are available in venv
-    if "$VENV_PYTHON" -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
-        # Use Python dashboard with venv Python
-        DASHBOARD_CMD="$VENV_PYTHON $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
-    fi
-elif command -v python3 &> /dev/null; then
-    # Check if Python dashboard dependencies are available in system Python
+if command -v python3 &> /dev/null; then
+    # Check if Python dashboard dependencies are available
     if python3 -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
-        # Use Python dashboard with system Python
+        # Use Python dashboard
         DASHBOARD_CMD="python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
     fi
 fi
