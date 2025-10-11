@@ -5,6 +5,9 @@
 
 set -euo pipefail
 
+# Source shared parsing utilities
+source "$HOME/.yoyo-dev/setup/parse-utils.sh"
+
 # Yoyo Dev version
 readonly VERSION="2.0.0"
 
@@ -79,44 +82,9 @@ fi
 project_name=$(basename "$(pwd)")
 project_path=$(pwd)
 
-# Extract mission and tech stack
-mission=""
-tech_stack=""
-
-if [ -f "./.yoyo-dev/product/mission-lite.md" ]; then
-    mission=$(sed -n '/^## Mission/,/^##/p' ./.yoyo-dev/product/mission-lite.md 2>/dev/null | sed '1d;$d' | head -n 1 | sed 's/^[[:space:]]*//' || true)
-
-    if grep -q "## Tech Stack" ./.yoyo-dev/product/mission-lite.md 2>/dev/null; then
-        tech_stack=$(sed -n '/^## Tech Stack/,/^##/p' ./.yoyo-dev/product/mission-lite.md 2>/dev/null | grep -v "^##" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/- //g' | tr '\n' ' ' || true)
-    fi
-fi
-
-if [ -z "$tech_stack" ] && [ -f "./.yoyo-dev/product/tech-stack.md" ]; then
-    frontend=$(grep -iE "^-?\s*\*?\*?Frontend\*?\*?:" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
-    backend=$(grep -iE "^-?\s*\*?\*?Backend\*?\*?:" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
-
-    if [ -z "$frontend" ] && [ -z "$backend" ]; then
-        frontend=$(grep -iE "(React|Next\.js|Vue|Angular|Svelte)" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1 || true)
-        backend=$(grep -iE "(Node|Express|Django|Flask|FastAPI|Convex|Supabase|Firebase)" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1 || true)
-    fi
-
-    if [ -n "$frontend" ] && [ -n "$backend" ]; then
-        tech_stack="$frontend + $backend"
-    elif [ -n "$frontend" ]; then
-        tech_stack="$frontend"
-    elif [ -n "$backend" ]; then
-        tech_stack="$backend"
-    fi
-fi
-
-# Fallback defaults
-if [ -z "$mission" ]; then
-    mission="AI-assisted development workflow"
-fi
-
-if [ -z "$tech_stack" ]; then
-    tech_stack="Not configured yet - run /plan-product or /analyze-product"
-fi
+# Extract mission and tech stack using shared functions
+mission=$(get_project_mission)
+tech_stack=$(get_tech_stack)
 
 # Create temporary tmux config with Yoyo Dev colors
 TMUX_CONFIG=$(mktemp)
