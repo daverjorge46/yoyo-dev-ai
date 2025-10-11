@@ -36,6 +36,20 @@ clear_screen() {
     printf '\033[H'
 }
 
+# Function to parse state.json
+parse_state_json() {
+    local state_file="$1"
+
+    if [ ! -f "$state_file" ]; then
+        echo ""
+        return 1
+    fi
+
+    # Extract current_phase using grep and basic parsing
+    local phase=$(grep '"current_phase"' "$state_file" 2>/dev/null | sed 's/.*"current_phase"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/')
+    echo "$phase"
+}
+
 # Function to find active tasks
 find_active_tasks() {
     ACTIVE_TASKS=()
@@ -126,23 +140,40 @@ show_task_status() {
     echo -e "${BOLD}Current Tasks:${RESET}"
     echo ""
 
-    # Get first incomplete task
-    local current_task=$(grep -A 10 "^##\s*Task" "$task_file" | grep -m 1 "^- \[ \]" || echo "")
+    # Get completed and incomplete counts
+    local completed_count=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo "0")
+    local incomplete_count=$(grep -c "^- \[ \]" "$task_file" 2>/dev/null || echo "0")
 
-    if [ -n "$current_task" ]; then
-        # Show up to 5 incomplete subtasks
+    # Show last 2 completed tasks if any
+    if [[ $completed_count -gt 0 ]]; then
+        echo -e "${DIM}Recently completed:${RESET}"
+        grep "^- \[x\]" "$task_file" | tail -2 | while read -r line; do
+            echo -e "  ${GREEN}✓${RESET} ${DIM}${line#- [x] }${RESET}"
+        done
+        echo ""
+    fi
+
+    # Show up to 5 incomplete subtasks
+    if [[ $incomplete_count -gt 0 ]]; then
+        if [[ $completed_count -gt 0 ]]; then
+            echo -e "${DIM}Up next:${RESET}"
+        fi
         grep "^- \[ \]" "$task_file" | head -5 | while read -r line; do
             echo -e "  ${YELLOW}○${RESET} ${line#- [ ] }"
         done
         echo ""
 
-        # Note: remaining was already calculated in the awk command above
-        if [[ $remaining -gt 5 ]]; then
-            echo -e "${DIM}  ... and $((remaining - 5)) more${RESET}"
+        # Show remaining count if more than 5
+        if [[ $incomplete_count -gt 5 ]]; then
+            echo -e "${DIM}  ... and $((incomplete_count - 5)) more${RESET}"
             echo ""
         fi
     else
-        echo -e "  ${GREEN}✓ All tasks completed!${RESET}"
+        if [[ $completed_count -eq 0 ]]; then
+            echo -e "  ${DIM}No tasks found${RESET}"
+        else
+            echo -e "  ${GREEN}✓ All tasks completed!${RESET}"
+        fi
         echo ""
     fi
 
@@ -150,12 +181,27 @@ show_task_status() {
     echo -e "${DIM}Task file: $task_file${RESET}"
     echo ""
 
-    # Next action
+    # Next action - use state.json for accurate phase detection
     echo -e "${BOLD}${CYAN}Next Action:${RESET}"
-    if [ "$completed_subtasks" -lt "$total_subtasks" ]; then
+
+    # Find state.json in the same directory as tasks
+    local state_file="$task_dir/state.json"
+    local current_phase=$(parse_state_json "$state_file")
+
+    # Determine next action based on phase and completion
+    if [ "$current_phase" = "completed" ] || [ "$completed_subtasks" -eq "$total_subtasks" ] && [ "$total_subtasks" -gt 0 ]; then
+        echo -e "  ${GREEN}✓${RESET} Complete - Ready for review/merge"
+    elif [ "$current_phase" = "ready_for_execution" ] || [ "$current_phase" = "implementation" ]; then
         echo -e "  ${GREEN}/execute-tasks${RESET}  - Continue implementation"
+    elif [ -n "$current_phase" ]; then
+        echo -e "  ${GREEN}/execute-tasks${RESET}  - Start implementation"
     else
-        echo -e "  ${GREEN}✓${RESET} Ready for review/merge"
+        # Fallback to completion-based logic
+        if [ "$completed_subtasks" -lt "$total_subtasks" ]; then
+            echo -e "  ${GREEN}/execute-tasks${RESET}  - Continue implementation"
+        else
+            echo -e "  ${GREEN}✓${RESET} Complete - Ready for review/merge"
+        fi
     fi
 }
 
@@ -211,6 +257,25 @@ show_getting_started() {
     echo ""
 }
 
+# Function to calculate completion percentage
+calculate_completion() {
+    local task_file="$1"
+
+    if [ ! -f "$task_file" ]; then
+        echo "0"
+        return
+    fi
+
+    local total=$(grep -c "^- \[[x ]\]" "$task_file" 2>/dev/null || echo "0")
+    local completed=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo "0")
+
+    if [ "$total" -eq 0 ]; then
+        echo "0"
+    else
+        echo $(( (completed * 100) / total ))
+    fi
+}
+
 # Function to show spec status
 show_spec_status() {
     echo -e "${BOLD}${BLUE}📄 Recent Specifications:${RESET}"
@@ -221,15 +286,31 @@ show_spec_status() {
         local spec_count=0
         for spec_dir in $(find ./.yoyo-dev/specs -mindepth 1 -maxdepth 1 -type d | sort -r | head -3); do
             local spec_name=$(basename "$spec_dir")
-            local has_tasks=""
+            local status_text=""
 
-            if [ -f "$spec_dir/tasks.md" ] || [ -f "$spec_dir/MASTER-TASKS.md" ]; then
-                has_tasks=" ${GREEN}[Has tasks]${RESET}"
-            else
-                has_tasks=" ${YELLOW}[No tasks yet]${RESET}"
+            # Find task file
+            local task_file=""
+            if [ -f "$spec_dir/MASTER-TASKS.md" ]; then
+                task_file="$spec_dir/MASTER-TASKS.md"
+            elif [ -f "$spec_dir/tasks.md" ]; then
+                task_file="$spec_dir/tasks.md"
             fi
 
-            echo -e "  ${CYAN}•${RESET} $spec_name$has_tasks"
+            if [ -n "$task_file" ]; then
+                local completion=$(calculate_completion "$task_file")
+
+                if [ "$completion" -eq 100 ]; then
+                    status_text=" ${GREEN}[Complete 100%]${RESET}"
+                elif [ "$completion" -gt 0 ]; then
+                    status_text=" ${YELLOW}[In Progress ${completion}%]${RESET}"
+                else
+                    status_text=" ${DIM}[Pending 0%]${RESET}"
+                fi
+            else
+                status_text=" ${DIM}[No tasks yet]${RESET}"
+            fi
+
+            echo -e "  ${CYAN}•${RESET} $spec_name$status_text"
             spec_count=$((spec_count + 1))
         done
 
@@ -245,9 +326,10 @@ display_footer() {
     echo ""
     echo "─────────────────────────────────────────"
     echo ""
-    echo -e "${DIM}Press ${CYAN}Ctrl+B${RESET}${DIM} then arrows to switch panes${RESET}"
-    echo -e "${DIM}Press ${CYAN}Ctrl+B${RESET}${DIM} then ${CYAN}r${RESET}${DIM} to refresh now${RESET}"
-    echo -e "${DIM}Press ${CYAN}Ctrl+C${RESET}${DIM} to stop auto-refresh${RESET}"
+    echo -e "${BOLD}${CYAN}💡 Quick Tips:${RESET}"
+    echo -e "${DIM}• Use ${CYAN}/execute-tasks${RESET}${DIM} to continue implementation${RESET}"
+    echo -e "${DIM}• Progress updates every ${REFRESH_INTERVAL} seconds automatically${RESET}"
+    echo -e "${DIM}• Press ${CYAN}Ctrl+C${RESET}${DIM} to stop auto-refresh${RESET}"
     echo ""
 }
 
