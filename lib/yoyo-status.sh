@@ -2,7 +2,16 @@
 
 # Yoyo Dev Status Display
 # Shows current project status, tasks, or getting started guide
-# Auto-refreshes every 5 seconds to show real-time progress
+# Auto-refreshes every 10 seconds to show real-time progress
+#
+# Configuration:
+#   YOYO_STATUS_REFRESH - Custom refresh interval in seconds
+#
+# Examples:
+#   YOYO_STATUS_REFRESH=5 yoyo-status.sh   # Faster updates (higher CPU)
+#   YOYO_STATUS_REFRESH=30 yoyo-status.sh  # Slower updates (lower CPU)
+#
+# Default: 10 seconds (balanced between responsiveness and CPU usage)
 
 set -uo pipefail
 
@@ -18,7 +27,7 @@ readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 # Refresh interval in seconds
-readonly REFRESH_INTERVAL="${YOYO_STATUS_REFRESH:-5}"
+readonly REFRESH_INTERVAL="${YOYO_STATUS_REFRESH:-10}"
 
 # Function to clear screen properly
 clear_screen() {
@@ -72,17 +81,23 @@ show_task_status() {
     echo -e "${BOLD}${GREEN}📋 Active Task:${RESET} $task_name"
     echo ""
 
-    # Count total and completed tasks
-    local total_tasks=$(grep -c "^##\s*Task" "$task_file" 2>/dev/null || echo 0)
-    local completed_tasks=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo 0)
-    local total_subtasks=$(grep -c "^- \[" "$task_file" 2>/dev/null || echo 0)
-    local completed_subtasks=$(grep -c "^- \[x\]" "$task_file" 2>/dev/null || echo 0)
+    # Count total and completed tasks (optimized with single awk pass)
+    local counts=$(awk '
+        /^##[[:space:]]*Task/ { total_tasks++ }
+        /^-[[:space:]]*\[x\]/ { completed_subtasks++; total_subtasks++ }
+        /^-[[:space:]]*\[[[:space:]]\]/ { total_subtasks++; remaining++ }
+        END {
+            printf "%d %d %d %d",
+                total_tasks+0,
+                completed_subtasks+0,
+                total_subtasks+0,
+                remaining+0
+        }
+    ' "$task_file" 2>/dev/null || echo "0 0 0 0")
 
-    # Ensure numeric values and strip any whitespace
-    total_tasks=$(echo "${total_tasks:-0}" | tr -d '[:space:]')
-    completed_tasks=$(echo "${completed_tasks:-0}" | tr -d '[:space:]')
-    total_subtasks=$(echo "${total_subtasks:-0}" | tr -d '[:space:]')
-    completed_subtasks=$(echo "${completed_subtasks:-0}" | tr -d '[:space:]')
+    # Parse results
+    read -r total_tasks completed_tasks total_subtasks remaining <<< "$counts"
+    local completed_subtasks="$completed_tasks"
 
     # Validate numeric (set to 0 if not a number)
     [[ "$total_tasks" =~ ^[0-9]+$ ]] || total_tasks=0
@@ -121,8 +136,7 @@ show_task_status() {
         done
         echo ""
 
-        local remaining=$(grep -c "^- \[ \]" "$task_file" 2>/dev/null || echo 0)
-        remaining=${remaining:-0}
+        # Note: remaining was already calculated in the awk command above
         if [[ $remaining -gt 5 ]]; then
             echo -e "${DIM}  ... and $((remaining - 5)) more${RESET}"
             echo ""
