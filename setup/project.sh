@@ -316,6 +316,35 @@ if [ "$CLAUDE_CODE" = true ]; then
             chmod +x "./.yoyo-dev/lib/task-monitor-tmux.sh"
         fi
 
+        # Copy status display scripts (visual mode)
+        if [ -f "$BASE_AGENT_OS/lib/yoyo-status.sh" ]; then
+            copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./.yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
+            chmod +x "./.yoyo-dev/lib/yoyo-status.sh"
+        fi
+
+        # Copy Python dashboard (new in v2.1)
+        if [ -f "$BASE_AGENT_OS/lib/yoyo-dashboard.py" ]; then
+            copy_file "$BASE_AGENT_OS/lib/yoyo-dashboard.py" "./.yoyo-dev/lib/yoyo-dashboard.py" "true" "lib/yoyo-dashboard.py (Python dashboard)"
+            chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
+        fi
+
+        # Copy Python requirements
+        if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
+            copy_file "$BASE_AGENT_OS/requirements.txt" "./.yoyo-dev/requirements.txt" "true" "requirements.txt (Python deps)"
+        fi
+
+        # Copy dashboard dependency installer
+        if [ -f "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" ]; then
+            copy_file "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" "./.yoyo-dev/setup/install-dashboard-deps.sh" "true" "setup/install-dashboard-deps.sh"
+            chmod +x "./.yoyo-dev/setup/install-dashboard-deps.sh"
+        fi
+
+        # Copy yoyo-tmux.sh launcher (visual mode)
+        if [ -f "$BASE_AGENT_OS/setup/yoyo-tmux.sh" ]; then
+            copy_file "$BASE_AGENT_OS/setup/yoyo-tmux.sh" "./.yoyo-dev/setup/yoyo-tmux.sh" "true" "setup/yoyo-tmux.sh (visual mode)"
+            chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
+        fi
+
         # Copy MASTER-TASKS template
         if [ -f "$BASE_AGENT_OS/templates/MASTER-TASKS.md" ]; then
             copy_file "$BASE_AGENT_OS/templates/MASTER-TASKS.md" "./.yoyo-dev/templates/MASTER-TASKS.md" "true" "templates/MASTER-TASKS.md"
@@ -338,6 +367,36 @@ if [ "$CLAUDE_CODE" = true ]; then
             "true" \
             "lib/task-monitor-tmux.sh"
         chmod +x "./.yoyo-dev/lib/task-monitor-tmux.sh"
+
+        # Download status display scripts
+        download_file "${BASE_URL}/lib/yoyo-status.sh" \
+            "./.yoyo-dev/lib/yoyo-status.sh" \
+            "true" \
+            "lib/yoyo-status.sh (Bash fallback)"
+        chmod +x "./.yoyo-dev/lib/yoyo-status.sh"
+
+        download_file "${BASE_URL}/lib/yoyo-dashboard.py" \
+            "./.yoyo-dev/lib/yoyo-dashboard.py" \
+            "true" \
+            "lib/yoyo-dashboard.py (Python dashboard)"
+        chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
+
+        download_file "${BASE_URL}/requirements.txt" \
+            "./.yoyo-dev/requirements.txt" \
+            "true" \
+            "requirements.txt (Python deps)"
+
+        download_file "${BASE_URL}/setup/install-dashboard-deps.sh" \
+            "./.yoyo-dev/setup/install-dashboard-deps.sh" \
+            "true" \
+            "setup/install-dashboard-deps.sh"
+        chmod +x "./.yoyo-dev/setup/install-dashboard-deps.sh"
+
+        download_file "${BASE_URL}/setup/yoyo-tmux.sh" \
+            "./.yoyo-dev/setup/yoyo-tmux.sh" \
+            "true" \
+            "setup/yoyo-tmux.sh (visual mode)"
+        chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
 
         download_file "${BASE_URL}/templates/MASTER-TASKS.md" \
             "./.yoyo-dev/templates/MASTER-TASKS.md" \

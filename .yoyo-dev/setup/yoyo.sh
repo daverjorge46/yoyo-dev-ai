@@ -187,11 +187,22 @@ install_mcps() {
         exit 1
     fi
 
-    # Check if base Yoyo Dev installation exists
-    if [ ! -f ~/.yoyo-dev/setup/mcp-prerequisites.sh ] || [ ! -f ~/.yoyo-dev/setup/mcp-installer.sh ]; then
+    # Determine which MCP scripts to use (prefer local project copies)
+    local MCP_PREREQUISITES=""
+    local MCP_INSTALLER=""
+
+    if [ -f "./.yoyo-dev/setup/mcp-prerequisites.sh" ] && [ -f "./.yoyo-dev/setup/mcp-installer.sh" ]; then
+        # Use local project copies (installed during project setup)
+        MCP_PREREQUISITES="./.yoyo-dev/setup/mcp-prerequisites.sh"
+        MCP_INSTALLER="./.yoyo-dev/setup/mcp-installer.sh"
+    elif [ -f ~/.yoyo-dev/setup/mcp-prerequisites.sh ] && [ -f ~/.yoyo-dev/setup/mcp-installer.sh ]; then
+        # Fall back to base installation
+        MCP_PREREQUISITES=~/.yoyo-dev/setup/mcp-prerequisites.sh
+        MCP_INSTALLER=~/.yoyo-dev/setup/mcp-installer.sh
+    else
         echo -e "${RED}ERROR: MCP installation scripts not found${RESET}"
         echo ""
-        echo "Please ensure Yoyo Dev base installation is up to date."
+        echo "Please ensure Yoyo Dev is up to date."
         echo "Run: yoyo-update"
         echo ""
         exit 1
@@ -200,9 +211,9 @@ install_mcps() {
     # Run prerequisite check
     echo "Checking prerequisites..."
     echo ""
-    if bash ~/.yoyo-dev/setup/mcp-prerequisites.sh; then
+    if bash "$MCP_PREREQUISITES"; then
         # Prerequisites met, run installer
-        bash ~/.yoyo-dev/setup/mcp-installer.sh prompt --config ./.yoyo-dev/config.yml
+        bash "$MCP_INSTALLER" prompt --config ./.yoyo-dev/config.yml
 
         if [ $? -eq 0 ]; then
             echo ""

@@ -290,10 +290,27 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         chmod +x "./.yoyo-dev/lib/task-monitor-tmux.sh"
     fi
 
-    # Update status display script (visual mode)
+    # Update status display scripts (visual mode)
     if [ -f "$BASE_AGENT_OS/lib/yoyo-status.sh" ]; then
-        copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./.yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh"
+        copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./.yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
         chmod +x "./.yoyo-dev/lib/yoyo-status.sh"
+    fi
+
+    # Update Python dashboard (new in v2.1)
+    if [ -f "$BASE_AGENT_OS/lib/yoyo-dashboard.py" ]; then
+        copy_file "$BASE_AGENT_OS/lib/yoyo-dashboard.py" "./.yoyo-dev/lib/yoyo-dashboard.py" "true" "lib/yoyo-dashboard.py (Python dashboard)"
+        chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
+    fi
+
+    # Update Python requirements
+    if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
+        copy_file "$BASE_AGENT_OS/requirements.txt" "./.yoyo-dev/requirements.txt" "true" "requirements.txt (Python deps)"
+    fi
+
+    # Update dashboard dependency installer
+    if [ -f "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" ]; then
+        copy_file "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" "./.yoyo-dev/setup/install-dashboard-deps.sh" "true" "setup/install-dashboard-deps.sh"
+        chmod +x "./.yoyo-dev/setup/install-dashboard-deps.sh"
     fi
 
     # Update MASTER-TASKS template (always, to get latest improvements)
@@ -380,6 +397,44 @@ echo "   .yoyo-dev/patterns/        - Successful patterns library"
 echo ""
 echo "--------------------------------"
 echo ""
+
+# Offer to install Python dashboard dependencies
+if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
+    # Check if Python dashboard dependencies are already installed
+    if command -v python3 &> /dev/null && python3 -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
+        echo "✅ Python dashboard dependencies already installed"
+        echo ""
+    else
+        echo "🐍 Python Dashboard (Optional)"
+        echo ""
+        echo "Yoyo Dev now includes an enhanced Python dashboard for visual mode:"
+        echo "  • Real-time file watching (no polling delay)"
+        echo "  • Beautiful Rich TUI with progress bars"
+        echo "  • Color-coded status indicators"
+        echo "  • Auto-fallback to Bash if unavailable"
+        echo ""
+        read -p "Install Python dashboard dependencies now? [Y/n] " -n 1 -r
+        echo ""
+
+        if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+            if [ -f "./.yoyo-dev/setup/install-dashboard-deps.sh" ]; then
+                bash "./.yoyo-dev/setup/install-dashboard-deps.sh"
+            else
+                echo ""
+                echo "⚠️  Dashboard installer not found"
+                echo "You can install manually: ~/.yoyo-dev/setup/install-dashboard-deps.sh"
+            fi
+        else
+            echo ""
+            echo "⏭️  Skipping Python dashboard installation"
+            echo "You can install later: ~/.yoyo-dev/setup/install-dashboard-deps.sh"
+        fi
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+    fi
+fi
+
 echo "Update complete! Your Yoyo Dev installation is now up to date."
 echo ""
 echo "Continue building! 🚀"
