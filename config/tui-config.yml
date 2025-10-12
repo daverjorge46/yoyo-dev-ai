@@ -1,0 +1,61 @@
+# Yoyo Dev Textual TUI Configuration
+# =====================================
+#
+# This file controls the behavior and appearance of the Yoyo Dev TUI.
+# Edit these settings to customize your experience.
+#
+# Version: 1.0
+
+# General Settings
+# ----------------
+auto_refresh: true              # Automatically refresh on file changes
+refresh_interval: 5             # Seconds between refreshes (when file watching disabled)
+
+# Editor Integration
+# ------------------
+editor:
+  command: "code"               # Editor command: "code", "vim", "nano", "subl", etc.
+  args: "{file}"                # Arguments ({{file}} will be replaced with file path)
+
+# Appearance
+# ----------
+theme: "yoyo-dev"               # Color scheme: "yoyo-dev", "dark", "light", "dracula", "nord"
+
+# Layout
+# ------
+layout:
+  sidebar_width: 30             # Width of left sidebar in columns
+  show_git_panel: true          # Show git status panel
+  compact_mode: false           # Use compact layout (hides some panels)
+
+# Keyboard Shortcuts
+# ------------------
+# Customize keyboard shortcuts (use Textual key syntax)
+keybindings:
+  command_palette: ["ctrl+p", "/"]  # Open command palette
+  quit: ["q", "ctrl+c"]             # Quit application
+  help: ["?"]                       # Show help overlay
+  refresh: ["r"]                    # Force refresh
+  git_menu: ["g"]                   # Open git operations menu
+
+# Features
+# --------
+features:
+  file_watching: true           # Watch files for changes (uses watchdog)
+  git_integration: true         # Show git status and enable git actions
+  command_history: true         # Remember recent commands in palette
+  analytics: false              # Usage tracking (opt-in, not implemented yet)
+
+# Advanced Settings
+# -----------------
+advanced:
+  log_level: "INFO"             # Logging level: "DEBUG", "INFO", "WARNING", "ERROR"
+  max_log_lines: 10000          # Maximum lines in log buffer
+  task_history_limit: 100       # Maximum tasks to keep in history
+
+# Experimental Features
+# ---------------------
+# These features are experimental and may change or be removed
+experimental:
+  web_export: false             # Enable Textual web export (not implemented)
+  multi_project: false          # Multi-project dashboard (not implemented)
