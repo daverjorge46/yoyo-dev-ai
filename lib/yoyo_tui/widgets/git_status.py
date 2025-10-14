@@ -81,40 +81,45 @@ class GitStatus(Widget):
         Returns:
             Formatted status string with rich markup
         """
+        from pathlib import Path
+
         # Check if git is installed
         if not self.git_service.is_git_installed():
             return "[dim]Git not available[/dim]"
 
+        # Get current directory
+        cwd = Path.cwd()
+
         # Check if in a git repository
-        if not self.git_service.is_git_repo():
+        if not self.git_service.is_git_repo(cwd):
             return "[dim]Not a git repository[/dim]"
 
         lines = []
 
         # Branch name
-        branch = self.git_service.get_current_branch()
+        branch = self.git_service.get_current_branch(cwd)
         if branch:
             lines.append(f"[cyan]📦 Branch:[/cyan] {branch}")
         else:
             lines.append("[dim]📦 Branch: unknown[/dim]")
 
         # Uncommitted changes
-        uncommitted = self.git_service.get_uncommitted_changes_count()
+        uncommitted = self.git_service.get_uncommitted_changes_count(cwd)
         if uncommitted > 0:
             lines.append(f"[yellow]● Uncommitted:[/yellow] {uncommitted}")
         else:
             lines.append("[green]● Uncommitted:[/green] 0")
 
         # Untracked files
-        untracked = self.git_service.get_untracked_files_count()
+        untracked = self.git_service.get_untracked_files_count(cwd)
         if untracked > 0:
             lines.append(f"[yellow]? Untracked:[/yellow] {untracked}")
         else:
             lines.append("[dim]? Untracked: 0[/dim]")
 
         # Ahead/behind status
-        if self.git_service.has_remote():
-            ahead, behind = self.git_service.get_ahead_behind_count()
+        if self.git_service.has_remote(cwd):
+            ahead, behind = self.git_service.get_ahead_behind_count(cwd)
 
             if ahead > 0:
                 lines.append(f"[cyan]↑ Ahead:[/cyan] {ahead}")
