@@ -8,6 +8,7 @@ from textual.app import App
 from textual.binding import Binding
 
 from .config import ConfigManager, TUIConfig
+from .screens.main import MainScreen
 
 
 class YoyoDevApp(App):
@@ -47,13 +48,11 @@ class YoyoDevApp(App):
 
         Initializes screens, services, and starts file watching.
         """
-        # TODO: Push main screen when implemented (Task 5)
-        # self.push_screen(MainScreen())
+        # Push main screen (Task 5 complete)
+        self.push_screen(MainScreen())
 
         # TODO: Start file watcher when implemented (Task 2 already has FileWatcher service)
         # self.start_file_watcher()
-
-        pass
 
     def action_command_palette(self) -> None:
         """

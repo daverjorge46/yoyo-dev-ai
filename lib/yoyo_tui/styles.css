@@ -1,0 +1,225 @@
+/*
+ * Yoyo Dev Textual TUI Styles
+ *
+ * Brand Colors:
+ * - Background: #2d3748 (dark blue-gray)
+ * - Text: #e2e8f0 (light gray)
+ * - Accent/Brand: #63b3ed (bright blue)
+ * - Success: #68d391 (green)
+ * - Warning: #f6ad55 (orange)
+ * - Error: #fc8181 (red)
+ */
+
+/* ============================================================================
+ * Global Styles
+ * ============================================================================ */
+
+Screen {
+    background: #2d3748;
+    color: #e2e8f0;
+}
+
+/* ============================================================================
+ * Header & Footer
+ * ============================================================================ */
+
+Header {
+    background: #63b3ed;
+    color: #2d3748;
+    dock: top;
+    height: 1;
+}
+
+Footer {
+    background: #4a5568;
+    color: #e2e8f0;
+    dock: bottom;
+    height: 1;
+}
+
+/* ============================================================================
+ * Layout Containers
+ * ============================================================================ */
+
+#sidebar {
+    width: 30;
+    background: #384152;
+    border-right: solid #4a5568;
+}
+
+#main {
+    width: 1fr;
+    background: #2d3748;
+}
+
+Vertical {
+    height: 1fr;
+}
+
+Horizontal {
+    height: 1fr;
+}
+
+/* ============================================================================
+ * Widget Styles
+ * ============================================================================ */
+
+/* Task Tree Widget */
+TaskTree {
+    background: transparent;
+    border: solid #4a5568;
+    padding: 1;
+}
+
+TaskTree:focus {
+    border: solid #63b3ed;
+}
+
+/* Progress Bar */
+ProgressBar {
+    background: #4a5568;
+    color: #68d391;
+}
+
+ProgressBar.-gradient {
+    color: linear-gradient(90deg, #68d391, #63b3ed);
+}
+
+/* Git Status Widget */
+GitStatus {
+    background: transparent;
+    border: solid #4a5568;
+    padding: 1;
+}
+
+GitStatus:focus {
+    border: solid #63b3ed;
+}
+
+/* Panel Widget (generic container) */
+.panel {
+    background: transparent;
+    border: solid #4a5568;
+    padding: 1;
+}
+
+.panel:focus {
+    border: solid #63b3ed;
+}
+
+/* Data Table */
+DataTable {
+    background: transparent;
+    border: solid #4a5568;
+}
+
+DataTable:focus {
+    border: solid #63b3ed;
+}
+
+DataTable > .datatable--header {
+    background: #4a5568;
+    color: #e2e8f0;
+    text-style: bold;
+}
+
+DataTable > .datatable--cursor {
+    background: #63b3ed;
+    color: #2d3748;
+}
+
+/* Static Widget */
+Static {
+    background: transparent;
+}
+
+/* ============================================================================
+ * Command Palette
+ * ============================================================================ */
+
+CommandPaletteScreen {
+    align: center middle;
+}
+
+#command-palette-container {
+    width: 80;
+    height: 30;
+    background: #2d3748;
+    border: solid #63b3ed;
+    padding: 1;
+}
+
+Input {
+    background: #4a5568;
+    color: #e2e8f0;
+    border: solid #4a5568;
+}
+
+Input:focus {
+    border: solid #63b3ed;
+}
+
+/* ============================================================================
+ * Utility Classes
+ * ============================================================================ */
+
+.success {
+    color: #68d391;
+}
+
+.warning {
+    color: #f6ad55;
+}
+
+.error {
+    color: #fc8181;
+}
+
+.accent {
+    color: #63b3ed;
+}
+
+.dim {
+    color: #718096;
+}
+
+.bold {
+    text-style: bold;
+}
+
+.italic {
+    text-style: italic;
+}
+
+/* ============================================================================
+ * Focus States
+ * ============================================================================ */
+
+*:focus {
+    border: solid #63b3ed;
+}
+
+/* ============================================================================
+ * Responsive Breakpoints
+ * ============================================================================ */
+
+/* Small terminals (< 80 columns) */
+@media (max-width: 79) {
+    #sidebar {
+        display: none;
+    }
+}
+
+/* Medium terminals (80-120 columns) */
+@media (min-width: 80) and (max-width: 120) {
+    #sidebar {
+        width: 25;
+    }
+}
+
+/* Large terminals (> 120 columns) */
+@media (min-width: 121) {
+    #sidebar {
+        width: 35;
+    }
+}
