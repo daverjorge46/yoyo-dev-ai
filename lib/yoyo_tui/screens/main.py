@@ -30,6 +30,9 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Header, Footer, Static
 
+from ..widgets import TaskTree, ProgressPanel
+from ..models import TaskData
+
 
 class MainScreen(Screen):
     """Main dashboard screen for Yoyo Dev TUI."""
@@ -79,16 +82,17 @@ class MainScreen(Screen):
 
             # Right main content area
             with Vertical(id="main"):
-                yield Static(
-                    "[bold cyan]Active Tasks[/bold cyan]\n\n"
-                    "Loading task data...\n\n"
-                    "[dim]Tasks will appear here once widgets are implemented (Task 6)[/dim]",
-                    id="task-panel"
-                )
+                # Progress overview panel
+                yield ProgressPanel(task_data=TaskData.empty())
+
+                # Task tree widget
+                yield TaskTree(task_data=TaskData.empty())
+
+                # Placeholder for spec list (Task 7)
                 yield Static(
                     "[bold cyan]Specifications[/bold cyan]\n\n"
                     "Loading specifications...\n\n"
-                    "[dim]Spec list will appear here once widgets are implemented (Task 7)[/dim]",
+                    "[dim]Spec list will appear here in Task 7[/dim]",
                     id="spec-panel"
                 )
 
