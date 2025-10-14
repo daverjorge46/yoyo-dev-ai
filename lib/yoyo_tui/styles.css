@@ -82,7 +82,7 @@ ProgressBar {
 }
 
 ProgressBar.-gradient {
-    color: linear-gradient(90deg, #68d391, #63b3ed);
+    color: #68d391;
 }
 
 /* Git Status Widget */
@@ -203,23 +203,7 @@ Input:focus {
  * Responsive Breakpoints
  * ============================================================================ */
 
-/* Small terminals (< 80 columns) */
-@media (max-width: 79) {
-    #sidebar {
-        display: none;
-    }
-}
-
-/* Medium terminals (80-120 columns) */
-@media (min-width: 80) and (max-width: 120) {
-    #sidebar {
-        width: 25;
-    }
-}
-
-/* Large terminals (> 120 columns) */
-@media (min-width: 121) {
-    #sidebar {
-        width: 35;
-    }
-}
+/* Note: Textual CSS doesn't support @media queries.
+ * Responsive behavior is handled in MainScreen.on_resize() method
+ * using breakpoint constants (BREAKPOINT_SMALL = 80, BREAKPOINT_MEDIUM = 120).
+ * The sidebar visibility and width are adjusted dynamically. */

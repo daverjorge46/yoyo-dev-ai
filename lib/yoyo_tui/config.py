@@ -62,7 +62,33 @@ class TUIConfig:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> 'TUIConfig':
         """Create config from dictionary (loaded from YAML)."""
-        return cls(**data)
+        # Flatten nested structures from YAML template
+        flattened = {}
+
+        for key, value in data.items():
+            if key == 'editor' and isinstance(value, dict):
+                # Flatten editor.command → editor_command
+                flattened['editor_command'] = value.get('command', 'code')
+                flattened['editor_args'] = value.get('args', '{file}')
+            elif key == 'layout' and isinstance(value, dict):
+                # Flatten layout.* → *
+                flattened['sidebar_width'] = value.get('sidebar_width', 30)
+                flattened['show_git_panel'] = value.get('show_git_panel', True)
+                flattened['compact_mode'] = value.get('compact_mode', False)
+            elif key == 'features' and isinstance(value, dict):
+                # Flatten features.* → *
+                flattened['file_watching'] = value.get('file_watching', True)
+                flattened['git_integration'] = value.get('git_integration', True)
+                flattened['command_history'] = value.get('command_history', True)
+                flattened['analytics'] = value.get('analytics', False)
+            elif key in ('advanced', 'experimental'):
+                # Ignore advanced/experimental sections (not implemented yet)
+                pass
+            else:
+                # Keep other keys as-is
+                flattened[key] = value
+
+        return cls(**flattened)
 
 
 class ConfigManager:
