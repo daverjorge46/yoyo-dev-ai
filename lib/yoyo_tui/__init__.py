@@ -26,6 +26,7 @@ from .models import (
 )
 
 from .config import TUIConfig, ConfigManager
+from .app import YoyoDevApp, create_app
 
 __all__ = [
     "Subtask",
@@ -35,5 +36,7 @@ __all__ = [
     "GitStatus",
     "TUIConfig",
     "ConfigManager",
+    "YoyoDevApp",
+    "create_app",
     "__version__",
 ]
