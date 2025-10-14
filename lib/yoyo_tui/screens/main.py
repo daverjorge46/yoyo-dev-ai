@@ -30,7 +30,7 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Header, Footer, Static
 
-from ..widgets import TaskTree, ProgressPanel
+from ..widgets import TaskTree, ProgressPanel, SpecList, GitStatus, ProjectOverview, ShortcutsPanel
 from ..models import TaskData
 
 
@@ -60,25 +60,14 @@ class MainScreen(Screen):
         with Horizontal():
             # Left sidebar (30 columns)
             with Vertical(id="sidebar"):
-                yield Static(
-                    "[bold cyan]Project Overview[/bold cyan]\n\n"
-                    "Loading project context...",
-                    id="project-overview"
-                )
-                yield Static(
-                    "[bold cyan]Git Status[/bold cyan]\n\n"
-                    "Checking repository...",
-                    id="git-status-panel"
-                )
-                yield Static(
-                    "[bold cyan]Keyboard Shortcuts[/bold cyan]\n\n"
-                    "[cyan]Ctrl+P[/cyan] Command Palette\n"
-                    "[cyan]?[/cyan]      Help\n"
-                    "[cyan]q[/cyan]      Quit\n"
-                    "[cyan]r[/cyan]      Refresh\n"
-                    "[cyan]g[/cyan]      Git Menu",
-                    id="shortcuts-panel"
-                )
+                # Project overview widget showing mission and context
+                yield ProjectOverview()
+
+                # Git Status widget with live updates
+                yield GitStatus()
+
+                # Keyboard shortcuts panel
+                yield ShortcutsPanel()
 
             # Right main content area
             with Vertical(id="main"):
@@ -88,13 +77,8 @@ class MainScreen(Screen):
                 # Task tree widget
                 yield TaskTree(task_data=TaskData.empty())
 
-                # Placeholder for spec list (Task 7)
-                yield Static(
-                    "[bold cyan]Specifications[/bold cyan]\n\n"
-                    "Loading specifications...\n\n"
-                    "[dim]Spec list will appear here in Task 7[/dim]",
-                    id="spec-panel"
-                )
+                # Spec list widget showing recent specs and fixes
+                yield SpecList()
 
         # Bottom footer with keyboard shortcuts
         yield Footer()
