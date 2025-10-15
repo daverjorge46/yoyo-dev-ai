@@ -163,8 +163,8 @@ set -g history-limit 50000
 
 # Custom keybindings
 # Ctrl+B r - Force refresh status pane (send Ctrl+C then restart)
-# Note: Will use Python dashboard if available, otherwise falls back to Bash
-bind-key r run-shell "tmux send-keys -t 1 C-c && tmux respawn-pane -t 1 -k 'if [ -f ~/.yoyo-dev/venv/bin/python3 ] && ~/.yoyo-dev/venv/bin/python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then ~/.yoyo-dev/venv/bin/python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; elif command -v python3 >/dev/null && python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; else ~/.yoyo-dev/lib/yoyo-status.sh; fi'"
+# Note: Tries TUI → Rich dashboard → Bash fallback
+bind-key r run-shell "tmux send-keys -t 1 C-c && tmux respawn-pane -t 1 -k 'if [ -f ~/.yoyo-dev/venv/bin/python3 ] && ~/.yoyo-dev/venv/bin/python3 -c \"import textual, watchdog, yaml\" 2>/dev/null; then ~/.yoyo-dev/venv/bin/python3 ~/.yoyo-dev/lib/yoyo-tui.py; elif [ -f ~/.yoyo-dev/venv/bin/python3 ] && ~/.yoyo-dev/venv/bin/python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then ~/.yoyo-dev/venv/bin/python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; elif command -v python3 >/dev/null && python3 -c \"import textual, watchdog, yaml\" 2>/dev/null; then python3 ~/.yoyo-dev/lib/yoyo-tui.py; elif command -v python3 >/dev/null && python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; else ~/.yoyo-dev/lib/yoyo-status.sh; fi'"
 EOF
 
 # Create startup script that displays header and launches Claude
@@ -246,20 +246,28 @@ sed -i "s|__TECH_STACK__|$tech_stack|g" "$STARTUP_SCRIPT"
 
 chmod +x "$STARTUP_SCRIPT"
 
-# Determine which dashboard to use (Python with fallback to Bash)
+# Determine which dashboard to use (TUI → Rich dashboard → Bash fallback)
 DASHBOARD_CMD="$HOME/.yoyo-dev/lib/yoyo-status.sh"
 
 # Check venv first, then fall back to system Python
 if [ -f "$HOME/.yoyo-dev/venv/bin/python3" ]; then
-    # Check if venv Python has dashboard dependencies
-    if "$HOME/.yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
-        # Use venv Python dashboard
+    # Try Textual TUI first (best experience)
+    if "$HOME/.yoyo-dev/venv/bin/python3" -c "import textual, watchdog, yaml" &> /dev/null 2>&1; then
+        # Use venv Python with Textual TUI
+        DASHBOARD_CMD="$HOME/.yoyo-dev/venv/bin/python3 $HOME/.yoyo-dev/lib/yoyo-tui.py"
+    # Fall back to Rich dashboard if Textual not available
+    elif "$HOME/.yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
+        # Use venv Python with Rich dashboard
         DASHBOARD_CMD="$HOME/.yoyo-dev/venv/bin/python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
     fi
 elif command -v python3 &> /dev/null; then
-    # Fall back to system Python if venv doesn't exist
-    if python3 -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
-        # Use system Python dashboard
+    # Try Textual TUI with system Python
+    if python3 -c "import textual, watchdog, yaml" &> /dev/null 2>&1; then
+        # Use system Python with Textual TUI
+        DASHBOARD_CMD="python3 $HOME/.yoyo-dev/lib/yoyo-tui.py"
+    # Fall back to Rich dashboard if Textual not available
+    elif python3 -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
+        # Use system Python with Rich dashboard
         DASHBOARD_CMD="python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
     fi
 fi

@@ -235,7 +235,7 @@ echo -e " ${YELLOW}Launching Claude Code...${RESET}"
 echo ""
 
 # Launch Claude Code
-exec claude
+claude
 EOFSTART
 
 # Replace placeholders
