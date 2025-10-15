@@ -85,8 +85,8 @@ class ProgressPanel(Widget):
         if not self.task_data:
             return 0.0
 
-        total_tasks = self.task_data.total_parent_tasks
-        completed_tasks = self.task_data.completed_parent_tasks
+        total_tasks = self.task_data.total_tasks
+        completed_tasks = self.task_data.completed_tasks
 
         if total_tasks == 0:
             return 0.0
@@ -121,8 +121,8 @@ class ProgressPanel(Widget):
         if not self.task_data:
             return "[dim]No task data[/dim]"
 
-        completed = self.task_data.completed_parent_tasks
-        total = self.task_data.total_parent_tasks
+        completed = self.task_data.completed_tasks
+        total = self.task_data.total_tasks
 
         if total == 0:
             return "[dim]No parent tasks[/dim]"

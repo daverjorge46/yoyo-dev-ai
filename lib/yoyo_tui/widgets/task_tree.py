@@ -77,7 +77,7 @@ class TaskTree(Widget):
             parent_task: ParentTask to add
         """
         # Completion indicator
-        if parent_task.is_complete:
+        if parent_task.completed:
             indicator = "[green]✓[/green]"
         else:
             indicator = "[dim]○[/dim]"
@@ -86,7 +86,7 @@ class TaskTree(Widget):
         progress_text = f"[cyan]{parent_task.progress}%[/cyan]"
 
         # Parent task label
-        label = f"{indicator} {parent_task.title} {progress_text}"
+        label = f"{indicator} {parent_task.name} {progress_text}"
 
         # Add parent node
         parent_node = root_node.add(label, expand=True)
@@ -105,7 +105,7 @@ class TaskTree(Widget):
             subtask: Subtask to add
         """
         # Checkbox indicator
-        if subtask.complete:
+        if subtask.completed:
             indicator = "[green][x][/green]"
         else:
             indicator = "[dim][ ][/dim]"
