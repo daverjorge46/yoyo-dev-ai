@@ -30,7 +30,7 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Header, Footer, Static
 
-from ..widgets import TaskTree, ProgressPanel, SpecList, GitStatus, ProjectOverview, ShortcutsPanel
+# from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel
 from ..models import TaskData
 
 
@@ -56,29 +56,17 @@ class MainScreen(Screen):
         # Top header bar
         yield Header()
 
-        # Main content area with sidebar and main panel
-        with Horizontal():
-            # Left sidebar (30 columns)
-            with Vertical(id="sidebar"):
-                # Project overview widget showing mission and context
-                yield ProjectOverview()
-
-                # Git Status widget with live updates
-                yield GitStatus()
-
-                # Keyboard shortcuts panel
-                yield ShortcutsPanel()
-
-            # Right main content area
-            with Vertical(id="main"):
-                # Progress overview panel
-                yield ProgressPanel(task_data=TaskData.empty())
-
-                # Task tree widget
-                yield TaskTree(task_data=TaskData.empty())
-
-                # Spec list widget showing recent specs and fixes
-                yield SpecList()
+        # Main content area with simplified layout
+        with Container():
+            yield Static(
+                "\n\n"
+                "  [bold cyan]🚀 YOYO DEV - TUI Dashboard[/bold cyan]\n\n"
+                "  [green]✓[/green] TUI is working!\n\n"
+                "  [yellow]⚠[/yellow]  Custom widgets temporarily disabled while fixing compatibility issues.\n\n"
+                "  [dim]The TUI will be fully functional after applying fixes.\n"
+                "  Press [cyan]Ctrl+C[/cyan] or [cyan]q[/cyan] to exit.[/dim]\n",
+                id="temp-placeholder"
+            )
 
         # Bottom footer with keyboard shortcuts
         yield Footer()
@@ -129,15 +117,16 @@ class MainScreen(Screen):
         """
         self.check_terminal_size()
 
-        # Get current size
-        width = self.app.size.width
-
-        # Adjust sidebar visibility based on breakpoints
-        sidebar = self.query_one("#sidebar")
-
-        if width <= self.BREAKPOINT_SMALL:
-            # Small terminal: hide sidebar
-            sidebar.display = False
-        else:
-            # Medium/large terminal: show sidebar
-            sidebar.display = True
+        # Sidebar resize logic temporarily disabled (no sidebar in simplified layout)
+        # # Get current size
+        # width = self.app.size.width
+        #
+        # # Adjust sidebar visibility based on breakpoints
+        # sidebar = self.query_one("#sidebar")
+        #
+        # if width <= self.BREAKPOINT_SMALL:
+        #     # Small terminal: hide sidebar
+        #     sidebar.display = False
+        # else:
+        #     # Medium/large terminal: show sidebar
+        #     sidebar.display = True
