@@ -6,7 +6,10 @@ This module contains all custom widgets for the Textual TUI:
 - ProgressPanel: Progress bars and task summaries
 - SpecList: Specifications and fixes data table
 - GitStatus: Git repository status with live updates
-- (Future widgets from Task 8)
+- ProjectOverview: Project mission and tech stack overview
+- ShortcutsPanel: Quick reference keyboard shortcuts
+- NextTasksPanel: Next uncompleted task with subtask preview
+- SuggestedCommandsPanel: Context-aware command suggestions
 """
 
 from .task_tree import TaskTree
@@ -15,6 +18,8 @@ from .spec_list import SpecList
 from .git_status import GitStatus
 from .project_overview import ProjectOverview
 from .shortcuts_panel import ShortcutsPanel
+from .next_tasks_panel import NextTasksPanel
+from .suggested_commands_panel import SuggestedCommandsPanel
 
 __all__ = [
     "TaskTree",
@@ -23,4 +28,6 @@ __all__ = [
     "GitStatus",
     "ProjectOverview",
     "ShortcutsPanel",
+    "NextTasksPanel",
+    "SuggestedCommandsPanel",
 ]
