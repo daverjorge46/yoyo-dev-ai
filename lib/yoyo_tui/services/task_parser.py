@@ -146,6 +146,86 @@ class TaskParser:
         return subtasks
 
     @staticmethod
+    def find_and_parse_tasks() -> TaskData:
+        """
+        Auto-discover and parse tasks.md from project.
+
+        Search order:
+        1. tasks.md in current working directory (highest priority)
+        2. tasks.md in .yoyo-dev/specs/*/tasks.md (most recent)
+        3. tasks.md in .yoyo-dev/fixes/*/tasks.md (most recent)
+        4. MASTER-TASKS.md in current working directory
+
+        Returns:
+            TaskData with parsed information (empty if no tasks found)
+        """
+        from pathlib import Path
+        import os
+
+        cwd = Path(os.getcwd())
+
+        # Priority 1: tasks.md in current directory
+        cwd_tasks = cwd / "tasks.md"
+        if cwd_tasks.exists():
+            return TaskParser.parse(cwd_tasks)
+
+        # Priority 2: Most recent spec tasks.md
+        yoyo_dev = cwd / ".yoyo-dev"
+        if yoyo_dev.exists():
+            specs_dir = yoyo_dev / "specs"
+            if specs_dir.exists() and specs_dir.is_dir():
+                spec_tasks = TaskParser._find_most_recent_tasks(specs_dir)
+                if spec_tasks:
+                    return TaskParser.parse(spec_tasks)
+
+            # Priority 3: Most recent fix tasks.md
+            fixes_dir = yoyo_dev / "fixes"
+            if fixes_dir.exists() and fixes_dir.is_dir():
+                fix_tasks = TaskParser._find_most_recent_tasks(fixes_dir)
+                if fix_tasks:
+                    return TaskParser.parse(fix_tasks)
+
+        # Priority 4: MASTER-TASKS.md in current directory
+        master_tasks = cwd / "MASTER-TASKS.md"
+        if master_tasks.exists():
+            return TaskParser.parse(master_tasks)
+
+        # No tasks found
+        return TaskData.empty()
+
+    @staticmethod
+    def _find_most_recent_tasks(parent_dir: Path) -> Optional[Path]:
+        """
+        Find most recent tasks.md in subdirectories.
+
+        Looks for tasks.md in subdirectories, sorted by directory name (reverse).
+        This works because directories are named YYYY-MM-DD-feature-name.
+
+        Args:
+            parent_dir: Parent directory to search (e.g., .yoyo-dev/specs)
+
+        Returns:
+            Path to most recent tasks.md, or None if not found
+        """
+        try:
+            # Get all subdirectories, sorted by name (reverse = most recent first)
+            subdirs = sorted(
+                [d for d in parent_dir.iterdir() if d.is_dir()],
+                reverse=True
+            )
+
+            # Find first subdirectory with tasks.md
+            for subdir in subdirs:
+                tasks_file = subdir / "tasks.md"
+                if tasks_file.exists():
+                    return tasks_file
+
+            return None
+
+        except (OSError, PermissionError):
+            return None
+
+    @staticmethod
     def _calculate_progress(
         completed_tasks: int,
         total_tasks: int,

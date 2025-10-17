@@ -9,6 +9,7 @@ from .state_parser import StateParser
 from .file_watcher import FileWatcher
 from .git_service import GitService
 from .executor import CommandExecutor, CommandResult
+from .data_manager import DataManager
 
 __all__ = [
     "TaskParser",
@@ -17,4 +18,5 @@ __all__ = [
     "GitService",
     "CommandExecutor",
     "CommandResult",
+    "DataManager",
 ]

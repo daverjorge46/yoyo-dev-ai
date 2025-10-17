@@ -4,11 +4,14 @@ Yoyo Dev Textual TUI Application
 Main application class that coordinates all TUI functionality.
 """
 
+from pathlib import Path
+
 from textual.app import App
 from textual.binding import Binding
 
 from .config import ConfigManager, TUIConfig
 from .screens.main import MainScreen
+from .services.file_watcher import FileWatcher
 
 
 class YoyoDevApp(App):
@@ -51,8 +54,8 @@ class YoyoDevApp(App):
         # Push main screen (Task 5 complete)
         self.push_screen(MainScreen())
 
-        # TODO: Start file watcher when implemented (Task 2 already has FileWatcher service)
-        # self.start_file_watcher()
+        # Start file watcher (Task 3 complete)
+        self.start_file_watcher()
 
     def action_command_palette(self) -> None:
         """
@@ -78,8 +81,13 @@ class YoyoDevApp(App):
 
         Bound to: r
         """
-        # TODO: Implement data refresh logic
-        self.notify("Refreshing data...")
+        try:
+            main_screen = self.screen
+            if isinstance(main_screen, MainScreen):
+                main_screen.refresh_all_data()
+                self.notify("Data refreshed", severity="information", timeout=2)
+        except Exception:
+            self.notify("Could not refresh data", severity="error", timeout=3)
 
     def action_git_menu(self) -> None:
         """
@@ -103,14 +111,51 @@ class YoyoDevApp(App):
         Start file watcher service to monitor .yoyo-dev for changes.
 
         Watches for changes to tasks.md, state.json, and MASTER-TASKS.md files.
+        Automatically refreshes TUI data when relevant files change.
         """
-        # TODO: Implement file watcher integration (Task 2 service exists)
-        pass
+        # Find .yoyo-dev directory (look in current working directory)
+        yoyo_dev_dir = Path.cwd() / ".yoyo-dev"
+
+        if not yoyo_dev_dir.exists() or not yoyo_dev_dir.is_dir():
+            # No .yoyo-dev directory, skip file watching
+            return
+
+        # Create FileWatcher with callback to refresh data
+        # Using 1.5s debounce interval as specified in requirements
+        self.file_watcher = FileWatcher(
+            callback=self.on_file_change,
+            debounce_interval=1.5
+        )
+
+        # Start watching .yoyo-dev directory recursively
+        success = self.file_watcher.start_watching(yoyo_dev_dir)
+
+        if success:
+            self.notify("File watching enabled", severity="information", timeout=2)
+        else:
+            self.notify("Could not enable file watching", severity="warning", timeout=3)
+
+    def on_file_change(self) -> None:
+        """
+        Callback triggered when watched files change.
+
+        Refreshes all data in the MainScreen to reflect file changes.
+        Called by FileWatcher with debouncing to prevent spam.
+        """
+        try:
+            # Get MainScreen and refresh all data
+            main_screen = self.screen
+            if isinstance(main_screen, MainScreen):
+                main_screen.refresh_all_data()
+                self.notify("Data refreshed", severity="information", timeout=1)
+        except Exception:
+            # Silently ignore errors to keep watcher running
+            pass
 
     def stop_file_watcher(self) -> None:
         """Stop file watcher service."""
         if self.file_watcher:
-            self.file_watcher.stop()
+            self.file_watcher.stop_watching()
             self.file_watcher = None
 
     def on_unmount(self) -> None:

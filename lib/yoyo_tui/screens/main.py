@@ -32,6 +32,7 @@ from textual.widgets import Header, Footer, Static
 
 from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel
 from ..models import TaskData
+from ..services.data_manager import DataManager
 
 
 class MainScreen(Screen):
@@ -45,6 +46,11 @@ class MainScreen(Screen):
     BREAKPOINT_SMALL = 79  # < 80 columns (hide sidebar)
     BREAKPOINT_MEDIUM = 120  # 80-120 columns (normal sidebar)
     # > 120 columns = large (wider sidebar)
+
+    def __init__(self, *args, **kwargs):
+        """Initialize MainScreen with task data attribute."""
+        super().__init__(*args, **kwargs)
+        self.task_data = TaskData.empty()  # Will be loaded on mount
 
     def compose(self) -> ComposeResult:
         """
@@ -90,9 +96,45 @@ class MainScreen(Screen):
         """
         Called when screen is mounted to the app.
 
-        Checks terminal size and displays warning if too small.
+        Loads real data and passes to widgets, then checks terminal size.
         """
+        # Load real task data
+        self.load_data()
+
+        # Check terminal size
         self.check_terminal_size()
+
+    def load_data(self) -> None:
+        """
+        Load real data from project and update widgets.
+
+        Discovers tasks.md, loads task data, and passes to all widgets.
+        """
+        # Load task data using DataManager
+        self.task_data = DataManager.load_active_tasks()
+
+        # Update widgets with loaded data
+        try:
+            # Update TaskTree
+            task_tree = self.query_one(TaskTree)
+            task_tree.load_tasks(self.task_data)
+
+            # Update ProgressPanel
+            progress_panel = self.query_one(ProgressPanel)
+            progress_panel.update_data(self.task_data)
+
+        except Exception as e:
+            # Widgets not mounted yet or other error
+            # Data is stored in self.task_data and will be available
+            pass
+
+    def refresh_all_data(self) -> None:
+        """
+        Refresh all data and update widgets.
+
+        Used by FileWatcher to trigger updates when files change.
+        """
+        self.load_data()
 
     def check_terminal_size(self) -> None:
         """
@@ -100,26 +142,30 @@ class MainScreen(Screen):
 
         Displays a notification if terminal is too small.
         """
-        size = self.app.size
-        width, height = size.width, size.height
+        try:
+            size = self.app.size
+            width, height = size.width, size.height
 
-        # Check minimum width
-        if width < self.MIN_WIDTH:
-            self.app.notify(
-                f"Terminal too narrow ({width} cols). "
-                f"Minimum recommended: {self.MIN_WIDTH} cols",
-                severity="warning",
-                timeout=10
-            )
+            # Check minimum width
+            if width < self.MIN_WIDTH:
+                self.app.notify(
+                    f"Terminal too narrow ({width} cols). "
+                    f"Minimum recommended: {self.MIN_WIDTH} cols",
+                    severity="warning",
+                    timeout=10
+                )
 
-        # Check minimum height
-        if height < self.MIN_HEIGHT:
-            self.app.notify(
-                f"Terminal too short ({height} rows). "
-                f"Minimum recommended: {self.MIN_HEIGHT} rows",
-                severity="warning",
-                timeout=10
-            )
+            # Check minimum height
+            if height < self.MIN_HEIGHT:
+                self.app.notify(
+                    f"Terminal too short ({height} rows). "
+                    f"Minimum recommended: {self.MIN_HEIGHT} rows",
+                    severity="warning",
+                    timeout=10
+                )
+        except Exception:
+            # No active app context (likely in testing)
+            pass
 
     def on_resize(self, event) -> None:
         """

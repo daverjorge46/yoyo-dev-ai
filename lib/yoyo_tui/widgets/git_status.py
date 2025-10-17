@@ -3,14 +3,17 @@ GitStatus Widget - Display git repository status with live updates.
 
 Shows branch name, uncommitted changes, untracked files, and sync status.
 Auto-refreshes every 5 seconds using Textual's set_interval.
+
+Uses async git operations to prevent blocking the UI thread.
 """
 
+from pathlib import Path
 from textual.app import ComposeResult
 from textual.widgets import Static
 from textual.widget import Widget
 from textual.containers import Vertical
 
-from ..services.git_service import GitService
+from ..services.git_service import GitService, CachedGitService
 
 
 class GitStatus(Widget):
@@ -33,7 +36,7 @@ class GitStatus(Widget):
             refresh_interval: Auto-refresh interval in seconds (default 5)
         """
         super().__init__(*args, **kwargs)
-        self.git_service = GitService()
+        self.git_service = CachedGitService(ttl_seconds=30.0)
         self.refresh_interval = refresh_interval
         self._timer = None
 
@@ -48,16 +51,18 @@ class GitStatus(Widget):
             # Title
             yield Static("[bold cyan]Git Status[/bold cyan]", id="git-status-title")
 
-            # Status content
-            status_text = self._generate_status_text()
-            yield Static(status_text, id="git-status-content")
+            # Status content (will be populated async)
+            yield Static("[dim]Loading...[/dim]", id="git-status-content")
 
     def on_mount(self) -> None:
         """
         Called when widget is mounted.
 
-        Sets up auto-refresh timer.
+        Sets up auto-refresh timer and loads initial status.
         """
+        # Load initial status immediately
+        self.update_status()
+
         # Set up auto-refresh timer
         self._timer = self.set_interval(
             self.refresh_interval,
@@ -74,58 +79,58 @@ class GitStatus(Widget):
             self._timer.stop()
             self._timer = None
 
-    def _generate_status_text(self) -> str:
+    async def _generate_status_text(self) -> str:
         """
-        Generate formatted git status text.
+        Generate formatted git status text (async version).
+
+        Runs git operations in background thread to prevent UI blocking.
 
         Returns:
             Formatted status string with rich markup
         """
-        from pathlib import Path
-
-        # Check if git is installed
-        if not self.git_service.is_git_installed():
+        # Check if git is installed (cached, fast)
+        if not GitService.is_git_installed():
             return "[dim]Git not available[/dim]"
 
         # Get current directory
         cwd = Path.cwd()
 
-        # Check if in a git repository
-        if not self.git_service.is_git_repo(cwd):
+        # Check if in a git repository (runs in background thread)
+        is_repo = await GitService.is_git_repo_async(cwd)
+        if not is_repo:
             return "[dim]Not a git repository[/dim]"
+
+        # Get complete git status in one call (runs in background thread, cached)
+        status = await self.git_service.get_status_async(cwd)
 
         lines = []
 
         # Branch name
-        branch = self.git_service.get_current_branch(cwd)
-        if branch:
-            lines.append(f"[cyan]📦 Branch:[/cyan] {branch}")
+        if status.branch:
+            lines.append(f"[cyan]📦 Branch:[/cyan] {status.branch}")
         else:
             lines.append("[dim]📦 Branch: unknown[/dim]")
 
         # Uncommitted changes
-        uncommitted = self.git_service.get_uncommitted_changes_count(cwd)
-        if uncommitted > 0:
-            lines.append(f"[yellow]● Uncommitted:[/yellow] {uncommitted}")
+        if status.uncommitted > 0:
+            lines.append(f"[yellow]● Uncommitted:[/yellow] {status.uncommitted}")
         else:
             lines.append("[green]● Uncommitted:[/green] 0")
 
         # Untracked files
-        untracked = self.git_service.get_untracked_files_count(cwd)
-        if untracked > 0:
-            lines.append(f"[yellow]? Untracked:[/yellow] {untracked}")
+        if status.untracked > 0:
+            lines.append(f"[yellow]? Untracked:[/yellow] {status.untracked}")
         else:
             lines.append("[dim]? Untracked: 0[/dim]")
 
         # Ahead/behind status
-        if self.git_service.has_remote(cwd):
-            ahead, behind = self.git_service.get_ahead_behind_count(cwd)
-
-            if ahead > 0:
-                lines.append(f"[cyan]↑ Ahead:[/cyan] {ahead}")
-            if behind > 0:
-                lines.append(f"[yellow]↓ Behind:[/yellow] {behind}")
-            if ahead == 0 and behind == 0:
+        has_remote = await GitService.has_remote_async(cwd)
+        if has_remote:
+            if status.ahead > 0:
+                lines.append(f"[cyan]↑ Ahead:[/cyan] {status.ahead}")
+            if status.behind > 0:
+                lines.append(f"[yellow]↓ Behind:[/yellow] {status.behind}")
+            if status.ahead == 0 and status.behind == 0:
                 lines.append("[green]✓ Synced[/green]")
         else:
             lines.append("[dim]No remote[/dim]")
@@ -133,10 +138,27 @@ class GitStatus(Widget):
         return "\n".join(lines)
 
     def update_status(self) -> None:
-        """Update git status display."""
+        """
+        Update git status display.
+
+        Schedules async status generation without blocking the UI.
+        This method is called by set_interval timer.
+        """
+        # Schedule the async work
+        self.run_worker(self._update_status_async(), exclusive=True)
+
+    async def _update_status_async(self) -> None:
+        """
+        Update git status display (async implementation).
+
+        Runs git operations in background thread, then updates UI on main thread.
+        """
         try:
+            # Generate status text (runs in background thread)
+            status_text = await self._generate_status_text()
+
+            # Update UI (runs on main thread)
             content = self.query_one("#git-status-content", Static)
-            status_text = self._generate_status_text()
             content.update(status_text)
         except Exception:
             # Widget not mounted yet or query failed

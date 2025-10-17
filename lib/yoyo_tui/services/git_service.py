@@ -3,12 +3,17 @@ GitService
 
 Provides git operations for the TUI (status, branch, commit, push).
 All operations use subprocess to run git commands.
+
+Async methods are provided to prevent blocking the UI thread.
 """
 
+import asyncio
 import subprocess
 import re
+import time
+from functools import lru_cache
 from pathlib import Path
-from typing import Optional, Tuple, List
+from typing import Optional, Tuple, List, Dict
 
 from ..models import GitStatus
 
@@ -26,9 +31,12 @@ class GitService:
     """
 
     @staticmethod
+    @lru_cache(maxsize=1)
     def is_git_installed() -> bool:
         """
         Check if git is installed and available.
+
+        Cached permanently since git installation doesn't change during runtime.
 
         Returns:
             True if git is installed, False otherwise
@@ -112,8 +120,7 @@ class GitService:
             )
 
         branch = GitService.get_current_branch(directory)
-        uncommitted = GitService._count_uncommitted_changes(directory)
-        untracked = GitService._count_untracked_files(directory)
+        uncommitted, untracked = GitService.get_status_counts(directory)
         ahead, behind = GitService.get_ahead_behind(directory)
 
         return GitStatus(
@@ -125,9 +132,52 @@ class GitService:
         )
 
     @staticmethod
+    def get_status_counts(directory: Path) -> Tuple[int, int]:
+        """
+        Get uncommitted and untracked file counts from a single git call.
+
+        This combines the functionality of _count_uncommitted_changes() and
+        _count_untracked_files() to avoid duplicate subprocess calls.
+
+        Args:
+            directory: Repository directory
+
+        Returns:
+            Tuple of (uncommitted_count, untracked_count)
+        """
+        try:
+            result = subprocess.run(
+                ['git', 'status', '--porcelain'],
+                cwd=str(directory),
+                capture_output=True,
+                check=True,
+                text=True,
+                timeout=5
+            )
+
+            uncommitted = 0
+            untracked = 0
+            lines = result.stdout.strip().split('\n')
+
+            for line in lines:
+                if not line:
+                    continue
+                if line.startswith('??'):
+                    untracked += 1
+                else:
+                    uncommitted += 1
+
+            return uncommitted, untracked
+
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+            return 0, 0
+
+    @staticmethod
     def _count_uncommitted_changes(directory: Path) -> int:
         """
         Count uncommitted changes (modified, deleted, staged).
+
+        DEPRECATED: Use get_status_counts() instead to avoid duplicate git calls.
 
         Args:
             directory: Repository directory
@@ -135,28 +185,15 @@ class GitService:
         Returns:
             Number of uncommitted changes
         """
-        try:
-            result = subprocess.run(
-                ['git', 'status', '--porcelain'],
-                cwd=str(directory),
-                capture_output=True,
-                check=True,
-                text=True,
-                timeout=5
-            )
-
-            # Count lines that are not untracked (not starting with ??)
-            lines = result.stdout.strip().split('\n')
-            count = sum(1 for line in lines if line and not line.startswith('??'))
-            return count
-
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-            return 0
+        uncommitted, _ = GitService.get_status_counts(directory)
+        return uncommitted
 
     @staticmethod
     def _count_untracked_files(directory: Path) -> int:
         """
         Count untracked files.
+
+        DEPRECATED: Use get_status_counts() instead to avoid duplicate git calls.
 
         Args:
             directory: Repository directory
@@ -164,23 +201,8 @@ class GitService:
         Returns:
             Number of untracked files
         """
-        try:
-            result = subprocess.run(
-                ['git', 'status', '--porcelain'],
-                cwd=str(directory),
-                capture_output=True,
-                check=True,
-                text=True,
-                timeout=5
-            )
-
-            # Count lines starting with ??
-            lines = result.stdout.strip().split('\n')
-            count = sum(1 for line in lines if line.startswith('??'))
-            return count
-
-        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
-            return 0
+        _, untracked = GitService.get_status_counts(directory)
+        return untracked
 
     @staticmethod
     def get_ahead_behind(directory: Path) -> Tuple[int, int]:
@@ -410,3 +432,230 @@ class GitService:
             return [msg for msg in messages if msg]
         except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
             return []
+
+    # ============================================================================
+    # Async Methods (Non-blocking)
+    # ============================================================================
+
+    @staticmethod
+    async def is_git_repo_async(directory: Path) -> bool:
+        """
+        Check if directory is a git repository (async version).
+
+        Runs in background thread to prevent blocking UI.
+
+        Args:
+            directory: Directory to check
+
+        Returns:
+            True if git repo, False otherwise
+        """
+        return await asyncio.to_thread(GitService.is_git_repo, directory)
+
+    @staticmethod
+    async def get_current_branch_async(directory: Path) -> str:
+        """
+        Get current git branch name (async version).
+
+        Runs in background thread to prevent blocking UI.
+
+        Args:
+            directory: Repository directory
+
+        Returns:
+            Branch name or empty string if not in a repo
+        """
+        return await asyncio.to_thread(GitService.get_current_branch, directory)
+
+    @staticmethod
+    async def get_status_async(directory: Path) -> GitStatus:
+        """
+        Get comprehensive git status (async version).
+
+        Runs in background thread to prevent blocking UI.
+        This is the primary method to use from async contexts (like Textual widgets).
+
+        Args:
+            directory: Repository directory
+
+        Returns:
+            GitStatus object with all status information
+        """
+        return await asyncio.to_thread(GitService.get_status, directory)
+
+    @staticmethod
+    async def get_status_counts_async(directory: Path) -> Tuple[int, int]:
+        """
+        Get uncommitted and untracked file counts (async version).
+
+        Runs in background thread to prevent blocking UI.
+
+        Args:
+            directory: Repository directory
+
+        Returns:
+            Tuple of (uncommitted_count, untracked_count)
+        """
+        return await asyncio.to_thread(GitService.get_status_counts, directory)
+
+    @staticmethod
+    async def get_ahead_behind_async(directory: Path) -> Tuple[int, int]:
+        """
+        Get number of commits ahead/behind remote (async version).
+
+        Runs in background thread to prevent blocking UI.
+
+        Args:
+            directory: Repository directory
+
+        Returns:
+            Tuple of (ahead_count, behind_count)
+        """
+        return await asyncio.to_thread(GitService.get_ahead_behind, directory)
+
+    @staticmethod
+    async def has_remote_async(directory: Path) -> bool:
+        """
+        Check if repository has at least one remote (async version).
+
+        Runs in background thread to prevent blocking UI.
+
+        Args:
+            directory: Repository directory
+
+        Returns:
+            True if has remote, False otherwise
+        """
+        return await asyncio.to_thread(GitService.has_remote, directory)
+
+
+class CachedGitService:
+    """
+    Caching wrapper for GitService to reduce subprocess calls.
+
+    Implements TTL-based caching with directory-specific cache keys.
+    Cache invalidation occurs on directory change or TTL expiration (30s default).
+    """
+
+    def __init__(self, ttl_seconds: float = 30.0):
+        """
+        Initialize cached git service.
+
+        Args:
+            ttl_seconds: Time-to-live for cached results (default: 30s)
+        """
+        self._ttl = ttl_seconds
+        self._cache: Dict[str, Tuple[float, GitStatus]] = {}
+        self._current_directory: Optional[Path] = None
+
+    def get_status(self, directory: Path) -> GitStatus:
+        """
+        Get git status with TTL caching.
+
+        Cache key is based on directory path. Cache is invalidated if:
+        - Directory changes
+        - TTL expires (30 seconds)
+
+        Args:
+            directory: Repository directory
+
+        Returns:
+            Cached or fresh GitStatus object
+        """
+        # Invalidate cache on directory change
+        if self._current_directory != directory:
+            self._cache.clear()
+            self._current_directory = directory
+
+        # Create cache key
+        cache_key = str(directory.resolve())
+
+        # Check cache
+        if cache_key in self._cache:
+            timestamp, cached_status = self._cache[cache_key]
+            age = time.time() - timestamp
+
+            # Return cached result if fresh
+            if age < self._ttl:
+                return cached_status
+
+        # Cache miss or expired - fetch fresh data
+        status = GitService.get_status(directory)
+
+        # Store in cache with current timestamp
+        self._cache[cache_key] = (time.time(), status)
+
+        return status
+
+    def invalidate_cache(self, directory: Optional[Path] = None):
+        """
+        Manually invalidate cache.
+
+        Args:
+            directory: If specified, only invalidate cache for this directory.
+                      If None, clear entire cache.
+        """
+        if directory is None:
+            self._cache.clear()
+        else:
+            cache_key = str(directory.resolve())
+            self._cache.pop(cache_key, None)
+
+    def set_ttl(self, ttl_seconds: float):
+        """
+        Change TTL duration.
+
+        Args:
+            ttl_seconds: New TTL in seconds
+        """
+        self._ttl = ttl_seconds
+
+    @property
+    def cache_size(self) -> int:
+        """Get current number of cached entries."""
+        return len(self._cache)
+
+    @property
+    def ttl(self) -> float:
+        """Get current TTL in seconds."""
+        return self._ttl
+
+    async def get_status_async(self, directory: Path) -> GitStatus:
+        """
+        Get git status with TTL caching (async version).
+
+        Runs in background thread to prevent blocking UI.
+        Cache key is based on directory path. Cache is invalidated if:
+        - Directory changes
+        - TTL expires (30 seconds)
+
+        Args:
+            directory: Repository directory
+
+        Returns:
+            Cached or fresh GitStatus object
+        """
+        # Invalidate cache on directory change
+        if self._current_directory != directory:
+            self._cache.clear()
+            self._current_directory = directory
+
+        # Create cache key
+        cache_key = str(directory.resolve())
+
+        # Check cache
+        if cache_key in self._cache:
+            timestamp, cached_status = self._cache[cache_key]
+            age = time.time() - timestamp
+
+            # Return cached result if fresh
+            if age < self._ttl:
+                return cached_status
+
+        # Cache miss or expired - fetch fresh data (in background thread)
+        status = await GitService.get_status_async(directory)
+
+        # Store in cache with current timestamp
+        self._cache[cache_key] = (time.time(), status)
+
+        return status
