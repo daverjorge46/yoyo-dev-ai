@@ -177,11 +177,11 @@ class SuggestedCommandsPanel(Static):
         Returns:
             True if incomplete tasks exist
         """
-        if not self.task_data or not self.task_data.tasks:
+        if not self.task_data or not self.task_data.parent_tasks:
             return False
 
         # Check if any parent task or subtask is incomplete
-        for task in self.task_data.tasks:
+        for task in self.task_data.parent_tasks:
             if not task.completed:
                 return True
             if task.subtasks and any(not sub.completed for sub in task.subtasks):

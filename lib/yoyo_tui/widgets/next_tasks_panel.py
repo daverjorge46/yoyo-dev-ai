@@ -10,7 +10,7 @@ from textual.app import ComposeResult
 from textual.widgets import Static
 from textual.containers import Vertical
 
-from ..models import TaskData, Task
+from ..models import TaskData, ParentTask
 
 
 class NextTasksPanel(Static):
@@ -87,7 +87,7 @@ class NextTasksPanel(Static):
 
         # Parent task title
         status_icon = "✓" if next_task.completed else "○"
-        lines.append(f"[bold]{status_icon} {next_task.title}[/bold]")
+        lines.append(f"[bold]{status_icon} {next_task.name}[/bold]")
 
         # Progress indicator
         completed_count = sum(1 for sub in next_task.subtasks if sub.completed)
@@ -105,7 +105,7 @@ class NextTasksPanel(Static):
             for i, subtask in enumerate(next_task.subtasks[:preview_count]):
                 checkbox = "[green]✓[/green]" if subtask.completed else "[ ]"
                 text_style = "dim strike" if subtask.completed else "white"
-                lines.append(f"{checkbox} [{text_style}]{subtask.title}[/{text_style}]")
+                lines.append(f"{checkbox} [{text_style}]{subtask.text}[/{text_style}]")
 
             # Show "... and X more" if there are more subtasks
             remaining = len(next_task.subtasks) - preview_count
@@ -128,18 +128,18 @@ class NextTasksPanel(Static):
 All tasks complete! 🎉
 or no tasks.md file detected."""
 
-    def _find_next_task(self) -> Optional[Task]:
+    def _find_next_task(self) -> Optional[ParentTask]:
         """
         Find the next uncompleted parent task.
 
         Returns:
             Next uncompleted Task or None if all complete
         """
-        if not self.task_data or not self.task_data.tasks:
+        if not self.task_data or not self.task_data.parent_tasks:
             return None
 
         # Find first parent task that's not 100% complete
-        for task in self.task_data.tasks:
+        for task in self.task_data.parent_tasks:
             if not task.completed:
                 return task
 
