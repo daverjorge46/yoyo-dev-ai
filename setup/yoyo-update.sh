@@ -313,6 +313,26 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         chmod +x "./.yoyo-dev/setup/install-dashboard-deps.sh"
     fi
 
+    # Update TUI library if it exists
+    if [ -d "$BASE_AGENT_OS/lib/yoyo_tui" ]; then
+        echo ""
+        echo "  📂 TUI Library:"
+        if [ -d "./.yoyo-dev/lib/yoyo_tui" ]; then
+            # Preserve venv but update TUI code
+            echo "  → Updating TUI library (preserving venv)..."
+            # Copy TUI library files (excluding venv and __pycache__)
+            rsync -av --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
+                "$BASE_AGENT_OS/lib/yoyo_tui/" "./.yoyo-dev/lib/yoyo_tui/" > /dev/null 2>&1
+            echo "  ✓ TUI library updated"
+        else
+            # First time TUI installation
+            echo "  → Installing TUI library..."
+            mkdir -p "./.yoyo-dev/lib"
+            cp -r "$BASE_AGENT_OS/lib/yoyo_tui" "./.yoyo-dev/lib/"
+            echo "  ✓ TUI library installed"
+        fi
+    fi
+
     # Update MASTER-TASKS template (always, to get latest improvements)
     if [ -f "$BASE_AGENT_OS/templates/MASTER-TASKS.md" ]; then
         copy_file "$BASE_AGENT_OS/templates/MASTER-TASKS.md" "./.yoyo-dev/templates/MASTER-TASKS.md" "true" "templates/MASTER-TASKS.md"
@@ -398,22 +418,78 @@ echo ""
 echo "--------------------------------"
 echo ""
 
-# Offer to install Python dashboard dependencies
+# Offer to install/update Python dashboard and TUI dependencies
 if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
-    # Check if Python dashboard dependencies are already installed
-    if command -v python3 &> /dev/null && python3 -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
-        echo "✅ Python dashboard dependencies already installed"
+    # Check if Python dashboard and TUI dependencies are already installed
+    DEPS_INSTALLED=false
+    TUI_INSTALLED=false
+
+    if command -v python3 &> /dev/null; then
+        # Check for dashboard dependencies
+        if python3 -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
+            DEPS_INSTALLED=true
+        fi
+
+        # Check for TUI dependencies
+        if python3 -c "import textual" &> /dev/null 2>&1; then
+            TUI_INSTALLED=true
+        fi
+
+        # Check venv installation
+        if [ -d "$HOME/.yoyo-dev/venv" ]; then
+            if "$HOME/.yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml, textual" &> /dev/null 2>&1; then
+                DEPS_INSTALLED=true
+                TUI_INSTALLED=true
+            fi
+        fi
+    fi
+
+    if [ "$DEPS_INSTALLED" = true ] && [ "$TUI_INSTALLED" = true ]; then
+        echo "✅ Python dashboard and TUI dependencies already installed"
         echo ""
+
+        # Check if requirements.txt was updated
+        if [ -f "./.yoyo-dev/requirements.txt" ]; then
+            echo "📋 Updated requirements.txt with latest dependency versions"
+            echo ""
+            read -p "Upgrade Python dependencies to latest versions? [y/N] " -n 1 -r
+            echo ""
+
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                if [ -d "$HOME/.yoyo-dev/venv" ]; then
+                    echo "Upgrading dependencies in virtual environment..."
+                    "$HOME/.yoyo-dev/venv/bin/pip" install --upgrade -r "$HOME/.yoyo-dev/requirements.txt"
+                elif command -v pip3 &> /dev/null; then
+                    echo "Upgrading dependencies..."
+                    pip3 install --upgrade -r "$HOME/.yoyo-dev/requirements.txt" --user
+                fi
+                echo "✓ Dependencies upgraded"
+            else
+                echo "⏭️  Skipping dependency upgrade"
+            fi
+            echo ""
+        fi
     else
-        echo "🐍 Python Dashboard (Optional)"
+        echo "🐍 Python Dashboard & TUI (Optional)"
         echo ""
-        echo "Yoyo Dev now includes an enhanced Python dashboard for visual mode:"
+        echo "Yoyo Dev includes enhanced Python dashboard and TUI for visual mode:"
         echo "  • Real-time file watching (no polling delay)"
         echo "  • Beautiful Rich TUI with progress bars"
+        echo "  • Interactive TUI dashboard (textual)"
         echo "  • Color-coded status indicators"
         echo "  • Auto-fallback to Bash if unavailable"
         echo ""
-        read -p "Install Python dashboard dependencies now? [Y/n] " -n 1 -r
+
+        if [ "$DEPS_INSTALLED" = false ] && [ "$TUI_INSTALLED" = false ]; then
+            echo "Missing dependencies: dashboard + TUI (rich, watchdog, yaml, textual)"
+        elif [ "$DEPS_INSTALLED" = false ]; then
+            echo "Missing dependencies: dashboard (rich, watchdog, yaml)"
+        else
+            echo "Missing dependencies: TUI (textual)"
+        fi
+        echo ""
+
+        read -p "Install/update Python dependencies now? [Y/n] " -n 1 -r
         echo ""
 
         if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
@@ -426,7 +502,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
             fi
         else
             echo ""
-            echo "⏭️  Skipping Python dashboard installation"
+            echo "⏭️  Skipping Python dependencies installation"
             echo "You can install later: ~/.yoyo-dev/setup/install-dashboard-deps.sh"
         fi
         echo ""

@@ -12,6 +12,7 @@ Features:
 
 import asyncio
 import json
+import logging
 import time
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -20,6 +21,8 @@ from textual.app import ComposeResult
 from textual.widgets import DataTable, Static
 from textual.widget import Widget
 from textual.containers import Vertical
+
+logger = logging.getLogger(__name__)
 
 
 class SpecList(Widget):
@@ -50,14 +53,17 @@ class SpecList(Widget):
         Initialize SpecList widget.
 
         Args:
-            yoyo_dev_path: Path to .yoyo-dev directory (defaults to ~/.yoyo-dev/.yoyo-dev)
+            yoyo_dev_path: Path to .yoyo-dev directory (defaults to <cwd>/.yoyo-dev)
             cache_ttl: Cache time-to-live in seconds (default: 30s)
         """
         super().__init__(*args, **kwargs)
         if yoyo_dev_path is None:
-            self.yoyo_dev_path = Path.home() / '.yoyo-dev' / '.yoyo-dev'
+            self.yoyo_dev_path = Path.cwd() / '.yoyo-dev'
         else:
             self.yoyo_dev_path = yoyo_dev_path
+
+        # Log path resolution for debugging
+        logger.debug(f"SpecList initialized with yoyo_dev_path: {self.yoyo_dev_path}")
 
         # Caching configuration
         self._cache_ttl = cache_ttl
@@ -244,9 +250,17 @@ class SpecList(Widget):
         specs = []
         specs_dir = self.yoyo_dev_path / 'specs'
 
+        # Validate specs directory exists
         if not specs_dir.exists():
+            logger.debug(f"Specs directory does not exist: {specs_dir}")
             return specs
 
+        # Validate it's a directory
+        if not specs_dir.is_dir():
+            logger.error(f"Specs path is not a directory: {specs_dir}")
+            return specs
+
+        logger.debug(f"Loading specs from: {specs_dir}")
         # Find all spec folders
         for spec_folder in sorted(specs_dir.iterdir(), reverse=True):
             if not spec_folder.is_dir():
@@ -308,9 +322,17 @@ class SpecList(Widget):
         fixes = []
         fixes_dir = self.yoyo_dev_path / 'fixes'
 
+        # Validate fixes directory exists
         if not fixes_dir.exists():
+            logger.debug(f"Fixes directory does not exist: {fixes_dir}")
             return fixes
 
+        # Validate it's a directory
+        if not fixes_dir.is_dir():
+            logger.error(f"Fixes path is not a directory: {fixes_dir}")
+            return fixes
+
+        logger.debug(f"Loading fixes from: {fixes_dir}")
         # Find all fix folders
         for fix_folder in sorted(fixes_dir.iterdir(), reverse=True):
             if not fix_folder.is_dir():

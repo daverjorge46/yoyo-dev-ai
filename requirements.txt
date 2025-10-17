@@ -1,6 +1,11 @@
-# Yoyo Dev Python Dashboard Dependencies
+# Yoyo Dev Python Dashboard & TUI Dependencies
 # Install with: pip3 install -r requirements.txt
 
-rich>=13.7.0        # Terminal UI framework
+# Dashboard dependencies
+rich>=13.7.0        # Terminal UI framework for dashboard
 watchdog>=4.0.0     # File system monitoring
 pyyaml>=6.0.1       # Configuration file parsing
+
+# TUI dependencies (for yoyo-tui visual mode)
+textual>=0.83.0     # TUI application framework
+textual-dev>=1.6.1  # TUI development tools (optional)

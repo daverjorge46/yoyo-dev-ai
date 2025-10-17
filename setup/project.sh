@@ -448,6 +448,27 @@ if [ "$CLAUDE_CODE" = true ]; then
             "true" \
             "setup/parse-utils.sh"
     fi
+
+    # Copy TUI library if available
+    echo ""
+    echo "  📂 TUI Library (Optional):"
+    if [ "$IS_FROM_BASE" = true ]; then
+        if [ -d "$BASE_AGENT_OS/lib/yoyo_tui" ]; then
+            mkdir -p "./.yoyo-dev/lib"
+            # Copy TUI library (excluding venv and cache)
+            cp -r "$BASE_AGENT_OS/lib/yoyo_tui" "./.yoyo-dev/lib/" 2>/dev/null || true
+            # Remove venv and cache if they were copied
+            rm -rf "./.yoyo-dev/lib/yoyo_tui/venv" 2>/dev/null || true
+            rm -rf "./.yoyo-dev/lib/yoyo_tui/__pycache__" 2>/dev/null || true
+            find "./.yoyo-dev/lib/yoyo_tui" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+            echo "  ✓ TUI library installed (lib/yoyo_tui/)"
+        else
+            echo "  ⚠️  TUI library not found in base installation"
+        fi
+    else
+        echo "  ⚠️  TUI library not available from GitHub installation"
+        echo "     Clone from repository to get TUI support"
+    fi
 fi
 
 # Handle Cursor installation for project

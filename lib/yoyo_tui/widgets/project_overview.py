@@ -5,11 +5,14 @@ Shows project name, mission summary, current tech stack, and roadmap phase.
 Reads from .yoyo-dev/product/ directory for mission and tech stack info.
 """
 
+import logging
 from pathlib import Path
 from textual.app import ComposeResult
 from textual.widgets import Static
 from textual.widget import Widget
 from textual.containers import Vertical
+
+logger = logging.getLogger(__name__)
 
 
 class ProjectOverview(Widget):
@@ -28,13 +31,16 @@ class ProjectOverview(Widget):
         Initialize ProjectOverview widget.
 
         Args:
-            product_path: Path to .yoyo-dev/product directory (defaults to ~/.yoyo-dev/.yoyo-dev/product)
+            product_path: Path to .yoyo-dev/product directory (defaults to <cwd>/.yoyo-dev/product)
         """
         super().__init__(*args, **kwargs)
         if product_path is None:
-            self.product_path = Path.home() / '.yoyo-dev' / '.yoyo-dev' / 'product'
+            self.product_path = Path.cwd() / '.yoyo-dev' / 'product'
         else:
             self.product_path = product_path
+
+        # Log path resolution for debugging
+        logger.debug(f"ProjectOverview initialized with product_path: {self.product_path}")
 
     def compose(self) -> ComposeResult:
         """
@@ -58,10 +64,17 @@ class ProjectOverview(Widget):
         Returns:
             Formatted overview string with rich markup
         """
-        # Check if product directory exists
+        # Validate product path exists
         if not self.product_path.exists():
-            return "[dim]No product context found[/dim]"
+            logger.debug(f"Product path does not exist: {self.product_path}")
+            return f"[dim]No product context found at:[/dim]\n[dim]{self.product_path}[/dim]"
 
+        # Validate it's a directory
+        if not self.product_path.is_dir():
+            logger.error(f"Product path is not a directory: {self.product_path}")
+            return f"[red]Error: Not a directory:[/red]\n[dim]{self.product_path}[/dim]"
+
+        logger.debug(f"Loading project context from: {self.product_path}")
         lines = []
 
         # Project name (from directory name or mission-lite.md)
@@ -219,10 +232,11 @@ class ProjectOverview(Widget):
             # Widget not mounted yet
             pass
 
-    def refresh(self, **kwargs) -> None:
+    def reload_context(self) -> None:
         """
-        Refresh context (alias for load_context).
+        Reload project context and refresh display.
 
-        Accepts any kwargs for compatibility with parent Widget.refresh().
+        This method provides the same functionality as load_context()
+        but with a distinct name to avoid conflicts with Widget.refresh().
         """
         self.load_context()

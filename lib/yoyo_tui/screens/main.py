@@ -74,8 +74,8 @@ class MainScreen(Screen):
         with Horizontal():
             # Left sidebar (30 columns)
             with Vertical(id="sidebar"):
-                # Project overview widget - TEMPORARILY DISABLED (refresh() method incompatibility)
-                # yield ProjectOverview()
+                # Project overview widget
+                yield ProjectOverview()
 
                 # Git Status widget (with config - Task 8)
                 if self.config.show_git_panel and self.config.git_integration:

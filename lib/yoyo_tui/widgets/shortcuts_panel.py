@@ -95,11 +95,12 @@ class ShortcutsPanel(Widget):
             # Widget not mounted yet
             pass
 
-    def refresh(self, **kwargs) -> None:
+    def refresh_shortcuts(self) -> None:
         """
         Refresh shortcuts display.
 
-        Accepts any kwargs for compatibility with parent Widget.refresh().
+        This method provides the same functionality as update_shortcuts()
+        but with a distinct name to avoid conflicts with Widget.refresh().
         """
         try:
             content = self.query_one("#shortcuts-panel-content", Static)
