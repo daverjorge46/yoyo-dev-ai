@@ -12,6 +12,7 @@ from textual.binding import Binding
 from .config import ConfigManager, TUIConfig
 from .screens.main import MainScreen
 from .screens.help_screen import HelpScreen
+from .screens.command_palette import CommandPaletteScreen
 from .services.file_watcher import FileWatcher
 
 
@@ -64,10 +65,9 @@ class YoyoDevApp(App):
         """
         Show command palette for fuzzy search of all Yoyo Dev commands.
 
-        Bound to: Ctrl+P, /
+        Bound to: Ctrl+P
         """
-        # TODO: Implement in Task 10
-        self.notify("Command palette - Coming soon in Task 10")
+        self.push_screen(CommandPaletteScreen())
 
     def action_help(self) -> None:
         """
