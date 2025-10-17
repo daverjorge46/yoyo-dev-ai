@@ -260,14 +260,133 @@ run_test "Project tasks" ... 6 26 26 0  # All 26 tasks now complete
 
 ---
 
+## TUI/Interactive UI Patterns
+
+### Pattern: Service-Based Command Execution
+
+**Last Used:** tui-interaction-improvements (2025-10-17)
+**Category:** Architecture / User Experience
+
+**Use Case:** When building interactive TUIs that need to execute external commands or scripts. Applies to dashboards, CLIs with TUI modes, or any interactive terminal application.
+
+**Implementation:**
+- Key files: `lib/yoyo_tui/services/command_executor.py`
+- Core approach:
+  - Create dedicated service class for command execution
+  - Use subprocess with stdin for command input
+  - Integrate with app notification system for user feedback
+  - Validate commands before execution
+  - Handle errors gracefully with user-friendly messages
+- Dependencies: subprocess, textual (for notifications)
+
+**Why It Works:**
+- Separation of concerns (execution logic separate from UI)
+- Testable in isolation (can mock subprocess)
+- Reusable across multiple widgets
+- Provides consistent user feedback
+- Safe command execution with validation
+
+**Gotchas:**
+- Must validate user input to prevent command injection
+- Need timeout handling for long-running commands
+- Subprocess communication requires careful stdin/stdout management
+- Error messages should be actionable for users
+
+**Code Example:**
+```python
+class CommandExecutor:
+    def __init__(self, app=None):
+        self.app = app
+
+    def execute_command(self, command: str) -> bool:
+        if not command or not command.strip():
+            return False
+
+        try:
+            proc = subprocess.Popen(
+                ["claude"],  # or appropriate CLI
+                stdin=subprocess.PIPE,
+                cwd=os.getcwd()
+            )
+            proc.stdin.write(f"{command}\n".encode())
+            proc.stdin.flush()
+
+            if self.app:
+                self.app.notify(f"Executing {command}...")
+            return True
+        except Exception as e:
+            if self.app:
+                self.app.notify(f"Error: {str(e)}", severity="error")
+            return False
+```
+
+---
+
+### Pattern: Unified History Aggregation
+
+**Last Used:** tui-interaction-improvements (2025-10-17)
+**Category:** Data Integration / User Experience
+
+**Use Case:** When building dashboards or status views that need to aggregate history from multiple sources (git commits, file changes, user actions, etc.). Especially useful for developer tools showing recent activity.
+
+**Implementation:**
+- Key files: `lib/yoyo_tui/services/history_tracker.py`, `lib/yoyo_tui/services/recap_parser.py`
+- Core approach:
+  - Create dedicated service to aggregate multiple history sources
+  - Use dataclasses for type-safe history entries
+  - Sort chronologically (newest first)
+  - Filter to most recent N items (configurable)
+  - Parse different file formats consistently
+- Dependencies: git (for commit history), file system access
+
+**Why It Works:**
+- Single source of truth for "what happened recently"
+- Consistent data model across different sources
+- Easy to add new history sources
+- Efficient caching with TTL prevents repeated parsing
+- Chronological sorting provides natural timeline view
+
+**Gotchas:**
+- Need graceful handling for missing directories/files
+- Git operations can be slow (use caching)
+- File parsing can fail with corrupted files (need error handling)
+- Multiple date formats need normalization
+
+**Code Example:**
+```python
+@dataclass
+class HistoryEntry:
+    type: HistoryType  # COMMIT, SPEC, FIX, RECAP
+    timestamp: datetime
+    title: str
+    description: str
+    source_path: Optional[Path]
+
+class HistoryTracker:
+    def get_recent_actions(self, count: int = 3) -> List[HistoryEntry]:
+        entries = []
+        entries.extend(self._get_git_commits())
+        entries.extend(self._get_specs())
+        entries.extend(self._get_fixes())
+        entries.extend(self._get_recaps())
+
+        # Sort chronologically (newest first)
+        entries.sort(key=lambda e: e.timestamp, reverse=True)
+
+        return entries[:count]
+```
+
+---
+
 ## Summary
 
-**Total Patterns:** 6
-**Categories:** Performance (3), Testing (2), Code Organization (1)
+**Total Patterns:** 8
+**Categories:** Performance (3), Testing (2), Code Organization (1), TUI/Interactive UI (2)
 
 **Most Impactful:**
 1. Shared Parsing Utilities with Caching (5-8x speedup, eliminated duplication)
 2. Single-Pass AWK (46-50% faster, cleaner code)
-3. Comprehensive Test Suite (prevented regressions, verified improvements)
+3. Service-Based Command Execution (clean architecture, reusable, testable)
+4. Comprehensive Test Suite (prevented regressions, verified improvements)
 
-**Last Updated:** 2025-10-11 (performance-bottlenecks fix)
+**Last Updated:** 2025-10-17 (tui-interaction-improvements fix)
