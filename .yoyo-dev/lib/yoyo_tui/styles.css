@@ -42,14 +42,16 @@ Footer {
  * ============================================================================ */
 
 #sidebar {
-    width: 30;
+    width: 35%;
     background: #384152;
     border-right: solid #4a5568;
+    padding: 1;
 }
 
 #main {
-    width: 1fr;
+    width: 65%;
     background: #2d3748;
+    padding: 1;
 }
 
 Vertical {
@@ -131,6 +133,62 @@ DataTable > .datatable--cursor {
 /* Static Widget */
 Static {
     background: transparent;
+}
+
+/* ============================================================================
+ * Custom Widget Styles
+ * ============================================================================ */
+
+/* Project Overview Widget */
+ProjectOverview {
+    background: transparent;
+    border: solid #4a5568;
+    padding: 1;
+    margin-bottom: 1;
+}
+
+/* Next Tasks Panel */
+NextTasksPanel {
+    background: transparent;
+    border: solid #4a5568;
+    padding: 1;
+    margin-bottom: 1;
+}
+
+NextTasksPanel:focus {
+    border: solid #63b3ed;
+}
+
+/* Suggested Commands Panel */
+SuggestedCommandsPanel {
+    background: transparent;
+    border: solid #4a5568;
+    padding: 1;
+    margin-top: 1;
+}
+
+/* Shortcuts Panel */
+ShortcutsPanel {
+    background: transparent;
+    border: solid #4a5568;
+    padding: 1;
+    margin-bottom: 1;
+}
+
+/* Progress Panel */
+ProgressPanel {
+    background: transparent;
+    border: solid #4a5568;
+    padding: 1;
+    margin-bottom: 1;
+}
+
+/* Spec List */
+SpecList {
+    background: transparent;
+    border: solid #4a5568;
+    padding: 1;
+    margin-top: 1;
 }
 
 /* ============================================================================

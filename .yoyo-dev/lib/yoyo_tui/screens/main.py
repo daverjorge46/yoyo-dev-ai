@@ -30,7 +30,7 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Header, Footer, Static
 
-from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel
+from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel, NextTasksPanel, SuggestedCommandsPanel
 from ..widgets.git_status import GitStatus
 from ..models import TaskData
 from ..services.data_manager import DataManager
@@ -77,24 +77,25 @@ class MainScreen(Screen):
                 # Project overview widget
                 yield ProjectOverview()
 
-                # Git Status widget (with config - Task 8)
-                if self.config.show_git_panel and self.config.git_integration:
-                    yield GitStatus(
-                        refresh_interval=self.config.refresh_interval,
-                        git_cache_ttl=self.config.git_cache_ttl
-                    )
+                # Git Status widget - always show
+                yield GitStatus(
+                    refresh_interval=self.config.refresh_interval,
+                    git_cache_ttl=self.config.git_cache_ttl
+                )
 
-                # Keyboard shortcuts panel - TEMPORARILY DISABLED (refresh() method incompatibility)
-                # yield ShortcutsPanel()
+                # Keyboard shortcuts panel
+                yield ShortcutsPanel()
 
-                # Placeholder for sidebar (only if git panel is disabled)
-                if not (self.config.show_git_panel and self.config.git_integration):
-                    yield Static("\n[cyan]📋 Sidebar[/cyan]\n\n[dim]Widgets temporarily disabled\ndue to Textual API compatibility.[/dim]", id="sidebar-placeholder")
+                # Suggested commands panel
+                yield SuggestedCommandsPanel(task_data=TaskData.empty())
 
             # Right main content area
             with Vertical(id="main"):
                 # Progress overview panel
                 yield ProgressPanel(task_data=TaskData.empty())
+
+                # Next tasks panel - shows next uncompleted task
+                yield NextTasksPanel(task_data=TaskData.empty())
 
                 # Task tree widget
                 yield TaskTree(task_data=TaskData.empty())
@@ -135,6 +136,14 @@ class MainScreen(Screen):
             # Update ProgressPanel
             progress_panel = self.query_one(ProgressPanel)
             progress_panel.update_data(self.task_data)
+
+            # Update NextTasksPanel
+            next_tasks_panel = self.query_one(NextTasksPanel)
+            next_tasks_panel.update_data(self.task_data)
+
+            # Update SuggestedCommandsPanel
+            suggested_commands_panel = self.query_one(SuggestedCommandsPanel)
+            suggested_commands_panel.update_data(self.task_data)
 
         except Exception as e:
             # Widgets not mounted yet or other error

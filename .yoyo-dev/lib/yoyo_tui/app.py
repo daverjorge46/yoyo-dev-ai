@@ -11,6 +11,8 @@ from textual.binding import Binding
 
 from .config import ConfigManager, TUIConfig
 from .screens.main import MainScreen
+from .screens.help_screen import HelpScreen
+from .screens.command_palette import CommandPaletteScreen
 from .services.file_watcher import FileWatcher
 
 
@@ -27,12 +29,13 @@ class YoyoDevApp(App):
     CSS_PATH = "styles.css"
 
     BINDINGS = [
-        Binding("ctrl+p", "command_palette", "Command Palette", priority=True),
-        Binding("/", "command_palette", "Search"),
+        Binding("ctrl+p", "command_palette", "Commands", priority=True),
         Binding("?", "help", "Help"),
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),
         Binding("g", "git_menu", "Git"),
+        Binding("t", "focus_tasks", "Tasks"),
+        Binding("s", "focus_specs", "Specs"),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -51,10 +54,10 @@ class YoyoDevApp(App):
 
         Initializes screens, services, and starts file watching.
         """
-        # Push main screen with config (Task 5 complete, Task 8 updated)
+        # Push main screen with config
         self.push_screen(MainScreen(config=self.config))
 
-        # Start file watcher if enabled (Task 3 complete, Task 8 updated)
+        # Start file watcher if enabled
         if self.config.file_watching:
             self.start_file_watcher()
 
@@ -62,10 +65,9 @@ class YoyoDevApp(App):
         """
         Show command palette for fuzzy search of all Yoyo Dev commands.
 
-        Bound to: Ctrl+P, /
+        Bound to: Ctrl+P
         """
-        # TODO: Implement in Task 10
-        self.notify("Command palette - Coming soon in Task 10")
+        self.push_screen(CommandPaletteScreen())
 
     def action_help(self) -> None:
         """
@@ -73,8 +75,7 @@ class YoyoDevApp(App):
 
         Bound to: ?
         """
-        # TODO: Implement in Task 13
-        self.notify("Help screen - Coming soon in Task 13")
+        self.push_screen(HelpScreen())
 
     def action_refresh(self) -> None:
         """
@@ -96,8 +97,39 @@ class YoyoDevApp(App):
 
         Bound to: g
         """
-        # TODO: Implement in Task 12
-        self.notify("Git menu - Coming soon in Task 12")
+        self.notify("Git menu - Coming soon")
+
+    def action_focus_tasks(self) -> None:
+        """
+        Focus on the tasks panel in the dashboard.
+
+        Bound to: t
+        """
+        try:
+            from .widgets import TaskTree
+            main_screen = self.screen
+            if isinstance(main_screen, MainScreen):
+                task_tree = main_screen.query_one(TaskTree)
+                task_tree.focus()
+                self.notify("Tasks focused", severity="information", timeout=1)
+        except Exception:
+            self.notify("Could not focus tasks", severity="warning", timeout=2)
+
+    def action_focus_specs(self) -> None:
+        """
+        Focus on the specs/fixes panel in the dashboard.
+
+        Bound to: s
+        """
+        try:
+            from .widgets import SpecList
+            main_screen = self.screen
+            if isinstance(main_screen, MainScreen):
+                spec_list = main_screen.query_one(SpecList)
+                spec_list.focus()
+                self.notify("Specs focused", severity="information", timeout=1)
+        except Exception:
+            self.notify("Could not focus specs", severity="warning", timeout=2)
 
     def action_quit(self) -> None:
         """
@@ -124,7 +156,7 @@ class YoyoDevApp(App):
             return
 
         # Create FileWatcher with callback to refresh data
-        # Use config values for debounce and max-wait (Task 8)
+        # Use config values for debounce and max-wait
         self.file_watcher = FileWatcher(
             callback=self.on_file_change,
             debounce_interval=self.config.file_watcher_debounce,
