@@ -61,6 +61,9 @@ class TaskParser:
                 completed_subtasks, total_subtasks
             )
 
+            # Extract source metadata from file path
+            source_type, spec_name, fix_name = TaskParser._extract_source_metadata(task_file)
+
             return TaskData(
                 file_path=task_file,
                 parent_tasks=parent_tasks,
@@ -68,7 +71,10 @@ class TaskParser:
                 completed_tasks=completed_tasks,
                 total_subtasks=total_subtasks,
                 completed_subtasks=completed_subtasks,
-                progress=progress
+                progress=progress,
+                source_type=source_type,
+                spec_name=spec_name,
+                fix_name=fix_name
             )
 
         except IOError:
@@ -224,6 +230,80 @@ class TaskParser:
 
         except (OSError, PermissionError):
             return None
+
+    @staticmethod
+    def _extract_source_metadata(task_file: Path) -> tuple[Optional[str], Optional[str], Optional[str]]:
+        """
+        Extract source metadata from task file path.
+
+        Determines the source type (spec, fix, master) and extracts clean names
+        from the file path structure.
+
+        Args:
+            task_file: Path to the task file
+
+        Returns:
+            Tuple of (source_type, spec_name, fix_name)
+            - source_type: "spec", "fix", "master", or "unknown"
+            - spec_name: Clean spec name (without date) or None
+            - fix_name: Clean fix name (without date) or None
+        """
+        try:
+            path_parts = task_file.parts
+
+            # Check if path contains .yoyo-dev
+            if ".yoyo-dev" in path_parts:
+                yoyo_idx = path_parts.index(".yoyo-dev")
+
+                # Check for specs
+                if yoyo_idx + 1 < len(path_parts) and path_parts[yoyo_idx + 1] == "specs":
+                    if yoyo_idx + 2 < len(path_parts):
+                        folder_name = path_parts[yoyo_idx + 2]
+                        clean_name = TaskParser._extract_clean_name(folder_name)
+                        return ("spec", clean_name, None)
+
+                # Check for fixes
+                if yoyo_idx + 1 < len(path_parts) and path_parts[yoyo_idx + 1] == "fixes":
+                    if yoyo_idx + 2 < len(path_parts):
+                        folder_name = path_parts[yoyo_idx + 2]
+                        clean_name = TaskParser._extract_clean_name(folder_name)
+                        return ("fix", None, clean_name)
+
+            # Check if it's MASTER-TASKS.md
+            if task_file.name == "MASTER-TASKS.md":
+                return ("master", None, None)
+
+            # Unknown source
+            return ("unknown", None, None)
+
+        except Exception:
+            return ("unknown", None, None)
+
+    @staticmethod
+    def _extract_clean_name(folder_name: str) -> str:
+        """
+        Extract clean name from folder name by removing date prefix.
+
+        Converts "2025-10-15-feature-name" to "feature-name".
+
+        Args:
+            folder_name: Folder name with date prefix
+
+        Returns:
+            Clean name without date prefix
+        """
+        # Split by hyphen and check if first three parts are date
+        parts = folder_name.split('-')
+
+        # If we have at least 4 parts (YYYY-MM-DD-name), remove date
+        if len(parts) >= 4:
+            # Check if first part looks like a year (4 digits)
+            if len(parts[0]) == 4 and parts[0].isdigit():
+                # Return everything after the date (parts[3:])
+                return '-'.join(parts[3:])
+
+        # Return original if no date pattern found
+        return folder_name
 
     @staticmethod
     def _calculate_progress(

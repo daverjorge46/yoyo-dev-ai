@@ -30,6 +30,7 @@ class YoyoDevApp(App):
 
     BINDINGS = [
         Binding("ctrl+p", "command_palette", "Commands", priority=True),
+        Binding("/", "command_palette", "Command Palette"),
         Binding("?", "help", "Help"),
         Binding("q", "quit", "Quit"),
         Binding("r", "refresh", "Refresh"),

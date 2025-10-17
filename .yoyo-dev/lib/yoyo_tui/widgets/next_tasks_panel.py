@@ -83,6 +83,12 @@ class NextTasksPanel(Static):
 
         # Panel header
         lines.append("[bold cyan]📋 Next Task[/bold cyan]")
+
+        # Add source metadata header if available
+        metadata_line = self._render_metadata()
+        if metadata_line:
+            lines.append(metadata_line)
+
         lines.append("")
 
         # Parent task title
@@ -113,6 +119,72 @@ class NextTasksPanel(Static):
                 lines.append(f"[dim]... and {remaining} more subtask{'s' if remaining != 1 else ''}[/dim]")
 
         return "\n".join(lines)
+
+    def _render_metadata(self) -> str:
+        """
+        Render metadata header showing source file information.
+
+        Returns:
+            Rich-formatted metadata line or empty string if no metadata
+        """
+        if not self.task_data or not self.task_data.source_type:
+            return ""
+
+        source_type = self.task_data.source_type
+
+        # Determine icon, type label, and build relative path
+        if source_type == "spec":
+            icon = "📄"
+            type_label = "SPEC"
+            name = self.task_data.spec_name or "unknown"
+            # Extract folder name from file path for display
+            folder_name = self._extract_folder_from_path("specs")
+            path_display = f"specs/{folder_name}" if folder_name else name
+        elif source_type == "fix":
+            icon = "🔧"
+            type_label = "FIX"
+            name = self.task_data.fix_name or "unknown"
+            # Extract folder name from file path for display
+            folder_name = self._extract_folder_from_path("fixes")
+            path_display = f"fixes/{folder_name}" if folder_name else name
+        elif source_type == "master":
+            icon = "📋"
+            type_label = "MASTER"
+            name = "MASTER-TASKS"
+            path_display = name
+        else:
+            # Unknown source type
+            return ""
+
+        # Build metadata line with distinct styling
+        # Format: "📄 SPEC: user-profiles (specs/2025-10-15-user-profiles)"
+        metadata = f"[dim cyan]{icon} {type_label}:[/dim cyan] [cyan]{name}[/cyan] [dim]({path_display})[/dim]"
+
+        return metadata
+
+    def _extract_folder_from_path(self, parent_folder: str) -> Optional[str]:
+        """
+        Extract the folder name from file path after parent folder.
+
+        Args:
+            parent_folder: Parent folder name ("specs" or "fixes")
+
+        Returns:
+            Folder name or None if not found
+        """
+        if not self.task_data or not self.task_data.file_path:
+            return None
+
+        try:
+            path_parts = self.task_data.file_path.parts
+            if parent_folder in path_parts:
+                idx = path_parts.index(parent_folder)
+                if idx + 1 < len(path_parts):
+                    return path_parts[idx + 1]
+        except Exception:
+            pass
+
+        return None
 
     def _render_empty_state(self) -> str:
         """

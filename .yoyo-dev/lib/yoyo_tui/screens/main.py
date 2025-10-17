@@ -30,7 +30,7 @@ from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Header, Footer, Static
 
-from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel, NextTasksPanel, SuggestedCommandsPanel
+from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel, NextTasksPanel, SuggestedCommandsPanel, HistoryPanel
 from ..widgets.git_status import GitStatus
 from ..models import TaskData
 from ..services.data_manager import DataManager
@@ -82,6 +82,9 @@ class MainScreen(Screen):
                     refresh_interval=self.config.refresh_interval,
                     git_cache_ttl=self.config.git_cache_ttl
                 )
+
+                # History panel - shows recent activity
+                yield HistoryPanel()
 
                 # Keyboard shortcuts panel
                 yield ShortcutsPanel()
@@ -157,6 +160,14 @@ class MainScreen(Screen):
         Used by FileWatcher to trigger updates when files change.
         """
         self.load_data()
+
+        # Also refresh history panel
+        try:
+            history_panel = self.query_one(HistoryPanel)
+            history_panel.refresh_history()
+        except Exception:
+            # History panel not mounted yet
+            pass
 
     def check_terminal_size(self) -> None:
         """
