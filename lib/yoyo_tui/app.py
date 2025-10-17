@@ -54,10 +54,10 @@ class YoyoDevApp(App):
 
         Initializes screens, services, and starts file watching.
         """
-        # Push main screen with config (Task 5 complete, Task 8 updated)
+        # Push main screen with config
         self.push_screen(MainScreen(config=self.config))
 
-        # Start file watcher if enabled (Task 3 complete, Task 8 updated)
+        # Start file watcher if enabled
         if self.config.file_watching:
             self.start_file_watcher()
 
@@ -97,8 +97,7 @@ class YoyoDevApp(App):
 
         Bound to: g
         """
-        # TODO: Implement in Task 12
-        self.notify("Git menu - Coming soon in Task 12")
+        self.notify("Git menu - Coming soon")
 
     def action_focus_tasks(self) -> None:
         """
@@ -157,7 +156,7 @@ class YoyoDevApp(App):
             return
 
         # Create FileWatcher with callback to refresh data
-        # Use config values for debounce and max-wait (Task 8)
+        # Use config values for debounce and max-wait
         self.file_watcher = FileWatcher(
             callback=self.on_file_change,
             debounce_interval=self.config.file_watcher_debounce,

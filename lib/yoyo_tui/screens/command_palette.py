@@ -253,8 +253,8 @@ class CommandPaletteScreen(Screen):
             timeout=3
         )
 
-        # TODO: Integrate with Claude Code command execution
-        # For now, just show the command that would be executed
+        # Note: Full integration with Claude Code command execution pending
+        # Currently shows notification that command was selected
 
     def action_dismiss(self) -> None:
         """Close the command palette and return to main dashboard."""
