@@ -16,7 +16,7 @@ Welcome to the Yoyo Dev TUI! This interactive dashboard helps you manage your AI
 
 ### Actions
 - **r** - Refresh all data (tasks, specs, git status)
-- **g** - Open git menu (quick git actions: stage, commit, push)
+- **g** - Open git menu (quick git actions: stage, commit, push) [Coming soon]
 
 ### Within Widgets
 - **↑/↓** - Navigate lists and trees
