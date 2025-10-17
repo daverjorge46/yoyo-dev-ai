@@ -77,12 +77,11 @@ class MainScreen(Screen):
                 # Project overview widget
                 yield ProjectOverview()
 
-                # Git Status widget (with config - Task 8)
-                if self.config.show_git_panel and self.config.git_integration:
-                    yield GitStatus(
-                        refresh_interval=self.config.refresh_interval,
-                        git_cache_ttl=self.config.git_cache_ttl
-                    )
+                # Git Status widget - always show
+                yield GitStatus(
+                    refresh_interval=self.config.refresh_interval,
+                    git_cache_ttl=self.config.git_cache_ttl
+                )
 
                 # Keyboard shortcuts panel
                 yield ShortcutsPanel()
