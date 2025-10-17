@@ -72,6 +72,9 @@ class TaskData:
         total_subtasks: Total number of subtasks
         completed_subtasks: Number of completed subtasks
         progress: Overall completion percentage (0-100)
+        source_type: Type of source ("spec", "fix", "master", or "unknown")
+        spec_name: Clean name of spec (without date prefix) if source is spec
+        fix_name: Clean name of fix (without date prefix) if source is fix
     """
     file_path: Path
     parent_tasks: List[ParentTask] = field(default_factory=list)
@@ -80,6 +83,79 @@ class TaskData:
     total_subtasks: int = 0
     completed_subtasks: int = 0
     progress: int = 0
+    source_type: Optional[str] = None
+    spec_name: Optional[str] = None
+    fix_name: Optional[str] = None
+
+    def __post_init__(self):
+        """Auto-populate metadata from file_path if not already set."""
+        if self.source_type is None and self.file_path and self.file_path != Path():
+            self._extract_metadata_from_path()
+
+    def _extract_metadata_from_path(self):
+        """
+        Extract source metadata from file path.
+
+        Populates source_type, spec_name, and fix_name based on file path structure.
+        """
+        try:
+            path_parts = self.file_path.parts
+
+            # Check if path contains .yoyo-dev
+            if ".yoyo-dev" in path_parts:
+                yoyo_idx = path_parts.index(".yoyo-dev")
+
+                # Check for specs
+                if yoyo_idx + 1 < len(path_parts) and path_parts[yoyo_idx + 1] == "specs":
+                    if yoyo_idx + 2 < len(path_parts):
+                        folder_name = path_parts[yoyo_idx + 2]
+                        self.source_type = "spec"
+                        self.spec_name = self._extract_clean_name(folder_name)
+                        return
+
+                # Check for fixes
+                if yoyo_idx + 1 < len(path_parts) and path_parts[yoyo_idx + 1] == "fixes":
+                    if yoyo_idx + 2 < len(path_parts):
+                        folder_name = path_parts[yoyo_idx + 2]
+                        self.source_type = "fix"
+                        self.fix_name = self._extract_clean_name(folder_name)
+                        return
+
+            # Check if it's MASTER-TASKS.md
+            if self.file_path.name == "MASTER-TASKS.md":
+                self.source_type = "master"
+                return
+
+            # Unknown source
+            self.source_type = "unknown"
+
+        except Exception:
+            self.source_type = "unknown"
+
+    @staticmethod
+    def _extract_clean_name(folder_name: str) -> str:
+        """
+        Extract clean name from folder name by removing date prefix.
+
+        Converts "2025-10-15-feature-name" to "feature-name".
+
+        Args:
+            folder_name: Folder name with date prefix
+
+        Returns:
+            Clean name without date prefix
+        """
+        parts = folder_name.split('-')
+
+        # If we have at least 4 parts (YYYY-MM-DD-name), remove date
+        if len(parts) >= 4:
+            # Check if first part looks like a year (4 digits)
+            if len(parts[0]) == 4 and parts[0].isdigit():
+                # Return everything after the date (parts[3:])
+                return '-'.join(parts[3:])
+
+        # Return original if no date pattern found
+        return folder_name
 
     @classmethod
     def empty(cls) -> 'TaskData':

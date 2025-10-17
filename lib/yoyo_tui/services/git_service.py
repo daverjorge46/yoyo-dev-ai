@@ -433,6 +433,49 @@ class GitService:
         except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
             return []
 
+    @staticmethod
+    def get_recent_commits_with_timestamps(directory: Path, count: int = 5) -> List[Dict[str, str]]:
+        """
+        Get recent commit messages with timestamps.
+
+        Args:
+            directory: Repository directory
+            count: Number of commits to retrieve
+
+        Returns:
+            List of dicts with 'message', 'timestamp', and 'hash' keys
+        """
+        if not GitService.is_git_repo(directory):
+            return []
+
+        try:
+            # Format: hash|timestamp|message
+            result = subprocess.run(
+                ['git', 'log', f'-{count}', '--pretty=%H|%aI|%s'],
+                cwd=str(directory),
+                capture_output=True,
+                check=True,
+                text=True,
+                timeout=5
+            )
+
+            commits = []
+            for line in result.stdout.strip().split('\n'):
+                if not line:
+                    continue
+
+                parts = line.split('|', 2)
+                if len(parts) == 3:
+                    commits.append({
+                        'hash': parts[0],
+                        'timestamp': parts[1],
+                        'message': parts[2]
+                    })
+
+            return commits
+        except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+            return []
+
     # ============================================================================
     # Async Methods (Non-blocking)
     # ============================================================================

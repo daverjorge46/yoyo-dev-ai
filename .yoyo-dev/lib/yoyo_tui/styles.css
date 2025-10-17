@@ -42,14 +42,14 @@ Footer {
  * ============================================================================ */
 
 #sidebar {
-    width: 35%;
+    width: 50%;
     background: #384152;
     border-right: solid #4a5568;
     padding: 1;
 }
 
 #main {
-    width: 65%;
+    width: 50%;
     background: #2d3748;
     padding: 1;
 }

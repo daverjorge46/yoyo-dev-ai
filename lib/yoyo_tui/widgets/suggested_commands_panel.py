@@ -7,10 +7,12 @@ Analyzes project state and suggests relevant commands to run next.
 from pathlib import Path
 from typing import List, Tuple
 from textual.app import ComposeResult
-from textual.widgets import Static
+from textual.widgets import Static, Button
 from textual.containers import Vertical
+from textual.message import Message
 
 from ..models import TaskData
+from ..services.command_executor import CommandExecutor
 
 
 class SuggestedCommandsPanel(Static):
@@ -41,14 +43,22 @@ class SuggestedCommandsPanel(Static):
         """
         super().__init__(*args, **kwargs)
         self.task_data = task_data or TaskData.empty()
+        self.command_executor: CommandExecutor = None
 
     def compose(self) -> ComposeResult:
         """Compose the suggested commands panel layout."""
         with Vertical(id="suggested-commands-content"):
-            yield Static(self._render_content(), id="suggested-commands-display")
+            # Panel header
+            yield Static("[bold cyan]💡 Suggested Commands[/bold cyan]\n",
+                        id="suggested-commands-header")
+
+            # Command buttons will be added dynamically
+            yield Vertical(id="suggested-commands-buttons")
 
     def on_mount(self) -> None:
         """Called when widget is mounted."""
+        # Initialize command executor with app instance
+        self.command_executor = CommandExecutor(app=self.app)
         self.update_content()
 
     def update_data(self, task_data: TaskData) -> None:
@@ -64,47 +74,67 @@ class SuggestedCommandsPanel(Static):
     def update_content(self) -> None:
         """Refresh the displayed content with current suggestions."""
         try:
-            display = self.query_one("#suggested-commands-display", Static)
-            display.update(self._render_content())
-        except Exception:
-            # Widget not mounted yet
-            pass
+            buttons_container = self.query_one("#suggested-commands-buttons", Vertical)
 
-    def _render_content(self) -> str:
+            # Remove existing buttons
+            buttons_container.remove_children()
+
+            # Get suggestions
+            suggestions = self._get_suggestions()
+
+            # Create buttons for command suggestions (skip non-command items)
+            for cmd, desc, shortcut in suggestions[:5]:
+                # Only create buttons for actual Yoyo Dev commands
+                if cmd.startswith("/"):
+                    # Create button with command as ID
+                    button = Button(
+                        f"{cmd}",
+                        id=f"cmd-btn-{cmd.lstrip('/')}",
+                        variant="default"
+                    )
+                    button.tooltip = desc  # Show description on hover if supported
+                    buttons_container.mount(button)
+
+                    # Add description as static text below button
+                    buttons_container.mount(
+                        Static(f"[dim]{desc}[/dim]\n", classes="command-description")
+                    )
+                else:
+                    # Non-command items (like "Press ?") - show as static text
+                    if shortcut:
+                        buttons_container.mount(
+                            Static(f"[cyan]{cmd}[/cyan] [dim]({shortcut})[/dim]",
+                                   classes="command-hint")
+                        )
+                    else:
+                        buttons_container.mount(
+                            Static(f"[cyan]{cmd}[/cyan]", classes="command-hint")
+                        )
+                    buttons_container.mount(
+                        Static(f"[dim]{desc}[/dim]\n", classes="command-description")
+                    )
+
+        except Exception as e:
+            # Widget not mounted yet or error occurred
+            import logging
+            logging.getLogger(__name__).error(f"Error updating suggested commands: {e}")
+
+    def on_button_pressed(self, event: Button.Pressed) -> None:
         """
-        Render the panel content with context-aware suggestions.
+        Handle button press events for command execution.
 
-        Returns:
-            Rich-formatted string with suggested commands
+        Args:
+            event: Button press event
         """
-        suggestions = self._get_suggestions()
+        button = event.button
 
-        lines = []
+        # Extract command from button label
+        command = button.label
 
-        # Panel header
-        lines.append("[bold cyan]💡 Suggested Commands[/bold cyan]")
-        lines.append("")
+        # Execute command via CommandExecutor
+        if self.command_executor and command:
+            self.command_executor.execute_command(str(command))
 
-        if not suggestions:
-            lines.append("[dim]No suggestions available[/dim]")
-            return "\n".join(lines)
-
-        # Display top 5 suggestions
-        for i, (cmd, desc, shortcut) in enumerate(suggestions[:5], 1):
-            # Command with shortcut
-            if shortcut:
-                lines.append(f"[bold cyan]{cmd}[/bold cyan] [dim]({shortcut})[/dim]")
-            else:
-                lines.append(f"[bold cyan]{cmd}[/bold cyan]")
-
-            # Description
-            lines.append(f"[dim]{desc}[/dim]")
-
-            # Add spacing between items (except last)
-            if i < min(5, len(suggestions)):
-                lines.append("")
-
-        return "\n".join(lines)
 
     def _get_suggestions(self) -> List[Tuple[str, str, str]]:
         """
