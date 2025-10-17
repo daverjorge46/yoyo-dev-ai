@@ -121,6 +121,9 @@ class MainScreen(Screen):
         # Check terminal size
         self.check_terminal_size()
 
+        # Start auto-refresh timer using config refresh_interval
+        self.set_interval(self.auto_refresh, self.config.refresh_interval)
+
     def load_data(self) -> None:
         """
         Load real data from project and update widgets.
@@ -168,6 +171,58 @@ class MainScreen(Screen):
         except Exception:
             # History panel not mounted yet
             pass
+
+    def refresh_task_data(self) -> None:
+        """
+        Reload task data without full screen refresh.
+
+        Lightweight refresh for task-related widgets only.
+        """
+        # Reload task data
+        self.task_data = DataManager.load_active_tasks()
+
+        # Update task-related widgets
+        try:
+            # Update TaskTree
+            task_tree = self.query_one(TaskTree)
+            task_tree.load_tasks(self.task_data)
+
+            # Update ProgressPanel
+            progress_panel = self.query_one(ProgressPanel)
+            progress_panel.update_data(self.task_data)
+
+            # Update NextTasksPanel
+            next_tasks_panel = self.query_one(NextTasksPanel)
+            next_tasks_panel.update_data(self.task_data)
+
+            # Update SuggestedCommandsPanel
+            suggested_commands_panel = self.query_one(SuggestedCommandsPanel)
+            suggested_commands_panel.update_data(self.task_data)
+        except Exception:
+            # Widgets not mounted yet or error
+            pass
+
+    def refresh_history_data(self) -> None:
+        """
+        Reload history data without full screen refresh.
+
+        Lightweight refresh for history panel only.
+        """
+        try:
+            history_panel = self.query_one(HistoryPanel)
+            history_panel.refresh_history()
+        except Exception:
+            # History panel not mounted yet
+            pass
+
+    def auto_refresh(self) -> None:
+        """
+        Automatic refresh called by timer every 10 seconds.
+
+        Performs lightweight data reload without notification spam.
+        """
+        self.refresh_task_data()
+        self.refresh_history_data()
 
     def check_terminal_size(self) -> None:
         """

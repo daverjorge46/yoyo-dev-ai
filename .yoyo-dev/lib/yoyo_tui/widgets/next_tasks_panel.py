@@ -9,6 +9,7 @@ from typing import Optional
 from textual.app import ComposeResult
 from textual.widgets import Static
 from textual.containers import Vertical
+from textual.reactive import reactive
 
 from ..models import TaskData, ParentTask
 
@@ -27,6 +28,9 @@ class NextTasksPanel(Static):
 
     DEFAULT_ID = "next-tasks-panel"
 
+    # Reactive property for task data - triggers re-render on change
+    task_data: reactive[TaskData] = reactive(TaskData.empty())
+
     def __init__(self, task_data: Optional[TaskData] = None, *args, **kwargs):
         """
         Initialize NextTasksPanel.
@@ -35,7 +39,8 @@ class NextTasksPanel(Static):
             task_data: Task data to display (optional, can update later)
         """
         super().__init__(*args, **kwargs)
-        self.task_data = task_data or TaskData.empty()
+        if task_data:
+            self.task_data = task_data
 
     def compose(self) -> ComposeResult:
         """Compose the next tasks panel layout."""
@@ -64,6 +69,17 @@ class NextTasksPanel(Static):
         except Exception:
             # Widget not mounted yet
             pass
+
+    def watch_task_data(self, new_data: TaskData) -> None:
+        """
+        Watcher for task_data reactive property.
+
+        Automatically updates content when task_data changes.
+
+        Args:
+            new_data: New task data value
+        """
+        self.update_content()
 
     def _render_content(self) -> str:
         """

@@ -142,19 +142,16 @@ class YoyoDevApp(App):
 
     def start_file_watcher(self) -> None:
         """
-        Start file watcher service to monitor .yoyo-dev for changes.
+        Start file watcher service to monitor both CWD and .yoyo-dev for changes.
 
-        Watches for changes to tasks.md, state.json, and MASTER-TASKS.md files.
+        Watches for changes to tasks.md, state.json, and MASTER-TASKS.md files
+        in both the current working directory and .yoyo-dev directory.
         Automatically refreshes TUI data when relevant files change.
 
         Uses config values for debounce_interval and max_wait (Task 8).
         """
-        # Find .yoyo-dev directory (look in current working directory)
-        yoyo_dev_dir = Path.cwd() / ".yoyo-dev"
-
-        if not yoyo_dev_dir.exists() or not yoyo_dev_dir.is_dir():
-            # No .yoyo-dev directory, skip file watching
-            return
+        # Get current working directory
+        cwd = Path.cwd()
 
         # Create FileWatcher with callback to refresh data
         # Use config values for debounce and max-wait
@@ -164,8 +161,9 @@ class YoyoDevApp(App):
             max_wait=self.config.file_watcher_max_wait
         )
 
-        # Start watching .yoyo-dev directory recursively
-        success = self.file_watcher.start_watching(yoyo_dev_dir)
+        # Start watching current working directory recursively
+        # This will watch both CWD and .yoyo-dev subdirectory
+        success = self.file_watcher.start_watching(cwd)
 
         if success:
             self.notify("File watching enabled", severity="information", timeout=2)
