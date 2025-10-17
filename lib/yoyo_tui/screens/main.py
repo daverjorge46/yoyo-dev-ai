@@ -84,12 +84,8 @@ class MainScreen(Screen):
                         git_cache_ttl=self.config.git_cache_ttl
                     )
 
-                # Keyboard shortcuts panel - TEMPORARILY DISABLED (refresh() method incompatibility)
-                # yield ShortcutsPanel()
-
-                # Placeholder for sidebar (only if git panel is disabled)
-                if not (self.config.show_git_panel and self.config.git_integration):
-                    yield Static("\n[cyan]📋 Sidebar[/cyan]\n\n[dim]Widgets temporarily disabled\ndue to Textual API compatibility.[/dim]", id="sidebar-placeholder")
+                # Keyboard shortcuts panel
+                yield ShortcutsPanel()
 
             # Right main content area
             with Vertical(id="main"):
