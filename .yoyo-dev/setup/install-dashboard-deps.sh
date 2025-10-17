@@ -83,6 +83,69 @@ check_pep668() {
     fi
 }
 
+# Function to check TUI dependencies
+check_tui_dependencies() {
+    local python_exe="$1"
+    local missing_deps=()
+
+    # Check for textual
+    if ! "$python_exe" -c "import textual" &>/dev/null; then
+        missing_deps+=("textual")
+    fi
+
+    # Check for watchdog
+    if ! "$python_exe" -c "import watchdog" &>/dev/null; then
+        missing_deps+=("watchdog")
+    fi
+
+    # Check for rich
+    if ! "$python_exe" -c "import rich" &>/dev/null; then
+        missing_deps+=("rich")
+    fi
+
+    # Check for yaml
+    if ! "$python_exe" -c "import yaml" &>/dev/null; then
+        missing_deps+=("yaml")
+    fi
+
+    if [ ${#missing_deps[@]} -eq 0 ]; then
+        return 0  # All dependencies present
+    else
+        return 1  # Missing dependencies
+    fi
+}
+
+# Function to validate TUI dependencies versions
+validate_tui_versions() {
+    local python_exe="$1"
+
+    echo -e "${CYAN}Validating TUI dependency versions...${RESET}"
+
+    # Check textual version
+    local textual_version=$("$python_exe" -c "import textual; print(textual.__version__)" 2>/dev/null || echo "0.0.0")
+    local textual_major=$(echo "$textual_version" | cut -d. -f1)
+    local textual_minor=$(echo "$textual_version" | cut -d. -f2)
+
+    if [ "$textual_major" -eq 0 ] && [ "$textual_minor" -lt 83 ]; then
+        echo -e "${YELLOW}⚠ textual version $textual_version is older than recommended (>=0.83.0)${RESET}"
+        return 1
+    fi
+
+    # Check watchdog version
+    local watchdog_version=$("$python_exe" -c "import watchdog; print(watchdog.__version__)" 2>/dev/null || echo "0.0.0")
+    local watchdog_major=$(echo "$watchdog_version" | cut -d. -f1)
+
+    if [ "$watchdog_major" -lt 4 ]; then
+        echo -e "${YELLOW}⚠ watchdog version $watchdog_version is older than recommended (>=4.0.0)${RESET}"
+        return 1
+    fi
+
+    echo -e "${GREEN}✓ textual ${textual_version}${RESET}"
+    echo -e "${GREEN}✓ watchdog ${watchdog_version}${RESET}"
+
+    return 0
+}
+
 # Function to install with virtual environment
 install_with_venv() {
     echo ""
@@ -109,6 +172,11 @@ install_with_venv() {
     if "$VENV_DIR/bin/pip" install -r "$YOYO_DIR/requirements.txt"; then
         echo ""
         echo -e "${GREEN}✓ All dependencies installed successfully in venv!${RESET}"
+        echo ""
+
+        # Validate TUI dependencies
+        validate_tui_versions "$VENV_DIR/bin/python3"
+
         echo ""
         echo -e "${CYAN}Virtual environment location:${RESET} $VENV_DIR"
         echo -e "${CYAN}Python executable:${RESET} $VENV_DIR/bin/python3"
@@ -159,17 +227,38 @@ install_with_apt() {
     echo -e "${CYAN}Installing system packages with apt...${RESET}"
     echo ""
 
-    packages="python3-rich python3-watchdog python3-yaml"
+    packages="python3-rich python3-watchdog python3-yaml python3-textual"
 
     if command -v apt &> /dev/null; then
+        # Note: python3-textual may not be available on all systems
+        echo -e "${YELLOW}Note: python3-textual may not be available as a system package${RESET}"
+        echo -e "${YELLOW}      If apt fails, consider using virtual environment instead${RESET}"
+        echo ""
+
         if sudo apt install -y $packages; then
             echo ""
             echo -e "${GREEN}✓ All system packages installed successfully!${RESET}"
+            echo ""
+            validate_tui_versions python3
             return 0
         else
             echo ""
             echo -e "${RED}✗ Failed to install some system packages${RESET}"
-            return 1
+            echo -e "${YELLOW}Trying without textual (will use pip for TUI)...${RESET}"
+
+            # Try without textual
+            packages_without_textual="python3-rich python3-watchdog python3-yaml"
+            if sudo apt install -y $packages_without_textual; then
+                echo -e "${GREEN}✓ Base packages installed${RESET}"
+                echo -e "${YELLOW}⚠ textual not available via apt${RESET}"
+                echo ""
+                echo "To enable full TUI functionality, run:"
+                echo "  pip3 install textual --user"
+                return 1
+            else
+                echo -e "${RED}✗ Failed to install system packages${RESET}"
+                return 1
+            fi
         fi
     else
         echo -e "${RED}✗ apt package manager not found${RESET}"
@@ -305,6 +394,29 @@ echo ""
 echo -e "${BOLD}${GREEN}┌────────────────────────────────────────────┐${RESET}"
 echo -e "${BOLD}${GREEN}│${RESET}  ✓ ${BOLD}Dashboard Setup Complete${RESET}               ${BOLD}${GREEN}│${RESET}"
 echo -e "${BOLD}${GREEN}└────────────────────────────────────────────┘${RESET}"
+echo ""
+
+# Final TUI validation
+echo -e "${CYAN}Final validation...${RESET}"
+if [ -d "$HOME/.yoyo-dev/venv" ]; then
+    # Check venv installation
+    if check_tui_dependencies "$HOME/.yoyo-dev/venv/bin/python3"; then
+        echo -e "${GREEN}✓ All TUI dependencies installed and validated${RESET}"
+        echo -e "${GREEN}✓ Virtual environment: $HOME/.yoyo-dev/venv${RESET}"
+    else
+        echo -e "${YELLOW}⚠ Some TUI dependencies may be missing${RESET}"
+        echo -e "${YELLOW}  Dashboard will still work, but TUI mode may be limited${RESET}"
+    fi
+elif command -v python3 &> /dev/null; then
+    # Check system installation
+    if check_tui_dependencies python3; then
+        echo -e "${GREEN}✓ All TUI dependencies installed and validated${RESET}"
+    else
+        echo -e "${YELLOW}⚠ Some TUI dependencies may be missing${RESET}"
+        echo -e "${YELLOW}  Run: pip3 install -r ~/.yoyo-dev/requirements.txt --user${RESET}"
+    fi
+fi
+
 echo ""
 echo -e "${CYAN}Next steps:${RESET}"
 echo "  • Dashboard will be used automatically in visual mode"
