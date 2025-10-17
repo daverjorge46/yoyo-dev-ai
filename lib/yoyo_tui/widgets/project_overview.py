@@ -219,6 +219,10 @@ class ProjectOverview(Widget):
             # Widget not mounted yet
             pass
 
-    def refresh(self) -> None:
-        """Refresh context (alias for load_context)."""
+    def refresh(self, **kwargs) -> None:
+        """
+        Refresh context (alias for load_context).
+
+        Accepts any kwargs for compatibility with parent Widget.refresh().
+        """
         self.load_context()

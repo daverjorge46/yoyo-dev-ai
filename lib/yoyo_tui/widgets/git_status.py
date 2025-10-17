@@ -182,6 +182,10 @@ class GitStatus(Widget):
                 # Widget not mounted yet or query failed - fail silently
                 pass
 
-    def refresh(self) -> None:
-        """Refresh status (alias for update_status)."""
+    def refresh(self, **kwargs) -> None:
+        """
+        Refresh status (alias for update_status).
+
+        Accepts any kwargs for compatibility with parent Widget.refresh().
+        """
         self.update_status()
