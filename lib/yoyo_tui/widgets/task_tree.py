@@ -33,6 +33,7 @@ class TaskTree(Widget):
         """
         super().__init__(*args, **kwargs)
         self.task_data = task_data or TaskData.empty()
+        self._is_loading = True  # Start in loading state
 
     def compose(self) -> ComposeResult:
         """
@@ -59,9 +60,15 @@ class TaskTree(Widget):
         Args:
             tree: Tree widget to populate
         """
+        # Show loading state
+        if self._is_loading:
+            tree.root.add_leaf("[dim italic]Loading tasks...[/dim italic]")
+            return
+
+        # Show empty state with helpful message
         if not self.task_data or not self.task_data.parent_tasks:
-            # No tasks available
-            tree.root.add_leaf("[dim]No tasks available[/dim]")
+            tree.root.add_leaf("[dim]No tasks found[/dim]")
+            tree.root.add_leaf("[dim italic]Run /create-new to get started[/dim italic]")
             return
 
         # Add each parent task
@@ -124,6 +131,7 @@ class TaskTree(Widget):
             task_data: TaskData to display
         """
         self.task_data = task_data
+        self._is_loading = False  # Data has loaded
 
         # Get tree widget and repopulate
         try:

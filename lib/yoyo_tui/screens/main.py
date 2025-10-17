@@ -31,8 +31,10 @@ from textual.screen import Screen
 from textual.widgets import Header, Footer, Static
 
 from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel
+from ..widgets.git_status import GitStatus
 from ..models import TaskData
 from ..services.data_manager import DataManager
+from ..config import TUIConfig
 
 
 class MainScreen(Screen):
@@ -47,9 +49,15 @@ class MainScreen(Screen):
     BREAKPOINT_MEDIUM = 120  # 80-120 columns (normal sidebar)
     # > 120 columns = large (wider sidebar)
 
-    def __init__(self, *args, **kwargs):
-        """Initialize MainScreen with task data attribute."""
+    def __init__(self, config: TUIConfig = None, *args, **kwargs):
+        """
+        Initialize MainScreen with task data attribute.
+
+        Args:
+            config: TUI configuration (Task 8)
+        """
         super().__init__(*args, **kwargs)
+        self.config = config or TUIConfig()  # Use provided config or defaults
         self.task_data = TaskData.empty()  # Will be loaded on mount
 
     def compose(self) -> ComposeResult:
@@ -69,14 +77,19 @@ class MainScreen(Screen):
                 # Project overview widget - TEMPORARILY DISABLED (refresh() method incompatibility)
                 # yield ProjectOverview()
 
-                # Git Status widget - DISABLED per user request
-                # yield GitStatus()
+                # Git Status widget (with config - Task 8)
+                if self.config.show_git_panel and self.config.git_integration:
+                    yield GitStatus(
+                        refresh_interval=self.config.refresh_interval,
+                        git_cache_ttl=self.config.git_cache_ttl
+                    )
 
                 # Keyboard shortcuts panel - TEMPORARILY DISABLED (refresh() method incompatibility)
                 # yield ShortcutsPanel()
 
-                # Placeholder for sidebar
-                yield Static("\n[cyan]📋 Sidebar[/cyan]\n\n[dim]Widgets temporarily disabled\ndue to Textual API compatibility.[/dim]", id="sidebar-placeholder")
+                # Placeholder for sidebar (only if git panel is disabled)
+                if not (self.config.show_git_panel and self.config.git_integration):
+                    yield Static("\n[cyan]📋 Sidebar[/cyan]\n\n[dim]Widgets temporarily disabled\ndue to Textual API compatibility.[/dim]", id="sidebar-placeholder")
 
             # Right main content area
             with Vertical(id="main"):
@@ -86,8 +99,8 @@ class MainScreen(Screen):
                 # Task tree widget
                 yield TaskTree(task_data=TaskData.empty())
 
-                # Spec list widget showing recent specs and fixes
-                yield SpecList()
+                # Spec list widget showing recent specs and fixes (with config - Task 8)
+                yield SpecList(cache_ttl=self.config.spec_cache_ttl)
 
         # Bottom footer with keyboard shortcuts
         yield Footer()

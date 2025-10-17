@@ -51,11 +51,12 @@ class YoyoDevApp(App):
 
         Initializes screens, services, and starts file watching.
         """
-        # Push main screen (Task 5 complete)
-        self.push_screen(MainScreen())
+        # Push main screen with config (Task 5 complete, Task 8 updated)
+        self.push_screen(MainScreen(config=self.config))
 
-        # Start file watcher (Task 3 complete)
-        self.start_file_watcher()
+        # Start file watcher if enabled (Task 3 complete, Task 8 updated)
+        if self.config.file_watching:
+            self.start_file_watcher()
 
     def action_command_palette(self) -> None:
         """
@@ -112,6 +113,8 @@ class YoyoDevApp(App):
 
         Watches for changes to tasks.md, state.json, and MASTER-TASKS.md files.
         Automatically refreshes TUI data when relevant files change.
+
+        Uses config values for debounce_interval and max_wait (Task 8).
         """
         # Find .yoyo-dev directory (look in current working directory)
         yoyo_dev_dir = Path.cwd() / ".yoyo-dev"
@@ -121,10 +124,11 @@ class YoyoDevApp(App):
             return
 
         # Create FileWatcher with callback to refresh data
-        # Using 1.5s debounce interval as specified in requirements
+        # Use config values for debounce and max-wait (Task 8)
         self.file_watcher = FileWatcher(
             callback=self.on_file_change,
-            debounce_interval=1.5
+            debounce_interval=self.config.file_watcher_debounce,
+            max_wait=self.config.file_watcher_max_wait
         )
 
         # Start watching .yoyo-dev directory recursively

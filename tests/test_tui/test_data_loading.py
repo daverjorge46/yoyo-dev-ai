@@ -503,7 +503,7 @@ class TestSpecListDataDisplay:
         spec_list = SpecList(yoyo_dev_path=yoyo_dev)
 
         # Expected: Should find all 3 specs
-        specs = spec_list._load_specs()
+        specs = spec_list._load_specs_sync()
 
         assert len(specs) >= 3, "Should find all 3 spec directories"
         assert any(s['name'] == "2025-10-15-feature-a" for s in specs)
@@ -537,7 +537,7 @@ class TestSpecListDataDisplay:
         spec_list = SpecList(yoyo_dev_path=yoyo_dev)
 
         # Expected: Should find all 2 fixes
-        fixes = spec_list._load_fixes()
+        fixes = spec_list._load_fixes_sync()
 
         assert len(fixes) >= 2, "Should find all 2 fix directories"
         assert any(f['name'] == "2025-10-15-bug-fix-a" for f in fixes)
@@ -575,7 +575,7 @@ class TestSpecListDataDisplay:
         spec_list = SpecList(yoyo_dev_path=yoyo_dev)
 
         # Expected: Should calculate progress from completed_tasks
-        specs = spec_list._load_specs()
+        specs = spec_list._load_specs_sync()
 
         assert len(specs) >= 1
         spec = next(s for s in specs if s['name'] == "2025-10-17-feature-x")
@@ -605,7 +605,7 @@ class TestSpecListDataDisplay:
         spec_list = SpecList(yoyo_dev_path=yoyo_dev)
 
         # Expected: Should handle gracefully
-        specs = spec_list._load_specs()
+        specs = spec_list._load_specs_sync()
 
         assert len(specs) >= 1
         spec = next(s for s in specs if s['name'] == "2025-10-17-new-spec")
@@ -681,6 +681,6 @@ class TestDataLoadingIntegration:
 
         # Verify SpecList has data
         spec_list = screen.query_one(SpecList)
-        specs = spec_list._load_specs()
+        specs = spec_list._load_specs_sync()
         assert len(specs) >= 1, "SpecList should find spec directory"
         assert any(s['name'] == "2025-10-17-user-system" for s in specs)

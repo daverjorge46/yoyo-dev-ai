@@ -35,8 +35,17 @@ class DataManager:
 
         Returns:
             TaskData with parsed tasks (empty if none found)
+
+        Note:
+            Handles missing directories gracefully - returns empty TaskData.
         """
-        return TaskParser.find_and_parse_tasks()
+        try:
+            return TaskParser.find_and_parse_tasks()
+        except (OSError, PermissionError) as e:
+            # Handle file system errors gracefully
+            import sys
+            print(f"Warning: Error loading tasks: {e}", file=sys.stderr)
+            return TaskData.empty()
 
     @staticmethod
     def load_project_info() -> dict:
@@ -51,37 +60,60 @@ class DataManager:
             - name: Project name
             - mission: Short mission statement
             - has_yoyo_dev: Whether .yoyo-dev exists
+
+        Note:
+            Handles missing directories gracefully - returns basic info.
         """
         from pathlib import Path
         import os
 
-        cwd = Path(os.getcwd())
+        try:
+            cwd = Path(os.getcwd())
+        except (OSError, RuntimeError):
+            # Can't get current directory
+            return {
+                "name": "Unknown",
+                "mission": "",
+                "has_yoyo_dev": False
+            }
+
         yoyo_dev = cwd / ".yoyo-dev"
 
         project_info = {
             "name": cwd.name,
             "mission": "",
-            "has_yoyo_dev": yoyo_dev.exists()
+            "has_yoyo_dev": False
         }
 
+        # Check if .yoyo-dev exists
+        try:
+            project_info["has_yoyo_dev"] = yoyo_dev.exists()
+        except (OSError, PermissionError):
+            # Can't check directory - assume it doesn't exist
+            pass
+
         # Try to load mission-lite.md
-        if yoyo_dev.exists():
-            product_dir = yoyo_dev / "product"
-            if product_dir.exists():
-                mission_lite = product_dir / "mission-lite.md"
-                if mission_lite.exists():
-                    try:
-                        content = mission_lite.read_text()
-                        # Extract first non-empty line as mission
-                        lines = [line.strip() for line in content.split('\n') if line.strip()]
-                        if lines:
-                            # Skip markdown headers
-                            for line in lines:
-                                if not line.startswith('#'):
-                                    project_info["mission"] = line
-                                    break
-                    except IOError:
-                        pass
+        if project_info["has_yoyo_dev"]:
+            try:
+                product_dir = yoyo_dev / "product"
+                if product_dir.exists():
+                    mission_lite = product_dir / "mission-lite.md"
+                    if mission_lite.exists():
+                        try:
+                            content = mission_lite.read_text()
+                            # Extract first non-empty line as mission
+                            lines = [line.strip() for line in content.split('\n') if line.strip()]
+                            if lines:
+                                # Skip markdown headers
+                                for line in lines:
+                                    if not line.startswith('#'):
+                                        project_info["mission"] = line
+                                        break
+                        except IOError:
+                            pass
+            except (OSError, PermissionError):
+                # Can't read directory - skip silently
+                pass
 
         return project_info
 

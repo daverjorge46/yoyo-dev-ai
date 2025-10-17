@@ -28,15 +28,16 @@ class GitStatus(Widget):
         refresh_interval: Update interval in seconds (default 5)
     """
 
-    def __init__(self, refresh_interval: int = 5, *args, **kwargs):
+    def __init__(self, refresh_interval: int = 5, git_cache_ttl: float = 30.0, *args, **kwargs):
         """
         Initialize GitStatus widget.
 
         Args:
             refresh_interval: Auto-refresh interval in seconds (default 5)
+            git_cache_ttl: Cache time-to-live for git operations in seconds (default 30.0, Task 8)
         """
         super().__init__(*args, **kwargs)
-        self.git_service = CachedGitService(ttl_seconds=30.0)
+        self.git_service = CachedGitService(ttl_seconds=git_cache_ttl)
         self.refresh_interval = refresh_interval
         self._timer = None
 
@@ -152,6 +153,7 @@ class GitStatus(Widget):
         Update git status display (async implementation).
 
         Runs git operations in background thread, then updates UI on main thread.
+        Handles errors gracefully and shows user-friendly error messages.
         """
         try:
             # Generate status text (runs in background thread)
@@ -160,9 +162,25 @@ class GitStatus(Widget):
             # Update UI (runs on main thread)
             content = self.query_one("#git-status-content", Static)
             content.update(status_text)
-        except Exception:
-            # Widget not mounted yet or query failed
-            pass
+        except Exception as e:
+            # Git operation failed - show error with retry hint
+            try:
+                content = self.query_one("#git-status-content", Static)
+                content.update(
+                    f"[red]Git error:[/red]\n[dim]{str(e)[:40]}...[/dim]\n\n"
+                    f"[dim italic]Press 'r' to retry[/dim italic]"
+                )
+
+                # Notify user of error
+                if hasattr(self, 'app'):
+                    self.app.notify(
+                        f"Git operation failed: {str(e)[:50]}",
+                        severity="error",
+                        timeout=5
+                    )
+            except Exception:
+                # Widget not mounted yet or query failed - fail silently
+                pass
 
     def refresh(self) -> None:
         """Refresh status (alias for update_status)."""

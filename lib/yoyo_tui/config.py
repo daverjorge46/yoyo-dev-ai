@@ -21,7 +21,7 @@ class TUIConfig:
 
     # General settings
     auto_refresh: bool = True
-    refresh_interval: int = 5  # seconds (when file watching disabled)
+    refresh_interval: int = 5  # seconds (for widget auto-refresh timers)
 
     # Editor integration
     editor_command: str = "code"  # or "vim", "nano", "subl", etc.
@@ -44,8 +44,15 @@ class TUIConfig:
     command_history: bool = True
     analytics: bool = False  # usage tracking (opt-in)
 
+    # Performance settings (NEW in Task 8)
+    git_cache_ttl: float = 30.0  # seconds (git status cache time-to-live)
+    spec_cache_ttl: float = 30.0  # seconds (spec/fix list cache time-to-live)
+    file_watcher_debounce: float = 1.5  # seconds (debounce interval for file changes)
+    file_watcher_max_wait: float = 5.0  # seconds (max wait before forcing refresh)
+    performance_mode: bool = False  # enable for longer TTLs and less frequent updates
+
     def __post_init__(self):
-        """Initialize default keybindings if not provided."""
+        """Initialize default keybindings and apply performance mode adjustments."""
         if self.keybindings is None:
             self.keybindings = {
                 "command_palette": ["ctrl+p", "/"],
@@ -54,6 +61,14 @@ class TUIConfig:
                 "refresh": ["r"],
                 "git_menu": ["g"],
             }
+
+        # Apply performance mode adjustments
+        if self.performance_mode:
+            self.git_cache_ttl = 60.0  # 60s (2x longer)
+            self.spec_cache_ttl = 60.0  # 60s (2x longer)
+            self.refresh_interval = 10  # 10s (2x longer)
+            self.file_watcher_debounce = 3.0  # 3s (2x longer)
+            self.file_watcher_max_wait = 10.0  # 10s (2x longer)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert config to dictionary for YAML serialization."""
@@ -81,6 +96,13 @@ class TUIConfig:
                 flattened['git_integration'] = value.get('git_integration', True)
                 flattened['command_history'] = value.get('command_history', True)
                 flattened['analytics'] = value.get('analytics', False)
+            elif key == 'performance' and isinstance(value, dict):
+                # Flatten performance.* → *
+                flattened['git_cache_ttl'] = float(value.get('git_cache_ttl', 30.0))
+                flattened['spec_cache_ttl'] = float(value.get('spec_cache_ttl', 30.0))
+                flattened['file_watcher_debounce'] = float(value.get('file_watcher_debounce', 1.5))
+                flattened['file_watcher_max_wait'] = float(value.get('file_watcher_max_wait', 5.0))
+                flattened['performance_mode'] = bool(value.get('performance_mode', False))
             elif key in ('advanced', 'experimental'):
                 # Ignore advanced/experimental sections (not implemented yet)
                 pass
@@ -184,7 +206,7 @@ class ConfigManager:
 
 # General settings
 auto_refresh: true
-refresh_interval: 5  # seconds (when file watching disabled)
+refresh_interval: 5  # seconds (widget auto-refresh interval)
 
 # Editor integration
 editor:
@@ -214,6 +236,15 @@ features:
   git_integration: true
   command_history: true
   analytics: false  # usage tracking (opt-in)
+
+# Performance settings
+# Customize refresh rates and cache TTLs for performance tuning
+performance:
+  git_cache_ttl: 30.0           # seconds (git status cache lifetime)
+  spec_cache_ttl: 30.0          # seconds (spec/fix list cache lifetime)
+  file_watcher_debounce: 1.5    # seconds (wait time after file changes)
+  file_watcher_max_wait: 5.0    # seconds (max wait before forcing refresh)
+  performance_mode: false       # true = 2x longer intervals (slower updates, better performance)
 """
 
         with open(path, 'w') as f:

@@ -1,61 +1,44 @@
 # Yoyo Dev Textual TUI Configuration
-# =====================================
-#
-# This file controls the behavior and appearance of the Yoyo Dev TUI.
-# Edit these settings to customize your experience.
-#
-# Version: 1.0
+# This file controls TUI behavior and appearance
 
-# General Settings
-# ----------------
-auto_refresh: true              # Automatically refresh on file changes
-refresh_interval: 5             # Seconds between refreshes (when file watching disabled)
+# General settings
+auto_refresh: true
+refresh_interval: 5  # seconds (widget auto-refresh interval)
 
-# Editor Integration
-# ------------------
+# Editor integration
 editor:
-  command: "code"               # Editor command: "code", "vim", "nano", "subl", etc.
-  args: "{file}"                # Arguments ({{file}} will be replaced with file path)
+  command: "code"  # or "vim", "nano", "subl", etc.
+  args: "{file}"   # {file} placeholder for file path
 
-# Appearance
-# ----------
-theme: "yoyo-dev"               # Color scheme: "yoyo-dev", "dark", "light", "dracula", "nord"
+# Color scheme
+theme: "yoyo-dev"  # or "dark", "light", "dracula", "nord"
 
 # Layout
-# ------
 layout:
-  sidebar_width: 30             # Width of left sidebar in columns
-  show_git_panel: true          # Show git status panel
-  compact_mode: false           # Use compact layout (hides some panels)
+  sidebar_width: 30
+  show_git_panel: true
+  compact_mode: false
 
-# Keyboard Shortcuts
-# ------------------
-# Customize keyboard shortcuts (use Textual key syntax)
+# Keyboard shortcuts (customizable)
 keybindings:
-  command_palette: ["ctrl+p", "/"]  # Open command palette
-  quit: ["q", "ctrl+c"]             # Quit application
-  help: ["?"]                       # Show help overlay
-  refresh: ["r"]                    # Force refresh
-  git_menu: ["g"]                   # Open git operations menu
+  command_palette: ["ctrl+p", "/"]
+  quit: ["q", "ctrl+c"]
+  help: ["?"]
+  refresh: ["r"]
+  git_menu: ["g"]
 
 # Features
-# --------
 features:
-  file_watching: true           # Watch files for changes (uses watchdog)
-  git_integration: true         # Show git status and enable git actions
-  command_history: true         # Remember recent commands in palette
-  analytics: false              # Usage tracking (opt-in, not implemented yet)
+  file_watching: true
+  git_integration: true
+  command_history: true
+  analytics: false  # usage tracking (opt-in)
 
-# Advanced Settings
-# -----------------
-advanced:
-  log_level: "INFO"             # Logging level: "DEBUG", "INFO", "WARNING", "ERROR"
-  max_log_lines: 10000          # Maximum lines in log buffer
-  task_history_limit: 100       # Maximum tasks to keep in history
-
-# Experimental Features
-# ---------------------
-# These features are experimental and may change or be removed
-experimental:
-  web_export: false             # Enable Textual web export (not implemented)
-  multi_project: false          # Multi-project dashboard (not implemented)
+# Performance settings
+# Customize refresh rates and cache TTLs for performance tuning
+performance:
+  git_cache_ttl: 30.0           # seconds (git status cache lifetime)
+  spec_cache_ttl: 30.0          # seconds (spec/fix list cache lifetime)
+  file_watcher_debounce: 1.5    # seconds (wait time after file changes)
+  file_watcher_max_wait: 5.0    # seconds (max wait before forcing refresh)
+  performance_mode: false       # true = 2x longer intervals (slower updates, better performance)
