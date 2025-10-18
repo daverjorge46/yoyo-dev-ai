@@ -112,11 +112,11 @@ class TestHistoryTrackerGitTimestamps(unittest.TestCase):
                 # Expected: Commits should be sorted newest first
                 # Actual: All have same timestamp, order is arbitrary
 
-                self.assertlen(git_commits) >= 3
+                assert len(git_commits) >= 3
 
                 # Check if timestamps are monotonically decreasing (newest first)
                 for i in range(len(git_commits) - 1):
-                    self.assertgit_commits[i].timestamp >= git_commits[i + 1].timestamp, \
+                    assert git_commits[i].timestamp >= git_commits[i + 1].timestamp, \
                         "EXPECTED: Commits sorted by actual git timestamp (newest first)\n" \
                         "ACTUAL: All commits have same timestamp (datetime.now())\n" \
                         "BUG: Cannot sort chronologically when all timestamps are identical"
@@ -188,7 +188,7 @@ class TestHistoryTrackerTimestampCorrectness:
         # This proves the developer KNEW about proper timestamps but chose datetime.now()
         # as a shortcut/hack
 
-        self.asserthas_timestamp_method or True, \
+        assert has_timestamp_method or True, \
             "GitService should provide commit timestamp extraction methods"
 
     def test_history_tracker_uses_correct_git_method(selfself):
@@ -218,12 +218,12 @@ class TestHistoryTrackerTimestampCorrectness:
                     # Expected: Should call get_recent_commits_with_timestamps
                     # Actual: Calls get_recent_commits (no timestamps)
 
-                    self.assertmock_with_timestamps.called, \
+                    assert mock_with_timestamps.called, \
                         "EXPECTED: Should call get_recent_commits_with_timestamps()\n" \
                         "ACTUAL: Calls get_recent_commits() without timestamps\n" \
                         "BUG: Lines 151-154 call wrong GitService method"
 
-                    self.assertnot mock_simple.called or mock_with_timestamps.called, \
+                    assert not mock_simple.called or mock_with_timestamps.called, \
                         "Should prefer timestamp method over simple method"
 
 
@@ -326,7 +326,7 @@ class TestHistoryTrackerBugDocumentation:
                 timestamps = [c.timestamp for c in commits]
                 unique_timestamps = set(timestamps)
 
-                self.assertlen(unique_timestamps) > 1, \
+                assert len(unique_timestamps) > 1, \
                     "EXPECTED: Each commit has unique timestamp from git history\n" \
                     "ACTUAL: All commits have datetime.now() (identical timestamp)\n" \
                     "BUG: Line 162 in history_tracker.py"
@@ -337,7 +337,7 @@ class TestHistoryTrackerBugDocumentation:
                     for ts in timestamps
                 )
 
-                self.assertnot all_timestamps_are_now, \
+                assert not all_timestamps_are_now, \
                     "EXPECTED: Historic commits should have past timestamps\n" \
                     "ACTUAL: All commits timestamped at current time\n" \
                     "BUG: datetime.now() used for all commits"
@@ -348,7 +348,7 @@ class TestHistoryTrackerBugDocumentation:
 
                 # After sorting, should have meaningful order
                 # But with identical timestamps, order is arbitrary
-                self.assertsorted_commits != commits or len(unique_timestamps) > 1, \
+                assert sorted_commits != commits or len(unique_timestamps) > 1, \
                     "EXPECTED: Chronological sorting should reorder commits\n" \
                     "ACTUAL: Sorting has no effect (all timestamps identical)\n" \
                     "BUG: Cannot sort by time when timestamps are all the same"
@@ -393,15 +393,15 @@ class TestHistoryTrackerTimestampFix:
         timestamps = [e.timestamp for e in entries]
         unique_timestamps = set(timestamps)
 
-        self.assertlen(unique_timestamps) == 3, \
+        assert len(unique_timestamps) == 3, \
             "With real git timestamps, each commit has unique timestamp"
 
         # Verify sorting works correctly
         sorted_entries = sorted(entries)  # Uses __lt__ which compares timestamps
 
-        self.assertsorted_entries[0].title == "docs: very recent", \
+        assert sorted_entries[0].title == "docs: very recent", \
             "Newest commit should be first after sorting"
-        self.assertsorted_entries[-1].title == "feat: old feature", \
+        assert sorted_entries[-1].title == "feat: old feature", \
             "Oldest commit should be last after sorting"
 
         # This is what the code SHOULD do after fix
