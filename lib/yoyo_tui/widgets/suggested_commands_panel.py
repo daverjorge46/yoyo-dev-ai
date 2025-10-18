@@ -13,6 +13,7 @@ from textual.message import Message
 
 from ..models import TaskData
 from ..services.command_executor import CommandExecutor
+from ..screens.task_detail_screen import TaskDetailScreen
 
 
 class SuggestedCommandsPanel(Static):
@@ -84,12 +85,13 @@ class SuggestedCommandsPanel(Static):
 
             # Create buttons for command suggestions (skip non-command items)
             for cmd, desc, shortcut in suggestions[:5]:
-                # Only create buttons for actual Yoyo Dev commands
-                if cmd.startswith("/"):
+                # Create buttons for Yoyo Dev commands or navigation items
+                if cmd.startswith("/") or cmd in ["Tasks"]:
                     # Create button with command as ID
+                    button_id = f"cmd-btn-{cmd.lstrip('/').lower()}"
                     button = Button(
                         f"{cmd}",
-                        id=f"cmd-btn-{cmd.lstrip('/')}",
+                        id=button_id,
                         variant="default"
                     )
                     button.tooltip = desc  # Show description on hover if supported
@@ -121,7 +123,11 @@ class SuggestedCommandsPanel(Static):
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """
-        Handle button press events for command execution.
+        Handle button press events for navigation or command execution.
+
+        Special handling:
+        - "Tasks" button → Navigate to TaskDetailScreen
+        - Other commands → Execute via CommandExecutor
 
         Args:
             event: Button press event
@@ -131,9 +137,17 @@ class SuggestedCommandsPanel(Static):
         # Extract command from button label
         command = button.label
 
-        # Execute command via CommandExecutor
-        if self.command_executor and command:
-            self.command_executor.execute_command(str(command))
+        # Check if this is a navigation button
+        if command == "Tasks":
+            # Navigate to TaskDetailScreen
+            if self.task_data and self.task_data.parent_tasks:
+                self.app.push_screen(TaskDetailScreen(task_data=self.task_data))
+            else:
+                self.app.notify("No tasks available", severity="warning", timeout=2)
+        else:
+            # Execute command via CommandExecutor
+            if self.command_executor and command:
+                self.command_executor.execute_command(str(command))
 
 
     def _get_suggestions(self) -> List[Tuple[str, str, str]]:
@@ -150,6 +164,14 @@ class SuggestedCommandsPanel(Static):
         has_specs = self._has_recent_specs()
         has_uncommitted_changes = self._has_uncommitted_changes()
         has_product_docs = self._has_product_docs()
+
+        # Priority 0: View tasks detail (navigation button)
+        if has_tasks:
+            suggestions.append((
+                "Tasks",
+                "View detailed task breakdown",
+                "t"
+            ))
 
         # Priority 1: Execute tasks if available
         if has_tasks:

@@ -159,6 +159,11 @@ class HistoryTracker:
                 try:
                     # commit['timestamp'] is in ISO format (e.g., "2025-10-18T10:30:45-07:00")
                     timestamp = datetime.fromisoformat(commit['timestamp'])
+
+                    # Convert to naive datetime for consistency with other sources
+                    # (specs, fixes, recaps use naive datetimes from folder dates)
+                    if timestamp.tzinfo is not None:
+                        timestamp = timestamp.replace(tzinfo=None)
                 except (ValueError, KeyError):
                     # Skip commits with invalid timestamps
                     continue
