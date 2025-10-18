@@ -25,10 +25,13 @@ Layout structure:
 └────────────────────────────────────────────┘
 """
 
+import logging
 from textual.app import ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Header, Footer, Static
+
+logger = logging.getLogger(__name__)
 
 from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel, NextTasksPanel, SuggestedCommandsPanel, HistoryPanel
 from ..widgets.git_status import GitStatus
@@ -115,6 +118,8 @@ class MainScreen(Screen):
 
         Loads real data and passes to widgets, then checks terminal size.
         """
+        logger.debug("MainScreen.on_mount: Starting")
+
         # Load real task data
         self.load_data()
 
@@ -124,18 +129,23 @@ class MainScreen(Screen):
         # Start auto-refresh timer using config refresh_interval
         self.set_interval(self.auto_refresh, self.config.refresh_interval)
 
+        logger.debug("MainScreen.on_mount: Complete")
+
     def load_data(self) -> None:
         """
         Load real data from project and update widgets.
 
         Discovers tasks.md, loads task data, and passes to all widgets.
         """
+        logger.debug("MainScreen.load_data: Loading task data from DataManager")
         # Load task data using DataManager
         self.task_data = DataManager.load_active_tasks()
+        logger.debug(f"MainScreen.load_data: Loaded {len(self.task_data.parent_tasks) if self.task_data else 0} parent tasks")
 
         # Update widgets with loaded data
         try:
             # Update TaskTree
+            logger.debug("MainScreen.load_data: Updating TaskTree")
             task_tree = self.query_one(TaskTree)
             task_tree.load_tasks(self.task_data)
 
@@ -151,10 +161,12 @@ class MainScreen(Screen):
             suggested_commands_panel = self.query_one(SuggestedCommandsPanel)
             suggested_commands_panel.update_data(self.task_data)
 
+            logger.debug("MainScreen.load_data: All widgets updated successfully")
+
         except Exception as e:
             # Widgets not mounted yet or other error
             # Data is stored in self.task_data and will be available
-            pass
+            logger.debug(f"MainScreen.load_data: Error updating widgets: {e}")
 
     def refresh_all_data(self) -> None:
         """

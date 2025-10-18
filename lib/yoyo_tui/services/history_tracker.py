@@ -135,7 +135,7 @@ class HistoryTracker:
 
     def _get_git_commits(self) -> List[HistoryEntry]:
         """
-        Get recent git commit history.
+        Get recent git commit history with real timestamps.
 
         Returns:
             List of HistoryEntry objects for recent commits
@@ -146,21 +146,27 @@ class HistoryTracker:
         except Exception:
             return []
 
-        # Get simple commit messages (timestamps will be approximate)
+        # Get commit messages with actual git timestamps
         try:
-            commit_messages = GitService.get_recent_commits(
+            commit_data = GitService.get_recent_commits_with_timestamps(
                 self.project_root,
                 count=5
             )
 
             entries = []
-            for msg in commit_messages:
-                # Use current time as approximate timestamp
-                # (In production, GitService.get_recent_commits_with_timestamps could be used for exact timestamps)
+            for commit in commit_data:
+                # Parse ISO timestamp from git
+                try:
+                    # commit['timestamp'] is in ISO format (e.g., "2025-10-18T10:30:45-07:00")
+                    timestamp = datetime.fromisoformat(commit['timestamp'])
+                except (ValueError, KeyError):
+                    # Skip commits with invalid timestamps
+                    continue
+
                 entries.append(HistoryEntry(
                     type=HistoryType.COMMIT,
-                    timestamp=datetime.now(),
-                    title=msg,
+                    timestamp=timestamp,
+                    title=commit['message'],
                     description="",
                     source_path=None
                 ))

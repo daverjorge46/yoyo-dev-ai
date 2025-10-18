@@ -258,6 +258,112 @@ Input:focus {
 }
 
 /* ============================================================================
+ * Detail Screens
+ * ============================================================================ */
+
+/* Task Detail Screen */
+#task-detail-container {
+    background: transparent;
+    padding: 2;
+}
+
+#task-detail-title {
+    text-style: bold;
+    padding-bottom: 1;
+}
+
+#task-source-info {
+    padding-bottom: 1;
+}
+
+#task-progress-overview {
+    padding: 1;
+    margin-bottom: 1;
+    border: solid #4a5568;
+    background: #384152;
+}
+
+#task-breakdown {
+    padding: 1;
+    margin-bottom: 1;
+    border: solid #4a5568;
+    background: transparent;
+}
+
+#recent-actions-title {
+    text-style: bold;
+    padding-top: 1;
+    padding-bottom: 1;
+}
+
+#recent-actions-content {
+    padding: 1;
+    border: solid #4a5568;
+    background: #384152;
+}
+
+/* Spec Detail Screen */
+#spec-detail-container {
+    background: transparent;
+    padding: 2;
+}
+
+#spec-detail-title {
+    text-style: bold;
+    padding-bottom: 1;
+}
+
+#spec-metadata {
+    padding-bottom: 1;
+}
+
+#spec-progress-overview {
+    padding: 1;
+    margin-bottom: 1;
+    border: solid #4a5568;
+    background: #384152;
+}
+
+#spec-tabs {
+    margin-top: 1;
+    border: solid #4a5568;
+}
+
+TabbedContent {
+    background: transparent;
+}
+
+TabPane {
+    background: transparent;
+    padding: 1;
+}
+
+Tabs {
+    background: #4a5568;
+}
+
+Tab {
+    background: #4a5568;
+    color: #e2e8f0;
+}
+
+Tab:hover {
+    background: #63b3ed;
+    color: #2d3748;
+}
+
+Tab.-active {
+    background: #63b3ed;
+    color: #2d3748;
+    text-style: bold;
+}
+
+/* Markdown content in detail screens */
+Markdown {
+    background: transparent;
+}
+
+/* ============================================================================
  * Responsive Breakpoints
  * ============================================================================ */
 
