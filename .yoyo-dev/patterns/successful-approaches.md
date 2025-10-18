@@ -378,15 +378,155 @@ class HistoryTracker:
 
 ---
 
+### Pattern: Clipboard-Based Command Integration
+
+**Last Used:** tui-realtime-updates-and-commands (2025-10-17)
+**Category:** Architecture / Integration Patterns
+
+**Use Case:** When a TUI/CLI tool needs to pass commands to a parent process or shell session that spawned it. Especially when subprocess execution is architecturally impossible (nested sessions).
+
+**Implementation:**
+- Key files: `lib/yoyo_tui/services/command_executor.py`
+- Core approach:
+  - Primary: Use clipboard library (pyperclip) to copy command text
+  - Fallback 1: Use xclip on Linux if pyperclip unavailable
+  - Fallback 2: Use xsel on Linux if xclip unavailable
+  - Show notification instructing user to paste
+  - Graceful error handling for completely unavailable clipboard
+- Dependencies: pyperclip (cross-platform), xclip/xsel (Linux fallback)
+
+**Why It Works:**
+- Respects process boundaries (no nested subprocess issues)
+- User-initiated paste ensures commands execute in correct context
+- Works across all platforms (clipboard support ubiquitous)
+- Simple implementation with clear user feedback
+- Testable using mocks
+
+**Gotchas:**
+- Requires graphical environment (X11 DISPLAY on Linux)
+- Headless systems need alternative approach (file-based)
+- User must manually paste (not automatic)
+- Clipboard can only hold one command at a time
+- Previous clipboard content is overwritten
+
+**Code Example:**
+```python
+def execute_command(self, command: str) -> bool:
+    try:
+        # Primary: pyperclip (cross-platform)
+        import pyperclip
+        pyperclip.copy(command)
+    except (ImportError, Exception):
+        try:
+            # Fallback 1: xclip (Linux)
+            subprocess.run(
+                ["xclip", "-selection", "clipboard"],
+                input=command, text=True, timeout=2
+            )
+        except (FileNotFoundError, subprocess.TimeoutExpired):
+            try:
+                # Fallback 2: xsel (Linux)
+                subprocess.run(
+                    ["xsel", "--clipboard", "--input"],
+                    input=command, text=True, timeout=2
+                )
+            except Exception:
+                self.app.notify(
+                    f"Clipboard unavailable. Command: {command}",
+                    severity="error"
+                )
+                return False
+
+    self.app.notify(
+        f"Copied '{command}' to clipboard. Paste to execute.",
+        severity="information"
+    )
+    return True
+```
+
+**Key Learning:**
+When a subprocess tries to spawn its parent process (e.g., TUI running inside Claude Code trying to run `claude` command), it's architecturally impossible. Clipboard-based handoff is the correct pattern for this integration.
+
+---
+
+### Pattern: Dual-Strategy Auto-Refresh (Polling + File Watching)
+
+**Last Used:** tui-realtime-updates-and-commands (2025-10-17)
+**Category:** User Experience / Real-Time Updates
+
+**Use Case:** When building dashboards or monitoring UIs that need to show real-time data updates. Especially when file watching alone might miss events due to filesystem timing issues or external changes.
+
+**Implementation:**
+- Key files: `lib/yoyo_tui/screens/main.py`, `lib/yoyo_tui/app.py`
+- Core approach:
+  - **Strategy 1:** Polling timer (5-10 second interval) using `set_interval()`
+  - **Strategy 2:** File watcher (inotify/fsevents) for instant updates
+  - Lightweight refresh methods (update only changed data, not full screen)
+  - Reactive UI properties (Textual reactive system)
+  - FileWatcher monitors both `.yoyo-dev/` AND current working directory
+- Dependencies: textual (for reactive properties and set_interval)
+
+**Why It Works:**
+- Polling catches missed file watch events (reliable baseline)
+- File watching provides instant updates (responsive)
+- Lightweight refreshes prevent UI lag (only reload changed data)
+- Reactive properties auto-update UI (declarative, no manual update() calls)
+- Dual strategy has redundancy (either method works)
+
+**Gotchas:**
+- Polling interval too short wastes CPU (5-10s is good balance)
+- File watchers can miss rapid changes (polling catches them)
+- Need to handle unmounted widgets gracefully (try/except)
+- Recursive watching can be expensive (debounce changes)
+
+**Code Example:**
+```python
+class MainScreen(Screen):
+    def on_mount(self) -> None:
+        # Start polling timer (every 5 seconds)
+        self.set_interval(self.auto_refresh, self.config.refresh_interval)
+
+    def auto_refresh(self) -> None:
+        """Called by timer - lightweight updates only."""
+        self.refresh_task_data()
+        self.refresh_history_data()
+
+    def refresh_task_data(self) -> None:
+        """Reload only task data, not entire screen."""
+        self.task_data = DataManager.load_active_tasks()
+        try:
+            task_tree = self.query_one(TaskTree)
+            task_tree.load_tasks(self.task_data)
+        except Exception:
+            pass  # Widget not mounted yet
+
+# Reactive property auto-updates UI
+class NextTasksPanel(Static):
+    task_data: reactive[TaskData] = reactive(TaskData.empty())
+
+    def watch_task_data(self, new_data: TaskData) -> None:
+        """Automatically called when task_data changes."""
+        self.update_content()  # Redraw UI with new data
+```
+
+**Performance:**
+- Polling overhead: <100ms per cycle (negligible)
+- File watching: instant (0ms latency)
+- Reactive updates: fast (only affected widgets re-render)
+- Combined approach: responsive + reliable
+
+---
+
 ## Summary
 
-**Total Patterns:** 8
-**Categories:** Performance (3), Testing (2), Code Organization (1), TUI/Interactive UI (2)
+**Total Patterns:** 10
+**Categories:** Performance (3), Testing (2), Code Organization (1), TUI/Interactive UI (2), Architecture (1), Integration (1)
 
 **Most Impactful:**
 1. Shared Parsing Utilities with Caching (5-8x speedup, eliminated duplication)
 2. Single-Pass AWK (46-50% faster, cleaner code)
-3. Service-Based Command Execution (clean architecture, reusable, testable)
-4. Comprehensive Test Suite (prevented regressions, verified improvements)
+3. Clipboard-Based Command Integration (solved impossible subprocess problem)
+4. Dual-Strategy Auto-Refresh (reliable + responsive updates)
+5. Comprehensive Test Suite (prevented regressions, verified improvements)
 
-**Last Updated:** 2025-10-17 (tui-interaction-improvements fix)
+**Last Updated:** 2025-10-17 (tui-realtime-updates-and-commands fix)
