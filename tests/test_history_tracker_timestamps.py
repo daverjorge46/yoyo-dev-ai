@@ -161,7 +161,7 @@ class TestHistoryTrackerGitTimestamps(unittest.TestCase):
                     for commit in commits
                 )
 
-                self.assertnot all_are_now, \
+                assert not all_are_now, \
                     "EXPECTED: Historic commits should have past timestamps\n" \
                     "ACTUAL: All commits have current time (datetime.now())\n" \
                     "BUG: Line 162 uses datetime.now() instead of git timestamp"

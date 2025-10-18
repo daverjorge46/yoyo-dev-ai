@@ -106,7 +106,7 @@ class TestCommandExecutorClipboardIntegration:
 
             # Verify exact command text
             clipboard_content = mock_clipboard.call_args[0][0]
-            self.assertclipboard_content == command, \
+            assert clipboard_content == command, \
                 "EXPECTED: Clipboard should contain exact command text\n" \
                 "ACTUAL: Command sent to subprocess, not clipboard\n" \
                 "BUG: No clipboard integration exists"
@@ -134,7 +134,7 @@ class TestCommandExecutorClipboardIntegration:
 
             notification_message = mock_app.notify.call_args[0][0]
 
-            self.assert"paste" in notification_message.lower() or "Cmd+V" in notification_message, \
+            assert "paste" in notification_message.lower() or "Cmd+V" in notification_message, \
                 "EXPECTED: Notification should tell user to paste command\n" \
                 "ACTUAL: Notification says 'Executing...' (subprocess approach)\n" \
                 "BUG: Lines 74-79 show wrong notification for clipboard approach"
@@ -163,7 +163,7 @@ class TestCommandExecutorSubprocessProblems:
 
         # Current implementation DOES call Popen (the bug)
         # Expected behavior: Should NOT call Popen
-        self.assertnot mock_popen.called, \
+        assert not mock_popen.called, \
             "EXPECTED: Should not spawn subprocess (use clipboard instead)\n" \
             "ACTUAL: Spawns subprocess.Popen(['claude'])\n" \
             "BUG: Creates duplicate Claude Code instance"
@@ -188,7 +188,7 @@ class TestCommandExecutorSubprocessProblems:
 
         # Subprocess is called (current buggy behavior)
         # This means command runs in DIFFERENT context
-        self.assertnot mock_popen.called, \
+        assert not mock_popen.called, \
             "EXPECTED: Command should run in current Claude Code session\n" \
             "ACTUAL: Subprocess spawns isolated Claude Code instance\n" \
             "BUG: No context sharing between TUI and command execution"
@@ -214,7 +214,7 @@ class TestCommandExecutorSubprocessProblems:
 
         # Verify subprocess is started (the problem)
         # Subprocess won't have access to TUI's loaded context
-        self.assertnot mock_popen.called, \
+        assert not mock_popen.called, \
             "EXPECTED: Command executes in same context as TUI\n" \
             "ACTUAL: Subprocess starts fresh, loses TUI context\n" \
             "BUG: Subprocess cannot see TaskData, SpecList, etc. loaded in TUI"
@@ -335,13 +335,13 @@ class TestCommandExecutorBugDocumentation:
                 # ----------------
 
                 # 1. Should NOT spawn subprocess
-                self.assertnot mock_popen.called, \
+                assert not mock_popen.called, \
                     "EXPECTED: No subprocess spawning\n" \
                     "ACTUAL: subprocess.Popen(['claude']) called\n" \
                     "BUG: Lines 82-90 in command_executor.py"
 
                 # 2. Should write to clipboard
-                self.assertmock_clipboard.called, \
+                assert mock_clipboard.called, \
                     "EXPECTED: Command copied to clipboard\n" \
                     "ACTUAL: No clipboard integration\n" \
                     "BUG: No pyperclip usage in command_executor.py"
@@ -349,7 +349,7 @@ class TestCommandExecutorBugDocumentation:
                 # 3. Clipboard should have command text
                 if mock_clipboard.called:
                     clipboard_content = mock_clipboard.call_args[0][0]
-                    self.assertclipboard_content == command, \
+                    assert clipboard_content == command, \
                         "EXPECTED: Clipboard contains command text\n" \
                         "ACTUAL: Command sent to subprocess stdin\n" \
                         "BUG: Wrong integration approach"
@@ -396,14 +396,14 @@ class TestCommandExecutorBugDocumentation:
             result = executor.execute_command(command)
 
             # Verify correct behavior
-            self.assertresult is True, "Should succeed"
+            assert result is True, "Should succeed"
             mock_clipboard.assert_called_once_with(command), \
                 "Should copy command to clipboard"
 
             # Verify notification
             mock_app.notify.assert_called_once()
             notification = mock_app.notify.call_args[0][0]
-            self.assert"paste" in notification.lower() or "Cmd+V" in notification, \
+            assert "paste" in notification.lower() or "Cmd+V" in notification, \
                 "Should tell user to paste"
 
             # This is what the code SHOULD do after fix
@@ -423,7 +423,7 @@ class TestCommandExecutorClipboardDependency:
         """
         try:
             import pyperclip
-            self.assertpyperclip is not None
+            assert pyperclip is not None
         except ImportError:
             self.skipTest("pyperclip not installed (required for clipboard fix)")
 
@@ -441,7 +441,7 @@ class TestCommandExecutorClipboardDependency:
 
             # Verify copy worked (read back from clipboard)
             copied = pyperclip.paste()
-            self.assertcopied == test_text, \
+            assert copied == test_text, \
                 "pyperclip should correctly copy and paste text"
         except ImportError:
             self.skipTest("pyperclip not installed")
