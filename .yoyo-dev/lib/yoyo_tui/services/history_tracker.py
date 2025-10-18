@@ -135,7 +135,7 @@ class HistoryTracker:
 
     def _get_git_commits(self) -> List[HistoryEntry]:
         """
-        Get recent git commit history with real timestamps.
+        Get recent git commit history.
 
         Returns:
             List of HistoryEntry objects for recent commits
@@ -146,35 +146,24 @@ class HistoryTracker:
         except Exception:
             return []
 
-        # Get commit messages with timestamps
+        # Get simple commit messages (timestamps will be approximate)
         try:
-            commits_data = GitService.get_recent_commits_with_timestamps(
+            commit_messages = GitService.get_recent_commits(
                 self.project_root,
                 count=5
             )
 
             entries = []
-            for commit in commits_data:
-                try:
-                    # Parse ISO 8601 timestamp from git log
-                    timestamp_str = commit['timestamp']
-                    timestamp = datetime.fromisoformat(timestamp_str)
-
-                    # Remove timezone info for comparison with naive datetimes
-                    # (specs/fixes/recaps use date-only timestamps)
-                    if timestamp.tzinfo is not None:
-                        timestamp = timestamp.replace(tzinfo=None)
-
-                    entries.append(HistoryEntry(
-                        type=HistoryType.COMMIT,
-                        timestamp=timestamp,
-                        title=commit['message'],
-                        description="",
-                        source_path=None
-                    ))
-                except (KeyError, ValueError):
-                    # Skip commits with malformed data or invalid timestamps
-                    continue
+            for msg in commit_messages:
+                # Use current time as approximate timestamp
+                # (In production, GitService.get_recent_commits_with_timestamps could be used for exact timestamps)
+                entries.append(HistoryEntry(
+                    type=HistoryType.COMMIT,
+                    timestamp=datetime.now(),
+                    title=msg,
+                    description="",
+                    source_path=None
+                ))
 
             return entries
 
