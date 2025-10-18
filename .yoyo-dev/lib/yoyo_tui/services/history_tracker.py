@@ -160,6 +160,11 @@ class HistoryTracker:
                     timestamp_str = commit['timestamp']
                     timestamp = datetime.fromisoformat(timestamp_str)
 
+                    # Remove timezone info for comparison with naive datetimes
+                    # (specs/fixes/recaps use date-only timestamps)
+                    if timestamp.tzinfo is not None:
+                        timestamp = timestamp.replace(tzinfo=None)
+
                     entries.append(HistoryEntry(
                         type=HistoryType.COMMIT,
                         timestamp=timestamp,

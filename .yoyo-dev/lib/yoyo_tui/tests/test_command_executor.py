@@ -13,7 +13,7 @@ import sys
 # Add parent directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from services.command_executor import CommandExecutor
+from yoyo_tui.services.command_executor import CommandExecutor
 
 
 class TestCommandExecutorClipboardCopy:

@@ -1,7 +1,7 @@
 """
 CommandExecutor Service
 
-Handles execution of Yoyo Dev commands by sending them to Claude Code via stdin.
+Handles execution of Yoyo Dev commands by copying them to clipboard.
 This integrates the TUI with Claude Code's command execution system.
 """
 
@@ -15,11 +15,11 @@ logger = logging.getLogger(__name__)
 
 class CommandExecutor:
     """
-    Execute Yoyo Dev commands by sending them to Claude Code stdin.
+    Execute Yoyo Dev commands by copying them to clipboard.
 
     This service integrates the TUI with Claude Code by:
-    - Starting Claude Code as a subprocess
-    - Sending command text to Claude Code's stdin
+    - Copying command text to clipboard using pyperclip
+    - Falling back to xclip/xsel on Linux if pyperclip unavailable
     - Providing execution feedback via app notifications
 
     Usage:
@@ -35,17 +35,16 @@ class CommandExecutor:
             app: Optional app instance for sending notifications
         """
         self.app = app
-        self._process: Optional[subprocess.Popen] = None
 
     def execute_command(self, command: str) -> bool:
         """
-        Execute a Yoyo Dev command by sending it to Claude Code stdin.
+        Execute a Yoyo Dev command by copying it to clipboard.
 
         Args:
             command: Command to execute (e.g., "/execute-tasks")
 
         Returns:
-            True if command was sent successfully, False otherwise
+            True if command was copied successfully, False otherwise
         """
         # Validate command
         if not command or command is None:
@@ -70,66 +69,95 @@ class CommandExecutor:
             return False
 
         try:
-            # Notify user that command is executing
-            if self.app:
-                self.app.notify(
-                    f"Executing {command}...",
-                    severity="information",
-                    timeout=2
-                )
+            # Try pyperclip first
+            try:
+                import pyperclip
+                pyperclip.copy(command)
+                logger.info(f"Copied command to clipboard using pyperclip: {command}")
 
-            # Start Claude Code subprocess
-            self._process = subprocess.Popen(
-                ["claude"],  # Claude Code CLI command
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                cwd=Path.cwd(),
-                bufsize=1
-            )
+                # Show success notification
+                if self.app:
+                    self.app.notify(
+                        f"Copied '{command}' to clipboard. Paste in Claude Code to execute.",
+                        severity="information",
+                        timeout=5
+                    )
+                return True
 
-            # Send command to stdin
-            if self._process.stdin:
-                self._process.stdin.write(f"{command}\n")
-                self._process.stdin.flush()
-                self._process.stdin.close()
+            except (ImportError, Exception) as e:
+                # Pyperclip failed, try xclip/xsel fallback on Linux
+                logger.warning(f"pyperclip failed ({e}), trying xclip/xsel fallback")
 
-            # Check if process started successfully
-            if self._process.poll() is not None:
-                # Process already exited
-                logger.warning(f"Claude Code process exited immediately")
-                return True  # Still consider it success if it started
+                # Try xclip first
+                try:
+                    result = subprocess.run(
+                        ["xclip", "-selection", "clipboard"],
+                        input=command,
+                        text=True,
+                        capture_output=True,
+                        timeout=2
+                    )
 
-            logger.info(f"Successfully sent command to Claude Code: {command}")
-            return True
+                    if result.returncode == 0:
+                        logger.info(f"Copied command to clipboard using xclip: {command}")
 
-        except FileNotFoundError:
-            error_msg = "Claude Code CLI not found. Is 'claude' installed?"
-            logger.error(error_msg)
-            if self.app:
-                self.app.notify(error_msg, severity="error", timeout=5)
-            return False
+                        if self.app:
+                            self.app.notify(
+                                f"Copied '{command}' to clipboard. Paste in Claude Code to execute.",
+                                severity="information",
+                                timeout=5
+                            )
+                        return True
+
+                except (FileNotFoundError, subprocess.TimeoutExpired):
+                    # xclip not available, try xsel
+                    try:
+                        result = subprocess.run(
+                            ["xsel", "--clipboard", "--input"],
+                            input=command,
+                            text=True,
+                            capture_output=True,
+                            timeout=2
+                        )
+
+                        if result.returncode == 0:
+                            logger.info(f"Copied command to clipboard using xsel: {command}")
+
+                            if self.app:
+                                self.app.notify(
+                                    f"Copied '{command}' to clipboard. Paste in Claude Code to execute.",
+                                    severity="information",
+                                    timeout=5
+                                )
+                            return True
+
+                    except (FileNotFoundError, subprocess.TimeoutExpired):
+                        pass
+
+                # All clipboard methods failed
+                error_msg = "Clipboard unavailable. Install pyperclip, xclip, or xsel."
+                logger.error(error_msg)
+
+                if self.app:
+                    self.app.notify(
+                        f"Clipboard unavailable. Command: {command}",
+                        severity="error",
+                        timeout=5
+                    )
+                return False
 
         except Exception as e:
-            error_msg = f"Failed to execute command: {str(e)}"
+            error_msg = f"Failed to copy command: {str(e)}"
             logger.error(error_msg)
             if self.app:
                 self.app.notify(
-                    f"Command execution failed: {str(e)}",
+                    f"Command copy failed: {str(e)}",
                     severity="error",
                     timeout=5
                 )
             return False
 
     def cleanup(self) -> None:
-        """Clean up subprocess resources."""
-        if self._process:
-            try:
-                if self._process.poll() is None:
-                    self._process.terminate()
-                    self._process.wait(timeout=5)
-            except Exception as e:
-                logger.error(f"Error cleaning up subprocess: {e}")
-            finally:
-                self._process = None
+        """Clean up resources (no-op for clipboard-based approach)."""
+        # No subprocess to clean up anymore
+        pass
