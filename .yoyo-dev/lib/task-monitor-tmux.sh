@@ -41,8 +41,11 @@ start_split_monitor() {
         echo -e "${COLOR_BOLD}${COLOR_CYAN}╚════════════════════════════════════════════════════════════════╝${COLOR_RESET}"
         echo ""
 
-        # Split window vertically (task monitor on right, 35% width)
-        tmux split-window -h -p 35 "$TASK_MONITOR '$task_file' watch"
+        # Split window vertically (task monitor on right, 50% width)
+        # -h: horizontal split (side-by-side)
+        # -p 50: allocate 50% width to new pane (50/50 split)
+        # User can adjust split ratio after launch using Ctrl+B then arrow keys
+        tmux split-window -h -p 50 "$TASK_MONITOR '$task_file' watch"
 
         # Select the left pane (main work area)
         tmux select-pane -L
@@ -62,10 +65,14 @@ start_split_monitor() {
         echo ""
 
         # Create new tmux session with split
+        # Session name format: yoyo-dev-<timestamp>
         local session_name="yoyo-dev-$(date +%s)"
 
         tmux new-session -d -s "$session_name"
-        tmux split-window -h -p 35 -t "$session_name" "$TASK_MONITOR '$task_file' watch"
+        # Split window horizontally (side-by-side) with 50/50 ratio
+        # -h: horizontal split, -p 50: 50% width for new pane
+        # User can resize panes after launch using Ctrl+B then arrow keys
+        tmux split-window -h -p 50 -t "$session_name" "$TASK_MONITOR '$task_file' watch"
         tmux select-pane -t "$session_name:0.0"
 
         echo "✅ Tmux session created: $session_name"

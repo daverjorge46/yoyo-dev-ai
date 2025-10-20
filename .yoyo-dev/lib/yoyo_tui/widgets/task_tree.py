@@ -5,12 +5,15 @@ Displays parent tasks and subtasks in a tree structure with completion indicator
 Uses Textual's Tree widget for hierarchical navigation.
 """
 
+import logging
 from textual.app import ComposeResult
 from textual.widgets import Tree, Static
 from textual.widget import Widget
 from textual.containers import Vertical
 
 from ..models import TaskData, ParentTask, Subtask
+
+logger = logging.getLogger(__name__)
 
 
 class TaskTree(Widget):
@@ -34,6 +37,7 @@ class TaskTree(Widget):
         super().__init__(*args, **kwargs)
         self.task_data = task_data or TaskData.empty()
         self._is_loading = True  # Start in loading state
+        logger.debug(f"TaskTree.__init__: _is_loading={self._is_loading}, has_data={bool(task_data and task_data.parent_tasks)}")
 
     def compose(self) -> ComposeResult:
         """
@@ -42,11 +46,18 @@ class TaskTree(Widget):
         Yields:
             Tree widget with task hierarchy
         """
+        logger.debug(f"TaskTree.compose: _is_loading={self._is_loading}, has_data={bool(self.task_data and self.task_data.parent_tasks)}")
+
         with Vertical():
             # Create tree widget
             tree = Tree("Tasks", id="task-tree")
             tree.show_root = True
             tree.show_guides = True
+
+            # If we have task data, transition out of loading state
+            if self.task_data and self.task_data.parent_tasks:
+                logger.debug("TaskTree.compose: Transitioning from loading state (data available)")
+                self._is_loading = False
 
             # Load tasks into tree
             self._populate_tree(tree)
@@ -60,18 +71,23 @@ class TaskTree(Widget):
         Args:
             tree: Tree widget to populate
         """
+        logger.debug(f"TaskTree._populate_tree: _is_loading={self._is_loading}, num_tasks={len(self.task_data.parent_tasks) if self.task_data else 0}")
+
         # Show loading state
         if self._is_loading:
+            logger.debug("TaskTree._populate_tree: Showing loading state")
             tree.root.add_leaf("[dim italic]Loading tasks...[/dim italic]")
             return
 
         # Show empty state with helpful message
         if not self.task_data or not self.task_data.parent_tasks:
+            logger.debug("TaskTree._populate_tree: Showing empty state")
             tree.root.add_leaf("[dim]No tasks found[/dim]")
             tree.root.add_leaf("[dim italic]Run /create-new to get started[/dim italic]")
             return
 
         # Add each parent task
+        logger.debug(f"TaskTree._populate_tree: Adding {len(self.task_data.parent_tasks)} parent tasks")
         for parent_task in self.task_data.parent_tasks:
             self._add_parent_task(tree.root, parent_task)
 
@@ -130,8 +146,10 @@ class TaskTree(Widget):
         Args:
             task_data: TaskData to display
         """
+        logger.debug(f"TaskTree.load_tasks: Received {len(task_data.parent_tasks) if task_data else 0} tasks")
         self.task_data = task_data
         self._is_loading = False  # Data has loaded
+        logger.debug(f"TaskTree.load_tasks: Set _is_loading=False")
 
         # Get tree widget and repopulate
         try:
@@ -139,9 +157,10 @@ class TaskTree(Widget):
             tree.clear()
             tree.root.label = "Tasks"
             self._populate_tree(tree)
-        except Exception:
+            logger.debug("TaskTree.load_tasks: Tree repopulated successfully")
+        except Exception as e:
             # Tree not mounted yet, will populate on mount
-            pass
+            logger.debug(f"TaskTree.load_tasks: Tree not mounted yet ({e}), will populate on mount")
 
     def update_tasks(self, task_data: TaskData) -> None:
         """

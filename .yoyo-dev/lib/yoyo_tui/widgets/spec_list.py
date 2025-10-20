@@ -22,6 +22,8 @@ from textual.widgets import DataTable, Static
 from textual.widget import Widget
 from textual.containers import Vertical
 
+from ..screens.spec_detail_screen import SpecDetailScreen
+
 logger = logging.getLogger(__name__)
 
 
@@ -70,6 +72,10 @@ class SpecList(Widget):
         self._cache: Dict[str, Tuple[float, List[dict]]] = {}
         self._is_loading = False
 
+        # Store spec/fix metadata for navigation
+        # Maps row index to (spec_folder, spec_type) tuple
+        self._row_metadata: Dict[int, Tuple[Path, str]] = {}
+
     def compose(self) -> ComposeResult:
         """
         Compose the spec list layout.
@@ -85,7 +91,8 @@ class SpecList(Widget):
             yield Static("[bold cyan]Specifications & Fixes[/bold cyan]", id="spec-list-title")
 
             # Data table with loading placeholder
-            table = DataTable(id="spec-table", show_cursor=False)
+            # Enable cursor so rows are clickable
+            table = DataTable(id="spec-table", show_cursor=True)
             table.add_columns("Name", "Type", "Progress", "Status")
 
             # Show loading state initially
@@ -153,23 +160,31 @@ class SpecList(Widget):
             specs: List of spec dictionaries
             fixes: List of fix dictionaries
         """
+        # Clear metadata mapping
+        self._row_metadata.clear()
+
         # Add specs
-        for spec in specs:
+        for idx, spec in enumerate(specs):
             table.add_row(
                 spec['name'],
                 "[cyan]spec[/cyan]",
                 self._format_progress(spec['progress']),
                 self._format_status(spec['status'])
             )
+            # Store metadata for navigation (row_index -> (folder_path, type))
+            self._row_metadata[idx] = (spec['folder'], 'spec')
 
         # Add fixes
-        for fix in fixes:
+        for idx, fix in enumerate(fixes):
+            row_idx = len(specs) + idx  # Offset by number of specs
             table.add_row(
                 fix['name'],
                 "[yellow]fix[/yellow]",
                 self._format_progress(fix['progress']),
                 self._format_status(fix['status'])
             )
+            # Store metadata for navigation
+            self._row_metadata[row_idx] = (fix['folder'], 'fix')
 
         # If no data, show placeholder
         if len(specs) == 0 and len(fixes) == 0:
@@ -305,7 +320,8 @@ class SpecList(Widget):
             specs.append({
                 'name': spec_name,
                 'progress': progress,
-                'status': status
+                'status': status,
+                'folder': spec_folder  # Add folder path for navigation
             })
 
         return specs[:5]  # Return most recent 5
@@ -376,7 +392,8 @@ class SpecList(Widget):
             fixes.append({
                 'name': fix_name,
                 'progress': progress,
-                'status': status
+                'status': status,
+                'folder': fix_folder  # Add folder path for navigation
             })
 
         return fixes[:5]  # Return most recent 5
@@ -447,3 +464,44 @@ class SpecList(Widget):
     def refresh_data(self) -> None:
         """Refresh data (alias for load_specs)."""
         self.load_specs()
+
+    def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
+        """
+        Handle row selection in the spec/fix table.
+
+        Navigates to SpecDetailScreen for the selected spec or fix.
+
+        Args:
+            event: Row selection event with row_key
+        """
+        try:
+            # Get the row index from the event
+            table = event.data_table
+            row_key = event.row_key
+
+            # Get row index from row_key
+            # Row keys are RowKey objects, need to get the index
+            rows = list(table.rows.keys())
+            if row_key not in rows:
+                return
+
+            row_index = rows.index(row_key)
+
+            # Get metadata for this row
+            if row_index not in self._row_metadata:
+                # No metadata (probably the placeholder row)
+                return
+
+            spec_folder, spec_type = self._row_metadata[row_index]
+
+            # Navigate to SpecDetailScreen
+            self.app.push_screen(
+                SpecDetailScreen(
+                    spec_folder=spec_folder,
+                    spec_type=spec_type
+                )
+            )
+
+        except Exception as e:
+            logger.error(f"Error handling row selection: {e}")
+            self.app.notify("Could not open spec details", severity="error", timeout=2)
