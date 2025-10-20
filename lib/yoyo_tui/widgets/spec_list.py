@@ -35,19 +35,19 @@ class SpecList(Widget):
 
     Features:
     - Async file I/O to prevent blocking UI during startup
-    - TTL-based caching (30s default) to reduce file operations
+    - TTL-based caching (10s default, reduced from 30s for faster updates)
     - Loading state displayed while data loads asynchronously
 
     Attributes:
         yoyo_dev_path: Path to .yoyo-dev directory
         _cache: TTL-based cache for spec/fix data
-        _cache_ttl: Cache time-to-live in seconds
+        _cache_ttl: Cache time-to-live in seconds (default: 10s)
     """
 
     def __init__(
         self,
         yoyo_dev_path: Path | None = None,
-        cache_ttl: float = 30.0,
+        cache_ttl: float = 10.0,
         *args,
         **kwargs
     ):
@@ -56,7 +56,7 @@ class SpecList(Widget):
 
         Args:
             yoyo_dev_path: Path to .yoyo-dev directory (defaults to <cwd>/.yoyo-dev)
-            cache_ttl: Cache time-to-live in seconds (default: 30s)
+            cache_ttl: Cache time-to-live in seconds (default: 10s, reduced from 30s for faster updates)
         """
         super().__init__(*args, **kwargs)
         if yoyo_dev_path is None:
