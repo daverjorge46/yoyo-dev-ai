@@ -1,109 +1,159 @@
 """
-FileWatcher Service
+FileWatcher Service with EventBus Integration
 
-Watches file system for changes to tasks.md, state.json, and other relevant files.
-Implements proper debouncing with timer cancellation to prevent callback spam.
+Watches file system for changes to yoyo-dev files and emits events via EventBus.
+Implements debouncing with 100ms window to prevent callback spam.
+Filters out unwanted files (.pyc, __pycache__, .git, etc.).
 """
 
 import time
 import threading
+import fnmatch
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Dict, Optional, Set
 
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler, FileSystemEvent
 
+from .event_bus import EventBus
+from ..models import EventType
 
-class DebouncedFileHandler(FileSystemEventHandler):
+
+class YoyoDevFileHandler(FileSystemEventHandler):
     """
-    File system event handler with proper debouncing.
+    File system event handler with debouncing and EventBus integration.
 
-    Uses timer cancellation to ensure only ONE callback after a quiet period.
-    Implements max-wait timeout to prevent indefinite delay during continuous changes.
+    Features:
+    - 100ms debouncing window per file
+    - Smart filtering for ignored patterns
+    - Event emission via EventBus
+    - Thread-safe operation
     """
 
-    def __init__(
-        self,
-        callback: Callable[[], None],
-        debounce_interval: float = 1.5,
-        max_wait: float = 5.0
-    ):
+    def __init__(self, event_bus: EventBus, debounce_window: float = 0.1):
         """
         Initialize handler.
 
         Args:
-            callback: Function to call when files change
-            debounce_interval: Seconds to wait after last change before triggering (default: 1.5s)
-            max_wait: Maximum seconds to wait before forcing trigger (default: 5.0s)
+            event_bus: EventBus instance for event emission
+            debounce_window: Seconds to wait after last change before emitting (default: 0.1s = 100ms)
         """
         super().__init__()
-        self.callback = callback
-        self.debounce_interval = debounce_interval
-        self.max_wait = max_wait
+        self.event_bus = event_bus
+        self.debounce_window = debounce_window
 
-        # Timer for debouncing
-        self.pending_timer: Optional[threading.Timer] = None
-        self.lock = threading.Lock()
+        # Debouncing state: file_path -> (last_event_time, pending_timer)
+        self._pending_events: Dict[str, tuple[float, Optional[threading.Timer]]] = {}
+        self._lock = threading.Lock()
 
-        # Track first event time for max-wait enforcement
-        self.first_event_time: Optional[float] = None
-
-        # Only watch these specific files
-        self.watched_files = {
-            'tasks.md',
-            'MASTER-TASKS.md',
-            'state.json',
-            'spec.md',
-            'spec-lite.md'
+        # Ignore patterns for unwanted files
+        self.ignore_patterns = {
+            '*.pyc',
+            '__pycache__',
+            '.git',
+            '.pytest_cache',
+            '.DS_Store',
+            '*.swp',
+            '*.swo',
+            '*~',
+            '.mypy_cache',
+            '*.egg-info',
+            '.tox',
+            'node_modules',
+            '.venv',
+            'venv',
+            '*.log'
         }
 
-    def _trigger_callback(self) -> None:
+    def _should_ignore(self, file_path: str) -> bool:
         """
-        Trigger the callback and reset state.
+        Check if file should be ignored based on patterns.
 
-        Called by timer after quiet period or max-wait timeout.
+        Args:
+            file_path: Path to check
+
+        Returns:
+            True if file should be ignored, False otherwise
         """
-        with self.lock:
-            self.pending_timer = None
-            self.first_event_time = None
+        path = Path(file_path)
 
-        try:
-            self.callback()
-        except Exception:
-            # Silently ignore callback errors to keep watcher running
-            pass
+        # Check filename and all parent directories
+        parts = [path.name] + [p.name for p in path.parents]
 
-    def _schedule_callback(self) -> None:
+        for part in parts:
+            for pattern in self.ignore_patterns:
+                if fnmatch.fnmatch(part, pattern):
+                    return True
+
+        return False
+
+    def _emit_event(self, file_path: str, event_type: EventType, change_type: str) -> None:
         """
-        Schedule callback after debounce interval.
+        Emit event via EventBus.
 
-        Cancels any pending timer and schedules a new one.
+        Args:
+            file_path: Path to file that changed
+            event_type: Type of event
+            change_type: Human-readable change type (created/modified/deleted)
         """
-        with self.lock:
-            # Cancel pending timer if exists
-            if self.pending_timer is not None:
-                self.pending_timer.cancel()
+        self.event_bus.publish(
+            event_type=event_type,
+            data={
+                'file_path': file_path,
+                'change_type': change_type
+            },
+            source='FileWatcher'
+        )
 
-            # Track first event time for max-wait
-            if self.first_event_time is None:
-                self.first_event_time = time.time()
+    def _schedule_event(self, file_path: str, event_type: EventType, change_type: str) -> None:
+        """
+        Schedule event emission after debounce window.
 
-            # Check if we've exceeded max-wait
-            now = time.time()
-            time_since_first = now - self.first_event_time
+        Args:
+            file_path: Path to file that changed
+            event_type: Type of event
+            change_type: Human-readable change type
+        """
+        with self._lock:
+            # Cancel existing timer for this file
+            if file_path in self._pending_events:
+                _, existing_timer = self._pending_events[file_path]
+                if existing_timer is not None:
+                    existing_timer.cancel()
 
-            if time_since_first >= self.max_wait:
-                # Max-wait exceeded - trigger immediately
-                delay = 0.0
-            else:
-                # Calculate delay: either debounce_interval or remaining max-wait
-                remaining_max_wait = self.max_wait - time_since_first
-                delay = min(self.debounce_interval, remaining_max_wait)
+            # Create new timer
+            def emit_after_debounce():
+                with self._lock:
+                    if file_path in self._pending_events:
+                        del self._pending_events[file_path]
+                self._emit_event(file_path, event_type, change_type)
 
-            # Schedule new timer
-            self.pending_timer = threading.Timer(delay, self._trigger_callback)
-            self.pending_timer.daemon = True
-            self.pending_timer.start()
+            timer = threading.Timer(self.debounce_window, emit_after_debounce)
+            timer.daemon = True
+            timer.start()
+
+            # Store timer
+            self._pending_events[file_path] = (time.time(), timer)
+
+    def on_created(self, event: FileSystemEvent) -> None:
+        """
+        Handle file creation events.
+
+        Args:
+            event: File system event
+        """
+        # Ignore directory events
+        if event.is_directory:
+            return
+
+        file_path = event.src_path
+
+        # Check ignore patterns
+        if self._should_ignore(file_path):
+            return
+
+        # Schedule FILE_CREATED event with debouncing
+        self._schedule_event(file_path, EventType.FILE_CREATED, 'created')
 
     def on_modified(self, event: FileSystemEvent) -> None:
         """
@@ -116,68 +166,75 @@ class DebouncedFileHandler(FileSystemEventHandler):
         if event.is_directory:
             return
 
-        # Check if this is a file we care about
-        filename = Path(event.src_path).name
-        if filename not in self.watched_files:
+        file_path = event.src_path
+
+        # Check ignore patterns
+        if self._should_ignore(file_path):
             return
 
-        # Schedule callback with debouncing
-        self._schedule_callback()
+        # Schedule FILE_CHANGED event with debouncing
+        self._schedule_event(file_path, EventType.FILE_CHANGED, 'modified')
 
-    def on_created(self, event: FileSystemEvent) -> None:
+    def on_deleted(self, event: FileSystemEvent) -> None:
         """
-        Handle file creation events (treat same as modification).
+        Handle file deletion events.
 
         Args:
             event: File system event
         """
-        self.on_modified(event)
+        # Ignore directory events
+        if event.is_directory:
+            return
 
-    def cancel_pending_timer(self) -> None:
-        """
-        Cancel any pending timer.
+        file_path = event.src_path
 
-        Called during cleanup to prevent callbacks after watcher stops.
+        # Check ignore patterns
+        if self._should_ignore(file_path):
+            return
+
+        # Schedule FILE_DELETED event with debouncing
+        self._schedule_event(file_path, EventType.FILE_DELETED, 'deleted')
+
+    def cancel_pending_timers(self) -> None:
         """
-        with self.lock:
-            if self.pending_timer is not None:
-                self.pending_timer.cancel()
-                self.pending_timer = None
-            self.first_event_time = None
+        Cancel all pending timers.
+
+        Called during cleanup to prevent events after watcher stops.
+        """
+        with self._lock:
+            for file_path, (_, timer) in list(self._pending_events.items()):
+                if timer is not None:
+                    timer.cancel()
+            self._pending_events.clear()
 
 
 class FileWatcher:
     """
-    Watch file system for changes and trigger callbacks.
+    Watch file system for changes and emit events via EventBus.
 
     Features:
     - Recursive directory watching
-    - Proper debouncing with timer cancellation
-    - Max-wait timeout to prevent indefinite delay
-    - Filters for relevant files only
-    - Context manager support for automatic cleanup
+    - Debouncing with 100ms window
+    - Filters for ignored files
+    - Multiple directory watching
+    - Thread-safe operation
+    - Context manager support
     """
 
-    def __init__(
-        self,
-        callback: Callable[[], None],
-        debounce_interval: float = 1.5,
-        max_wait: float = 5.0
-    ):
+    def __init__(self, event_bus: EventBus, debounce_window: float = 0.1):
         """
         Initialize FileWatcher.
 
         Args:
-            callback: Function to call when watched files change
-            debounce_interval: Seconds to wait after last change (default: 1.5s)
-            max_wait: Maximum seconds before forcing trigger (default: 5.0s)
+            event_bus: EventBus instance for event emission
+            debounce_window: Seconds to wait after last change (default: 0.1s = 100ms)
         """
-        self.callback = callback
-        self.debounce_interval = debounce_interval
-        self.max_wait = max_wait
+        self.event_bus = event_bus
+        self.debounce_window = debounce_window
         self.observer: Optional[Observer] = None
-        self.event_handler: Optional[DebouncedFileHandler] = None
+        self.event_handler: Optional[YoyoDevFileHandler] = None
         self.is_watching = False
+        self.watched_directories: Set[Path] = set()
 
     def start_watching(self, directory: Path) -> bool:
         """
@@ -192,15 +249,15 @@ class FileWatcher:
         if not directory.exists() or not directory.is_dir():
             return False
 
+        # Stop existing watcher if running
         if self.is_watching:
             self.stop_watching()
 
         try:
             # Create event handler
-            self.event_handler = DebouncedFileHandler(
-                callback=self.callback,
-                debounce_interval=self.debounce_interval,
-                max_wait=self.max_wait
+            self.event_handler = YoyoDevFileHandler(
+                event_bus=self.event_bus,
+                debounce_window=self.debounce_window
             )
 
             # Create and start observer
@@ -213,19 +270,51 @@ class FileWatcher:
             self.observer.start()
 
             self.is_watching = True
+            self.watched_directories = {directory}
             return True
 
-        except Exception:
+        except Exception as e:
+            # Log error but don't crash
+            print(f"Error starting file watcher: {e}")
             self.observer = None
             self.event_handler = None
             self.is_watching = False
+            return False
+
+    def add_watch_directory(self, directory: Path) -> bool:
+        """
+        Add an additional directory to watch.
+
+        Args:
+            directory: Directory to add to watching
+
+        Returns:
+            True if directory added successfully, False otherwise
+        """
+        if not directory.exists() or not directory.is_dir():
+            return False
+
+        if not self.is_watching or self.observer is None or self.event_handler is None:
+            return False
+
+        try:
+            self.observer.schedule(
+                self.event_handler,
+                str(directory),
+                recursive=True
+            )
+            self.watched_directories.add(directory)
+            return True
+
+        except Exception as e:
+            print(f"Error adding watch directory: {e}")
             return False
 
     def stop_watching(self) -> None:
         """Stop watching for file changes."""
         # Cancel any pending timers first
         if self.event_handler is not None:
-            self.event_handler.cancel_pending_timer()
+            self.event_handler.cancel_pending_timers()
 
         if self.observer is not None:
             try:
@@ -237,6 +326,7 @@ class FileWatcher:
                 self.observer = None
                 self.event_handler = None
                 self.is_watching = False
+                self.watched_directories.clear()
 
     def __enter__(self):
         """Context manager entry."""

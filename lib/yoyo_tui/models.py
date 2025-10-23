@@ -184,34 +184,175 @@ class TaskData:
 @dataclass
 class SpecData:
     """
-    Specification or fix metadata.
+    Specification metadata parsed from spec folder.
 
     Attributes:
-        name: Spec/fix folder name (e.g., "2025-10-11-feature-name")
-        type: Either "spec" or "fix"
+        name: Clean spec name (without date prefix, e.g., "test-feature")
+        folder_path: Path to spec folder
         created_date: Date in YYYY-MM-DD format
-        completion: Completion percentage (0-100)
-        status: Current status ("pending", "in_progress", "complete")
+        title: Spec title from spec.md (first H1)
+        status: Current status from state.json ("pending", "in_progress", "complete")
+        progress: Completion percentage (0-100) from tasks
+        total_tasks: Total number of parent tasks
+        completed_tasks: Number of completed parent tasks
+        has_technical_spec: Whether technical-spec.md exists
+        has_database_schema: Whether database-schema.md exists
+        has_api_spec: Whether api-spec.md exists
     """
     name: str
-    type: str  # "spec" or "fix"
+    folder_path: Path
     created_date: str
-    completion: int = 0
-    status: str = "pending"  # "pending", "in_progress", "complete"
+    title: str
+    status: str = "pending"
+    progress: int = 0
+    total_tasks: int = 0
+    completed_tasks: int = 0
+    has_technical_spec: bool = False
+    has_database_schema: bool = False
+    has_api_spec: bool = False
 
     @property
     def display_name(self) -> str:
-        """Get shortened display name (remove date prefix)."""
-        # Remove YYYY-MM-DD- prefix if present
-        parts = self.name.split('-', 3)
-        if len(parts) == 4:  # Has date prefix
-            return parts[3]
+        """Get shortened display name (already clean, without date)."""
         return self.name
 
     @property
     def icon(self) -> str:
-        """Get emoji icon based on type."""
-        return "📄" if self.type == "spec" else "🔧"
+        """Get emoji icon for spec."""
+        return "📄"
+
+    @property
+    def folder_name(self) -> str:
+        """Get folder name with date prefix."""
+        return self.folder_path.name if self.folder_path else ""
+
+
+@dataclass
+class FixData:
+    """
+    Fix metadata parsed from fix folder.
+
+    Attributes:
+        name: Clean fix name (without date prefix, e.g., "test-fix")
+        folder_path: Path to fix folder
+        created_date: Date in YYYY-MM-DD format
+        title: Fix title from analysis.md (first H1)
+        problem_summary: Brief problem description from analysis.md
+        status: Current status from state.json ("pending", "in_progress", "complete")
+        progress: Completion percentage (0-100) from tasks
+        total_tasks: Total number of parent tasks
+        completed_tasks: Number of completed parent tasks
+    """
+    name: str
+    folder_path: Path
+    created_date: str
+    title: str
+    problem_summary: str
+    status: str = "pending"
+    progress: int = 0
+    total_tasks: int = 0
+    completed_tasks: int = 0
+
+    @property
+    def display_name(self) -> str:
+        """Get shortened display name (already clean, without date)."""
+        return self.name
+
+    @property
+    def icon(self) -> str:
+        """Get emoji icon for fix."""
+        return "🔧"
+
+    @property
+    def folder_name(self) -> str:
+        """Get folder name with date prefix."""
+        return self.folder_path.name if self.folder_path else ""
+
+
+@dataclass
+class RecapData:
+    """
+    Recap metadata parsed from recap file.
+
+    Attributes:
+        name: Clean recap name (without date prefix, e.g., "test-recap")
+        file_path: Path to recap file
+        created_date: Date in YYYY-MM-DD format
+        title: Recap title from file (first H1)
+        summary: Brief summary from recap
+        patterns_extracted: Number of patterns extracted
+    """
+    name: str
+    file_path: Path
+    created_date: str
+    title: str
+    summary: str
+    patterns_extracted: int = 0
+
+    @property
+    def display_name(self) -> str:
+        """Get shortened display name (already clean, without date)."""
+        return self.name
+
+    @property
+    def icon(self) -> str:
+        """Get emoji icon for recap."""
+        return "📝"
+
+    @property
+    def file_name(self) -> str:
+        """Get file name with date prefix."""
+        return self.file_path.name if self.file_path else ""
+
+
+@dataclass
+class ExecutionProgress:
+    """
+    Execution progress tracking data.
+
+    Attributes:
+        is_running: Whether execution is currently running
+        spec_or_fix_name: Name of spec or fix being executed
+        current_phase: Current phase (e.g., "implementation", "testing")
+        current_parent_task: Current parent task number
+        current_subtask: Current subtask text
+        total_parent_tasks: Total number of parent tasks
+        total_subtasks: Total number of subtasks
+        percentage: Overall completion percentage (0-100)
+        current_action: Current action description
+        started_at: ISO timestamp when execution started
+        last_updated: ISO timestamp of last update
+    """
+    is_running: bool = False
+    spec_or_fix_name: Optional[str] = None
+    current_phase: Optional[str] = None
+    current_parent_task: Optional[int] = None
+    current_subtask: Optional[str] = None
+    total_parent_tasks: int = 0
+    total_subtasks: int = 0
+    percentage: int = 0
+    current_action: Optional[str] = None
+    started_at: Optional[str] = None
+    last_updated: Optional[str] = None
+
+    @classmethod
+    def empty(cls) -> 'ExecutionProgress':
+        """Create an empty ExecutionProgress instance."""
+        return cls(is_running=False)
+
+    @property
+    def display_status(self) -> str:
+        """Get human-readable status text."""
+        if not self.is_running:
+            return "Idle"
+
+        if self.current_action:
+            return self.current_action
+
+        if self.current_subtask:
+            return f"Task {self.current_parent_task}: {self.current_subtask}"
+
+        return f"Phase: {self.current_phase}"
 
 
 @dataclass
@@ -296,3 +437,83 @@ class CommandEntry:
 FilePath = Path
 TaskList = List[ParentTask]
 SpecList = List[SpecData]
+FixList = List[FixData]
+RecapList = List[RecapData]
+
+
+# ============================================================================
+# Event System Models (for EventBus integration)
+# ============================================================================
+
+from enum import Enum
+from datetime import datetime
+from typing import Any, Dict
+
+
+class EventType(Enum):
+    """All event types in the TUI dashboard."""
+
+    # File system events
+    FILE_CHANGED = "file_changed"
+    FILE_CREATED = "file_created"
+    FILE_DELETED = "file_deleted"
+
+    # State change events
+    STATE_UPDATED = "state_updated"
+    SPEC_CREATED = "spec_created"
+    FIX_CREATED = "fix_created"
+    TASK_COMPLETED = "task_completed"
+
+    # Execution events
+    EXECUTION_STARTED = "execution_started"
+    EXECUTION_PROGRESS = "execution_progress"
+    EXECUTION_COMPLETED = "execution_completed"
+
+    # Cache events
+    CACHE_INVALIDATED = "cache_invalidated"
+    CACHE_CLEARED = "cache_cleared"
+
+
+@dataclass
+class Event:
+    """
+    Event data structure.
+
+    Represents a single event in the system with metadata.
+    """
+
+    event_type: EventType
+    data: Dict[str, Any]
+    timestamp: datetime
+    source: str  # Component that emitted the event
+
+
+@dataclass
+class ApplicationState:
+    """
+    Centralized application state.
+
+    Contains all loaded data for the TUI dashboard:
+    - Specs from .yoyo-dev/specs/
+    - Fixes from .yoyo-dev/fixes/
+    - Tasks from various sources
+    - Recaps from .yoyo-dev/recaps/
+    - Execution progress (if running)
+    - Git status
+
+    Attributes:
+        specs: List of all specs
+        fixes: List of all fixes
+        tasks: List of all task data
+        recaps: List of all recaps
+        execution_progress: Current execution progress (if any)
+        git_status: Current git status (if available)
+        last_updated: Timestamp of last update
+    """
+    specs: List[SpecData] = field(default_factory=list)
+    fixes: List[FixData] = field(default_factory=list)
+    tasks: List[TaskData] = field(default_factory=list)
+    recaps: List[RecapData] = field(default_factory=list)
+    execution_progress: Optional[ExecutionProgress] = None
+    git_status: Optional[GitStatus] = None
+    last_updated: datetime = field(default_factory=datetime.now)

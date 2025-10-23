@@ -75,7 +75,7 @@ class HistoryTracker:
         self.project_root = project_root
         self.recap_parser = RecapParser()
 
-    def get_recent_actions(self, count: int = 3) -> List[HistoryEntry]:
+    def get_recent_actions(self, count: int = 10) -> List[HistoryEntry]:
         """
         Get recent important actions across all history sources.
 
@@ -83,7 +83,7 @@ class HistoryTracker:
         and returns the most recent N entries.
 
         Args:
-            count: Number of recent actions to return (default: 3)
+            count: Number of recent actions to return (default: 10)
 
         Returns:
             List of HistoryEntry objects (newest first)

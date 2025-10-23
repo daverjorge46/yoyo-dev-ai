@@ -71,12 +71,12 @@ class CommandExecutor:
             # Copy command to clipboard
             pyperclip.copy(command)
 
-            # Notify user that command was copied
+            # Notify user that command was copied (with clear instructions)
             if self.app:
                 self.app.notify(
-                    f"Command copied to clipboard - paste into Claude Code\n{command}",
+                    f"✓ Copied to clipboard! Paste into Claude Code to execute:\n{command}",
                     severity="information",
-                    timeout=4
+                    timeout=6
                 )
 
             logger.info(f"Successfully copied command to clipboard: {command}")

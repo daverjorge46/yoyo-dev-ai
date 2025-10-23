@@ -7,7 +7,7 @@ Shows recent actions from multiple sources:
 - Fix implementations
 - Recap completions
 
-Displays last 3 important actions in chronological order.
+Displays last 10 important actions in chronological order (scrollable).
 """
 
 from pathlib import Path
@@ -23,13 +23,14 @@ class HistoryPanel(Static):
     """
     Widget displaying unified project history.
 
-    Shows last 3 important actions from all sources:
+    Shows last 10 important actions from all sources:
     - Commits (📝)
     - Specs (📄)
     - Fixes (🔧)
     - Recaps (✅)
 
     Automatically refreshes when project files change.
+    Widget is scrollable to accommodate all 10 entries.
     """
 
     # Reactive property for history updates
@@ -53,8 +54,8 @@ class HistoryPanel(Static):
     def refresh_history(self) -> None:
         """Reload history from all sources and update display."""
         try:
-            # Get last 3 recent actions
-            recent_actions = self.tracker.get_recent_actions(count=3)
+            # Get last 10 recent actions (expanded from 3 for better visibility)
+            recent_actions = self.tracker.get_recent_actions(count=10)
 
             # Format history content
             lines = ["[bold cyan]Recent Activity[/bold cyan]", ""]

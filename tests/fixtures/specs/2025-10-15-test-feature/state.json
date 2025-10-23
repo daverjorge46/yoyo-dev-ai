@@ -1,0 +1,18 @@
+{
+  "spec_name": "test-feature",
+  "fix_name": null,
+  "spec_created": "2025-10-15",
+  "tasks_created": "2025-10-15",
+  "execution_started": "2025-10-15T10:00:00.000000",
+  "execution_completed": null,
+  "current_phase": "implementation",
+  "active_task": 2,
+  "completed_tasks": [1],
+  "pr_url": null,
+  "affected_files": [
+    "lib/test_module.py"
+  ],
+  "phase": "1",
+  "part_of_series": false,
+  "next_phase": null
+}

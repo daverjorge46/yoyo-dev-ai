@@ -246,6 +246,26 @@ sed -i "s|__TECH_STACK__|$tech_stack|g" "$STARTUP_SCRIPT"
 
 chmod +x "$STARTUP_SCRIPT"
 
+# Auto-install dependencies if missing (silent, automatic)
+# This ensures TUI/dashboard are available without user intervention
+if command -v python3 &> /dev/null; then
+    # Check if dependencies are installed
+    DEPS_MISSING=false
+    if [ -f "$HOME/.yoyo-dev/venv/bin/python3" ]; then
+        if ! "$HOME/.yoyo-dev/venv/bin/python3" -c "import textual, rich, watchdog, yaml" &> /dev/null 2>&1; then
+            DEPS_MISSING=true
+        fi
+    elif ! python3 -c "import textual, rich, watchdog, yaml" &> /dev/null 2>&1; then
+        DEPS_MISSING=true
+    fi
+
+    # Install if missing (automatic, no prompt)
+    if [ "$DEPS_MISSING" = true ] && [ -f "$HOME/.yoyo-dev/setup/install-deps.sh" ]; then
+        echo "Installing Yoyo Dev dependencies..."
+        "$HOME/.yoyo-dev/setup/install-deps.sh" > /dev/null 2>&1 || true
+    fi
+fi
+
 # Determine which dashboard to use (TUI → Rich dashboard → Bash fallback)
 DASHBOARD_CMD="$HOME/.yoyo-dev/lib/yoyo-status.sh"
 
