@@ -62,7 +62,12 @@ class MainScreen(Screen):
 
         Args:
             config: TUI configuration (Task 8)
+            data_manager: Optional DataManager instance (passed via kwargs)
         """
+        # Extract data_manager from kwargs before calling super().__init__()
+        # to prevent TypeError from Textual's Screen.__init__()
+        self.data_manager = kwargs.pop('data_manager', None)
+
         super().__init__(*args, **kwargs)
         self.config = config or TUIConfig()  # Use provided config or defaults
         self.task_data = TaskData.empty()  # Will be loaded on mount
