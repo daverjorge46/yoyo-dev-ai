@@ -1,6 +1,6 @@
 Metadata-Version: 2.3
 Name: textual
-Version: 6.3.0
+Version: 6.4.0
 Summary: Modern Text User Interface framework
 License: MIT
 Author: Will McGugan
@@ -23,7 +23,8 @@ Classifier: Programming Language :: Python :: 3.13
 Classifier: Programming Language :: Python :: 3.14
 Classifier: Typing :: Typed
 Provides-Extra: syntax
-Requires-Dist: markdown-it-py[linkify,plugins] (>=2.1.0)
+Requires-Dist: markdown-it-py[linkify] (>=2.1.0)
+Requires-Dist: mdit-py-plugins
 Requires-Dist: platformdirs (>=3.6.0,<5)
 Requires-Dist: pygments (>=2.19.2,<3.0.0)
 Requires-Dist: rich (>=14.2.0)
@@ -38,8 +39,8 @@ Requires-Dist: tree-sitter-json (>=0.24.0) ; (python_version >= "3.10") and (ext
 Requires-Dist: tree-sitter-markdown (>=0.3.0) ; (python_version >= "3.10") and (extra == "syntax")
 Requires-Dist: tree-sitter-python (>=0.23.0) ; (python_version >= "3.10") and (extra == "syntax")
 Requires-Dist: tree-sitter-regex (>=0.24.0) ; (python_version >= "3.10") and (extra == "syntax")
-Requires-Dist: tree-sitter-rust (>=0.23.0,<=0.23.2) ; (python_version >= "3.10") and (extra == "syntax")
-Requires-Dist: tree-sitter-sql (>=0.3.0,<0.3.8) ; (python_version >= "3.10") and (extra == "syntax")
+Requires-Dist: tree-sitter-rust (>=0.23.0) ; (python_version >= "3.10") and (extra == "syntax")
+Requires-Dist: tree-sitter-sql (>=0.3.11) ; (python_version >= "3.10") and (extra == "syntax")
 Requires-Dist: tree-sitter-toml (>=0.6.0) ; (python_version >= "3.10") and (extra == "syntax")
 Requires-Dist: tree-sitter-xml (>=0.7.0) ; (python_version >= "3.10") and (extra == "syntax")
 Requires-Dist: tree-sitter-yaml (>=0.6.0) ; (python_version >= "3.10") and (extra == "syntax")
