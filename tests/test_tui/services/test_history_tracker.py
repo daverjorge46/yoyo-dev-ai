@@ -361,11 +361,11 @@ No PR URL in this file.
         assert hasattr(HistoryType, 'FIX')
         assert hasattr(HistoryType, 'RECAP')
 
-    def test_get_recent_actions_returns_last_3_by_default(self):
-        """Test get_recent_actions defaults to returning 3 entries."""
+    def test_get_recent_actions_returns_last_10_by_default(self):
+        """Test get_recent_actions defaults to returning 10 entries (updated from 3)."""
         tracker = HistoryTracker(Path("/test/project"))
 
-        # Mock 10 entries
+        # Mock 15 entries
         mock_entries = [
             HistoryEntry(
                 type=HistoryType.COMMIT,

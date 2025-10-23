@@ -470,41 +470,24 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
             echo ""
         fi
     else
-        echo "🐍 Python Dashboard & TUI (Optional)"
+        echo "🐍 Python Dashboard & TUI"
         echo ""
-        echo "Yoyo Dev includes enhanced Python dashboard and TUI for visual mode:"
-        echo "  • Real-time file watching (no polling delay)"
-        echo "  • Beautiful Rich TUI with progress bars"
-        echo "  • Interactive TUI dashboard (textual)"
-        echo "  • Color-coded status indicators"
-        echo "  • Auto-fallback to Bash if unavailable"
+        echo "Installing/updating Yoyo Dev dependencies automatically..."
+        echo "  • Dashboard (rich, watchdog, yaml, gitpython)"
+        echo "  • TUI (textual, pyperclip)"
         echo ""
 
-        if [ "$DEPS_INSTALLED" = false ] && [ "$TUI_INSTALLED" = false ]; then
-            echo "Missing dependencies: dashboard + TUI (rich, watchdog, yaml, textual)"
-        elif [ "$DEPS_INSTALLED" = false ]; then
-            echo "Missing dependencies: dashboard (rich, watchdog, yaml)"
-        else
-            echo "Missing dependencies: TUI (textual)"
-        fi
-        echo ""
-
-        read -p "Install/update Python dependencies now? [Y/n] " -n 1 -r
-        echo ""
-
-        if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-            if [ -f "./.yoyo-dev/setup/install-dashboard-deps.sh" ]; then
-                bash "./.yoyo-dev/setup/install-dashboard-deps.sh"
-            else
-                echo ""
-                echo "⚠️  Dashboard installer not found"
-                echo "You can install manually: ~/.yoyo-dev/setup/install-dashboard-deps.sh"
-            fi
+        # Auto-install using unified installer (no user prompt)
+        if [ -f "$BASE_AGENT_OS/setup/install-deps.sh" ]; then
+            bash "$BASE_AGENT_OS/setup/install-deps.sh"
+        elif [ -f "./.yoyo-dev/setup/install-deps.sh" ]; then
+            bash "./.yoyo-dev/setup/install-deps.sh"
         else
             echo ""
-            echo "⏭️  Skipping Python dependencies installation"
-            echo "You can install later: ~/.yoyo-dev/setup/install-dashboard-deps.sh"
+            echo "⚠️  Dependency installer not found"
+            echo "You can install manually: ~/.yoyo-dev/setup/install-deps.sh"
         fi
+
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
