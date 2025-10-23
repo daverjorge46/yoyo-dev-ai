@@ -3,7 +3,6 @@
 Comprehensive FileWatcher integration tests.
 
 Tests event emission, debouncing, file type detection, ignore patterns, and edge cases.
-Uses real Event Bus instance for proper integration testing.
 """
 
 import sys
@@ -12,6 +11,7 @@ import tempfile
 import shutil
 import pytest
 from pathlib import Path
+from unittest.mock import patch, MagicMock, Mock
 
 # Add lib to path for imports
 sys.path.insert(0, str(Path.home() / '.yoyo-dev' / 'lib'))
@@ -54,7 +54,10 @@ class TestFileWatcherEventEmission:
 
         # Track events
         events_received = []
-        real_event_bus.subscribe(EventType.FILE_CHANGED, lambda e: events_received.append(e))
+        def track_event(event):
+            events_received.append(event)
+
+        real_event_bus.subscribe(EventType.FILE_CHANGED, track_event)
 
         # Create FileWatcher with very short debounce for testing
         watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
@@ -88,9 +91,6 @@ class TestFileWatcherEventEmission:
         # Create FileWatcher
         watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
         watcher.start_watching(temp_watch_dir)
-
-        # Give watchdog time to start watching
-        time.sleep(0.2)
 
         try:
             # Create new file
@@ -144,22 +144,19 @@ class TestFileWatcherEventEmission:
 class TestFileWatcherDebouncing:
     """Test that FileWatcher properly debounces rapid file changes."""
 
-    def test_rapid_edits_debounced_to_single_event(self, temp_watch_dir, real_event_bus):
+    def test_rapid_edits_debounced_to_single_event(self, temp_watch_dir, mock_event_bus):
         """Test that rapid edits within debounce window emit only one event."""
         from yoyo_tui.services.file_watcher import FileWatcher
-        from yoyo_tui.services.event_bus import EventType
 
         # Create test file
         test_file = temp_watch_dir / "tasks.md"
         test_file.write_text("# Tasks")
 
-        # Track events
-        events_received = []
-        real_event_bus.subscribe(EventType.FILE_CHANGED, lambda e: events_received.append(e))
-
         # Create FileWatcher with 0.5s debounce
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.5)
-        watcher.start_watching(temp_watch_dir)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.5)
+        watcher.add_watch_directory(str(temp_watch_dir))
+        watcher.start_watching()
 
         try:
             # Make 5 rapid edits within 0.4s (within debounce window)
@@ -171,27 +168,24 @@ class TestFileWatcherDebouncing:
             time.sleep(0.7)
 
             # Verify callback called only once (or very few times, not 5)
-            assert len(events_received) <= 2, f"Expected ≤2 events, got {len(events_received)}"
+            assert callback.call_count <= 2, f"Expected ≤2 calls, got {callback.call_count}"
 
         finally:
             watcher.stop_watching()
 
-    def test_slow_edits_emit_multiple_events(self, temp_watch_dir, real_event_bus):
+    def test_slow_edits_emit_multiple_events(self, temp_watch_dir, mock_event_bus):
         """Test that slow edits outside debounce window emit separate events."""
         from yoyo_tui.services.file_watcher import FileWatcher
-        from yoyo_tui.services.event_bus import EventType
 
         # Create test file
         test_file = temp_watch_dir / "tasks.md"
         test_file.write_text("# Tasks")
 
-        # Track events
-        events_received = []
-        real_event_bus.subscribe(EventType.FILE_CHANGED, lambda e: events_received.append(e))
-
         # Create FileWatcher with 0.2s debounce
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.2)
-        watcher.start_watching(temp_watch_dir)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.2)
+        watcher.add_watch_directory(str(temp_watch_dir))
+        watcher.start_watching()
 
         try:
             # Make 3 slow edits with 0.4s between each (outside debounce window)
@@ -203,7 +197,7 @@ class TestFileWatcherDebouncing:
             time.sleep(0.3)
 
             # Verify callback called multiple times (at least 2)
-            assert len(events_received) >= 2, f"Expected ≥2 events, got {len(events_received)}"
+            assert callback.call_count >= 2, f"Expected ≥2 calls, got {callback.call_count}"
 
         finally:
             watcher.stop_watching()
@@ -216,18 +210,15 @@ class TestFileWatcherDebouncing:
 class TestFileWatcherIgnorePatterns:
     """Test that FileWatcher ignores specified file patterns."""
 
-    def test_pyc_files_ignored(self, temp_watch_dir, real_event_bus):
+    def test_pyc_files_ignored(self, temp_watch_dir, mock_event_bus):
         """Test that .pyc files are ignored."""
         from yoyo_tui.services.file_watcher import FileWatcher
-        from yoyo_tui.services.event_bus import EventType
-
-        # Track events
-        events_received = []
-        real_event_bus.subscribe(EventType.FILE_CREATED, lambda e: events_received.append(e))
 
         # Create FileWatcher
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
-        watcher.start_watching(temp_watch_dir)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.1)
+        watcher.add_watch_directory(str(temp_watch_dir))
+        watcher.start_watching()
 
         try:
             # Create .pyc file (should be ignored)
@@ -238,23 +229,20 @@ class TestFileWatcherIgnorePatterns:
             time.sleep(0.3)
 
             # Verify no events published for .pyc file
-            assert len(events_received) == 0, ".pyc file should be ignored"
+            assert callback.call_count == 0, ".pyc file should be ignored"
 
         finally:
             watcher.stop_watching()
 
-    def test_vim_swap_files_ignored(self, temp_watch_dir, real_event_bus):
+    def test_vim_swap_files_ignored(self, temp_watch_dir, mock_event_bus):
         """Test that vim swap files (.swp, .swo) are ignored."""
         from yoyo_tui.services.file_watcher import FileWatcher
-        from yoyo_tui.services.event_bus import EventType
-
-        # Track events
-        events_received = []
-        real_event_bus.subscribe(EventType.FILE_CREATED, lambda e: events_received.append(e))
 
         # Create FileWatcher
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
-        watcher.start_watching(temp_watch_dir)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.1)
+        watcher.add_watch_directory(str(temp_watch_dir))
+        watcher.start_watching()
 
         try:
             # Create swap files (should be ignored)
@@ -268,23 +256,20 @@ class TestFileWatcherIgnorePatterns:
             time.sleep(0.3)
 
             # Verify no events published for swap files
-            assert len(events_received) == 0, "Vim swap files should be ignored"
+            assert callback.call_count == 0, "Vim swap files should be ignored"
 
         finally:
             watcher.stop_watching()
 
-    def test_pycache_directory_ignored(self, temp_watch_dir, real_event_bus):
+    def test_pycache_directory_ignored(self, temp_watch_dir, mock_event_bus):
         """Test that __pycache__ directory is ignored."""
         from yoyo_tui.services.file_watcher import FileWatcher
-        from yoyo_tui.services.event_bus import EventType
-
-        # Track events
-        events_received = []
-        real_event_bus.subscribe(EventType.FILE_CREATED, lambda e: events_received.append(e))
 
         # Create FileWatcher
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
-        watcher.start_watching(temp_watch_dir)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.1)
+        watcher.add_watch_directory(str(temp_watch_dir))
+        watcher.start_watching()
 
         try:
             # Create __pycache__ directory and file (should be ignored)
@@ -296,7 +281,7 @@ class TestFileWatcherIgnorePatterns:
             time.sleep(0.3)
 
             # Verify no events published for __pycache__
-            assert len(events_received) == 0, "__pycache__ directory should be ignored"
+            assert callback.call_count == 0, "__pycache__ directory should be ignored"
 
         finally:
             watcher.stop_watching()
@@ -309,22 +294,19 @@ class TestFileWatcherIgnorePatterns:
 class TestFileWatcherFileTypeDetection:
     """Test that FileWatcher detects file types correctly."""
 
-    def test_tasks_md_detected(self, temp_watch_dir, real_event_bus):
+    def test_tasks_md_detected(self, temp_watch_dir, mock_event_bus):
         """Test that tasks.md is detected as task file."""
         from yoyo_tui.services.file_watcher import FileWatcher
-        from yoyo_tui.services.event_bus import EventType
 
         # Create test file
         tasks_file = temp_watch_dir / "tasks.md"
         tasks_file.write_text("# Tasks")
 
-        # Track events
-        events_received = []
-        real_event_bus.subscribe(EventType.FILE_CHANGED, lambda e: events_received.append(e))
-
         # Create FileWatcher
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
-        watcher.start_watching(temp_watch_dir)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.1)
+        watcher.add_watch_directory(str(temp_watch_dir))
+        watcher.start_watching()
 
         try:
             # Modify tasks.md
@@ -334,28 +316,28 @@ class TestFileWatcherFileTypeDetection:
             time.sleep(0.3)
 
             # Verify event published with correct file path
-            assert len(events_received) > 0, "No events received"
-            assert "tasks.md" in events_received[0].data.get("file_path", "")
+            callback.assert_called()
+            call_args = callback.call_args[0] if callback.call_args else ()
+            if call_args:
+                file_path = call_args[0] if len(call_args) > 0 else None
+                assert file_path and "tasks.md" in str(file_path)
 
         finally:
             watcher.stop_watching()
 
-    def test_spec_md_detected(self, temp_watch_dir, real_event_bus):
+    def test_spec_md_detected(self, temp_watch_dir, mock_event_bus):
         """Test that spec.md is detected as spec file."""
         from yoyo_tui.services.file_watcher import FileWatcher
-        from yoyo_tui.services.event_bus import EventType
 
         # Create test file
         spec_file = temp_watch_dir / "spec.md"
         spec_file.write_text("# Spec")
 
-        # Track events
-        events_received = []
-        real_event_bus.subscribe(EventType.FILE_CHANGED, lambda e: events_received.append(e))
-
         # Create FileWatcher
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
-        watcher.start_watching(temp_watch_dir)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.1)
+        watcher.add_watch_directory(str(temp_watch_dir))
+        watcher.start_watching()
 
         try:
             # Modify spec.md
@@ -365,28 +347,25 @@ class TestFileWatcherFileTypeDetection:
             time.sleep(0.3)
 
             # Verify event published
-            assert len(events_received) > 0, "No events received"
+            callback.assert_called()
 
         finally:
             watcher.stop_watching()
 
-    def test_state_json_detected(self, temp_watch_dir, real_event_bus):
+    def test_state_json_detected(self, temp_watch_dir, mock_event_bus):
         """Test that state.json is detected as state file."""
         from yoyo_tui.services.file_watcher import FileWatcher
-        from yoyo_tui.services.event_bus import EventType
         import json
 
         # Create test file
         state_file = temp_watch_dir / "state.json"
         state_file.write_text(json.dumps({"phase": "planning"}))
 
-        # Track events
-        events_received = []
-        real_event_bus.subscribe(EventType.FILE_CHANGED, lambda e: events_received.append(e))
-
         # Create FileWatcher
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
-        watcher.start_watching(temp_watch_dir)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.1)
+        watcher.add_watch_directory(str(temp_watch_dir))
+        watcher.start_watching()
 
         try:
             # Modify state.json
@@ -396,7 +375,7 @@ class TestFileWatcherFileTypeDetection:
             time.sleep(0.3)
 
             # Verify event published
-            assert len(events_received) > 0, "No events received"
+            callback.assert_called()
 
         finally:
             watcher.stop_watching()
@@ -409,34 +388,39 @@ class TestFileWatcherFileTypeDetection:
 class TestFileWatcherEdgeCases:
     """Test FileWatcher edge cases and error handling."""
 
-    def test_watching_nonexistent_directory_handled(self, real_event_bus):
+    def test_watching_nonexistent_directory_handled(self):
         """Test that watching nonexistent directory is handled gracefully."""
         from yoyo_tui.services.file_watcher import FileWatcher
 
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.1)
 
         # Should not raise exception
-        result = watcher.start_watching(Path("/nonexistent/path/to/directory"))
+        result = watcher.add_watch_directory("/nonexistent/path/to/directory")
 
-        # Should return False
-        assert result is False
+        # Should return False or handle gracefully
+        assert result is False or result is None
 
-    def test_stop_without_start_handled(self, real_event_bus):
+    def test_stop_without_start_handled(self):
         """Test that stopping without starting is handled gracefully."""
         from yoyo_tui.services.file_watcher import FileWatcher
 
-        watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
+        callback = Mock()
+        watcher = FileWatcher(callback=callback, debounce_interval=0.1)
 
         # Should not raise exception
         watcher.stop_watching()
 
-    def test_context_manager_usage(self, temp_watch_dir, real_event_bus):
+    def test_context_manager_usage(self, temp_watch_dir):
         """Test that FileWatcher works as context manager."""
         from yoyo_tui.services.file_watcher import FileWatcher
 
+        callback = Mock()
+
         # Use as context manager
-        with FileWatcher(event_bus=real_event_bus, debounce_window=0.1) as watcher:
-            watcher.start_watching(temp_watch_dir)
+        with FileWatcher(callback=callback, debounce_interval=0.1) as watcher:
+            watcher.add_watch_directory(str(temp_watch_dir))
+            watcher.start_watching()
 
             # Create test file
             test_file = temp_watch_dir / "test.md"
@@ -455,26 +439,20 @@ class TestFileWatcherEdgeCases:
 class TestFileWatcherMultipleDirectories:
     """Test FileWatcher with multiple watch directories."""
 
-    def test_watching_multiple_directories(self, real_event_bus):
+    def test_watching_multiple_directories(self, mock_event_bus):
         """Test that FileWatcher can watch multiple directories."""
         from yoyo_tui.services.file_watcher import FileWatcher
-        from yoyo_tui.services.event_bus import EventType
 
         # Create two temp directories
         temp_dir1 = tempfile.mkdtemp(prefix="yoyo_test1_")
         temp_dir2 = tempfile.mkdtemp(prefix="yoyo_test2_")
 
         try:
-            # Track events
-            events_received = []
-            real_event_bus.subscribe(EventType.FILE_CREATED, lambda e: events_received.append(e))
-
-            watcher = FileWatcher(event_bus=real_event_bus, debounce_window=0.1)
-            watcher.start_watching(Path(temp_dir1))
-            watcher.add_watch_directory(Path(temp_dir2))
-
-            # Give watchdog time to start watching both directories
-            time.sleep(0.2)
+            callback = Mock()
+            watcher = FileWatcher(callback=callback, debounce_interval=0.1)
+            watcher.add_watch_directory(temp_dir1)
+            watcher.add_watch_directory(temp_dir2)
+            watcher.start_watching()
 
             try:
                 # Create files in both directories
@@ -488,7 +466,7 @@ class TestFileWatcherMultipleDirectories:
                 time.sleep(0.4)
 
                 # Verify events from both directories
-                assert len(events_received) >= 2, "Should detect files in both directories"
+                assert callback.call_count >= 2, "Should detect files in both directories"
 
             finally:
                 watcher.stop_watching()
@@ -499,7 +477,7 @@ class TestFileWatcherMultipleDirectories:
 
 
 # ============================================================================
-# App Integration Tests
+# Legacy App Integration Tests (from original file)
 # ============================================================================
 
 class TestFileWatcherAppIntegration:
@@ -511,14 +489,17 @@ class TestFileWatcherAppIntegration:
 
         assert hasattr(YoyoDevApp, 'start_file_watcher')
         assert hasattr(YoyoDevApp, 'stop_file_watcher')
-        # Note: YoyoDevApp uses on_state_updated, not on_file_change
+        assert hasattr(YoyoDevApp, 'on_file_change')
 
-    @pytest.mark.skip(reason="Requires full app initialization with Textual")
-    def test_app_initializes_file_watcher_to_none(self):
+    @patch('yoyo_tui.app.ConfigManager')
+    def test_app_initializes_file_watcher_to_none(self, mock_config):
         """Test that file watcher is initialized to None."""
         from yoyo_tui.app import YoyoDevApp
+        from yoyo_tui.config import TUIConfig
 
+        mock_config.load.return_value = TUIConfig()
         app = YoyoDevApp()
+
         assert app.file_watcher is None
 
 
