@@ -3,22 +3,26 @@ MainScreen - Primary dashboard screen for Yoyo Dev TUI.
 
 This screen provides the main layout for the TUI with:
 - Header with app title
-- Sidebar with project overview, git status, and shortcuts
+- Fixed project overview panel at top (full width)
+- Sidebar with git status, history, and shortcuts
 - Main content area for tasks, specs, and progress
 - Footer with keyboard shortcuts
 
 Layout structure:
 ┌────────────────────────────────────────────┐
 │          Header (Brand Blue)               │
+├────────────────────────────────────────────┤
+│  📦 Yoyo Dev - Project Overview (Fixed)    │
+│  Mission | Features | Stack | Phase        │
 ├─────────────┬──────────────────────────────┤
 │  Sidebar    │      Main Content            │
-│  (30 cols)  │                              │
+│  (50%)      │      (50%)                   │
 │             │                              │
-│ - Project   │  - Active Task Panel         │
-│   Overview  │  - Spec List Panel           │
-│ - Git       │                              │
-│   Status    │                              │
-│ - Shortcuts │                              │
+│ - Git       │  - Progress Panel            │
+│   Status    │  - Next Tasks                │
+│ - History   │  - Task Tree                 │
+│ - Shortcuts │  - Spec List                 │
+│ - Commands  │                              │
 │             │                              │
 ├─────────────┴──────────────────────────────┤
 │          Footer (Medium Gray)              │
