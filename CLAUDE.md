@@ -62,21 +62,28 @@ The system is designed to guide AI agents through product planning, specificatio
 ### Launching Yoyo Dev
 
 ```bash
-# Launch Claude Code with branded Yoyo Dev interface
+# Launch full-screen Textual TUI dashboard
 yoyo
 ```
 
-The `yoyo` command displays:
-- Beautiful ASCII art header
+The `yoyo` command displays a branded header with project info, then launches the **Textual TUI dashboard** (full-screen):
+- Beautiful ASCII art header with project context
 - Project name, location, and mission
 - Tech stack summary
-- Available commands overview
-- Quick-start guide
+- Quick-start guide and command overview
 - Link to product documentation
 
-Then launches Claude Code normally.
+Then launches the full-screen Textual TUI dashboard.
 
-**Features:**
+**TUI Dashboard Features:**
+- Real-time task and spec tracking
+- Live project status updates
+- Interactive commands (one-click to copy)
+- Press `?` for help and keyboard shortcuts
+- Press `q` to quit
+- Auto-installs dependencies (textual, watchdog, pyyaml) if needed
+
+**Installation:**
 - Auto-detects Yoyo Dev installation (offers install if missing)
 - Reads project context from `.yoyo-dev/product/` files
 - Shows all available commands with descriptions
