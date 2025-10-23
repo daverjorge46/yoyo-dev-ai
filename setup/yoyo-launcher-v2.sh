@@ -1,7 +1,9 @@
 #!/bin/bash
 
-# Yoyo Dev v2.0 CLI Launcher
+# Yoyo Dev v2.0 TUI Launcher
 # "Powerful when you need it. Invisible when you don't."
+#
+# Launches the Textual TUI dashboard directly with dependency checking.
 
 set -euo pipefail
 
@@ -12,6 +14,7 @@ source "$HOME/.yoyo-dev/setup/parse-utils.sh"
 readonly CYAN='\033[0;36m'
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
+readonly RED='\033[0;31m'
 readonly BLUE='\033[0;34m'
 readonly MAGENTA='\033[0;35m'
 readonly BOLD='\033[1m'
@@ -20,6 +23,112 @@ readonly RESET='\033[0m'
 
 # Yoyo Dev version
 readonly VERSION="2.0.0"
+
+# TUI Python script location
+readonly TUI_SCRIPT="$HOME/.yoyo-dev/lib/yoyo-tui.py"
+
+# ============================================================================
+# Dependency Checking
+# ============================================================================
+
+check_python() {
+    # Check if Python 3 is available
+    if ! command -v python3 &> /dev/null; then
+        echo ""
+        echo -e "${RED}ERROR: Python 3 is not installed${RESET}"
+        echo ""
+        echo "Please install Python 3 to use Yoyo Dev TUI:"
+        echo "  sudo apt install python3 python3-pip  # Debian/Ubuntu"
+        echo "  sudo dnf install python3 python3-pip  # Fedora"
+        echo "  brew install python3                  # macOS"
+        echo ""
+        return 1
+    fi
+    return 0
+}
+
+check_tui_dependencies() {
+    # Check if required Python packages are installed
+    local missing=()
+
+    # Check textual
+    if ! python3 -c "import textual" &> /dev/null; then
+        missing+=("textual")
+    fi
+
+    # Check watchdog
+    if ! python3 -c "import watchdog" &> /dev/null; then
+        missing+=("watchdog")
+    fi
+
+    # Check yaml
+    if ! python3 -c "import yaml" &> /dev/null; then
+        missing+=("pyyaml")
+    fi
+
+    if [ ${#missing[@]} -gt 0 ]; then
+        echo ""
+        echo -e "${YELLOW}⚠️  Missing TUI dependencies: ${missing[*]}${RESET}"
+        echo ""
+        echo "Would you like to install them now? (Y/n)"
+        read -r response
+
+        if [[ "$response" =~ ^([yY][eE][sS]|[yY]|)$ ]]; then
+            install_tui_dependencies "${missing[@]}"
+            return $?
+        else
+            echo ""
+            echo -e "${RED}Cannot launch TUI without dependencies${RESET}"
+            echo ""
+            echo "Install manually with:"
+            echo "  pip3 install ${missing[*]}"
+            echo ""
+            return 1
+        fi
+    fi
+
+    return 0
+}
+
+install_tui_dependencies() {
+    # Install missing TUI dependencies
+    local packages=("$@")
+
+    echo ""
+    echo -e "${CYAN}Installing TUI dependencies...${RESET}"
+    echo ""
+
+    # Try with pip3 first
+    if command -v pip3 &> /dev/null; then
+        if pip3 install --user "${packages[@]}"; then
+            echo ""
+            echo -e "${GREEN}✅ Dependencies installed successfully${RESET}"
+            echo ""
+            return 0
+        fi
+    fi
+
+    # Fallback to python3 -m pip
+    if python3 -m pip install --user "${packages[@]}"; then
+        echo ""
+        echo -e "${GREEN}✅ Dependencies installed successfully${RESET}"
+        echo ""
+        return 0
+    fi
+
+    # Installation failed
+    echo ""
+    echo -e "${RED}ERROR: Failed to install dependencies${RESET}"
+    echo ""
+    echo "Please install manually:"
+    echo "  pip3 install ${packages[*]}"
+    echo ""
+    return 1
+}
+
+# ============================================================================
+# UI Functions
+# ============================================================================
 
 # Show version
 show_version() {
@@ -86,39 +195,31 @@ show_help() {
     echo ""
     echo -e "${BOLD}Yoyo Launcher:${RESET}"
     echo ""
-    echo -e "  ${GREEN}yoyo${RESET}                    Launch with visual mode (default)"
-    echo -e "  ${GREEN}yoyo --standard${RESET}         Launch standard mode (no split pane)"
+    echo -e "  ${GREEN}yoyo${RESET}                    Launch TUI dashboard (full-screen)"
     echo -e "  ${GREEN}yoyo --help${RESET}             Show this reference"
     echo -e "  ${GREEN}yoyo --version${RESET}          Show version"
     echo -e "  ${GREEN}yoyo --commands${RESET}         List all commands"
     echo ""
-    echo -e "  ${DIM}Visual mode: 2-pane layout (Main | Task Status)${RESET}"
-    echo -e "  ${DIM}Set YOYO_VISUAL_MODE=false to disable visual mode${RESET}"
-    echo ""
-    echo -e "${BOLD}Visual Mode:${RESET}"
-    echo ""
-    echo -e "  ${DIM}Left (65%):  Claude Code terminal - full interaction${RESET}"
-    echo -e "  ${DIM}Right (35%): Task status - auto-refreshes every 5s${RESET}"
-    echo ""
-    echo -e "  ${DIM}Controls:${RESET}"
-    echo -e "    Ctrl+B then arrows  - Switch panes"
-    echo -e "    Ctrl+B then z       - Full screen toggle"
-    echo -e "    Shift + click/drag  - Copy text"
+    echo -e "  ${DIM}The TUI provides an interactive dashboard with:${RESET}"
+    echo -e "    • Real-time task and spec tracking"
+    echo -e "    • Live project status updates"
+    echo -e "    • One-click command execution"
+    echo -e "    • Press ? for help, q to quit"
     echo ""
     echo "────────────────────────────────────────────────────────────────────"
     echo ""
     echo -e "${BOLD}Examples:${RESET}"
     echo ""
-    echo -e "  ${CYAN}# Simple feature with monitoring${RESET}"
-    echo -e "  /create-new \"Add profile avatar\" --lite --monitor"
+    echo -e "  ${CYAN}# Simple feature${RESET}"
+    echo -e "  /create-new \"Add profile avatar\" --lite"
     echo -e "  /execute-tasks"
     echo ""
     echo -e "  ${CYAN}# Complex feature with parallel execution${RESET}"
     echo -e "  /create-new \"User authentication\""
-    echo -e "  /execute-tasks --parallel --monitor"
+    echo -e "  /execute-tasks --parallel"
     echo ""
-    echo -e "  ${CYAN}# Fix bug with investigation${RESET}"
-    echo -e "  /create-fix \"Layout broken on mobile\" --monitor"
+    echo -e "  ${CYAN}# Fix bug${RESET}"
+    echo -e "  /create-fix \"Layout broken on mobile\""
     echo ""
     echo -e "  ${CYAN}# Design system workflow${RESET}"
     echo -e "  /design-init --analyze"
@@ -173,8 +274,8 @@ start_monitor() {
     ~/.yoyo-dev/lib/task-monitor-tmux.sh split "$task_file"
 }
 
-# Display branded header and launch
-launch_claude() {
+# Display branded header and launch TUI
+launch_tui() {
     # Check if we're in a Yoyo Dev project
     if [ ! -d "./.yoyo-dev" ]; then
         echo ""
@@ -182,10 +283,9 @@ launch_claude() {
         echo ""
         echo "Would you like to:"
         echo "  1. Install Yoyo Dev in this project"
-        echo "  2. Launch Claude Code anyway"
-        echo "  3. Exit"
+        echo "  2. Exit"
         echo ""
-        read -p "Choice (1/2/3): " choice
+        read -p "Choice (1/2): " choice
 
         case $choice in
             1)
@@ -194,16 +294,21 @@ launch_claude() {
                 ~/.yoyo-dev/setup/project.sh --claude-code
                 exit 0
                 ;;
-            2)
-                echo ""
-                echo "Launching Claude Code..."
-                exec claude
-                ;;
             *)
                 echo "Exiting..."
                 exit 0
                 ;;
         esac
+    fi
+
+    # Check Python availability
+    if ! check_python; then
+        exit 1
+    fi
+
+    # Check and install TUI dependencies if needed
+    if ! check_tui_dependencies; then
+        exit 1
     fi
 
     # Get project info
@@ -247,24 +352,24 @@ launch_claude() {
     echo -e "   • ${GREEN}/execute-tasks${RESET}                            ${DIM}# Build (interactive by default)${RESET}"
     echo ""
     echo -e " ${BOLD}New in v2.0:${RESET}"
-    echo -e "   ${CYAN}✨${RESET} Visual mode with live task status (auto-refreshes)"
-    echo -e "   ${CYAN}✨${RESET} Interactive mode by default (pause after each subtask)"
-    echo -e "   ${CYAN}✨${RESET} MASTER-TASKS.md (single source of truth)"
-    echo -e "   ${CYAN}✨${RESET} Lite mode for fast iteration"
-    echo -e "   ${CYAN}✨${RESET} Comprehensive flag documentation"
+    echo -e "   ${CYAN}✨${RESET} Full-screen Textual TUI dashboard"
+    echo -e "   ${CYAN}✨${RESET} Real-time task and spec tracking"
+    echo -e "   ${CYAN}✨${RESET} Interactive commands and navigation"
+    echo -e "   ${CYAN}✨${RESET} Press ${CYAN}?${RESET} for help and keyboard shortcuts"
+    echo -e "   ${CYAN}✨${RESET} Live project status updates"
     echo ""
     echo " ──────────────────────────────────────────────────────────────────────────────"
     echo ""
-    echo -e " ${DIM}Run ${CYAN}/yoyo-help${RESET}${DIM} for complete command reference${RESET}"
-    echo -e " ${DIM}Docs: ${CYAN}.yoyo-dev/COMMAND-REFERENCE.md${RESET}"
+    echo -e " ${DIM}Inside TUI:${RESET}"
+    echo -e "   • Press ${CYAN}?${RESET} for help and keyboard shortcuts"
+    echo -e "   • Press ${CYAN}q${RESET} to quit"
+    echo -e "   • Click commands to copy to clipboard"
     echo ""
-    echo -e " ${DIM}💡 Tip: Visual mode shows task status in real-time!${RESET}"
-    echo ""
-    echo -e " ${YELLOW}Launching Claude Code (standard mode)...${RESET}"
+    echo -e " ${YELLOW}Launching Yoyo Dev TUI...${RESET}"
     echo ""
 
-    # Launch Claude Code
-    exec claude
+    # Launch Textual TUI
+    exec python3 "$TUI_SCRIPT"
 }
 
 # Main
@@ -281,32 +386,9 @@ main() {
         --commands|-c)
             show_commands
             ;;
-        --monitor|-m)
-            if [[ -z "${2:-}" ]]; then
-                echo ""
-                echo -e "${YELLOW}⚠️  Missing task file path${RESET}"
-                echo ""
-                echo "Usage: yoyo --monitor path/to/MASTER-TASKS.md"
-                echo ""
-                exit 1
-            fi
-            start_monitor "$2"
-            ;;
-        --visual|-V)
-            # Launch visual mode with tmux colors
-            exec ~/.yoyo-dev/setup/yoyo-tmux.sh
-            ;;
-        --standard|--normal|-n)
-            # Launch standard mode (opt-out of visual mode)
-            launch_claude
-            ;;
         launch|*)
-            # Default to tmux visual mode, fallback to standard
-            if [[ "${YOYO_VISUAL_MODE:-}" == "false" ]]; then
-                launch_claude
-            else
-                exec ~/.yoyo-dev/setup/yoyo-tmux.sh
-            fi
+            # Launch Textual TUI
+            launch_tui
             ;;
     esac
 }
