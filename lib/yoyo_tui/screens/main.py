@@ -148,9 +148,22 @@ class MainScreen(Screen):
         Discovers tasks.md, loads task data, and passes to all widgets.
         """
         logger.debug("MainScreen.load_data: Loading task data from DataManager")
-        # Load task data using DataManager
-        self.task_data = DataManager.load_active_tasks()
-        logger.debug(f"MainScreen.load_data: Loaded {len(self.task_data.parent_tasks) if self.task_data else 0} parent tasks")
+
+        # Load task data using DataManager instance
+        if self.data_manager:
+            state = self.data_manager.state
+            # Use first available task data (could be from spec, fix, or master)
+            if state.tasks and len(state.tasks) > 0:
+                self.task_data = state.tasks[0]
+                logger.debug(f"MainScreen.load_data: Loaded {len(self.task_data.parent_tasks)} parent tasks from {self.task_data.source_type}")
+            else:
+                logger.debug("MainScreen.load_data: No tasks found in state, using empty TaskData")
+                self.task_data = TaskData.empty()
+        else:
+            logger.debug("MainScreen.load_data: No data_manager available, using empty TaskData")
+            self.task_data = TaskData.empty()
+
+        logger.debug(f"MainScreen.load_data: Final task count: {len(self.task_data.parent_tasks) if self.task_data else 0} parent tasks")
 
         # Update widgets with loaded data
         try:
@@ -200,8 +213,15 @@ class MainScreen(Screen):
 
         Lightweight refresh for task-related widgets only.
         """
-        # Reload task data
-        self.task_data = DataManager.load_active_tasks()
+        # Reload task data using DataManager instance
+        if self.data_manager:
+            state = self.data_manager.state
+            if state.tasks and len(state.tasks) > 0:
+                self.task_data = state.tasks[0]
+            else:
+                self.task_data = TaskData.empty()
+        else:
+            self.task_data = TaskData.empty()
 
         # Update task-related widgets
         try:

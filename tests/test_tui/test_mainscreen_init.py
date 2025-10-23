@@ -119,3 +119,42 @@ class TestMainScreenInitialization:
         # After fix, data_manager should exist as attribute
         assert hasattr(screen, 'data_manager')
         assert screen.data_manager is None
+
+    def test_mainscreen_load_data_with_no_data_manager(self):
+        """
+        Test that load_data() handles missing data_manager gracefully.
+
+        When data_manager is None, load_data should use empty TaskData.
+        """
+        # Arrange
+        screen = MainScreen()
+
+        # Act
+        screen.load_data()
+
+        # Assert
+        assert screen.task_data is not None
+        assert len(screen.task_data.parent_tasks) == 0
+
+    def test_mainscreen_load_data_with_data_manager(self):
+        """
+        Test that load_data() uses data_manager when available.
+
+        When data_manager is provided, load_data should get state from it.
+        """
+        # Arrange
+        mock_data_manager = Mock(spec=DataManager)
+        mock_state = Mock()
+        mock_task_data = Mock()
+        mock_task_data.parent_tasks = []
+        mock_task_data.source_type = "test"
+        mock_state.tasks = [mock_task_data]
+        mock_data_manager.state = mock_state
+
+        screen = MainScreen(data_manager=mock_data_manager)
+
+        # Act
+        screen.load_data()
+
+        # Assert
+        assert screen.task_data == mock_task_data
