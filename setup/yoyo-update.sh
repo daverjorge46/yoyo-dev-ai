@@ -222,7 +222,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     if [ -f "$BASE_AGENT_OS/setup/yoyo-launcher-v2.sh" ]; then
         # Update global yoyo command if it exists
         if [ -L "/usr/local/bin/yoyo" ] || [ -f "/usr/local/bin/yoyo" ]; then
-            echo "  → Updating global 'yoyo' command (visual mode enabled)..."
+            echo "  → Updating global 'yoyo' command (launches TUI)..."
             if sudo cp "$BASE_AGENT_OS/setup/yoyo-launcher-v2.sh" /usr/local/bin/yoyo 2>/dev/null && sudo chmod +x /usr/local/bin/yoyo 2>/dev/null; then
                 echo "  ✓ yoyo command updated globally"
             else
@@ -230,7 +230,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
                 echo "     Run manually: sudo cp ~/.yoyo-dev/setup/yoyo-launcher-v2.sh /usr/local/bin/yoyo"
             fi
         else
-            echo "  → Creating global 'yoyo' command (visual mode enabled)..."
+            echo "  → Creating global 'yoyo' command (launches TUI)..."
             if sudo cp "$BASE_AGENT_OS/setup/yoyo-launcher-v2.sh" /usr/local/bin/yoyo 2>/dev/null && sudo chmod +x /usr/local/bin/yoyo 2>/dev/null; then
                 echo "  ✓ yoyo command installed globally"
             else
@@ -239,19 +239,19 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
             fi
         fi
 
-        # Update fallback launcher in project (used by yoyo-tmux.sh)
+        # Update launcher in project
         mkdir -p "./.yoyo-dev/setup"
         copy_file "$BASE_AGENT_OS/setup/yoyo.sh" \
             "./.yoyo-dev/setup/yoyo.sh" \
             "true" \
-            "setup/yoyo.sh (fallback)"
+            "setup/yoyo.sh (TUI launcher)"
         chmod +x "./.yoyo-dev/setup/yoyo.sh"
 
-        # Update tmux launcher in project
+        # Update tmux launcher in project (deprecated but kept for compatibility)
         copy_file "$BASE_AGENT_OS/setup/yoyo-tmux.sh" \
             "./.yoyo-dev/setup/yoyo-tmux.sh" \
             "true" \
-            "setup/yoyo-tmux.sh (visual mode)"
+            "setup/yoyo-tmux.sh (deprecated)"
         chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
 
         # Install/update yoyo-update command
@@ -276,7 +276,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         fi
     else
         echo "  ⚠️  Warning: yoyo-launcher-v2.sh not found in base installation"
-        echo "     Visual mode will not be available"
+        echo "     TUI launcher will not be available"
     fi
 
     # Update v2.0 support files
@@ -529,18 +529,23 @@ echo ""
 
 # Check if TUI was updated and highlight new features
 if [ -d "./.yoyo-dev/lib/yoyo_tui" ]; then
-    echo "🎨 TUI Dashboard Updates:"
-    echo "  • NEW: Project overview fixed at top of dashboard"
-    echo "  • NEW: Enhanced help with complete command reference (press ? key)"
-    echo "  • IMPROVED: Mission, features, and tech stack display"
-    echo "  • UPDATED: Layout and styling for better UX"
+    echo "🎨 Full-Screen TUI Dashboard (NEW Default!):"
+    echo "  • The 'yoyo' command now launches the Textual TUI full-screen"
+    echo "  • Project overview fixed at top of dashboard"
+    echo "  • Enhanced help with complete command reference (press ? key)"
+    echo "  • Mission, features, and tech stack display"
+    echo "  • One-click command execution"
+    echo "  • Real-time task and spec tracking"
+    echo ""
+    echo "  Note: No more split-pane mode - TUI is now the default dashboard!"
     echo ""
 fi
 
 echo "Next Steps:"
-echo "  • Launch TUI: python3 ~/.yoyo-dev/lib/yoyo-tui.py"
-echo "  • Press ? for help and command reference"
-echo "  • Use --verbose flag to see detailed update info"
+echo "  • Launch TUI: yoyo"
+echo "  • Press ? inside TUI for help and keyboard shortcuts"
+echo "  • Press q to quit TUI"
+echo "  • All TUI dependencies will auto-install if needed"
 echo ""
 echo "Continue building! 🚀"
 echo ""
