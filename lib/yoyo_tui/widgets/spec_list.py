@@ -18,9 +18,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from textual.app import ComposeResult
-from textual.widgets import DataTable, Static
+from textual.widgets import DataTable, Static, Select
 from textual.widget import Widget
-from textual.containers import Vertical
+from textual.containers import Vertical, Horizontal
 
 from ..screens.spec_detail_screen import SpecDetailScreen
 
@@ -76,6 +76,9 @@ class SpecList(Widget):
         # Maps row index to (spec_folder, spec_type) tuple
         self._row_metadata: Dict[int, Tuple[Path, str]] = {}
 
+        # Current filter status
+        self._current_filter = "All"
+
     def compose(self) -> ComposeResult:
         """
         Compose the spec list layout.
@@ -84,11 +87,27 @@ class SpecList(Widget):
         after async file I/O completes.
 
         Yields:
-            DataTable with spec/fix information
+            Select filter and DataTable with spec/fix information
         """
         with Vertical(id="spec-list-container"):
-            # Title
-            yield Static("[bold cyan]Specifications & Fixes[/bold cyan]", id="spec-list-title")
+            # Title and filter row
+            with Horizontal(id="spec-list-header"):
+                yield Static("[bold cyan]Specifications & Fixes[/bold cyan]", id="spec-list-title")
+
+                # Status filter dropdown
+                filter_widget = Select(
+                    options=[
+                        ("All", "All"),
+                        ("In Progress", "In Progress"),
+                        ("Complete", "Complete"),
+                        ("Planning", "Planning"),
+                        ("Not Started", "Not Started"),
+                    ],
+                    value="All",
+                    id="spec-filter",
+                    allow_blank=False
+                )
+                yield filter_widget
 
             # Data table with loading placeholder
             # Enable cursor so rows are clickable
@@ -155,6 +174,8 @@ class SpecList(Widget):
         """
         Populate table with loaded spec and fix data.
 
+        Applies current filter before populating.
+
         Args:
             table: DataTable to populate
             specs: List of spec dictionaries
@@ -163,8 +184,12 @@ class SpecList(Widget):
         # Clear metadata mapping
         self._row_metadata.clear()
 
+        # Filter specs and fixes by status
+        filtered_specs = self._filter_by_status(specs)
+        filtered_fixes = self._filter_by_status(fixes)
+
         # Add specs
-        for idx, spec in enumerate(specs):
+        for idx, spec in enumerate(filtered_specs):
             table.add_row(
                 spec['name'],
                 "[cyan]spec[/cyan]",
@@ -175,8 +200,8 @@ class SpecList(Widget):
             self._row_metadata[idx] = (spec['folder'], 'spec')
 
         # Add fixes
-        for idx, fix in enumerate(fixes):
-            row_idx = len(specs) + idx  # Offset by number of specs
+        for idx, fix in enumerate(filtered_fixes):
+            row_idx = len(filtered_specs) + idx  # Offset by number of specs
             table.add_row(
                 fix['name'],
                 "[yellow]fix[/yellow]",
@@ -187,13 +212,21 @@ class SpecList(Widget):
             self._row_metadata[row_idx] = (fix['folder'], 'fix')
 
         # If no data, show placeholder
-        if len(specs) == 0 and len(fixes) == 0:
-            table.add_row(
-                "[dim]No specs or fixes found[/dim]",
-                "[dim]—[/dim]",
-                "[dim]—[/dim]",
-                "[dim]—[/dim]"
-            )
+        if len(filtered_specs) == 0 and len(filtered_fixes) == 0:
+            if self._current_filter == "All":
+                table.add_row(
+                    "[dim]No specs or fixes found[/dim]",
+                    "[dim]—[/dim]",
+                    "[dim]—[/dim]",
+                    "[dim]—[/dim]"
+                )
+            else:
+                table.add_row(
+                    f"[dim]No {self._current_filter.lower()} items[/dim]",
+                    "[dim]—[/dim]",
+                    "[dim]—[/dim]",
+                    "[dim]—[/dim]"
+                )
 
     async def _load_specs_async(self) -> List[dict]:
         """
@@ -436,6 +469,21 @@ class SpecList(Widget):
         else:
             return "[dim]○ Not Started[/dim]"
 
+    def _filter_by_status(self, items: List[dict]) -> List[dict]:
+        """
+        Filter specs/fixes by current status filter.
+
+        Args:
+            items: List of spec or fix dictionaries
+
+        Returns:
+            Filtered list based on current filter
+        """
+        if self._current_filter == "All":
+            return items
+
+        return [item for item in items if item['status'] == self._current_filter]
+
     def invalidate_cache(self, cache_key: Optional[str] = None) -> None:
         """
         Invalidate cache to force reload on next access.
@@ -505,3 +553,16 @@ class SpecList(Widget):
         except Exception as e:
             logger.error(f"Error handling row selection: {e}")
             self.app.notify("Could not open spec details", severity="error", timeout=2)
+
+    def on_select_changed(self, event: Select.Changed) -> None:
+        """
+        Handle filter selection change.
+
+        Args:
+            event: Select change event with new value
+        """
+        # Update current filter
+        self._current_filter = str(event.value)
+
+        # Reload and repopulate with new filter
+        asyncio.create_task(self._load_and_populate_async())

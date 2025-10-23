@@ -197,7 +197,50 @@ class MainScreen(Screen):
 
         Used by FileWatcher to trigger updates when files change.
         """
+        # Store previous state for change detection
+        previous_specs_count = len(self.data_manager.state.specs) if self.data_manager else 0
+        previous_fixes_count = len(self.data_manager.state.fixes) if self.data_manager else 0
+        previous_tasks_count = len(self.task_data.parent_tasks) if self.task_data else 0
+
         self.load_data()
+
+        # Check for significant changes and show notifications
+        if self.data_manager:
+            current_specs_count = len(self.data_manager.state.specs)
+            current_fixes_count = len(self.data_manager.state.fixes)
+            current_tasks_count = len(self.task_data.parent_tasks) if self.task_data else 0
+
+            # New spec created
+            if current_specs_count > previous_specs_count:
+                latest_spec = self.data_manager.state.specs[0] if self.data_manager.state.specs else None
+                if latest_spec:
+                    self.app.notify(
+                        title="✓ Spec Created",
+                        message=f"{latest_spec.name}",
+                        severity="information",
+                        timeout=3
+                    )
+
+            # New fix created
+            if current_fixes_count > previous_fixes_count:
+                latest_fix = self.data_manager.state.fixes[0] if self.data_manager.state.fixes else None
+                if latest_fix:
+                    self.app.notify(
+                        title="✓ Fix Created",
+                        message=f"{latest_fix.name}",
+                        severity="information",
+                        timeout=3
+                    )
+
+            # Task completed (increased task count usually means new work, but we can check completion)
+            if self.task_data and hasattr(self.task_data, 'progress'):
+                if self.task_data.progress == 100 and previous_tasks_count > 0:
+                    self.app.notify(
+                        title="✓ All Tasks Complete!",
+                        message="Great work! All tasks are done.",
+                        severity="information",
+                        timeout=4
+                    )
 
         # Also refresh history panel
         try:

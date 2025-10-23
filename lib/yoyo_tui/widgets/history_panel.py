@@ -67,13 +67,17 @@ class HistoryPanel(Static):
                     # Get icon based on type
                     icon = self._get_icon(entry.type)
 
-                    # Format title (truncate if too long)
-                    title = entry.title
-                    if len(title) > 40:
-                        title = title[:37] + "..."
+                    # Format timestamp as [HH:MM]
+                    time_str = entry.timestamp.strftime("%H:%M")
+                    timestamp = f"[dim]\\[{time_str}][/dim]"
 
-                    # Add entry
-                    lines.append(f"{icon} {title}")
+                    # Format title (truncate if too long to fit with timestamp)
+                    title = entry.title
+                    if len(title) > 35:
+                        title = title[:32] + "..."
+
+                    # Add entry with timestamp
+                    lines.append(f"{timestamp} {icon} {title}")
 
                     # Add description (PR URL) if available
                     if entry.description:
