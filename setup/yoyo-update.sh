@@ -10,6 +10,7 @@ OVERWRITE_INSTRUCTIONS=true
 OVERWRITE_STANDARDS=true
 OVERWRITE_COMMANDS=true
 OVERWRITE_AGENTS=true
+VERBOSE=false
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -37,6 +38,10 @@ while [[ $# -gt 0 ]]; do
             OVERWRITE_AGENTS=false
             shift
             ;;
+        -v|--verbose)
+            VERBOSE=true
+            shift
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -51,6 +56,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --no-overwrite-commands        Keep existing command files"
             echo "  --no-overwrite-agents          Keep existing agent files"
             echo "  --no-overwrite                 Keep all existing files (same as all flags above)"
+            echo "  -v, --verbose                  Show detailed update information"
             echo "  -h, --help                     Show this help message"
             echo ""
             echo "Note: Product docs, specs, fixes, recaps, and patterns are ALWAYS protected."
@@ -326,10 +332,27 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         if [ -d "./.yoyo-dev/lib/yoyo_tui" ]; then
             # Preserve venv but update TUI code
             echo "  → Updating TUI library (preserving venv)..."
+
             # Copy TUI library files (excluding venv and __pycache__)
-            rsync -av --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
-                "$BASE_AGENT_OS/lib/yoyo_tui/" "./.yoyo-dev/lib/yoyo_tui/" > /dev/null 2>&1
-            echo "  ✓ TUI library updated"
+            if [ "$VERBOSE" = true ]; then
+                echo "  → Verbose mode: showing file updates..."
+                rsync -av --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
+                    "$BASE_AGENT_OS/lib/yoyo_tui/" "./.yoyo-dev/lib/yoyo_tui/"
+            else
+                # Silent mode, just show summary
+                rsync -a --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
+                    "$BASE_AGENT_OS/lib/yoyo_tui/" "./.yoyo-dev/lib/yoyo_tui/"
+            fi
+
+            # List key files that were updated
+            echo "  → Updated components:"
+            echo "    • app.py - TUI application core"
+            echo "    • screens/ - Main, Help, CommandPalette screens"
+            echo "    • widgets/ - ProjectOverview, TaskTree, SpecList, etc."
+            echo "    • services/ - DataManager, FileWatcher, EventBus, etc."
+            echo "    • styles.css - Layout and styling (NEW: fixed top panel)"
+            echo "    • content/help.md - Command reference (ENHANCED)"
+            echo "  ✓ TUI library updated successfully"
         else
             # First time TUI installation
             echo "  → Installing TUI library..."
@@ -496,7 +519,28 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     fi
 fi
 
-echo "Update complete! Your Yoyo Dev installation is now up to date."
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ Update Complete!"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo ""
+echo "Your Yoyo Dev installation has been updated with the latest improvements."
+echo ""
+
+# Check if TUI was updated and highlight new features
+if [ -d "./.yoyo-dev/lib/yoyo_tui" ]; then
+    echo "🎨 TUI Dashboard Updates:"
+    echo "  • NEW: Project overview fixed at top of dashboard"
+    echo "  • NEW: Enhanced help with complete command reference (press ? key)"
+    echo "  • IMPROVED: Mission, features, and tech stack display"
+    echo "  • UPDATED: Layout and styling for better UX"
+    echo ""
+fi
+
+echo "Next Steps:"
+echo "  • Launch TUI: python3 ~/.yoyo-dev/lib/yoyo-tui.py"
+echo "  • Press ? for help and command reference"
+echo "  • Use --verbose flag to see detailed update info"
 echo ""
 echo "Continue building! 🚀"
 echo ""
