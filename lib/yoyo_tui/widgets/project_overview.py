@@ -80,24 +80,34 @@ class ProjectOverview(Widget):
         # Project name (from directory name or mission-lite.md)
         project_name = self._get_project_name()
         if project_name:
-            lines.append(f"[cyan]📦 Project:[/cyan] {project_name}")
+            lines.append(f"[bold cyan]📦 {project_name}[/bold cyan]")
         else:
             lines.append("[dim]📦 Project: Unknown[/dim]")
 
         # Mission summary
         mission_summary = self._get_mission_summary()
         if mission_summary:
-            lines.append(f"\n[cyan]🎯 Mission:[/cyan]\n{mission_summary}")
+            lines.append(f"\n[yellow]Mission:[/yellow]")
+            lines.append(f"[dim]{mission_summary}[/dim]")
+
+        # Key features
+        key_features = self._get_key_features()
+        if key_features:
+            lines.append(f"\n[yellow]Features:[/yellow]")
+            for feature in key_features:
+                lines.append(f"[dim]• {feature}[/dim]")
 
         # Tech stack
         tech_stack = self._get_tech_stack()
         if tech_stack:
-            lines.append(f"\n[cyan]⚙️  Tech Stack:[/cyan]\n{tech_stack}")
+            lines.append(f"\n[yellow]Stack:[/yellow]")
+            lines.append(f"[dim]{tech_stack}[/dim]")
 
         # Current phase (from roadmap.md)
         current_phase = self._get_current_phase()
         if current_phase:
-            lines.append(f"\n[cyan]📍 Phase:[/cyan] {current_phase}")
+            lines.append(f"\n[yellow]Phase:[/yellow]")
+            lines.append(f"[dim]{current_phase}[/dim]")
 
         if not lines:
             return "[dim]Loading project context...[/dim]"
@@ -147,18 +157,70 @@ class ProjectOverview(Widget):
                 # Find first paragraph after heading
                 lines = [l.strip() for l in content.split('\n') if l.strip()]
                 for i, line in enumerate(lines):
-                    if line.startswith('#'):
-                        # Get next non-heading line
-                        if i + 1 < len(lines) and not lines[i + 1].startswith('#'):
-                            summary = lines[i + 1]
-                            # Truncate to ~80 chars
-                            if len(summary) > 80:
-                                return summary[:77] + "..."
-                            return summary
+                    if line.startswith('# '):
+                        # Get next non-heading line that starts with **Mission**:
+                        if i + 1 < len(lines):
+                            next_line = lines[i + 1]
+                            if next_line.startswith('**Mission**:'):
+                                # Extract mission text after the label
+                                summary = next_line.replace('**Mission**:', '').strip()
+                                # Truncate to ~100 chars
+                                if len(summary) > 100:
+                                    return summary[:97] + "..."
+                                return summary
         except Exception:
             pass
 
         return ""
+
+    def _get_key_features(self) -> list[str]:
+        """
+        Get key features from mission-lite.md Solution section.
+
+        Returns:
+            List of key features (max 4) or empty list
+        """
+        mission_lite_file = self.product_path / 'mission-lite.md'
+        if not mission_lite_file.exists():
+            return []
+
+        try:
+            with open(mission_lite_file) as f:
+                content = f.read()
+                features = []
+                in_solution_section = False
+
+                for line in content.split('\n'):
+                    line_stripped = line.strip()
+
+                    # Detect Solution section
+                    if line_stripped.startswith('## Solution'):
+                        in_solution_section = True
+                        continue
+
+                    # Stop at next section
+                    if in_solution_section and line_stripped.startswith('##'):
+                        break
+
+                    # Extract bullet points in Solution section
+                    if in_solution_section and line_stripped.startswith('- '):
+                        # Remove leading dash and trim
+                        feature = line_stripped[2:].strip()
+                        # Remove markdown emphasis
+                        feature = feature.replace('**', '').replace('*', '')
+                        # Truncate long features
+                        if len(feature) > 50:
+                            feature = feature[:47] + "..."
+                        if feature:
+                            features.append(feature)
+
+                # Return first 4 features
+                return features[:4]
+        except Exception as e:
+            logger.debug(f"Error parsing key features: {e}")
+            pass
+
+        return []
 
     def _get_tech_stack(self) -> str:
         """
@@ -176,21 +238,40 @@ class ProjectOverview(Widget):
                 content = f.read()
                 # Look for primary technologies
                 techs = []
-                for line in content.split('\n'):
-                    line = line.strip()
-                    # Look for bullet points with tech names
-                    if line.startswith('- **') or line.startswith('* **'):
-                        # Extract tech name between ** markers
-                        start = line.find('**') + 2
-                        end = line.find('**', start)
-                        if end > start:
-                            tech = line[start:end]
-                            techs.append(tech)
+                in_relevant_section = False
+                # Skip generic terms
+                skip_terms = {'Platform', 'Status', 'Runtime', 'Languages'}
 
-                # Return first 3 techs
+                for line in content.split('\n'):
+                    line_stripped = line.strip()
+
+                    # Detect Core Technologies or TUI Dashboard Stack sections
+                    if line_stripped in ('## Core Technologies', '## TUI Dashboard Stack'):
+                        in_relevant_section = True
+                        continue
+
+                    # Stop at non-relevant level-2 sections (##)
+                    if in_relevant_section and line_stripped.startswith('## ') and not any(s in line_stripped for s in ['Core Technologies', 'TUI Dashboard', 'Workflow']):
+                        in_relevant_section = False
+
+                    # Extract technologies in format: **Tech Name**
+                    # Tech lines start with ** and may contain versions/URLs in parentheses
+                    if in_relevant_section and line_stripped.startswith('**'):
+                        # Extract text between first ** pair
+                        if '**' in line_stripped[2:]:
+                            end_pos = line_stripped.index('**', 2)
+                            tech = line_stripped[2:end_pos].strip()
+                            # Remove version numbers and URLs (keep just the name)
+                            tech = tech.split()[0]  # Take first word
+                            # Skip generic terms
+                            if tech and tech not in techs and tech not in skip_terms:
+                                techs.append(tech)
+
+                # Return first 4 techs
                 if techs:
-                    return ", ".join(techs[:3])
-        except Exception:
+                    return ", ".join(techs[:4])
+        except Exception as e:
+            logger.debug(f"Error parsing tech stack: {e}")
             pass
 
         return ""
