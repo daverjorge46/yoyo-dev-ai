@@ -457,22 +457,18 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         # Check if requirements.txt was updated
         if [ -f "./.yoyo-dev/requirements.txt" ]; then
             echo "📋 Updated requirements.txt with latest dependency versions"
-            echo ""
-            read -p "Upgrade Python dependencies to latest versions? [y/N] " -n 1 -r
+            echo "📦 Auto-installing Python dependencies..."
             echo ""
 
-            if [[ $REPLY =~ ^[Yy]$ ]]; then
-                if [ -d "$HOME/.yoyo-dev/venv" ]; then
-                    echo "Upgrading dependencies in virtual environment..."
-                    "$HOME/.yoyo-dev/venv/bin/pip" install --upgrade -r "$HOME/.yoyo-dev/requirements.txt"
-                elif command -v pip3 &> /dev/null; then
-                    echo "Upgrading dependencies..."
-                    pip3 install --upgrade -r "$HOME/.yoyo-dev/requirements.txt" --user
-                fi
-                echo "✓ Dependencies upgraded"
-            else
-                echo "⏭️  Skipping dependency upgrade"
+            # Auto-install dependencies without prompting
+            if [ -d "$HOME/.yoyo-dev/venv" ]; then
+                echo "Upgrading dependencies in virtual environment..."
+                "$HOME/.yoyo-dev/venv/bin/pip" install --upgrade -r "$HOME/.yoyo-dev/requirements.txt"
+            elif command -v pip3 &> /dev/null; then
+                echo "Upgrading dependencies..."
+                pip3 install --upgrade -r "$HOME/.yoyo-dev/requirements.txt" --user
             fi
+            echo "✓ Dependencies upgraded"
             echo ""
         fi
     else
