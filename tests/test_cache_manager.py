@@ -14,13 +14,7 @@ import threading
 import time
 from datetime import datetime
 
-import sys
-from pathlib import Path
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / ".yoyo-dev" / "lib"))
-
-from yoyo_tui.services.cache_manager import CacheManager, CacheEntry, CacheStats
+from lib.yoyo_tui.services.cache_manager import CacheManager, CacheEntry, CacheStats
 
 
 class TestCacheBasics:
@@ -175,7 +169,7 @@ class TestCacheInvalidation:
         cache.set("key2", "value2")
         cache.set("key3", "value3")
 
-        cache.clear_all()
+        cache.invalidate_all()
 
         assert cache.get("key1") is None
         assert cache.get("key2") is None
@@ -184,7 +178,7 @@ class TestCacheInvalidation:
     def test_clear_all_empty_cache(self):
         """Test clearing empty cache doesn't crash."""
         cache = CacheManager()
-        cache.clear_all()  # Should not raise exception
+        cache.invalidate_all()  # Should not raise exception
 
 
 class TestCacheStatistics:

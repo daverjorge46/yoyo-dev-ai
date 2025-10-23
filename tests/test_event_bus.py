@@ -16,14 +16,8 @@ import time
 from datetime import datetime
 from typing import List
 
-import sys
-from pathlib import Path
-
-# Add parent directory to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / ".yoyo-dev" / "lib"))
-
-from yoyo_tui.models.events import Event, EventType
-from yoyo_tui.services.event_bus import EventBus
+from lib.yoyo_tui.models import Event, EventType
+from lib.yoyo_tui.services.event_bus import EventBus
 
 
 class TestEventBusBasics:

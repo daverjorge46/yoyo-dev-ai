@@ -328,6 +328,12 @@ if [ "$CLAUDE_CODE" = true ]; then
             chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
         fi
 
+        # Copy Textual TUI launcher (new in v2.2 - event-driven architecture)
+        if [ -f "$BASE_AGENT_OS/lib/yoyo-tui.py" ]; then
+            copy_file "$BASE_AGENT_OS/lib/yoyo-tui.py" "./.yoyo-dev/lib/yoyo-tui.py" "true" "lib/yoyo-tui.py (TUI launcher)"
+            chmod +x "./.yoyo-dev/lib/yoyo-tui.py"
+        fi
+
         # Copy Python requirements
         if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
             copy_file "$BASE_AGENT_OS/requirements.txt" "./.yoyo-dev/requirements.txt" "true" "requirements.txt (Python deps)"
@@ -380,6 +386,12 @@ if [ "$CLAUDE_CODE" = true ]; then
             "true" \
             "lib/yoyo-dashboard.py (Python dashboard)"
         chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
+
+        download_file "${BASE_URL}/lib/yoyo-tui.py" \
+            "./.yoyo-dev/lib/yoyo-tui.py" \
+            "true" \
+            "lib/yoyo-tui.py (TUI launcher)"
+        chmod +x "./.yoyo-dev/lib/yoyo-tui.py"
 
         download_file "${BASE_URL}/requirements.txt" \
             "./.yoyo-dev/requirements.txt" \

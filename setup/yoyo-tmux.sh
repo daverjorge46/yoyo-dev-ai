@@ -163,8 +163,8 @@ set -g history-limit 50000
 
 # Custom keybindings
 # Ctrl+B r - Force refresh status pane (send Ctrl+C then restart)
-# Note: Tries TUI → Rich dashboard → Bash fallback
-bind-key r run-shell "tmux send-keys -t 1 C-c && tmux respawn-pane -t 1 -k 'if [ -f ~/.yoyo-dev/venv/bin/python3 ] && ~/.yoyo-dev/venv/bin/python3 -c \"import textual, watchdog, yaml\" 2>/dev/null; then ~/.yoyo-dev/venv/bin/python3 ~/.yoyo-dev/lib/yoyo-tui.py; elif [ -f ~/.yoyo-dev/venv/bin/python3 ] && ~/.yoyo-dev/venv/bin/python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then ~/.yoyo-dev/venv/bin/python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; elif command -v python3 >/dev/null && python3 -c \"import textual, watchdog, yaml\" 2>/dev/null; then python3 ~/.yoyo-dev/lib/yoyo-tui.py; elif command -v python3 >/dev/null && python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; else ~/.yoyo-dev/lib/yoyo-status.sh; fi'"
+# Note: Tries Rich dashboard → Bash fallback (split-pane compatible)
+bind-key r run-shell "tmux send-keys -t 1 C-c && tmux respawn-pane -t 1 -k 'if [ -f ~/.yoyo-dev/venv/bin/python3 ] && ~/.yoyo-dev/venv/bin/python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then ~/.yoyo-dev/venv/bin/python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; elif command -v python3 >/dev/null && python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; else ~/.yoyo-dev/lib/yoyo-status.sh; fi'"
 EOF
 
 # Create startup script that displays header and launches Claude
@@ -230,6 +230,7 @@ echo -e " ${DIM}Docs: ${CYAN}.yoyo-dev/COMMAND-REFERENCE.md${RESET}"
 echo ""
 echo -e " ${DIM}Layout: Main (left) | Task Status (right - auto-refreshes every 5s)${RESET}"
 echo -e " ${DIM}Switch panes: ${CYAN}Ctrl+B${RESET}${DIM} + arrows | Copy: Hold ${CYAN}Shift${RESET}${DIM} + click & drag${RESET}"
+echo -e " ${DIM}Full-screen TUI: Run ${CYAN}yoyo-tui${RESET}${DIM} in a separate terminal for interactive TUI${RESET}"
 echo ""
 echo -e " ${YELLOW}Launching Claude Code...${RESET}"
 echo ""
@@ -266,27 +267,23 @@ if command -v python3 &> /dev/null; then
     fi
 fi
 
-# Determine which dashboard to use (TUI → Rich dashboard → Bash fallback)
+# Determine which dashboard to use for split pane
+# NOTE: Rich dashboard prioritized over Textual TUI for split pane compatibility
+# Textual TUI is interactive and conflicts with split pane terminal control
+# Priority: Rich dashboard → Bash fallback
+# For full-screen interactive TUI, use: yoyo-tui (separate command)
 DASHBOARD_CMD="$HOME/.yoyo-dev/lib/yoyo-status.sh"
 
 # Check venv first, then fall back to system Python
 if [ -f "$HOME/.yoyo-dev/venv/bin/python3" ]; then
-    # Try Textual TUI first (best experience)
-    if "$HOME/.yoyo-dev/venv/bin/python3" -c "import textual, watchdog, yaml" &> /dev/null 2>&1; then
-        # Use venv Python with Textual TUI
-        DASHBOARD_CMD="$HOME/.yoyo-dev/venv/bin/python3 $HOME/.yoyo-dev/lib/yoyo-tui.py"
-    # Fall back to Rich dashboard if Textual not available
-    elif "$HOME/.yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
+    # Try Rich dashboard first (passive, split-pane compatible)
+    if "$HOME/.yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
         # Use venv Python with Rich dashboard
         DASHBOARD_CMD="$HOME/.yoyo-dev/venv/bin/python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
     fi
 elif command -v python3 &> /dev/null; then
-    # Try Textual TUI with system Python
-    if python3 -c "import textual, watchdog, yaml" &> /dev/null 2>&1; then
-        # Use system Python with Textual TUI
-        DASHBOARD_CMD="python3 $HOME/.yoyo-dev/lib/yoyo-tui.py"
-    # Fall back to Rich dashboard if Textual not available
-    elif python3 -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
+    # Try Rich dashboard with system Python
+    if python3 -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
         # Use system Python with Rich dashboard
         DASHBOARD_CMD="python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
     fi

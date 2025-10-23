@@ -302,6 +302,12 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
     fi
 
+    # Update Textual TUI launcher (new in v2.2 - event-driven architecture)
+    if [ -f "$BASE_AGENT_OS/lib/yoyo-tui.py" ]; then
+        copy_file "$BASE_AGENT_OS/lib/yoyo-tui.py" "./.yoyo-dev/lib/yoyo-tui.py" "true" "lib/yoyo-tui.py (TUI launcher)"
+        chmod +x "./.yoyo-dev/lib/yoyo-tui.py"
+    fi
+
     # Update Python requirements
     if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
         copy_file "$BASE_AGENT_OS/requirements.txt" "./.yoyo-dev/requirements.txt" "true" "requirements.txt (Python deps)"

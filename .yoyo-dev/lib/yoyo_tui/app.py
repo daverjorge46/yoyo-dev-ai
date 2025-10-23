@@ -13,7 +13,11 @@ from .config import ConfigManager, TUIConfig
 from .screens.main import MainScreen
 from .screens.help_screen import HelpScreen
 from .screens.command_palette import CommandPaletteScreen
+from .services.event_bus import EventBus
+from .services.cache_manager import CacheManager
+from .services.data_manager import DataManager
 from .services.file_watcher import FileWatcher
+from .models import EventType
 
 
 class YoyoDevApp(App):
@@ -23,6 +27,12 @@ class YoyoDevApp(App):
     A modern, interactive terminal user interface for AI-assisted development
     with Yoyo Dev. Provides task management, git integration, command palette,
     and real-time file watching.
+
+    Architecture:
+    - EventBus: Central event pub/sub system
+    - CacheManager: TTL-based cache for parsed data
+    - DataManager: Centralized state management for specs/fixes/tasks
+    - FileWatcher: Monitors file changes and emits events
     """
 
     TITLE = "Yoyo Dev - AI-Assisted Development"
@@ -46,8 +56,14 @@ class YoyoDevApp(App):
         # Load configuration
         self.config: TUIConfig = ConfigManager.load()
 
-        # Initialize services (will be set up in on_mount)
-        self.file_watcher = None
+        # Initialize event-driven architecture
+        self.event_bus = EventBus(enable_logging=True)
+        self.cache_manager = CacheManager(default_ttl=300)  # 5 min cache TTL
+        self.data_manager = None  # Will be initialized in on_mount
+        self.file_watcher = None  # Will be initialized in on_mount
+
+        # Subscribe to STATE_UPDATED events for UI refresh
+        self.event_bus.subscribe(EventType.STATE_UPDATED, self.on_state_updated)
 
     def on_mount(self) -> None:
         """
@@ -55,8 +71,21 @@ class YoyoDevApp(App):
 
         Initializes screens, services, and starts file watching.
         """
-        # Push main screen with config
-        self.push_screen(MainScreen(config=self.config))
+        # Initialize DataManager with .yoyo-dev path
+        cwd = Path.cwd()
+        yoyo_dev_path = cwd / ".yoyo-dev"
+
+        self.data_manager = DataManager(
+            yoyo_dev_path=yoyo_dev_path,
+            event_bus=self.event_bus,
+            cache_manager=self.cache_manager
+        )
+
+        # Load initial data
+        self.data_manager.initialize()
+
+        # Push main screen with config and data_manager
+        self.push_screen(MainScreen(config=self.config, data_manager=self.data_manager))
 
         # Start file watcher if enabled
         if self.config.file_watching:
@@ -80,15 +109,19 @@ class YoyoDevApp(App):
 
     def action_refresh(self) -> None:
         """
-        Force refresh of all data (tasks, specs, git status).
+        Force refresh of all data (specs, fixes, tasks, recaps).
+
+        Triggers DataManager to reload all data from file system.
+        DataManager will emit STATE_UPDATED event, which triggers UI refresh.
 
         Bound to: r
         """
         try:
-            main_screen = self.screen
-            if isinstance(main_screen, MainScreen):
-                main_screen.refresh_all_data()
-                self.notify("Data refreshed", severity="information", timeout=2)
+            if self.data_manager:
+                self.data_manager.refresh_all()
+                self.notify("Refreshing data...", severity="information", timeout=1)
+            else:
+                self.notify("Data manager not initialized", severity="error", timeout=2)
         except Exception:
             self.notify("Could not refresh data", severity="error", timeout=3)
 
@@ -142,49 +175,55 @@ class YoyoDevApp(App):
 
     def start_file_watcher(self) -> None:
         """
-        Start file watcher service to monitor both CWD and .yoyo-dev for changes.
+        Start file watcher service to monitor .yoyo-dev for changes.
 
-        Watches for changes to tasks.md, state.json, and MASTER-TASKS.md files
-        in both the current working directory and .yoyo-dev directory.
-        Automatically refreshes TUI data when relevant files change.
+        Watches for changes to specs, fixes, recaps, and emits events via EventBus.
+        DataManager subscribes to these events and automatically updates state.
 
-        Uses config values for debounce_interval and max_wait (Task 8).
+        The new architecture uses event-driven updates instead of callbacks.
         """
-        # Get current working directory
+        # Get .yoyo-dev path
         cwd = Path.cwd()
+        yoyo_dev_path = cwd / ".yoyo-dev"
 
-        # Create FileWatcher with callback to refresh data
-        # Use config values for debounce and max-wait
+        if not yoyo_dev_path.exists():
+            self.notify("No .yoyo-dev directory found", severity="warning", timeout=3)
+            return
+
+        # Create FileWatcher with EventBus integration
         self.file_watcher = FileWatcher(
-            callback=self.on_file_change,
-            debounce_interval=self.config.file_watcher_debounce,
-            max_wait=self.config.file_watcher_max_wait
+            event_bus=self.event_bus,
+            debounce_window=0.1  # 100ms debounce
         )
 
-        # Start watching current working directory recursively
-        # This will watch both CWD and .yoyo-dev subdirectory
-        success = self.file_watcher.start_watching(cwd)
+        # Start watching .yoyo-dev directory recursively
+        success = self.file_watcher.start_watching(yoyo_dev_path)
 
         if success:
             self.notify("File watching enabled", severity="information", timeout=2)
         else:
             self.notify("Could not enable file watching", severity="warning", timeout=3)
 
-    def on_file_change(self) -> None:
+    def on_state_updated(self, event) -> None:
         """
-        Callback triggered when watched files change.
+        Event handler for STATE_UPDATED events.
 
-        Refreshes all data in the MainScreen to reflect file changes.
-        Called by FileWatcher with debouncing to prevent spam.
+        Called when DataManager updates state (from file changes or refresh).
+        Refreshes UI to reflect updated data.
+
+        Args:
+            event: STATE_UPDATED event from EventBus
         """
         try:
-            # Get MainScreen and refresh all data
+            # Get MainScreen and refresh UI
             main_screen = self.screen
             if isinstance(main_screen, MainScreen):
                 main_screen.refresh_all_data()
-                self.notify("Data refreshed", severity="information", timeout=1)
+                # Notify user only on explicit file changes (not on initial load)
+                if event.data.get("source") != "initialize":
+                    self.notify("Data updated", severity="information", timeout=1)
         except Exception:
-            # Silently ignore errors to keep watcher running
+            # Silently ignore errors to keep event system running
             pass
 
     def stop_file_watcher(self) -> None:
