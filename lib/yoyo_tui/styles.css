@@ -41,6 +41,21 @@ Footer {
  * Layout Containers
  * ============================================================================ */
 
+/* Fixed project overview panel at top */
+#project-overview-container {
+    dock: top;
+    height: auto;
+    max-height: 12;
+    background: #384152;
+    border-bottom: solid #4a5568;
+    padding: 0 1;
+}
+
+/* Content area below project overview */
+#content-area {
+    height: 1fr;
+}
+
 #sidebar {
     width: 50%;
     background: #384152;
@@ -142,9 +157,13 @@ Static {
 /* Project Overview Widget */
 ProjectOverview {
     background: transparent;
-    border: solid #4a5568;
+    border: none;
     padding: 1;
-    margin-bottom: 1;
+    margin: 0;
+}
+
+#project-overview-container ProjectOverview {
+    height: auto;
 }
 
 /* Next Tasks Panel */

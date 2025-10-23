@@ -73,13 +73,14 @@ class MainScreen(Screen):
         # Top header bar
         yield Header()
 
+        # Fixed project overview panel at the top (full width)
+        with Container(id="project-overview-container"):
+            yield ProjectOverview()
+
         # Main content area with sidebar and main panel
-        with Horizontal():
+        with Horizontal(id="content-area"):
             # Left sidebar (30 columns)
             with Vertical(id="sidebar"):
-                # Project overview widget
-                yield ProjectOverview()
-
                 # Git Status widget - always show
                 yield GitStatus(
                     refresh_interval=self.config.refresh_interval,
