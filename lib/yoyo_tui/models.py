@@ -356,6 +356,43 @@ class ExecutionProgress:
 
 
 @dataclass
+class ProcessStatus:
+    """
+    Running process status information.
+
+    Used by ProcessMonitor to track /execute-tasks and other long-running processes.
+
+    Attributes:
+        pid: Process ID
+        command: Command being executed (e.g., "/execute-tasks")
+        spec_name: Spec or fix name
+        status: Current status (running, completed, failed)
+        progress: Progress percentage (0-100)
+        current_task: Current task description
+        started_at: ISO timestamp when process started
+        completed_at: ISO timestamp when process completed
+    """
+    pid: int
+    command: str
+    spec_name: str
+    status: str = "running"  # running, completed, failed
+    progress: int = 0
+    current_task: Optional[str] = None
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+
+    @property
+    def is_running(self) -> bool:
+        """Check if process is still running."""
+        return self.status == "running"
+
+    @property
+    def display_name(self) -> str:
+        """Get human-readable process name."""
+        return f"{self.command}: {self.spec_name}"
+
+
+@dataclass
 class GitStatus:
     """
     Git repository status information.
@@ -466,6 +503,11 @@ class EventType(Enum):
 
     # Execution events
     EXECUTION_STARTED = "execution_started"
+
+    # Process monitoring events
+    PROCESS_STARTED = "process_started"
+    PROCESS_PROGRESS = "process_progress"
+    PROCESS_COMPLETED = "process_completed"
     EXECUTION_PROGRESS = "execution_progress"
     EXECUTION_COMPLETED = "execution_completed"
 

@@ -39,8 +39,10 @@ logger = logging.getLogger(__name__)
 
 from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel, NextTasksPanel, SuggestedCommandsPanel, HistoryPanel
 from ..widgets.git_status import GitStatus
+from ..widgets.process_monitor_widget import ProcessMonitorWidget
 from ..models import TaskData
 from ..services.data_manager import DataManager
+from ..services.process_monitor import ProcessMonitor
 from ..config import TUIConfig
 
 
@@ -98,6 +100,14 @@ class MainScreen(Screen):
 
                 # History panel - shows recent activity
                 yield HistoryPanel()
+
+                # Process monitor - shows running /execute-tasks
+                # Initialize ProcessMonitor if not already created
+                if not hasattr(self, 'process_monitor'):
+                    self.process_monitor = ProcessMonitor(
+                        event_bus=self.app.event_bus
+                    )
+                yield ProcessMonitorWidget(process_monitor=self.process_monitor)
 
                 # Keyboard shortcuts panel
                 yield ShortcutsPanel()
