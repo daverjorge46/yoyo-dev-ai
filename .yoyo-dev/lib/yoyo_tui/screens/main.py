@@ -3,22 +3,26 @@ MainScreen - Primary dashboard screen for Yoyo Dev TUI.
 
 This screen provides the main layout for the TUI with:
 - Header with app title
-- Sidebar with project overview, git status, and shortcuts
+- Fixed project overview panel at top (full width)
+- Sidebar with git status, history, and shortcuts
 - Main content area for tasks, specs, and progress
 - Footer with keyboard shortcuts
 
 Layout structure:
 ┌────────────────────────────────────────────┐
 │          Header (Brand Blue)               │
+├────────────────────────────────────────────┤
+│  📦 Yoyo Dev - Project Overview (Fixed)    │
+│  Mission | Features | Stack | Phase        │
 ├─────────────┬──────────────────────────────┤
 │  Sidebar    │      Main Content            │
-│  (30 cols)  │                              │
+│  (50%)      │      (50%)                   │
 │             │                              │
-│ - Project   │  - Active Task Panel         │
-│   Overview  │  - Spec List Panel           │
-│ - Git       │                              │
-│   Status    │                              │
-│ - Shortcuts │                              │
+│ - Git       │  - Progress Panel            │
+│   Status    │  - Next Tasks                │
+│ - History   │  - Task Tree                 │
+│ - Shortcuts │  - Spec List                 │
+│ - Commands  │                              │
 │             │                              │
 ├─────────────┴──────────────────────────────┤
 │          Footer (Medium Gray)              │
@@ -35,8 +39,10 @@ logger = logging.getLogger(__name__)
 
 from ..widgets import TaskTree, ProgressPanel, SpecList, ProjectOverview, ShortcutsPanel, NextTasksPanel, SuggestedCommandsPanel, HistoryPanel
 from ..widgets.git_status import GitStatus
+from ..widgets.process_monitor_widget import ProcessMonitorWidget
 from ..models import TaskData
 from ..services.data_manager import DataManager
+from ..services.process_monitor import ProcessMonitor
 from ..config import TUIConfig
 
 
@@ -58,7 +64,12 @@ class MainScreen(Screen):
 
         Args:
             config: TUI configuration (Task 8)
+            data_manager: Optional DataManager instance (passed via kwargs)
         """
+        # Extract data_manager from kwargs before calling super().__init__()
+        # to prevent TypeError from Textual's Screen.__init__()
+        self.data_manager = kwargs.pop('data_manager', None)
+
         super().__init__(*args, **kwargs)
         self.config = config or TUIConfig()  # Use provided config or defaults
         self.task_data = TaskData.empty()  # Will be loaded on mount
@@ -73,13 +84,14 @@ class MainScreen(Screen):
         # Top header bar
         yield Header()
 
+        # Fixed project overview panel at the top (full width)
+        with Container(id="project-overview-container"):
+            yield ProjectOverview()
+
         # Main content area with sidebar and main panel
-        with Horizontal():
+        with Horizontal(id="content-area"):
             # Left sidebar (30 columns)
             with Vertical(id="sidebar"):
-                # Project overview widget
-                yield ProjectOverview()
-
                 # Git Status widget - always show
                 yield GitStatus(
                     refresh_interval=self.config.refresh_interval,
@@ -88,6 +100,14 @@ class MainScreen(Screen):
 
                 # History panel - shows recent activity
                 yield HistoryPanel()
+
+                # Process monitor - shows running /execute-tasks
+                # Initialize ProcessMonitor if not already created
+                if not hasattr(self, 'process_monitor'):
+                    self.process_monitor = ProcessMonitor(
+                        event_bus=self.app.event_bus
+                    )
+                yield ProcessMonitorWidget(process_monitor=self.process_monitor)
 
                 # Keyboard shortcuts panel
                 yield ShortcutsPanel()
@@ -138,9 +158,22 @@ class MainScreen(Screen):
         Discovers tasks.md, loads task data, and passes to all widgets.
         """
         logger.debug("MainScreen.load_data: Loading task data from DataManager")
-        # Load task data using DataManager
-        self.task_data = DataManager.load_active_tasks()
-        logger.debug(f"MainScreen.load_data: Loaded {len(self.task_data.parent_tasks) if self.task_data else 0} parent tasks")
+
+        # Load task data using DataManager instance
+        if self.data_manager:
+            state = self.data_manager.state
+            # Use first available task data (could be from spec, fix, or master)
+            if state.tasks and len(state.tasks) > 0:
+                self.task_data = state.tasks[0]
+                logger.debug(f"MainScreen.load_data: Loaded {len(self.task_data.parent_tasks)} parent tasks from {self.task_data.source_type}")
+            else:
+                logger.debug("MainScreen.load_data: No tasks found in state, using empty TaskData")
+                self.task_data = TaskData.empty()
+        else:
+            logger.debug("MainScreen.load_data: No data_manager available, using empty TaskData")
+            self.task_data = TaskData.empty()
+
+        logger.debug(f"MainScreen.load_data: Final task count: {len(self.task_data.parent_tasks) if self.task_data else 0} parent tasks")
 
         # Update widgets with loaded data
         try:
@@ -174,7 +207,50 @@ class MainScreen(Screen):
 
         Used by FileWatcher to trigger updates when files change.
         """
+        # Store previous state for change detection
+        previous_specs_count = len(self.data_manager.state.specs) if self.data_manager else 0
+        previous_fixes_count = len(self.data_manager.state.fixes) if self.data_manager else 0
+        previous_tasks_count = len(self.task_data.parent_tasks) if self.task_data else 0
+
         self.load_data()
+
+        # Check for significant changes and show notifications
+        if self.data_manager:
+            current_specs_count = len(self.data_manager.state.specs)
+            current_fixes_count = len(self.data_manager.state.fixes)
+            current_tasks_count = len(self.task_data.parent_tasks) if self.task_data else 0
+
+            # New spec created
+            if current_specs_count > previous_specs_count:
+                latest_spec = self.data_manager.state.specs[0] if self.data_manager.state.specs else None
+                if latest_spec:
+                    self.app.notify(
+                        title="✓ Spec Created",
+                        message=f"{latest_spec.name}",
+                        severity="information",
+                        timeout=3
+                    )
+
+            # New fix created
+            if current_fixes_count > previous_fixes_count:
+                latest_fix = self.data_manager.state.fixes[0] if self.data_manager.state.fixes else None
+                if latest_fix:
+                    self.app.notify(
+                        title="✓ Fix Created",
+                        message=f"{latest_fix.name}",
+                        severity="information",
+                        timeout=3
+                    )
+
+            # Task completed (increased task count usually means new work, but we can check completion)
+            if self.task_data and hasattr(self.task_data, 'progress'):
+                if self.task_data.progress == 100 and previous_tasks_count > 0:
+                    self.app.notify(
+                        title="✓ All Tasks Complete!",
+                        message="Great work! All tasks are done.",
+                        severity="information",
+                        timeout=4
+                    )
 
         # Also refresh history panel
         try:
@@ -190,8 +266,15 @@ class MainScreen(Screen):
 
         Lightweight refresh for task-related widgets only.
         """
-        # Reload task data
-        self.task_data = DataManager.load_active_tasks()
+        # Reload task data using DataManager instance
+        if self.data_manager:
+            state = self.data_manager.state
+            if state.tasks and len(state.tasks) > 0:
+                self.task_data = state.tasks[0]
+            else:
+                self.task_data = TaskData.empty()
+        else:
+            self.task_data = TaskData.empty()
 
         # Update task-related widgets
         try:

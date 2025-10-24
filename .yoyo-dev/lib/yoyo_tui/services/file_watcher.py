@@ -30,20 +30,22 @@ class YoyoDevFileHandler(FileSystemEventHandler):
     - Thread-safe operation
     """
 
-    def __init__(self, event_bus: EventBus, debounce_window: float = 0.1):
+    def __init__(self, event_bus: EventBus, debounce_window: float = 1.5, max_wait: float = 5.0):
         """
         Initialize handler.
 
         Args:
             event_bus: EventBus instance for event emission
-            debounce_window: Seconds to wait after last change before emitting (default: 0.1s = 100ms)
+            debounce_window: Seconds to wait after last change before emitting (default: 1.5s)
+            max_wait: Maximum seconds to wait before forcing emission (default: 5.0s)
         """
         super().__init__()
         self.event_bus = event_bus
         self.debounce_window = debounce_window
+        self.max_wait = max_wait
 
-        # Debouncing state: file_path -> (last_event_time, pending_timer)
-        self._pending_events: Dict[str, tuple[float, Optional[threading.Timer]]] = {}
+        # Debouncing state: file_path -> (first_event_time, last_event_time, pending_timer)
+        self._pending_events: Dict[str, tuple[float, float, Optional[threading.Timer]]] = {}
         self._lock = threading.Lock()
 
         # Ignore patterns for unwanted files
@@ -107,33 +109,56 @@ class YoyoDevFileHandler(FileSystemEventHandler):
 
     def _schedule_event(self, file_path: str, event_type: EventType, change_type: str) -> None:
         """
-        Schedule event emission after debounce window.
+        Schedule event emission after debounce window with max wait enforcement.
+
+        Implements two-phase debouncing:
+        1. Debounce window: Wait 1.5s after last change
+        2. Max wait: Force emission after 5s even if changes continue
 
         Args:
             file_path: Path to file that changed
             event_type: Type of event
             change_type: Human-readable change type
         """
+        current_time = time.time()
+
         with self._lock:
-            # Cancel existing timer for this file
+            # Get or create first_event_time for this file
             if file_path in self._pending_events:
-                _, existing_timer = self._pending_events[file_path]
+                first_event_time, _, existing_timer = self._pending_events[file_path]
                 if existing_timer is not None:
                     existing_timer.cancel()
+            else:
+                first_event_time = current_time
 
-            # Create new timer
-            def emit_after_debounce():
-                with self._lock:
-                    if file_path in self._pending_events:
-                        del self._pending_events[file_path]
-                self._emit_event(file_path, event_type, change_type)
+            # Check if max wait time exceeded
+            time_since_first = current_time - first_event_time
+            force_emit = time_since_first >= self.max_wait
 
-            timer = threading.Timer(self.debounce_window, emit_after_debounce)
-            timer.daemon = True
-            timer.start()
+            if force_emit:
+                # Max wait exceeded - emit immediately and reset
+                self._pending_events.pop(file_path, None)
+                # Emit outside lock to prevent deadlock
+                threading.Thread(
+                    target=lambda: self._emit_event(file_path, event_type, change_type),
+                    daemon=True
+                ).start()
+            else:
+                # Normal debounce - schedule timer
+                wait_time = min(self.debounce_window, self.max_wait - time_since_first)
 
-            # Store timer
-            self._pending_events[file_path] = (time.time(), timer)
+                def emit_after_debounce():
+                    with self._lock:
+                        if file_path in self._pending_events:
+                            del self._pending_events[file_path]
+                    self._emit_event(file_path, event_type, change_type)
+
+                timer = threading.Timer(wait_time, emit_after_debounce)
+                timer.daemon = True
+                timer.start()
+
+                # Store timer with first_event_time
+                self._pending_events[file_path] = (first_event_time, current_time, timer)
 
     def on_created(self, event: FileSystemEvent) -> None:
         """
@@ -202,7 +227,7 @@ class YoyoDevFileHandler(FileSystemEventHandler):
         Called during cleanup to prevent events after watcher stops.
         """
         with self._lock:
-            for file_path, (_, timer) in list(self._pending_events.items()):
+            for file_path, (_, _, timer) in list(self._pending_events.items()):
                 if timer is not None:
                     timer.cancel()
             self._pending_events.clear()
@@ -214,23 +239,25 @@ class FileWatcher:
 
     Features:
     - Recursive directory watching
-    - Debouncing with 100ms window
+    - Smart debouncing (1.5s window, 5s max wait)
     - Filters for ignored files
     - Multiple directory watching
     - Thread-safe operation
     - Context manager support
     """
 
-    def __init__(self, event_bus: EventBus, debounce_window: float = 0.1):
+    def __init__(self, event_bus: EventBus, debounce_window: float = 1.5, max_wait: float = 5.0):
         """
         Initialize FileWatcher.
 
         Args:
             event_bus: EventBus instance for event emission
-            debounce_window: Seconds to wait after last change (default: 0.1s = 100ms)
+            debounce_window: Seconds to wait after last change (default: 1.5s)
+            max_wait: Maximum seconds to wait before forcing emission (default: 5.0s)
         """
         self.event_bus = event_bus
         self.debounce_window = debounce_window
+        self.max_wait = max_wait
         self.observer: Optional[Observer] = None
         self.event_handler: Optional[YoyoDevFileHandler] = None
         self.is_watching = False
@@ -257,7 +284,8 @@ class FileWatcher:
             # Create event handler
             self.event_handler = YoyoDevFileHandler(
                 event_bus=self.event_bus,
-                debounce_window=self.debounce_window
+                debounce_window=self.debounce_window,
+                max_wait=self.max_wait
             )
 
             # Create and start observer

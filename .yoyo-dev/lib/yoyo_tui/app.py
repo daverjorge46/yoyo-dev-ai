@@ -193,7 +193,8 @@ class YoyoDevApp(App):
         # Create FileWatcher with EventBus integration
         self.file_watcher = FileWatcher(
             event_bus=self.event_bus,
-            debounce_window=0.1  # 100ms debounce
+            debounce_window=1.5,  # 1.5s debounce window
+            max_wait=5.0  # 5s max wait
         )
 
         # Start watching .yoyo-dev directory recursively
@@ -231,6 +232,22 @@ class YoyoDevApp(App):
         if self.file_watcher:
             self.file_watcher.stop_watching()
             self.file_watcher = None
+
+    def action_refresh(self) -> None:
+        """
+        Refresh dashboard data manually.
+
+        Bound to: r key
+        Triggers a manual refresh of all data in the UI.
+        """
+        try:
+            main_screen = self.screen
+            if isinstance(main_screen, MainScreen):
+                main_screen.refresh_all_data()
+                self.notify("Data refreshed", severity="information", timeout=1)
+        except Exception:
+            # Silently ignore errors
+            pass
 
     def on_unmount(self) -> None:
         """Called when app is unmounting. Clean up resources."""

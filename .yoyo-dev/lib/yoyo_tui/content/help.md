@@ -124,15 +124,107 @@ Press **g** to open the git menu for quick actions:
 - Push/pull with progress indicators
 - Switch branches quickly
 
-### Command Palette
-Press **Ctrl+P** to access all Yoyo Dev commands:
-- `/plan-product` - Set mission & roadmap for new product
-- `/create-new` - Create new feature with full spec workflow
-- `/execute-tasks` - Build and ship code for a feature
-- `/create-fix` - Analyze and fix bugs systematically
-- `/review` - Critical code review with specialized modes
+### Command Palette & Yoyo Dev Commands
+
+Press **Ctrl+P** to access the command palette with all available Yoyo Dev commands.
 
 Use fuzzy search to find commands quickly (e.g., type "exec" to find "/execute-tasks").
+
+## Complete Command Reference
+
+### Product Planning
+- **`/plan-product`** - Plan a new product and install Yoyo Dev
+  - Creates mission.md, roadmap.md, tech-stack.md
+  - Sets up product documentation structure
+  - Ideal for new projects
+
+- **`/analyze-product`** - Analyze existing codebase and install Yoyo Dev
+  - Scans existing code structure
+  - Generates product documentation
+  - Ideal for existing projects
+
+### Feature Development
+- **`/create-new`** - Create new feature (streamlined workflow)
+  - Full spec creation + task generation in one command
+  - Interactive requirements gathering
+  - Ready-to-execute task breakdown
+  - **Recommended** for most feature work
+
+- **`/create-spec`** - Create detailed feature specification
+  - Generates spec.md, spec-lite.md, technical-spec.md
+  - Optional database schema and API spec
+  - Decision log creation
+  - Use when you want detailed specs without auto-task creation
+
+- **`/create-tasks`** - Generate task breakdown from spec
+  - Creates tasks.md with parent/subtask structure
+  - TDD-based (test first, implement, verify)
+  - Adds task metadata for parallel execution
+  - Use after `/create-spec` to generate tasks
+
+- **`/execute-tasks`** - Execute tasks and ship code
+  - Full 3-phase execution (pre, execution, post)
+  - Runs tests, creates PR, updates roadmap
+  - Automatic parallel execution when possible
+  - Generates recap document
+
+### Bug Fixes
+- **`/create-fix`** - Systematic bug fix workflow
+  - Root cause analysis
+  - Creates fix folder with analysis.md
+  - TDD-based task breakdown
+  - Execution-ready
+
+### Design System
+- **`/design-init`** - Initialize design system
+  - Creates design tokens (colors, spacing, typography)
+  - Generates Tailwind config
+  - Component pattern library
+  - WCAG AA accessibility baseline
+
+- **`/design-audit`** - Audit design system compliance
+  - Checks color token usage
+  - Validates spacing scale
+  - Color contrast validation (WCAG AA)
+  - Focus state verification
+  - Generates violation report
+
+- **`/design-fix`** - Fix design system violations
+  - Systematically fix violations from audit
+  - Target specific violation types
+  - TDD-based fixes
+  - Re-validates after fixes
+
+- **`/design-component`** - Create UI component with strict validation
+  - Zero violations required
+  - All variants and states enforced
+  - Pattern library integration
+  - Stricter than `/create-new`
+
+### Code Review
+- **`/review`** - Critical code review with specialized modes
+  - `--devil` - Devil's advocate (find what will break)
+  - `--security` - Security vulnerabilities
+  - `--performance` - Performance bottlenecks
+  - `--production` - Production readiness
+  - `--premortem` - Why will this fail?
+  - `--quality` - Code quality and maintainability
+  - Generates detailed review report
+
+### Execution Flags
+Many commands support optional flags:
+
+**Review Modes** (apply during execution):
+- `--devil`, `--security`, `--performance`, `--production`
+
+**Execution Modes**:
+- `--lite` - Skip detailed specs (3-5x faster)
+- `--monitor` - Enable task monitor with tmux
+- `--sequential` - Force sequential execution (disable parallel)
+- `--parallel` - Force parallel execution
+
+**Design Mode**:
+- `--design-mode` - Enable design validation during execution
 
 ## Troubleshooting
 
