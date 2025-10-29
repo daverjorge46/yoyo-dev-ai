@@ -28,7 +28,7 @@ if [ ! -d "./yoyo-dev" ]; then
         1)
             echo ""
             echo "Installing Yoyo Dev..."
-            ~/.yoyo-dev/setup/project.sh --claude-code
+            ~/yoyo-dev/setup/project.sh --claude-code
             exit 0
             ;;
         2)

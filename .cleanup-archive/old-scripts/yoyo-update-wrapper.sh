@@ -53,7 +53,7 @@ check_yoyo_project() {
         echo "This directory does not have Yoyo Dev installed."
         echo ""
         echo "To install Yoyo Dev in this project:"
-        echo "  ~/.yoyo-dev/setup/project.sh --claude-code"
+        echo "  ~/yoyo-dev/setup/project.sh --claude-code"
         echo ""
         exit 1
     fi
@@ -71,7 +71,7 @@ main() {
     check_yoyo_project
 
     # Call the actual update script with all arguments
-    ~/.yoyo-dev/setup/yoyo-update.sh "$@"
+    ~/yoyo-dev/setup/yoyo-update.sh "$@"
 }
 
 main "$@"

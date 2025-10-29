@@ -19,7 +19,7 @@ echo ""
 
 # Check if running from correct directory
 if [[ ! -f "$HOME/yoyo-dev/setup/install-v2.sh" ]]; then
-    echo -e "${YELLOW}⚠️  Please run this script from ~/.yoyo-dev/setup/${RESET}"
+    echo -e "${YELLOW}⚠️  Please run this script from ~/yoyo-dev/setup/${RESET}"
     exit 1
 fi
 
@@ -131,7 +131,7 @@ echo ""
 echo -e "${BOLD}Command Reference:${RESET}"
 echo ""
 echo -e "  ${CYAN}/yoyo-help${RESET}                Show all commands and flags"
-echo -e "  ${CYAN}cat ~/.yoyo-dev/COMMAND-REFERENCE.md${RESET}"
+echo -e "  ${CYAN}cat ~/yoyo-dev/COMMAND-REFERENCE.md${RESET}"
 echo -e "                             Full documentation"
 echo ""
 

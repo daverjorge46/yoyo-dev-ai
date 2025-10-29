@@ -306,7 +306,7 @@ show_installation_menu() {
     echo "Please choose an installation method:"
     echo ""
     echo -e "${CYAN}1)${RESET} ${BOLD}Virtual Environment${RESET} (Recommended)"
-    echo "   • Creates isolated Python environment in ~/.yoyo-dev/venv"
+    echo "   • Creates isolated Python environment in ~/yoyo-dev/venv"
     echo "   • Clean, no system conflicts"
     echo ""
     echo -e "${CYAN}2)${RESET} ${BOLD}pipx${RESET} (If available)"
@@ -383,7 +383,7 @@ case "$INSTALL_METHOD" in
         echo ""
         echo "The Bash fallback dashboard will be used instead."
         echo "You can install Python dependencies later by running:"
-        echo "  ~/.yoyo-dev/setup/install-dashboard-deps.sh"
+        echo "  ~/yoyo-dev/setup/install-dashboard-deps.sh"
         ;;
     none)
         # Already handled above
@@ -413,7 +413,7 @@ elif command -v python3 &> /dev/null; then
         echo -e "${GREEN}✓ All TUI dependencies installed and validated${RESET}"
     else
         echo -e "${YELLOW}⚠ Some TUI dependencies may be missing${RESET}"
-        echo -e "${YELLOW}  Run: pip3 install -r ~/.yoyo-dev/requirements.txt --user${RESET}"
+        echo -e "${YELLOW}  Run: pip3 install -r ~/yoyo-dev/requirements.txt --user${RESET}"
     fi
 fi
 

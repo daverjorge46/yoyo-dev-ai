@@ -271,7 +271,7 @@ start_monitor() {
         exit 1
     fi
 
-    ~/.yoyo-dev/lib/task-monitor-tmux.sh split "$task_file"
+    ~/yoyo-dev/lib/task-monitor-tmux.sh split "$task_file"
 }
 
 # Display branded header and launch TUI
@@ -291,7 +291,7 @@ launch_tui() {
             1)
                 echo ""
                 echo "Installing Yoyo Dev..."
-                ~/.yoyo-dev/setup/project.sh --claude-code
+                ~/yoyo-dev/setup/project.sh --claude-code
                 exit 0
                 ;;
             *)

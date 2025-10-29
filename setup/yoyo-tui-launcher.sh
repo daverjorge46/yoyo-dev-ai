@@ -42,7 +42,7 @@ if [ -z "$PYTHON_CMD" ]; then
     echo -e "${RED}❌ Missing required dependencies: textual, watchdog, pyyaml${RESET}"
     echo ""
     echo "Install with:"
-    echo "  ~/.yoyo-dev/setup/install-deps.sh"
+    echo "  ~/yoyo-dev/setup/install-deps.sh"
     echo ""
     exit 1
 fi

@@ -37,14 +37,14 @@ if ! command -v tmux &> /dev/null; then
     echo ""
     echo "Falling back to standard mode..."
     echo ""
-    exec ~/.yoyo-dev/setup/yoyo.sh "$@"
+    exec ~/yoyo-dev/setup/yoyo.sh "$@"
 fi
 
 # Check if we have a TTY (required for tmux)
 if ! tty -s; then
     # No TTY available (running in background, via script, etc)
     # Fall back to standard mode
-    exec ~/.yoyo-dev/setup/yoyo.sh "$@"
+    exec ~/yoyo-dev/setup/yoyo.sh "$@"
 fi
 
 # Check if we're in a Yoyo Dev project
@@ -63,7 +63,7 @@ if [ ! -d "./yoyo-dev" ]; then
         1)
             echo ""
             echo "Installing Yoyo Dev..."
-            ~/.yoyo-dev/setup/project.sh --claude-code
+            ~/yoyo-dev/setup/project.sh --claude-code
             exit 0
             ;;
         2)
@@ -164,7 +164,7 @@ set -g history-limit 50000
 # Custom keybindings
 # Ctrl+B r - Force refresh status pane (send Ctrl+C then restart)
 # Note: Tries Rich dashboard → Bash fallback (split-pane compatible)
-bind-key r run-shell "tmux send-keys -t 1 C-c && tmux respawn-pane -t 1 -k 'if [ -f ~/.yoyo-dev/venv/bin/python3 ] && ~/.yoyo-dev/venv/bin/python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then ~/.yoyo-dev/venv/bin/python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; elif command -v python3 >/dev/null && python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then python3 ~/.yoyo-dev/lib/yoyo-dashboard.py; else ~/.yoyo-dev/lib/yoyo-status.sh; fi'"
+bind-key r run-shell "tmux send-keys -t 1 C-c && tmux respawn-pane -t 1 -k 'if [ -f ~/yoyo-dev/venv/bin/python3 ] && ~/yoyo-dev/venv/bin/python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then ~/yoyo-dev/venv/bin/python3 ~/yoyo-dev/lib/yoyo-dashboard.py; elif command -v python3 >/dev/null && python3 -c \"import rich, watchdog, yaml\" 2>/dev/null; then python3 ~/yoyo-dev/lib/yoyo-dashboard.py; else ~/yoyo-dev/lib/yoyo-status.sh; fi'"
 EOF
 
 # Create startup script that displays header and launches Claude

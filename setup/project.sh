@@ -256,7 +256,7 @@ if [ "$CLAUDE_CODE" = true ]; then
                     echo "  ✓ yoyo command installed globally"
                 else
                     echo "  ⚠️  Could not create global symlink (sudo required)"
-                    echo "     Run manually: sudo ln -sf ~/.yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
+                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
                 fi
             fi
 
@@ -270,7 +270,7 @@ if [ "$CLAUDE_CODE" = true ]; then
                         echo "  ✓ yoyo-update command installed globally"
                     else
                         echo "  ⚠️  Could not create global symlink (sudo required)"
-                        echo "     Run manually: sudo ln -sf ~/.yoyo-dev/setup/yoyo-update-wrapper.sh /usr/local/bin/yoyo-update"
+                        echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update-wrapper.sh /usr/local/bin/yoyo-update"
                     fi
                 fi
             fi
@@ -294,7 +294,7 @@ if [ "$CLAUDE_CODE" = true ]; then
             echo "  ✓ yoyo command installed globally"
         else
             echo "  ⚠️  Could not create global symlink (sudo required)"
-            echo "     Run manually: sudo ln -sf ~/.yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
+            echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
         fi
     fi
 

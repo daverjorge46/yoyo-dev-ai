@@ -85,7 +85,7 @@ if [ ! -d "./yoyo-dev" ]; then
     echo "❌ Error: Yoyo Dev not found in this project"
     echo ""
     echo "Please run the installation script first:"
-    echo "  ~/.yoyo-dev/setup/project.sh --claude-code"
+    echo "  ~/yoyo-dev/setup/project.sh --claude-code"
     echo ""
     exit 1
 fi
@@ -227,7 +227,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
                 echo "  ✓ yoyo command updated globally"
             else
                 echo "  ⚠️  Could not update global command (sudo required)"
-                echo "     Run manually: sudo cp ~/.yoyo-dev/setup/yoyo-launcher-v2.sh /usr/local/bin/yoyo"
+                echo "     Run manually: sudo cp ~/yoyo-dev/setup/yoyo-launcher-v2.sh /usr/local/bin/yoyo"
             fi
         else
             echo "  → Creating global 'yoyo' command (launches TUI)..."
@@ -235,7 +235,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
                 echo "  ✓ yoyo command installed globally"
             else
                 echo "  ⚠️  Could not create global command (sudo required)"
-                echo "     Run manually: sudo cp ~/.yoyo-dev/setup/yoyo-launcher-v2.sh /usr/local/bin/yoyo"
+                echo "     Run manually: sudo cp ~/yoyo-dev/setup/yoyo-launcher-v2.sh /usr/local/bin/yoyo"
             fi
         fi
 
@@ -262,7 +262,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
                     echo "  ✓ yoyo-update command updated globally"
                 else
                     echo "  ⚠️  Could not update global symlink (sudo required)"
-                    echo "     Run manually: sudo ln -sf ~/.yoyo-dev/setup/yoyo-update-wrapper.sh /usr/local/bin/yoyo-update"
+                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update-wrapper.sh /usr/local/bin/yoyo-update"
                 fi
             else
                 echo "  → Creating global 'yoyo-update' command..."
@@ -270,7 +270,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
                     echo "  ✓ yoyo-update command installed globally"
                 else
                     echo "  ⚠️  Could not create global symlink (sudo required)"
-                    echo "     Run manually: sudo ln -sf ~/.yoyo-dev/setup/yoyo-update-wrapper.sh /usr/local/bin/yoyo-update"
+                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update-wrapper.sh /usr/local/bin/yoyo-update"
                 fi
             fi
         fi
@@ -510,7 +510,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         else
             echo ""
             echo "⚠️  Dependency installer not found"
-            echo "You can install manually: ~/.yoyo-dev/setup/install-deps.sh"
+            echo "You can install manually: ~/yoyo-dev/setup/install-deps.sh"
         fi
 
         echo ""

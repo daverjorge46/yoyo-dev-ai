@@ -21,8 +21,12 @@ readonly RESET='\033[0m'
 # Yoyo Dev version
 readonly VERSION="3.0.0"
 
-# TUI Python script location
-readonly TUI_SCRIPT="$HOME/yoyo-dev/lib/yoyo-tui.py"
+# Determine script directory (where this script is located)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+# TUI Python script location (project-local)
+readonly TUI_SCRIPT="$PROJECT_ROOT/lib/yoyo-tui.py"
 
 # ============================================================================
 # Dependency Checking
@@ -268,7 +272,7 @@ start_monitor() {
         exit 1
     fi
 
-    ~/.yoyo-dev/lib/task-monitor-tmux.sh split "$task_file"
+    ~/yoyo-dev/lib/task-monitor-tmux.sh split "$task_file"
 }
 
 # Install MCP servers
@@ -294,10 +298,10 @@ install_mcps() {
         # Use local project copies (installed during project setup)
         MCP_PREREQUISITES="./yoyo-dev/setup/mcp-prerequisites.sh"
         MCP_INSTALLER="./yoyo-dev/setup/mcp-installer.sh"
-    elif [ -f ~/.yoyo-dev/setup/mcp-prerequisites.sh ] && [ -f ~/.yoyo-dev/setup/mcp-installer.sh ]; then
+    elif [ -f ~/yoyo-dev/setup/mcp-prerequisites.sh ] && [ -f ~/yoyo-dev/setup/mcp-installer.sh ]; then
         # Fall back to base installation
-        MCP_PREREQUISITES=~/.yoyo-dev/setup/mcp-prerequisites.sh
-        MCP_INSTALLER=~/.yoyo-dev/setup/mcp-installer.sh
+        MCP_PREREQUISITES=~/yoyo-dev/setup/mcp-prerequisites.sh
+        MCP_INSTALLER=~/yoyo-dev/setup/mcp-installer.sh
     else
         echo -e "${RED}ERROR: MCP installation scripts not found${RESET}"
         echo ""
@@ -350,7 +354,7 @@ launch_tui() {
             1)
                 echo ""
                 echo "Installing Yoyo Dev..."
-                ~/.yoyo-dev/setup/project.sh --claude-code
+                ~/yoyo-dev/setup/project.sh --claude-code
                 exit 0
                 ;;
             *)

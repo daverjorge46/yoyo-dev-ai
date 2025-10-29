@@ -20,7 +20,7 @@ echo "======================================"
 echo ""
 
 # Ensure we're in the yoyo-dev directory
-cd ~/.yoyo-dev
+cd ~/yoyo-dev
 
 # Check if .yoyo-dev directory exists
 if [ ! -d ".yoyo-dev" ]; then
