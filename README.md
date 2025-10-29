@@ -1,569 +1,605 @@
-# Yoyo Dev - Quick Start Guide
+# Yoyo Dev v3.0 - AI-Assisted Development Framework
 
-AI-assisted development workflow for building products with Claude Code.
+**"Powerful when you need it. Invisible when you don't."**
 
-**NEW in v1.5.0:** Comprehensive Design System for professional UI consistency and accessibility compliance.
+Production-grade intelligent TUI dashboard for AI-assisted software development with Claude Code.
 
-**Performance Optimizations (2025-10-11):**
-- ⚡ 97% faster startup (9ms vs 300ms)
-- ⚡ 94% faster status refresh (3ms vs 50ms)
-- ⚡ 100% CPU reduction during idle monitoring (0% vs 2-5%)
-- ⚡ Eliminated code duplication with shared parsing utilities
-- ⚡ Smart caching for frequently-accessed context
+## ✨ What's New in v3.0
 
-## Installation
+🚀 **Production-Grade Textual TUI Dashboard**
+- Intelligent 3-panel layout with real-time updates
+- Context-aware command suggestions
+- Proactive error detection
+- MCP server health monitoring
+- Beautiful, responsive terminal UI
 
-### Install in a New Project
+⚡ **Performance Optimizations**
+- 97% faster startup (9ms vs 300ms)
+- 94% faster status refresh (3ms vs 50ms)
+- 100% CPU reduction during idle (0% vs 2-5%)
+- Smart caching for frequently-accessed data
+
+🎨 **Design System (v1.5.0)**
+- Professional UI consistency
+- WCAG AA accessibility compliance
+- Design token system
+- Automated validation
+
+---
+
+## 📦 Installation
+
+### Quick Install
 
 ```bash
-# Basic installation (Claude Code only)
-~/.yoyo-dev/setup/project.sh --claude-code
-
-# With Cursor IDE support
-~/.yoyo-dev/setup/project.sh --claude-code --cursor
-
-# With specific project type
-~/.yoyo-dev/setup/project.sh --claude-code --project-type=default
-```
-
-### Install from GitHub (No Base Installation)
-
-```bash
+# Install in current project
 curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/project.sh | bash -s -- --no-base --claude-code
+
+# OR if you have a base installation
+~/.yoyo-dev/setup/project.sh --claude-code
 ```
 
 ### Installation Options
 
-- `--claude-code` - Install Claude Code commands and agents
-- `--cursor` - Install Cursor rules
-- `--no-base` - Install directly from GitHub
-- `--project-type=TYPE` - Use specific project configuration
-- `--overwrite-instructions` - Overwrite existing instruction files
-- `--overwrite-standards` - Overwrite existing standards files
+| Flag | Description |
+|------|-------------|
+| `--claude-code` | Install Claude Code commands and agents (required) |
+| `--cursor` | Also install Cursor IDE rules |
+| `--no-base` | Install directly from GitHub (no base installation needed) |
+| `--project-type=TYPE` | Use specific project configuration |
+| `--overwrite-instructions` | Overwrite existing instruction files |
+| `--overwrite-standards` | Overwrite existing standards files |
+
+### Install Global Command
+
+After project installation, install the global `yoyo` command:
+
+```bash
+# Install global command (works from any project directory)
+bash .yoyo-dev/setup/install-global-command.sh
+```
+
+This creates a global `yoyo` command that works from any Yoyo Dev project.
 
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
-Once installed, launch Yoyo Dev with the `yoyo` command:
+### Launch TUI Dashboard
 
 ```bash
-# Standard mode (uses terminal's default colors)
+# Launch production TUI v3.0
 yoyo
 
-# Visual mode (branded grey-blue theme with tmux)
-yoyo --visual
+# OR from project directory
+bash .yoyo-dev/setup/yoyo.sh
 ```
 
-**Visual Mode** provides a consistent, branded experience with custom colors regardless of your terminal settings. Powered by tmux with mouse support and enhanced controls.
+### TUI Features
 
-### Standard Mode
+**3-Panel Intelligent Dashboard:**
+- **Left Panel (30%)**: Active Work - Current specs/fixes with progress tracking
+- **Center Panel (40%)**: Command Palette - Context-aware command suggestions
+- **Right Panel (30%)**: History - Recent actions with success indicators
 
-You'll see a branded startup screen with your project context:
+**Keyboard Shortcuts:**
+- `?` - Help and shortcuts
+- `/` - Command search
+- `r` - Refresh all panels
+- `g` - Git menu
+- `t` - Focus active work
+- `s` - Focus specs/commands
+- `h` - Focus history
+- `q` - Quit
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│ ██╗   ██╗ ██████╗ ██╗   ██╗ ██████╗       ██████╗ ███████╗██╗   ██╗ │
-| ╚██╗ ██╔╝██╔═══██╗╚██╗ ██╔╝██╔═══██╗      ██╔══██╗██╔════╝██║   ██║ │
-|  ╚████╔╝ ██║   ██║ ╚████╔╝ ██║   ██║█████╗██║  ██║█████╗  ██║   ██║ │
-│   ╚██╔╝  ██║   ██║  ╚██╔╝  ██║   ██║╚════╝██║  ██║██╔══╝  ╚██╗ ██╔╝ │
-│    ██║   ╚██████╔╝   ██║   ╚██████╔╝      ██████╔╝███████╗ ╚████╔╝  │
-|    ╚═╝    ╚═════╝    ╚═╝    ╚═════╝       ╚═════╝ ╚══════╝  ╚═══╝   │
-│                                                                     │
-│              v2.0.0 - AI-Assisted Development Framework             │
-│          "Powerful when you need it. Invisible when you don't."     │
-└─────────────────────────────────────────────────────────────────────┘
-
-📁 Project: bank-statement-app
-📍 Location: /home/user/PROJECTS/bank-statement-app
-🎯 Mission: AI-assisted development workflow
-
-🛠️  Stack: **React 18.3.1** - Modern React with concurrent features and
-           automatic batching + **Convex React SDK 1.26.2** - Real-time
-           database with optimistic updates
-
-──────────────────────────────────────────────────────────────────────
-
-Quick Start:
-  • /create-new "feature name" --lite --monitor  # Fast feature creation
-  • /create-fix "problem" --monitor              # Fix bugs systematically
-  • /execute-tasks                               # Build (interactive by default)
-
-New in v2.0:
-  ✨  Interactive mode by default (pause after each subtask)
-  ✨  MASTER-TASKS.md (single source of truth)
-  ✨  Task monitor with tmux split-pane
-  ✨  Lite mode for fast iteration
-  ✨  Comprehensive flag documentation
-
-Run /yoyo-help for complete command reference
-Docs: .yoyo-dev/COMMAND-REFERENCE.md
-
-Launching Claude Code...
-```
-
-Then Claude Code launches normally, and you can start using Yoyo Dev commands!
-
-### Visual Mode (NEW!)
-
-For a branded, consistent experience with custom colors:
-
-```bash
-yoyo --visual
-```
-
-**Features:**
-- 🎨 Custom grey-blue color scheme (#2d3748 background)
-- 📊 **Auto status monitor** - Shows tasks, progress, or getting started guide
-- 🖼️ Branded status bar with project name
-- 🖱️ Mouse support (click to switch panes, scroll history)
-- 📐 Full tmux capabilities (split panes, detach/reattach)
-- ✨ Consistent appearance across all terminal emulators
-- ⚡ Real-time progress updates (refreshes every 10 seconds, configurable)
-
-**Make it default:**
-```bash
-# Add to ~/.bashrc or ~/.zshrc
-export YOYO_VISUAL_MODE=true
-```
-
-**Requirements:** `tmux` (falls back to standard mode if not installed)
-
-See [docs/VISUAL-MODE.md](docs/VISUAL-MODE.md) for complete documentation and customization options.
+**Intelligent Features:**
+- 🧠 Context-aware command suggestions based on project state
+- ⚠️ Proactive error detection with suggested fixes
+- 📊 Real-time progress tracking with visual indicators
+- 🔌 MCP server health monitoring
+- 🎯 One-click command execution (copy to clipboard)
 
 ---
 
-## Core Workflow
+## 📚 Core Workflows
 
-### 1. Plan Your Product
+### Product Setup
 
-**For new products:**
-```
+```bash
+# New product - set mission & roadmap
 /plan-product
-```
 
-Creates product documentation:
-- Mission statement and product vision
-- Target users and problems solved
-- Technical stack decisions
-- Development roadmap with phases
-
-**For existing codebases:**
-```
+# Existing product - analyze and setup
 /analyze-product
 ```
 
-Analyzes your codebase and creates product docs based on what already exists.
+### Feature Development
 
----
+```bash
+# Fast feature creation (spec + tasks)
+/create-new "Add user profile" --lite
 
-### 2. Build Features or Fix Issues
+# Detailed feature with full spec
+/create-new "User authentication"
 
-**Streamlined feature creation (recommended):**
-```
-/create-new
-```
-
-All-in-one command that:
-- Creates detailed specification with Q&A clarification
-- Generates technical specs, database schema, and API design
-- Automatically creates task breakdown
-- Prepares for execution in one workflow
-
-**Fix bugs and issues:**
-```
-/create-fix
-```
-
-Systematic bug fix workflow:
-- Investigates and analyzes the problem
-- Identifies root cause with code analysis
-- Creates fix analysis document
-- Generates TDD-based task breakdown (test first, then fix)
-- Prepares for execution
-
-**Advanced: Separate spec and task creation:**
-```
-/create-spec     # Create detailed spec only
-/create-tasks    # Create task breakdown from spec
-```
-
-Use these when you want fine-grained control over spec creation and task generation separately.
-
----
-
-### 3. Execute Tasks
-
-```
+# Execute tasks interactively
 /execute-tasks
-/execute-tasks --devil        # With critical review mode
-/execute-tasks --security     # With security review
+
+# Execute specific task
+/execute-tasks --task=2
+
+# Execute all tasks (legacy batch mode)
+/execute-tasks --all
 ```
 
-Implements the feature or fix:
-- Runs pre-execution setup (context, git branch)
-- Executes all tasks using TDD approach
-- Updates implementation context as it works
-- Runs full test suite
-- Creates git commit and PR
-- Updates roadmap if applicable
-- Creates recap document
-- Extracts successful patterns
+### Bug Fixes
 
-**Optional review modes:** Add `--devil`, `--security`, `--performance`, or `--production` flags for extra scrutiny during implementation.
+```bash
+# Systematic bug fix workflow
+/create-fix "Layout broken on mobile"
 
-**⚡ NEW: Parallel Execution** - Automatically analyzes task dependencies and executes independent tasks concurrently for 2-3x faster development!
-
-**The command handles everything from code to deployment.**
-
----
-
-### 4. Design System (NEW v1.5.0)
-
-**Initialize design system:**
+# Quick fix (skip investigation)
+/create-fix "Button not clickable" --quick
 ```
+
+### Design System (v1.5.0)
+
+```bash
+# Initialize design system
 /design-init
-```
 
-Creates comprehensive design system for UI consistency:
-- Design tokens (colors, spacing, typography)
-- Tailwind configuration
-- Component pattern library
-- Accessibility guidelines (WCAG AA)
-- Dark mode support
-
-**Audit design compliance:**
-```
+# Audit design compliance
 /design-audit
-```
 
-Comprehensive design system audit:
-- Color token compliance
-- Spacing scale adherence
-- Typography consistency
-- Color contrast validation (WCAG AA)
-- Focus state verification
-- Responsive design checks
+# Fix design violations
+/design-fix --colors --spacing
 
-**Fix design violations:**
-```
-/design-fix
-/design-fix --colors      # Fix only color violations
-/design-fix --spacing     # Fix only spacing violations
-/design-fix --contrast    # Fix only contrast violations
-```
-
-Systematically fix design inconsistencies found in audit.
-
-**Create consistent components:**
-```
+# Create UI component with strict validation
 /design-component "User profile card"
 ```
 
-Build UI components with enforced design consistency:
-- Zero violations allowed
-- All variants and states required
-- WCAG AA compliance enforced
-- Pattern library integration
+### Code Review (Optional)
 
-**Use when:**
-- Starting new UI project → Run `/design-init` after `/plan-product`
-- Building UI components → Use `/design-component` for strict validation
-- Weekly consistency check → Run `/design-audit`
-- Cleaning up design debt → Use `/design-fix`
-
----
-
-### 5. Review Code (Optional)
-
-```
+```bash
+# Devil's advocate review
 /review --devil "Review authentication flow"
+
+# Security audit
 /review --security "Audit payment processing"
-/review --performance "Analyze dashboard performance"
+
+# Performance analysis
+/review --performance "Analyze dashboard"
+
+# Pre-mortem analysis
+/review --premortem "Database migration plan"
 ```
-
-Critical code review when you need extra scrutiny:
-- Devil's Advocate: Find what will break
-- Security: Vulnerabilities and auth issues
-- Performance: Bottlenecks and optimization
-- Production: Error handling and monitoring
-- Pre-Mortem: Why will this fail?
-
-**Use when:** Projects go sideways, bugs keep appearing, or before risky deployments.
 
 ---
 
-## Example Sessions
+## 🏗️ Project Structure
 
-### Building a New Feature
+```
+your-project/
+├── .yoyo-dev/
+│   ├── product/              # Product documentation
+│   │   ├── mission.md
+│   │   ├── mission-lite.md   # Condensed for AI
+│   │   ├── tech-stack.md
+│   │   └── roadmap.md
+│   │
+│   ├── specs/                # Feature specifications
+│   │   └── YYYY-MM-DD-feature-name/
+│   │       ├── spec.md
+│   │       ├── spec-lite.md  # Condensed for AI
+│   │       ├── tasks.md      # Task breakdown
+│   │       ├── state.json    # Workflow state
+│   │       └── sub-specs/    # Technical details
+│   │
+│   ├── fixes/                # Bug fix documentation
+│   │   └── YYYY-MM-DD-fix-name/
+│   │       ├── analysis.md
+│   │       ├── solution-lite.md
+│   │       ├── tasks.md
+│   │       └── state.json
+│   │
+│   ├── recaps/               # Development recaps
+│   ├── patterns/             # Saved patterns
+│   │
+│   ├── instructions/         # AI workflow instructions
+│   │   ├── core/             # Core workflows
+│   │   └── meta/             # Meta instructions
+│   │
+│   ├── standards/            # Development standards
+│   │   ├── best-practices.md
+│   │   ├── tech-stack.md
+│   │   ├── personas.md
+│   │   ├── design-system.md  # NEW v1.5.0
+│   │   └── code-style/
+│   │
+│   ├── design/               # Design system (v1.5.0)
+│   │   ├── tokens.json
+│   │   ├── tailwind.config.js
+│   │   ├── design-system.md
+│   │   └── component-patterns/
+│   │
+│   └── setup/                # Installation scripts
+│
+└── .claude/                  # Claude Code configuration
+    ├── commands/             # Custom slash commands
+    └── agents/               # Specialized agents
+```
+
+---
+
+## 🧪 Testing
+
+### TUI v3.0 Test Suite
 
 ```bash
-# 1. Start a new product
-/plan-product
-# Answer: task management app for remote teams
+# Run all tests
+pytest tests/ -v
 
-# 2. Initialize design system (NEW v1.5.0)
+# Run specific category
+pytest tests/widgets/ -v      # Widget tests (209 tests)
+pytest tests/screens/ -v      # Screen tests (82 tests)
+pytest tests/services/ -v     # Service tests (80 tests)
+
+# Run with coverage
+pytest tests/ --cov=lib/yoyo_tui_v3 --cov-report=html
+
+# Quick test (quiet mode)
+pytest tests/ -v --tb=no -q
+```
+
+**Test Results:**
+- ✅ 414 tests passing (94.5% pass rate)
+- ⚠️ 24 tests with known mount dependencies (low priority)
+
+### Test Organization
+
+```
+tests/
+├── widgets/          # UI component tests
+├── screens/          # Screen navigation tests
+├── services/         # Business logic tests
+├── integration/      # Integration tests
+└── fixtures/         # Test data
+```
+
+---
+
+## 🔧 Configuration
+
+### Project Type Configuration
+
+Edit `.yoyo-dev/config.yml`:
+
+```yaml
+default_project_type: default
+
+project_types:
+  default:
+    instructions: ~/.yoyo-dev/instructions
+    standards: ~/.yoyo-dev/standards
+
+  custom_type:
+    instructions: ~/.yoyo-dev/project_types/custom_type/instructions
+    standards: ~/.yoyo-dev/project_types/custom_type/standards
+```
+
+### Parallel Execution
+
+```yaml
+parallel_execution:
+  enabled: true              # Auto-analyze task dependencies
+  max_concurrency: 5         # Max parallel tasks
+  auto_analyze: true         # Automatic dependency detection
+  ask_confirmation: true     # Ask before parallel execution
+```
+
+### Design System
+
+```yaml
+design_system:
+  enabled: true                   # Enable design system
+  auto_validate: true             # Auto-validate during workflows
+  accessibility_level: WCAG-AA    # WCAG-AA or WCAG-AAA
+  dark_mode: true                 # Dark mode support required
+  strict_mode: false              # Block merge on violations
+```
+
+---
+
+## 🚀 Advanced Features
+
+### Parallel Task Execution
+
+Yoyo Dev automatically analyzes task dependencies and executes independent tasks concurrently:
+
+```bash
+# Automatic parallel execution (when safe)
+/execute-tasks
+
+# Force sequential execution
+/execute-tasks --sequential
+
+# Force parallel execution
+/execute-tasks --parallel
+```
+
+**Performance Gains:**
+- 3 independent tasks: 3x faster
+- Mixed dependencies: 2x faster on average
+- Sequential tasks: No slowdown
+
+### Design System Workflows
+
+**Initialize Design System:**
+```bash
 /design-init
-# Sets up design tokens, patterns, Tailwind config
-
-# 3. Create and spec the feature
-/create-new
-# Answer: "what's next?" (picks from roadmap)
-# Creates spec + tasks in one workflow
-
-# 4. Build the feature
-/execute-tasks
-# Everything automated: code, tests, git, PR
-# Design validation runs automatically for UI components
 ```
 
-### Fixing a Bug
+Creates comprehensive design tokens, Tailwind config, and component patterns.
+
+**Audit Compliance:**
+```bash
+/design-audit                  # Full audit
+/design-audit --colors         # Color compliance only
+/design-audit --contrast       # Contrast ratios only
+```
+
+**Fix Violations:**
+```bash
+/design-fix                    # Fix all violations
+/design-fix --colors           # Fix color violations
+/design-fix --spacing          # Fix spacing violations
+```
+
+**Create Components:**
+```bash
+/design-component "Button with variants"
+```
+
+Enforces 100% design token compliance, WCAG AA accessibility, and pattern library integration.
+
+### Review Modes (Optional)
+
+Strategic code review when you need extra scrutiny:
 
 ```bash
-# 1. Analyze and plan the fix
-/create-fix
-# Describe the problem, let it investigate
+# Devil's advocate - find what will break
+/review --devil "Authentication flow"
 
-# 2. Implement the fix
-/execute-tasks
-# TDD approach: tests first, then fix
+# Security audit - OWASP Top 10 checks
+/review --security "Payment processing"
+
+# Performance analysis - bottlenecks & N+1 queries
+/review --performance "Dashboard rendering"
+
+# Production readiness - monitoring, rollbacks, health checks
+/review --production "Deployment plan"
+
+# Pre-mortem - why feature will fail before building
+/review --premortem "Real-time collaboration feature"
 ```
 
 ---
 
-## Key Files Created
+## 🔄 Updating
 
-### Product Level (`.yoyo-dev/product/`)
-- `mission.md` - Full product vision
-- `mission-lite.md` - Condensed for AI context
-- `tech-stack.md` - Technical architecture
-- `roadmap.md` - Development phases
-
-### Spec Level (`.yoyo-dev/specs/YYYY-MM-DD-feature-name/`)
-- `spec.md` - Full requirements
-- `spec-lite.md` - Condensed summary
-- `tasks.md` - Task breakdown
-- `decisions.md` - Technical decisions and rationale
-- `context.md` - Implementation progress (living doc)
-- `state.json` - Workflow state tracking
-- `sub-specs/technical-spec.md` - Implementation details
-- `sub-specs/database-schema.md` - DB changes (if needed)
-- `sub-specs/api-spec.md` - API design (if needed)
-
-### Fix Level (`.yoyo-dev/fixes/YYYY-MM-DD-fix-name/`)
-- `analysis.md` - Full problem analysis and solution approach
-- `solution-lite.md` - Condensed fix summary
-- `tasks.md` - Task breakdown for fix
-- `state.json` - Workflow state tracking
-
-### Design System Level (`.yoyo-dev/design/`) - NEW v1.5.0
-- `tokens.json` - Design tokens (colors, spacing, typography)
-- `tailwind.config.js` - Generated Tailwind configuration
-- `design-system.md` - Full design system documentation
-- `design-lite.md` - Condensed for AI context loading
-- `README.md` - Getting started guide
-- `component-patterns/` - Reusable UI component patterns
-  - `buttons.md` - Button variants and states
-  - `cards.md` - Card patterns
-  - `forms.md` - Form input patterns
-  - `navigation.md` - Navigation patterns
-  - `layouts.md` - Layout patterns
-- `audits/` - Design compliance audit reports
-
-### Project Level
-- `.yoyo-dev/recaps/` - Feature completion summaries
-- `.yoyo-dev/patterns/successful-approaches.md` - Reusable patterns library
-
----
-
-## Memory & Consistency Features
-
-**Decision Log** - Captures technical decisions with rationale
-**Inline Task Context** - Tasks include context, dependencies, files
-**Progressive Context** - Living documentation grows during implementation
-**Smart Loading** - Only loads relevant context, saves tokens
-**State Tracking** - Resume from any point, no lost progress
-**Pattern Library** - Learn from past successes
-
----
-
-## Tips
-
-✅ **Keep specs focused** - One feature at a time
-✅ **Review before executing** - Check tasks.md makes sense
-✅ **Let it finish** - `/execute-tasks` runs all post-execution steps automatically
-✅ **Check decisions.md** - See why technical choices were made
-✅ **Review context.md** - Understand how feature was built
-✅ **Reuse patterns** - Check `patterns/successful-approaches.md` for proven approaches
-✅ **Initialize design system early** - Run `/design-init` after `/plan-product` for UI projects (NEW v1.5.0)
-✅ **Weekly design audits** - Run `/design-audit` weekly to catch design drift (NEW v1.5.0)
-✅ **Use design tokens** - Always use `bg-brand-primary` not `bg-blue-500` (NEW v1.5.0)
-
----
-
-## Troubleshooting
-
-**Can't find yoyo-dev commands?**
-- Run installation script again: `~/.yoyo-dev/setup/project.sh --claude-code`
-
-**Tasks seem unclear?**
-- Check `decisions.md` for technical context
-- Review `context.md` for implementation details
-
-**Want to resume work?**
-- Check `state.json` to see current phase and active task
-- Run `/execute-tasks` to continue
-
-**Need different tech stack?**
-- Edit `.yoyo-dev/product/tech-stack.md` before running `/create-spec`
-
----
-
-## Default Tech Stack
-
-- **Frontend:** React 18 + TypeScript + Vite
-- **Backend:** Convex (serverless)
-- **Auth:** Clerk
-- **Styling:** Tailwind CSS v4
-- **Icons:** Lucide React
-- **Package Manager:** npm
-- **Node:** v22 LTS
-
-Customize in `.yoyo-dev/standards/tech-stack.md`
-
----
-
-## Support
-
-- Documentation: `/help` in Claude Code
-- Issues: Check your project's GitHub issues
-- Configuration: `.yoyo-dev/config.yml`
-
----
-
-## Rich Terminal Output
-
-Yoyo Dev features beautiful, structured terminal output with:
-
-- **Color-coded status** - Green for success, red for errors, yellow for warnings
-- **Progress indicators** - Visual progress bars for long operations
-- **Structured tables** - Clean data presentation
-- **Hierarchical tasks** - Easy-to-scan task trees
-- **Clear next steps** - Always know what to do next
-
-Example output:
-
-```
-┌────────────────────────────────────────────────┐
-│  🚀 YOYO DEV - CREATE NEW FEATURE              │
-│  ────────────────────────────────────────────  │
-│  Streamlined feature creation workflow         │
-└────────────────────────────────────────────────┘
-
-┌─ PHASE 1: SPECIFICATION CREATION ─────────────┐
-│                                                │
-│  → Step 1: Feature Discovery         ✓        │
-│  → Step 2: Requirements Clarification ⟳       │
-│  → Step 3: Technical Spec Generation  □       │
-│  → Step 4: User Review               □       │
-│                                                │
-└────────────────────────────────────────────────┘
-```
-
-All commands provide rich, scannable output for a superior developer experience.
-
----
-
-## ⚡ Parallel Task Execution
-
-Yoyo Dev automatically analyzes task dependencies and executes independent tasks concurrently.
-
-**How it works:**
-1. Analyzes which tasks can run in parallel (no file conflicts)
-2. Groups tasks by dependencies
-3. Executes each group's tasks concurrently
-4. Shows real-time progress for all parallel tasks
-
-**Example:**
-```
-Group 1 (Parallel - 3 tasks):
-  • Task 1: Database Schema      ⟳
-  • Task 2: ProfileCard Component ⟳
-  • Task 3: SettingsPage Component ⟳
-
-✓ Group 1 completed in 4 min (vs 12 min sequential = 3x faster)
-```
-
-**Benefits:**
-- **2-3x faster** development on average
-- **Automatic** dependency analysis
-- **Safe** - never runs conflicting tasks together
-- **Smart** - even single tasks can use parallel agents
-
-**Control:**
-```bash
-/execute-tasks              # Auto parallel (default)
-/execute-tasks --sequential # Force sequential (safe mode)
-/execute-tasks --parallel   # Force parallel
-```
-
----
-
-## Updating Yoyo Dev
-
-Keep your Yoyo Dev installation up to date:
+### Update Yoyo Dev
 
 ```bash
-# Update in current project
-~/.yoyo-dev/setup/yoyo-update.sh
+# Update to latest version
+bash .yoyo-dev/setup/yoyo-update.sh
 
-# Update with specific options
-~/.yoyo-dev/setup/yoyo-update.sh --overwrite-instructions --overwrite-standards
+# Preserve customizations
+bash .yoyo-dev/setup/yoyo-update.sh --no-overwrite-instructions --no-overwrite-standards
 ```
 
-Updates:
-- Core instructions and workflows
-- Commands and agents (including design system - NEW v1.5.0)
-- Standards and best practices
-- Design system capabilities (NEW v1.5.0)
-- Preserves your product docs, specs, and design system
+**Update Flags:**
+- `--no-overwrite-instructions` - Keep custom instructions
+- `--no-overwrite-standards` - Keep custom standards
+- `--no-overwrite-commands` - Keep custom commands
+- `--no-overwrite-agents` - Keep custom agents
+- `--no-overwrite` - Keep all customizations
 
-**What gets updated in v1.5.0:**
-- ✅ Design system standards (3 new files)
-- ✅ Design workflows (design-init instruction)
-- ✅ Design commands (4 new commands)
-- ✅ Design agents (2 new agents)
-- ✅ Configuration (design_system settings)
-
----
-
-## Design System Benefits (NEW v1.5.0)
-
-**The Problem:** AI-assisted development often produces inconsistent UIs with hardcoded colors, arbitrary spacing, poor contrast, and missing accessibility features.
-
-**The Solution:** Systematic design enforcement through:
-
-✅ **Design Tokens** - Single source of truth for all design values
-✅ **Component Patterns** - Reusable, professionally-designed UI patterns
-✅ **Automated Validation** - Real-time compliance checking during development
-✅ **Accessibility Enforcement** - WCAG AA compliance built-in and automated
-✅ **Visual Consistency** - Systematic enforcement, not subjective judgment
-
-**Better than manual design review because:**
-- Catches violations before merge (automated)
-- Provides specific fix recommendations (actionable)
-- Maintains design memory (learns your design language)
-- Works within your existing workflow (no context switching)
-
-**Guarantees:**
-- ✅ Color consistency (only design tokens, no hardcoded values)
-- ✅ Spacing consistency (4px/8px grid enforced)
-- ✅ Typography consistency (font scale enforced)
-- ✅ Component consistency (patterns reused, not reinvented)
-- ✅ Accessibility baseline (WCAG AA automated)
-- ✅ Dark mode support (required and validated)
+**Protected Files** (never overwritten):
+- Product docs (`.yoyo-dev/product/`)
+- Specs (`.yoyo-dev/specs/`)
+- Fixes (`.yoyo-dev/fixes/`)
+- Recaps (`.yoyo-dev/recaps/`)
+- Patterns (`.yoyo-dev/patterns/`)
 
 ---
 
-**That's it. Ship features fast with professional design: plan → design-init → create → execute.**
+## 📖 Documentation
+
+### Core Documentation
+
+- **Command Reference**: `.yoyo-dev/COMMAND-REFERENCE.md` - All commands with examples
+- **Best Practices**: `.yoyo-dev/standards/best-practices.md` - Development guidelines
+- **Tech Stack**: `.yoyo-dev/standards/tech-stack.md` - Technology decisions
+- **Design System**: `.yoyo-dev/standards/design-system.md` - Design philosophy
+- **Personas**: `.yoyo-dev/standards/personas.md` - Development approaches
+
+### Online Documentation
+
+- **Main Docs**: https://docs.claude.com/en/docs/claude-code
+- **GitHub**: https://github.com/daverjorge46/yoyo-dev-ai
+- **Issues**: https://github.com/daverjorge46/yoyo-dev-ai/issues
+
+---
+
+## 🎯 Quick Reference
+
+### Essential Commands
+
+```bash
+# Setup
+/plan-product               # Set mission & roadmap (new)
+/analyze-product            # Setup for existing product
+
+# Development
+/create-new "feature"       # Fast feature creation
+/create-fix "problem"       # Fix bugs systematically
+/execute-tasks              # Build and ship
+
+# Design
+/design-init                # Initialize design system
+/design-audit               # Check compliance
+/design-fix                 # Fix violations
+
+# TUI
+yoyo                        # Launch dashboard
+yoyo --help                 # Show help
+yoyo --version              # Show version
+```
+
+### Keyboard Shortcuts (TUI)
+
+```
+?     Help              r     Refresh
+/     Commands          g     Git menu
+t     Focus tasks       s     Focus specs
+h     Focus history     q     Quit
+```
+
+---
+
+## 🏆 Best Practices
+
+### Development Workflow
+
+1. **Plan First**: `/plan-product` or `/analyze-product`
+2. **Spec Features**: `/create-new "feature name"`
+3. **Execute Tasks**: `/execute-tasks` (interactive by default)
+4. **Review Code**: `/review --mode` (when needed)
+5. **Track Progress**: Use TUI dashboard (`yoyo`)
+
+### Design System Workflow
+
+1. **Initialize**: `/design-init` at project start
+2. **Audit Weekly**: `/design-audit` to catch drift
+3. **Fix Violations**: `/design-fix` before releases
+4. **Create Components**: `/design-component` for reusable UI
+
+### Code Quality
+
+- Use TDD approach (tests first, then implementation)
+- Follow persona-driven development (Frontend, Backend, QA, etc.)
+- Keep it simple - fewest lines possible
+- DRY - extract repeated logic
+- Type safety - no TypeScript errors
+
+---
+
+## 🐛 Troubleshooting
+
+### TUI Won't Launch
+
+```bash
+# Check Python dependencies
+python3 -c "import textual; import watchdog; import yaml"
+
+# Reinstall dependencies
+pip3 install --user textual watchdog pyyaml
+
+# Test TUI instantiation
+python3 -c "
+import sys
+sys.path.insert(0, 'lib')
+from yoyo_tui_v3.app import create_app
+app = create_app()
+print('✅ TUI OK')
+"
+```
+
+### Global Command Not Found
+
+```bash
+# Reinstall global command
+bash .yoyo-dev/setup/install-global-command.sh
+
+# Add to PATH (if needed)
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Tests Failing
+
+```bash
+# Run specific test
+pytest tests/widgets/test_status_bar.py -v
+
+# Check test environment
+pytest --version
+python3 --version
+
+# Recreate virtual environment
+rm -rf venv
+python3 -m venv venv
+source venv/bin/activate
+pip install pytest pytest-cov textual watchdog pyyaml
+```
+
+---
+
+## 🤝 Contributing
+
+Yoyo Dev is an open-source framework for AI-assisted development. Contributions welcome!
+
+### Development Setup
+
+```bash
+# Clone repository
+git clone https://github.com/daverjorge46/yoyo-dev-ai.git
+cd yoyo-dev-ai
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run tests
+pytest tests/ -v
+```
+
+### Making Changes
+
+1. Create feature branch
+2. Make changes
+3. Run tests: `pytest tests/ -v`
+4. Update documentation
+5. Submit pull request
+
+---
+
+## 📝 License
+
+MIT License - See LICENSE file for details
+
+---
+
+## 🙏 Acknowledgments
+
+Built with:
+- [Claude Code](https://claude.com/claude-code) - AI-assisted development
+- [Textual](https://textual.textualize.io/) - TUI framework
+- [Rich](https://rich.readthedocs.io/) - Terminal formatting
+
+---
+
+## 📬 Support
+
+- **Issues**: https://github.com/daverjorge46/yoyo-dev-ai/issues
+- **Discussions**: https://github.com/daverjorge46/yoyo-dev-ai/discussions
+- **Documentation**: https://docs.claude.com/en/docs/claude-code
+
+---
+
+**Version**: 3.0.0
+**Last Updated**: 2025-10-29
+**Status**: ✅ Production Ready

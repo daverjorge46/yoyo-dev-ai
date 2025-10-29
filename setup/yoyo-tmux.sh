@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Yoyo Dev v2.0 - Tmux Launcher
+# Yoyo Dev v3.0 - Tmux Launcher
 # Provides branded visual experience with custom colors and layout
 
 set -euo pipefail
@@ -9,7 +9,7 @@ set -euo pipefail
 source "$HOME/yoyo-dev/setup/parse-utils.sh"
 
 # Yoyo Dev version
-readonly VERSION="2.0.0"
+readonly VERSION="3.0.0"
 
 # Yoyo Dev color scheme (grey-blue theme)
 readonly BG_COLOR="#2d3748"        # Dark grey-blue background
@@ -182,7 +182,7 @@ BOLD='\033[1m'
 DIM='\033[2m'
 RESET='\033[0m'
 
-VERSION="2.0.0"
+VERSION="3.0.0"
 PROJECT_NAME="__PROJECT_NAME__"
 PROJECT_PATH="__PROJECT_PATH__"
 MISSION="__MISSION__"

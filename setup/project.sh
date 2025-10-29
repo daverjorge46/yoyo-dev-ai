@@ -463,19 +463,19 @@ if [ "$CLAUDE_CODE" = true ]; then
 
     # Copy TUI library if available
     echo ""
-    echo "  📂 TUI Library (Optional):"
+    echo "  📂 TUI Library v3.0 (Optional):"
     if [ "$IS_FROM_BASE" = true ]; then
-        if [ -d "$BASE_AGENT_OS/lib/yoyo_tui" ]; then
+        if [ -d "$BASE_AGENT_OS/lib/yoyo_tui_v3" ]; then
             mkdir -p "./yoyo-dev/lib"
-            # Copy TUI library (excluding venv and cache)
-            cp -r "$BASE_AGENT_OS/lib/yoyo_tui" "./yoyo-dev/lib/" 2>/dev/null || true
+            # Copy TUI v3 library (excluding venv and cache)
+            cp -r "$BASE_AGENT_OS/lib/yoyo_tui_v3" "./yoyo-dev/lib/" 2>/dev/null || true
             # Remove venv and cache if they were copied
-            rm -rf "./yoyo-dev/lib/yoyo_tui/venv" 2>/dev/null || true
-            rm -rf "./yoyo-dev/lib/yoyo_tui/__pycache__" 2>/dev/null || true
-            find "./yoyo-dev/lib/yoyo_tui" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-            echo "  ✓ TUI library installed (lib/yoyo_tui/)"
+            rm -rf "./yoyo-dev/lib/yoyo_tui_v3/venv" 2>/dev/null || true
+            rm -rf "./yoyo-dev/lib/yoyo_tui_v3/__pycache__" 2>/dev/null || true
+            find "./yoyo-dev/lib/yoyo_tui_v3" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+            echo "  ✓ TUI v3.0 library installed (lib/yoyo_tui_v3/)"
         else
-            echo "  ⚠️  TUI library not found in base installation"
+            echo "  ⚠️  TUI v3.0 library not found in base installation"
         fi
     else
         echo "  ⚠️  TUI library not available from GitHub installation"
