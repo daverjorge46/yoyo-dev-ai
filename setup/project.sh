@@ -70,7 +70,7 @@ echo ""
 # Get project directory info
 CURRENT_DIR=$(pwd)
 PROJECT_NAME=$(basename "$CURRENT_DIR")
-INSTALL_DIR="./.yoyo-dev"
+INSTALL_DIR="./yoyo-dev"
 
 echo "📍 Installing Yoyo Dev to this project's root directory ($PROJECT_NAME)"
 echo ""
@@ -242,17 +242,17 @@ if [ "$CLAUDE_CODE" = true ]; then
     if [ "$IS_FROM_BASE" = true ]; then
         if [ -f "$BASE_AGENT_OS/setup/yoyo.sh" ]; then
             # Create setup directory if it doesn't exist
-            mkdir -p "./.yoyo-dev/setup"
+            mkdir -p "./yoyo-dev/setup"
 
-            copy_file "$BASE_AGENT_OS/setup/yoyo.sh" "./.yoyo-dev/setup/yoyo.sh" "true" "setup/yoyo.sh"
-            chmod +x "./.yoyo-dev/setup/yoyo.sh"
+            copy_file "$BASE_AGENT_OS/setup/yoyo.sh" "./yoyo-dev/setup/yoyo.sh" "true" "setup/yoyo.sh"
+            chmod +x "./yoyo-dev/setup/yoyo.sh"
 
             # Create global symlink (requires sudo)
             if [ -L "/usr/local/bin/yoyo" ] || [ -f "/usr/local/bin/yoyo" ]; then
                 echo "  ✓ yoyo command already installed globally"
             else
                 echo "  → Creating global 'yoyo' command..."
-                if sudo ln -sf "$HOME/.yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
+                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
                     echo "  ✓ yoyo command installed globally"
                 else
                     echo "  ⚠️  Could not create global symlink (sudo required)"
@@ -266,7 +266,7 @@ if [ "$CLAUDE_CODE" = true ]; then
                     echo "  ✓ yoyo-update command already installed globally"
                 else
                     echo "  → Creating global 'yoyo-update' command..."
-                    if sudo ln -sf "$HOME/.yoyo-dev/setup/yoyo-update-wrapper.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
+                    if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update-wrapper.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
                         echo "  ✓ yoyo-update command installed globally"
                     else
                         echo "  ⚠️  Could not create global symlink (sudo required)"
@@ -280,17 +280,17 @@ if [ "$CLAUDE_CODE" = true ]; then
     else
         # Download from GitHub
         # Create setup directory if it doesn't exist
-        mkdir -p "./.yoyo-dev/setup"
+        mkdir -p "./yoyo-dev/setup"
 
         download_file "${BASE_URL}/setup/yoyo.sh" \
-            "./.yoyo-dev/setup/yoyo.sh" \
+            "./yoyo-dev/setup/yoyo.sh" \
             "true" \
             "setup/yoyo.sh"
-        chmod +x "./.yoyo-dev/setup/yoyo.sh"
+        chmod +x "./yoyo-dev/setup/yoyo.sh"
 
         # Create global symlink
         echo "  → Creating global 'yoyo' command..."
-        if sudo ln -sf "$HOME/.yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
+        if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
             echo "  ✓ yoyo command installed globally"
         else
             echo "  ⚠️  Could not create global symlink (sudo required)"
@@ -301,122 +301,122 @@ if [ "$CLAUDE_CODE" = true ]; then
     # Install v2.0 support files
     echo ""
     echo "  📂 v2.0 Support Files:"
-    mkdir -p "./.yoyo-dev/lib"
-    mkdir -p "./.yoyo-dev/templates"
+    mkdir -p "./yoyo-dev/lib"
+    mkdir -p "./yoyo-dev/templates"
 
     if [ "$IS_FROM_BASE" = true ]; then
         # Copy task monitor scripts
         if [ -f "$BASE_AGENT_OS/lib/task-monitor.sh" ]; then
-            copy_file "$BASE_AGENT_OS/lib/task-monitor.sh" "./.yoyo-dev/lib/task-monitor.sh" "true" "lib/task-monitor.sh"
-            chmod +x "./.yoyo-dev/lib/task-monitor.sh"
+            copy_file "$BASE_AGENT_OS/lib/task-monitor.sh" "./yoyo-dev/lib/task-monitor.sh" "true" "lib/task-monitor.sh"
+            chmod +x "./yoyo-dev/lib/task-monitor.sh"
         fi
 
         if [ -f "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" ]; then
-            copy_file "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" "./.yoyo-dev/lib/task-monitor-tmux.sh" "true" "lib/task-monitor-tmux.sh"
-            chmod +x "./.yoyo-dev/lib/task-monitor-tmux.sh"
+            copy_file "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" "./yoyo-dev/lib/task-monitor-tmux.sh" "true" "lib/task-monitor-tmux.sh"
+            chmod +x "./yoyo-dev/lib/task-monitor-tmux.sh"
         fi
 
         # Copy status display scripts (visual mode)
         if [ -f "$BASE_AGENT_OS/lib/yoyo-status.sh" ]; then
-            copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./.yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
-            chmod +x "./.yoyo-dev/lib/yoyo-status.sh"
+            copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
+            chmod +x "./yoyo-dev/lib/yoyo-status.sh"
         fi
 
         # Copy Python dashboard (new in v2.1)
         if [ -f "$BASE_AGENT_OS/lib/yoyo-dashboard.py" ]; then
-            copy_file "$BASE_AGENT_OS/lib/yoyo-dashboard.py" "./.yoyo-dev/lib/yoyo-dashboard.py" "true" "lib/yoyo-dashboard.py (Python dashboard)"
-            chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
+            copy_file "$BASE_AGENT_OS/lib/yoyo-dashboard.py" "./yoyo-dev/lib/yoyo-dashboard.py" "true" "lib/yoyo-dashboard.py (Python dashboard)"
+            chmod +x "./yoyo-dev/lib/yoyo-dashboard.py"
         fi
 
         # Copy Textual TUI launcher (new in v2.2 - event-driven architecture)
         if [ -f "$BASE_AGENT_OS/lib/yoyo-tui.py" ]; then
-            copy_file "$BASE_AGENT_OS/lib/yoyo-tui.py" "./.yoyo-dev/lib/yoyo-tui.py" "true" "lib/yoyo-tui.py (TUI launcher)"
-            chmod +x "./.yoyo-dev/lib/yoyo-tui.py"
+            copy_file "$BASE_AGENT_OS/lib/yoyo-tui.py" "./yoyo-dev/lib/yoyo-tui.py" "true" "lib/yoyo-tui.py (TUI launcher)"
+            chmod +x "./yoyo-dev/lib/yoyo-tui.py"
         fi
 
         # Copy Python requirements
         if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
-            copy_file "$BASE_AGENT_OS/requirements.txt" "./.yoyo-dev/requirements.txt" "true" "requirements.txt (Python deps)"
+            copy_file "$BASE_AGENT_OS/requirements.txt" "./yoyo-dev/requirements.txt" "true" "requirements.txt (Python deps)"
         fi
 
         # Copy dashboard dependency installer
         if [ -f "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" ]; then
-            copy_file "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" "./.yoyo-dev/setup/install-dashboard-deps.sh" "true" "setup/install-dashboard-deps.sh"
-            chmod +x "./.yoyo-dev/setup/install-dashboard-deps.sh"
+            copy_file "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" "./yoyo-dev/setup/install-dashboard-deps.sh" "true" "setup/install-dashboard-deps.sh"
+            chmod +x "./yoyo-dev/setup/install-dashboard-deps.sh"
         fi
 
         # Copy yoyo-tmux.sh launcher (visual mode)
         if [ -f "$BASE_AGENT_OS/setup/yoyo-tmux.sh" ]; then
-            copy_file "$BASE_AGENT_OS/setup/yoyo-tmux.sh" "./.yoyo-dev/setup/yoyo-tmux.sh" "true" "setup/yoyo-tmux.sh (visual mode)"
-            chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
+            copy_file "$BASE_AGENT_OS/setup/yoyo-tmux.sh" "./yoyo-dev/setup/yoyo-tmux.sh" "true" "setup/yoyo-tmux.sh (visual mode)"
+            chmod +x "./yoyo-dev/setup/yoyo-tmux.sh"
         fi
 
         # Copy MASTER-TASKS template
         if [ -f "$BASE_AGENT_OS/templates/MASTER-TASKS.md" ]; then
-            copy_file "$BASE_AGENT_OS/templates/MASTER-TASKS.md" "./.yoyo-dev/templates/MASTER-TASKS.md" "true" "templates/MASTER-TASKS.md"
+            copy_file "$BASE_AGENT_OS/templates/MASTER-TASKS.md" "./yoyo-dev/templates/MASTER-TASKS.md" "true" "templates/MASTER-TASKS.md"
         fi
 
         # Copy COMMAND-REFERENCE.md
         if [ -f "$BASE_AGENT_OS/COMMAND-REFERENCE.md" ]; then
-            copy_file "$BASE_AGENT_OS/COMMAND-REFERENCE.md" "./.yoyo-dev/COMMAND-REFERENCE.md" "true" "COMMAND-REFERENCE.md"
+            copy_file "$BASE_AGENT_OS/COMMAND-REFERENCE.md" "./yoyo-dev/COMMAND-REFERENCE.md" "true" "COMMAND-REFERENCE.md"
         fi
     else
         # Download from GitHub
         download_file "${BASE_URL}/lib/task-monitor.sh" \
-            "./.yoyo-dev/lib/task-monitor.sh" \
+            "./yoyo-dev/lib/task-monitor.sh" \
             "true" \
             "lib/task-monitor.sh"
-        chmod +x "./.yoyo-dev/lib/task-monitor.sh"
+        chmod +x "./yoyo-dev/lib/task-monitor.sh"
 
         download_file "${BASE_URL}/lib/task-monitor-tmux.sh" \
-            "./.yoyo-dev/lib/task-monitor-tmux.sh" \
+            "./yoyo-dev/lib/task-monitor-tmux.sh" \
             "true" \
             "lib/task-monitor-tmux.sh"
-        chmod +x "./.yoyo-dev/lib/task-monitor-tmux.sh"
+        chmod +x "./yoyo-dev/lib/task-monitor-tmux.sh"
 
         # Download status display scripts
         download_file "${BASE_URL}/lib/yoyo-status.sh" \
-            "./.yoyo-dev/lib/yoyo-status.sh" \
+            "./yoyo-dev/lib/yoyo-status.sh" \
             "true" \
             "lib/yoyo-status.sh (Bash fallback)"
-        chmod +x "./.yoyo-dev/lib/yoyo-status.sh"
+        chmod +x "./yoyo-dev/lib/yoyo-status.sh"
 
         download_file "${BASE_URL}/lib/yoyo-dashboard.py" \
-            "./.yoyo-dev/lib/yoyo-dashboard.py" \
+            "./yoyo-dev/lib/yoyo-dashboard.py" \
             "true" \
             "lib/yoyo-dashboard.py (Python dashboard)"
-        chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
+        chmod +x "./yoyo-dev/lib/yoyo-dashboard.py"
 
         download_file "${BASE_URL}/lib/yoyo-tui.py" \
-            "./.yoyo-dev/lib/yoyo-tui.py" \
+            "./yoyo-dev/lib/yoyo-tui.py" \
             "true" \
             "lib/yoyo-tui.py (TUI launcher)"
-        chmod +x "./.yoyo-dev/lib/yoyo-tui.py"
+        chmod +x "./yoyo-dev/lib/yoyo-tui.py"
 
         download_file "${BASE_URL}/requirements.txt" \
-            "./.yoyo-dev/requirements.txt" \
+            "./yoyo-dev/requirements.txt" \
             "true" \
             "requirements.txt (Python deps)"
 
         download_file "${BASE_URL}/setup/install-dashboard-deps.sh" \
-            "./.yoyo-dev/setup/install-dashboard-deps.sh" \
+            "./yoyo-dev/setup/install-dashboard-deps.sh" \
             "true" \
             "setup/install-dashboard-deps.sh"
-        chmod +x "./.yoyo-dev/setup/install-dashboard-deps.sh"
+        chmod +x "./yoyo-dev/setup/install-dashboard-deps.sh"
 
         download_file "${BASE_URL}/setup/yoyo-tmux.sh" \
-            "./.yoyo-dev/setup/yoyo-tmux.sh" \
+            "./yoyo-dev/setup/yoyo-tmux.sh" \
             "true" \
             "setup/yoyo-tmux.sh (visual mode)"
-        chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
+        chmod +x "./yoyo-dev/setup/yoyo-tmux.sh"
 
         download_file "${BASE_URL}/templates/MASTER-TASKS.md" \
-            "./.yoyo-dev/templates/MASTER-TASKS.md" \
+            "./yoyo-dev/templates/MASTER-TASKS.md" \
             "true" \
             "templates/MASTER-TASKS.md"
 
         download_file "${BASE_URL}/COMMAND-REFERENCE.md" \
-            "./.yoyo-dev/COMMAND-REFERENCE.md" \
+            "./yoyo-dev/COMMAND-REFERENCE.md" \
             "true" \
             "COMMAND-REFERENCE.md"
     fi
@@ -424,39 +424,39 @@ if [ "$CLAUDE_CODE" = true ]; then
     # Copy MCP installation scripts to project (for yoyo --install-mcps)
     echo ""
     echo "  📂 MCP Installation Scripts:"
-    mkdir -p "./.yoyo-dev/setup"
+    mkdir -p "./yoyo-dev/setup"
 
     if [ "$IS_FROM_BASE" = true ]; then
         if [ -f "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" ]; then
-            copy_file "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" "./.yoyo-dev/setup/mcp-prerequisites.sh" "true" "setup/mcp-prerequisites.sh"
-            chmod +x "./.yoyo-dev/setup/mcp-prerequisites.sh"
+            copy_file "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" "./yoyo-dev/setup/mcp-prerequisites.sh" "true" "setup/mcp-prerequisites.sh"
+            chmod +x "./yoyo-dev/setup/mcp-prerequisites.sh"
         fi
 
         if [ -f "$BASE_AGENT_OS/setup/mcp-installer.sh" ]; then
-            copy_file "$BASE_AGENT_OS/setup/mcp-installer.sh" "./.yoyo-dev/setup/mcp-installer.sh" "true" "setup/mcp-installer.sh"
-            chmod +x "./.yoyo-dev/setup/mcp-installer.sh"
+            copy_file "$BASE_AGENT_OS/setup/mcp-installer.sh" "./yoyo-dev/setup/mcp-installer.sh" "true" "setup/mcp-installer.sh"
+            chmod +x "./yoyo-dev/setup/mcp-installer.sh"
         fi
 
         # Copy parse-utils.sh (needed by yoyo.sh for project context parsing)
         if [ -f "$BASE_AGENT_OS/setup/parse-utils.sh" ]; then
-            copy_file "$BASE_AGENT_OS/setup/parse-utils.sh" "./.yoyo-dev/setup/parse-utils.sh" "true" "setup/parse-utils.sh"
+            copy_file "$BASE_AGENT_OS/setup/parse-utils.sh" "./yoyo-dev/setup/parse-utils.sh" "true" "setup/parse-utils.sh"
         fi
     else
         # Download from GitHub when using --no-base
         download_file "${BASE_URL}/setup/mcp-prerequisites.sh" \
-            "./.yoyo-dev/setup/mcp-prerequisites.sh" \
+            "./yoyo-dev/setup/mcp-prerequisites.sh" \
             "true" \
             "setup/mcp-prerequisites.sh"
-        chmod +x "./.yoyo-dev/setup/mcp-prerequisites.sh"
+        chmod +x "./yoyo-dev/setup/mcp-prerequisites.sh"
 
         download_file "${BASE_URL}/setup/mcp-installer.sh" \
-            "./.yoyo-dev/setup/mcp-installer.sh" \
+            "./yoyo-dev/setup/mcp-installer.sh" \
             "true" \
             "setup/mcp-installer.sh"
-        chmod +x "./.yoyo-dev/setup/mcp-installer.sh"
+        chmod +x "./yoyo-dev/setup/mcp-installer.sh"
 
         download_file "${BASE_URL}/setup/parse-utils.sh" \
-            "./.yoyo-dev/setup/parse-utils.sh" \
+            "./yoyo-dev/setup/parse-utils.sh" \
             "true" \
             "setup/parse-utils.sh"
     fi
@@ -466,13 +466,13 @@ if [ "$CLAUDE_CODE" = true ]; then
     echo "  📂 TUI Library (Optional):"
     if [ "$IS_FROM_BASE" = true ]; then
         if [ -d "$BASE_AGENT_OS/lib/yoyo_tui" ]; then
-            mkdir -p "./.yoyo-dev/lib"
+            mkdir -p "./yoyo-dev/lib"
             # Copy TUI library (excluding venv and cache)
-            cp -r "$BASE_AGENT_OS/lib/yoyo_tui" "./.yoyo-dev/lib/" 2>/dev/null || true
+            cp -r "$BASE_AGENT_OS/lib/yoyo_tui" "./yoyo-dev/lib/" 2>/dev/null || true
             # Remove venv and cache if they were copied
-            rm -rf "./.yoyo-dev/lib/yoyo_tui/venv" 2>/dev/null || true
-            rm -rf "./.yoyo-dev/lib/yoyo_tui/__pycache__" 2>/dev/null || true
-            find "./.yoyo-dev/lib/yoyo_tui" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
+            rm -rf "./yoyo-dev/lib/yoyo_tui/venv" 2>/dev/null || true
+            rm -rf "./yoyo-dev/lib/yoyo_tui/__pycache__" 2>/dev/null || true
+            find "./yoyo-dev/lib/yoyo_tui" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
             echo "  ✓ TUI library installed (lib/yoyo_tui/)"
         else
             echo "  ⚠️  TUI library not found in base installation"

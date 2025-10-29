@@ -18,7 +18,7 @@ echo -e "${BOLD}${CYAN}╚══════════════════
 echo ""
 
 # Check if running from correct directory
-if [[ ! -f "$HOME/.yoyo-dev/setup/install-v2.sh" ]]; then
+if [[ ! -f "$HOME/yoyo-dev/setup/install-v2.sh" ]]; then
     echo -e "${YELLOW}⚠️  Please run this script from ~/.yoyo-dev/setup/${RESET}"
     exit 1
 fi
@@ -28,22 +28,22 @@ echo ""
 
 # Step 1: Install new yoyo launcher
 echo -e "${CYAN}[1/6]${RESET} Installing yoyo launcher v2..."
-chmod +x "$HOME/.yoyo-dev/setup/yoyo-launcher-v2.sh"
-sudo cp "$HOME/.yoyo-dev/setup/yoyo-launcher-v2.sh" /usr/local/bin/yoyo
+chmod +x "$HOME/yoyo-dev/setup/yoyo-launcher-v2.sh"
+sudo cp "$HOME/yoyo-dev/setup/yoyo-launcher-v2.sh" /usr/local/bin/yoyo
 echo -e "      ${GREEN}✓${RESET} Launcher installed"
 echo ""
 
 # Step 2: Create lib directory if it doesn't exist
 echo -e "${CYAN}[2/6]${RESET} Setting up task monitor system..."
-mkdir -p "$HOME/.yoyo-dev/lib"
-chmod +x "$HOME/.yoyo-dev/lib/task-monitor.sh"
-chmod +x "$HOME/.yoyo-dev/lib/task-monitor-tmux.sh"
+mkdir -p "$HOME/yoyo-dev/lib"
+chmod +x "$HOME/yoyo-dev/lib/task-monitor.sh"
+chmod +x "$HOME/yoyo-dev/lib/task-monitor-tmux.sh"
 echo -e "      ${GREEN}✓${RESET} Task monitor ready"
 echo ""
 
 # Step 3: Create templates directory
 echo -e "${CYAN}[3/6]${RESET} Installing MASTER-TASKS template..."
-mkdir -p "$HOME/.yoyo-dev/templates"
+mkdir -p "$HOME/yoyo-dev/templates"
 echo -e "      ${GREEN}✓${RESET} Template installed"
 echo ""
 

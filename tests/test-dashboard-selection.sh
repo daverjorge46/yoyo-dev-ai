@@ -52,13 +52,13 @@ extract_dashboard_logic() {
     local venv_has_deps="$2"
     local system_has_deps="$3"
 
-    DASHBOARD_CMD="$HOME/.yoyo-dev/lib/yoyo-status.sh"
+    DASHBOARD_CMD="$HOME/yoyo-dev/lib/yoyo-status.sh"
 
     # Simulate venv check
     if [ "$venv_exists" = "true" ] && [ "$venv_has_deps" = "true" ]; then
-        DASHBOARD_CMD="$HOME/.yoyo-dev/venv/bin/python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
+        DASHBOARD_CMD="$HOME/yoyo-dev/venv/bin/python3 $HOME/yoyo-dev/lib/yoyo-dashboard.py"
     elif [ "$system_has_deps" = "true" ]; then
-        DASHBOARD_CMD="python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
+        DASHBOARD_CMD="python3 $HOME/yoyo-dev/lib/yoyo-dashboard.py"
     fi
 
     echo "$DASHBOARD_CMD"
@@ -67,35 +67,35 @@ extract_dashboard_logic() {
 echo "Test 1: Venv exists with dependencies (primary use case)"
 echo "--------------------------------------------------------"
 result=$(extract_dashboard_logic "true" "true" "false")
-expected="$HOME/.yoyo-dev/venv/bin/python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
+expected="$HOME/yoyo-dev/venv/bin/python3 $HOME/yoyo-dev/lib/yoyo-dashboard.py"
 run_test "Should use venv Python" "$expected" "$result"
 echo ""
 
 echo "Test 2: Venv exists but missing dependencies"
 echo "-------------------------------------------"
 result=$(extract_dashboard_logic "true" "false" "true")
-expected="python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
+expected="python3 $HOME/yoyo-dev/lib/yoyo-dashboard.py"
 run_test "Should fall back to system Python" "$expected" "$result"
 echo ""
 
 echo "Test 3: No venv, system Python has dependencies"
 echo "----------------------------------------------"
 result=$(extract_dashboard_logic "false" "false" "true")
-expected="python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
+expected="python3 $HOME/yoyo-dev/lib/yoyo-dashboard.py"
 run_test "Should use system Python" "$expected" "$result"
 echo ""
 
 echo "Test 4: No dependencies anywhere"
 echo "-------------------------------"
 result=$(extract_dashboard_logic "false" "false" "false")
-expected="$HOME/.yoyo-dev/lib/yoyo-status.sh"
+expected="$HOME/yoyo-dev/lib/yoyo-status.sh"
 run_test "Should fall back to bash dashboard" "$expected" "$result"
 echo ""
 
 echo "Test 5: Venv without deps, system without deps"
 echo "---------------------------------------------"
 result=$(extract_dashboard_logic "true" "false" "false")
-expected="$HOME/.yoyo-dev/lib/yoyo-status.sh"
+expected="$HOME/yoyo-dev/lib/yoyo-status.sh"
 run_test "Should fall back to bash dashboard" "$expected" "$result"
 echo ""
 

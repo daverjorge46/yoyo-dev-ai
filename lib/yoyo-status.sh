@@ -56,15 +56,15 @@ find_active_tasks() {
     ACTIVE_SPECS=()
     ACTIVE_FIXES=()
 
-    if [ -d "./.yoyo-dev" ]; then
+    if [ -d "./yoyo-dev" ]; then
         # Find most recent spec with tasks
-        if [ -d "./.yoyo-dev/specs" ]; then
-            ACTIVE_SPECS=($(find ./.yoyo-dev/specs -name "tasks.md" -o -name "MASTER-TASKS.md" 2>/dev/null | sort -r))
+        if [ -d "./yoyo-dev/specs" ]; then
+            ACTIVE_SPECS=($(find ./yoyo-dev/specs -name "tasks.md" -o -name "MASTER-TASKS.md" 2>/dev/null | sort -r))
         fi
 
         # Find most recent fix with tasks
-        if [ -d "./.yoyo-dev/fixes" ]; then
-            ACTIVE_FIXES=($(find ./.yoyo-dev/fixes -name "tasks.md" -o -name "MASTER-TASKS.md" 2>/dev/null | sort -r))
+        if [ -d "./yoyo-dev/fixes" ]; then
+            ACTIVE_FIXES=($(find ./yoyo-dev/fixes -name "tasks.md" -o -name "MASTER-TASKS.md" 2>/dev/null | sort -r))
         fi
 
         # Combine all tasks
@@ -213,7 +213,7 @@ show_getting_started() {
     echo ""
 
     # Check if product is configured
-    if [ -f "./.yoyo-dev/product/mission-lite.md" ] || [ -f "./.yoyo-dev/product/mission.md" ]; then
+    if [ -f "./yoyo-dev/product/mission-lite.md" ] || [ -f "./yoyo-dev/product/mission.md" ]; then
         echo -e "${BOLD}${GREEN}✓ Product Configured${RESET}"
         echo ""
         echo -e "${BOLD}Create Your First Feature:${RESET}"
@@ -229,8 +229,8 @@ show_getting_started() {
         echo ""
 
         # Show roadmap items if available
-        if [ -f "./.yoyo-dev/product/roadmap.md" ]; then
-            local next_item=$(grep "^- \[ \]" "./.yoyo-dev/product/roadmap.md" | head -1 | sed 's/^- \[ \] //' || echo "")
+        if [ -f "./yoyo-dev/product/roadmap.md" ]; then
+            local next_item=$(grep "^- \[ \]" "./yoyo-dev/product/roadmap.md" | head -1 | sed 's/^- \[ \] //' || echo "")
             if [ -n "$next_item" ]; then
                 echo -e "${BOLD}${MAGENTA}📍 Next on Roadmap:${RESET}"
                 echo -e "  $next_item"
@@ -282,9 +282,9 @@ show_spec_status() {
     echo ""
 
     # Find recent specs
-    if [ -d "./.yoyo-dev/specs" ]; then
+    if [ -d "./yoyo-dev/specs" ]; then
         local spec_count=0
-        for spec_dir in $(find ./.yoyo-dev/specs -mindepth 1 -maxdepth 1 -type d | sort -r | head -3); do
+        for spec_dir in $(find ./yoyo-dev/specs -mindepth 1 -maxdepth 1 -type d | sort -r | head -3); do
             local spec_name=$(basename "$spec_dir")
             local status_text=""
 

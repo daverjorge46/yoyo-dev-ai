@@ -34,11 +34,11 @@ from ..models import (
 )
 from .event_bus import EventBus
 from .cache_manager import CacheManager
-from .spec_parser import SpecParser
-from .fix_parser import FixParser
-from .recap_parser import RecapParser
-from .progress_parser import ProgressParser
-from .task_parser import TaskParser
+from ..parsers.spec_parser import SpecParser
+from ..parsers.fix_parser import FixParser
+from ..parsers.recap_parser import RecapParser
+from ..parsers.progress_parser import ProgressParser
+from ..parsers.task_parser import TaskParser
 
 logger = logging.getLogger(__name__)
 

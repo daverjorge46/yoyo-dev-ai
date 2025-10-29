@@ -14,6 +14,8 @@ from ..widgets.project_overview import ProjectOverview
 from ..widgets.active_work_panel import ActiveWorkPanel
 from ..widgets.command_palette import CommandPalettePanel
 from ..widgets.history_panel import HistoryPanel
+from ..widgets.execution_monitor import ExecutionMonitor
+from ..widgets.keyboard_shortcuts import KeyboardShortcuts
 from ..models import EventType, Event
 
 
@@ -31,7 +33,11 @@ class MainDashboard(Screen):
     │ (30%)        │ (40%)             │ (30%)                │
     │              │                   │                      │
     │ [t] focus    │ [s] focus         │ [h] focus            │
-    └──────────────┴───────────────────┴──────────────────────┘
+    ├──────────────┴───────────────────┴──────────────────────┤
+    │ ExecutionMonitor (shown when task executing)             │
+    ├──────────────────────────────────────────────────────────┤
+    │ KeyboardShortcuts                                        │
+    └──────────────────────────────────────────────────────────┘
 
     Keyboard Shortcuts:
     - ?: Help
@@ -125,6 +131,8 @@ class MainDashboard(Screen):
         self._active_work_panel = None
         self._command_palette_panel = None
         self._history_panel = None
+        self._execution_monitor = None
+        self._keyboard_shortcuts = None
 
     def compose(self):
         """Compose the dashboard layout."""
@@ -170,6 +178,16 @@ class MainDashboard(Screen):
                 id="history-panel"
             )
             yield self._history_panel
+
+        # Execution monitor (docked at bottom, hidden by default)
+        self._execution_monitor = ExecutionMonitor(
+            event_bus=self.event_bus
+        )
+        yield self._execution_monitor
+
+        # Keyboard shortcuts footer (docked at bottom)
+        self._keyboard_shortcuts = KeyboardShortcuts()
+        yield self._keyboard_shortcuts
 
     def on_mount(self) -> None:
         """Called when screen is mounted."""

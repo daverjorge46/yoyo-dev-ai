@@ -18,7 +18,7 @@ readonly RESET='\033[0m'
 VERSION="2.2.0"
 
 # Check if we're in a Yoyo Dev project
-if [ ! -d "./.yoyo-dev" ]; then
+if [ ! -d "./yoyo-dev" ]; then
     echo ""
     echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
     echo ""
@@ -56,13 +56,13 @@ project_path=$(pwd)
 mission=""
 tech_stack=""
 
-if [ -f "./.yoyo-dev/product/mission-lite.md" ]; then
-    mission=$(sed -n '/^## Mission/,/^##/p' ./.yoyo-dev/product/mission-lite.md 2>/dev/null | sed '1d;$d' | head -n 1 | sed 's/^[[:space:]]*//' || true)
+if [ -f "./yoyo-dev/product/mission-lite.md" ]; then
+    mission=$(sed -n '/^## Mission/,/^##/p' ./yoyo-dev/product/mission-lite.md 2>/dev/null | sed '1d;$d' | head -n 1 | sed 's/^[[:space:]]*//' || true)
 fi
 
-if [ -z "$tech_stack" ] && [ -f "./.yoyo-dev/product/tech-stack.md" ]; then
-    frontend=$(grep -iE "^-?\s*\*?\*?Frontend\*?\*?:" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
-    backend=$(grep -iE "^-?\s*\*?\*?Backend\*?\*?:" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
+if [ -z "$tech_stack" ] && [ -f "./yoyo-dev/product/tech-stack.md" ]; then
+    frontend=$(grep -iE "^-?\s*\*?\*?Frontend\*?\*?:" ./yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
+    backend=$(grep -iE "^-?\s*\*?\*?Backend\*?\*?:" ./yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
 
     if [ -n "$frontend" ] && [ -n "$backend" ]; then
         tech_stack="$frontend + $backend"

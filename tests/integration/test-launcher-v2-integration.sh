@@ -14,7 +14,7 @@ RESET='\033[0m'
 
 # Test configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SETUP_DIR="$HOME/.yoyo-dev/setup"
+SETUP_DIR="$HOME/yoyo-dev/setup"
 LAUNCHER_SCRIPT="$SETUP_DIR/yoyo-launcher-v2.sh"
 PARSE_UTILS="$SETUP_DIR/parse-utils.sh"
 TEST_PROJECT_DIR="/tmp/yoyo-test-launcher-$$"

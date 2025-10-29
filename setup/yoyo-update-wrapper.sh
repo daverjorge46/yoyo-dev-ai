@@ -46,7 +46,7 @@ show_help() {
 
 # Check if we're in a Yoyo Dev project
 check_yoyo_project() {
-    if [ ! -d "./.yoyo-dev" ]; then
+    if [ ! -d "./yoyo-dev" ]; then
         echo ""
         echo -e "${RED}❌ Error: Not a Yoyo Dev project${RESET}"
         echo ""

@@ -13,7 +13,7 @@ BOLD='\033[1m'
 RESET='\033[0m'
 
 # Check if we're in a Yoyo Dev project
-if [ ! -d "./.yoyo-dev" ]; then
+if [ ! -d "./yoyo-dev" ]; then
     echo ""
     echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
     echo ""
@@ -51,35 +51,35 @@ PROJECT_PATH=$(pwd)
 MISSION=""
 TECH_STACK=""
 
-if [ -f "./.yoyo-dev/product/mission-lite.md" ]; then
+if [ -f "./yoyo-dev/product/mission-lite.md" ]; then
     # Extract mission (first line after "## Mission")
-    MISSION=$(sed -n '/^## Mission/,/^##/p' ./.yoyo-dev/product/mission-lite.md | sed '1d;$d' | head -n 1 | sed 's/^[[:space:]]*//')
+    MISSION=$(sed -n '/^## Mission/,/^##/p' ./yoyo-dev/product/mission-lite.md | sed '1d;$d' | head -n 1 | sed 's/^[[:space:]]*//')
 
     # Extract tech stack (look for stack-related keywords)
-    if grep -q "## Tech Stack" ./.yoyo-dev/product/mission-lite.md; then
-        TECH_STACK=$(sed -n '/^## Tech Stack/,/^##/p' ./.yoyo-dev/product/mission-lite.md | grep -v "^##" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/- //g' | tr '\n' ' ')
+    if grep -q "## Tech Stack" ./yoyo-dev/product/mission-lite.md; then
+        TECH_STACK=$(sed -n '/^## Tech Stack/,/^##/p' ./yoyo-dev/product/mission-lite.md | grep -v "^##" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/- //g' | tr '\n' ' ')
     fi
 fi
 
 # If tech stack is empty, try to extract from tech-stack.md
-if [ -z "$TECH_STACK" ] && [ -f "./.yoyo-dev/product/tech-stack.md" ]; then
+if [ -z "$TECH_STACK" ] && [ -f "./yoyo-dev/product/tech-stack.md" ]; then
     # Try multiple extraction strategies
 
     # Strategy 1: Look for Frontend/Backend pattern
-    FRONTEND=$(grep -iE "^-?\s*\*?\*?Frontend\*?\*?:" ./.yoyo-dev/product/tech-stack.md | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//')
-    BACKEND=$(grep -iE "^-?\s*\*?\*?Backend\*?\*?:" ./.yoyo-dev/product/tech-stack.md | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//')
+    FRONTEND=$(grep -iE "^-?\s*\*?\*?Frontend\*?\*?:" ./yoyo-dev/product/tech-stack.md | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//')
+    BACKEND=$(grep -iE "^-?\s*\*?\*?Backend\*?\*?:" ./yoyo-dev/product/tech-stack.md | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//')
 
     # Strategy 2: Look for key technology mentions in bullet points
     if [ -z "$FRONTEND" ] && [ -z "$BACKEND" ]; then
         # Extract from bullet list - look for React, Next.js, Vue, Angular
-        FRONTEND=$(grep -iE "(React|Next\.js|Vue|Angular|Svelte)" ./.yoyo-dev/product/tech-stack.md | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1)
+        FRONTEND=$(grep -iE "(React|Next\.js|Vue|Angular|Svelte)" ./yoyo-dev/product/tech-stack.md | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1)
         # Look for Node, Express, Django, Flask, etc
-        BACKEND=$(grep -iE "(Node|Express|Django|Flask|FastAPI|Convex|Supabase|Firebase)" ./.yoyo-dev/product/tech-stack.md | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1)
+        BACKEND=$(grep -iE "(Node|Express|Django|Flask|FastAPI|Convex|Supabase|Firebase)" ./yoyo-dev/product/tech-stack.md | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1)
     fi
 
     # Strategy 3: Look for "Core Stack" or "Stack" section
     if [ -z "$FRONTEND" ] && [ -z "$BACKEND" ]; then
-        STACK_LINE=$(sed -n '/[Cc]ore [Ss]tack\|^[Ss]tack:/,/^$/p' ./.yoyo-dev/product/tech-stack.md | grep -v "^#" | grep -v "^$" | head -n 1)
+        STACK_LINE=$(sed -n '/[Cc]ore [Ss]tack\|^[Ss]tack:/,/^$/p' ./yoyo-dev/product/tech-stack.md | grep -v "^#" | grep -v "^$" | head -n 1)
         if [ -n "$STACK_LINE" ]; then
             TECH_STACK=$(echo "$STACK_LINE" | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//')
         fi

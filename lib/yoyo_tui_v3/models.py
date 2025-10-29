@@ -60,6 +60,27 @@ class Task:
     files_to_create: List[str] = field(default_factory=list)
     files_to_modify: List[str] = field(default_factory=list)
     parallel_safe: bool = True
+    # Parent spec context (for detail views)
+    spec_name: Optional[str] = None
+    spec_date: Optional[str] = None
+    # Subtask completion tracking
+    completed_subtasks: List[int] = field(default_factory=list)  # Indices of completed subtasks
+
+
+@dataclass
+class Subtask:
+    """Represents a subtask within a parent task."""
+    text: str
+    completed: bool
+
+
+@dataclass
+class ParentTask:
+    """Represents a parent task with subtasks."""
+    number: int
+    name: str
+    completed: bool
+    subtasks: List[Subtask] = field(default_factory=list)
 
 
 @dataclass
@@ -189,6 +210,8 @@ class EventType(Enum):
 
     # File events
     FILE_CHANGED = "file_changed"
+    FILE_CREATED = "file_created"
+    FILE_DELETED = "file_deleted"
 
     # Error events
     ERROR_DETECTED = "error_detected"
@@ -212,6 +235,33 @@ class Event:
     data: dict
     timestamp: datetime = field(default_factory=datetime.now)
     source: str = "unknown"
+
+
+# ============================================================================
+# Type Aliases (for DataManager compatibility)
+# ============================================================================
+
+# Type aliases used by DataManager service layer
+SpecData = Spec
+FixData = Fix
+TaskData = Task
+RecapData = dict  # Recap entries are stored as dictionaries
+ExecutionProgress = ExecutionState  # Execution progress tracking
+
+
+# ============================================================================
+# Application State Model
+# ============================================================================
+
+@dataclass
+class ApplicationState:
+    """Application-wide state container."""
+    specs: List['Spec'] = field(default_factory=list)
+    fixes: List['Fix'] = field(default_factory=list)
+    recaps: List[dict] = field(default_factory=list)
+    tasks: List['Task'] = field(default_factory=list)  # Added tasks list
+    execution_progress: Optional[dict] = None
+    last_updated: datetime = field(default_factory=datetime.now)
 
 
 # ============================================================================

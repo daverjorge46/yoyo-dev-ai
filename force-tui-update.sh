@@ -9,7 +9,7 @@ echo "==================="
 echo ""
 
 # Check if we're in a yoyo-dev project
-if [ ! -d "./.yoyo-dev" ]; then
+if [ ! -d "./yoyo-dev" ]; then
     echo "❌ Error: Not in a Yoyo Dev project directory"
     echo ""
     echo "Run this from a project that has Yoyo Dev installed (contains .yoyo-dev/)"
@@ -17,7 +17,7 @@ if [ ! -d "./.yoyo-dev" ]; then
     exit 1
 fi
 
-BASE_DIR="$HOME/.yoyo-dev"
+BASE_DIR="$HOME/yoyo-dev"
 
 echo "📍 Project: $(basename $(pwd))"
 echo "📦 Base installation: $BASE_DIR"
@@ -26,9 +26,9 @@ echo ""
 # Copy yoyo-tui.py
 echo "1. Installing yoyo-tui.py..."
 if [ -f "$BASE_DIR/lib/yoyo-tui.py" ]; then
-    mkdir -p "./.yoyo-dev/lib"
-    cp "$BASE_DIR/lib/yoyo-tui.py" "./.yoyo-dev/lib/yoyo-tui.py"
-    chmod +x "./.yoyo-dev/lib/yoyo-tui.py"
+    mkdir -p "./yoyo-dev/lib"
+    cp "$BASE_DIR/lib/yoyo-tui.py" "./yoyo-dev/lib/yoyo-tui.py"
+    chmod +x "./yoyo-dev/lib/yoyo-tui.py"
     echo "   ✓ yoyo-tui.py copied"
 else
     echo "   ✗ yoyo-tui.py not found in base installation"
@@ -38,11 +38,11 @@ fi
 echo ""
 echo "2. Updating yoyo_tui library..."
 if [ -d "$BASE_DIR/lib/yoyo_tui" ]; then
-    mkdir -p "./.yoyo-dev/lib"
+    mkdir -p "./yoyo-dev/lib"
 
     # Use rsync to copy, excluding venv and cache
     rsync -av --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
-        "$BASE_DIR/lib/yoyo_tui/" "./.yoyo-dev/lib/yoyo_tui/" > /dev/null 2>&1
+        "$BASE_DIR/lib/yoyo_tui/" "./yoyo-dev/lib/yoyo_tui/" > /dev/null 2>&1
 
     echo "   ✓ yoyo_tui library updated"
     echo "     - EventBus (event-driven architecture)"
@@ -58,8 +58,8 @@ fi
 echo ""
 echo "3. Updating yoyo-dashboard.py..."
 if [ -f "$BASE_DIR/lib/yoyo-dashboard.py" ]; then
-    cp "$BASE_DIR/lib/yoyo-dashboard.py" "./.yoyo-dev/lib/yoyo-dashboard.py"
-    chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
+    cp "$BASE_DIR/lib/yoyo-dashboard.py" "./yoyo-dev/lib/yoyo-dashboard.py"
+    chmod +x "./yoyo-dev/lib/yoyo-dashboard.py"
     echo "   ✓ yoyo-dashboard.py copied"
 else
     echo "   ✗ yoyo-dashboard.py not found"
@@ -69,7 +69,7 @@ fi
 echo ""
 echo "4. Updating requirements.txt..."
 if [ -f "$BASE_DIR/requirements.txt" ]; then
-    cp "$BASE_DIR/requirements.txt" "./.yoyo-dev/requirements.txt"
+    cp "$BASE_DIR/requirements.txt" "./yoyo-dev/requirements.txt"
     echo "   ✓ requirements.txt updated"
 else
     echo "   ✗ requirements.txt not found"

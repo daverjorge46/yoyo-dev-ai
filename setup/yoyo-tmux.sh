@@ -6,7 +6,7 @@
 set -euo pipefail
 
 # Source shared parsing utilities
-source "$HOME/.yoyo-dev/setup/parse-utils.sh"
+source "$HOME/yoyo-dev/setup/parse-utils.sh"
 
 # Yoyo Dev version
 readonly VERSION="2.0.0"
@@ -48,7 +48,7 @@ if ! tty -s; then
 fi
 
 # Check if we're in a Yoyo Dev project
-if [ ! -d "./.yoyo-dev" ]; then
+if [ ! -d "./yoyo-dev" ]; then
     echo ""
     echo "⚠️  Yoyo Dev not detected in this directory"
     echo ""
@@ -252,8 +252,8 @@ chmod +x "$STARTUP_SCRIPT"
 if command -v python3 &> /dev/null; then
     # Check if dependencies are installed
     DEPS_MISSING=false
-    if [ -f "$HOME/.yoyo-dev/venv/bin/python3" ]; then
-        if ! "$HOME/.yoyo-dev/venv/bin/python3" -c "import textual, rich, watchdog, yaml" &> /dev/null 2>&1; then
+    if [ -f "$HOME/yoyo-dev/venv/bin/python3" ]; then
+        if ! "$HOME/yoyo-dev/venv/bin/python3" -c "import textual, rich, watchdog, yaml" &> /dev/null 2>&1; then
             DEPS_MISSING=true
         fi
     elif ! python3 -c "import textual, rich, watchdog, yaml" &> /dev/null 2>&1; then
@@ -261,9 +261,9 @@ if command -v python3 &> /dev/null; then
     fi
 
     # Install if missing (automatic, no prompt)
-    if [ "$DEPS_MISSING" = true ] && [ -f "$HOME/.yoyo-dev/setup/install-deps.sh" ]; then
+    if [ "$DEPS_MISSING" = true ] && [ -f "$HOME/yoyo-dev/setup/install-deps.sh" ]; then
         echo "Installing Yoyo Dev dependencies..."
-        "$HOME/.yoyo-dev/setup/install-deps.sh" > /dev/null 2>&1 || true
+        "$HOME/yoyo-dev/setup/install-deps.sh" > /dev/null 2>&1 || true
     fi
 fi
 
@@ -272,20 +272,20 @@ fi
 # Textual TUI is interactive and conflicts with split pane terminal control
 # Priority: Rich dashboard → Bash fallback
 # For full-screen interactive TUI, use: yoyo-tui (separate command)
-DASHBOARD_CMD="$HOME/.yoyo-dev/lib/yoyo-status.sh"
+DASHBOARD_CMD="$HOME/yoyo-dev/lib/yoyo-status.sh"
 
 # Check venv first, then fall back to system Python
-if [ -f "$HOME/.yoyo-dev/venv/bin/python3" ]; then
+if [ -f "$HOME/yoyo-dev/venv/bin/python3" ]; then
     # Try Rich dashboard first (passive, split-pane compatible)
-    if "$HOME/.yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
+    if "$HOME/yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
         # Use venv Python with Rich dashboard
-        DASHBOARD_CMD="$HOME/.yoyo-dev/venv/bin/python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
+        DASHBOARD_CMD="$HOME/yoyo-dev/venv/bin/python3 $HOME/yoyo-dev/lib/yoyo-dashboard.py"
     fi
 elif command -v python3 &> /dev/null; then
     # Try Rich dashboard with system Python
     if python3 -c "import rich, watchdog, yaml" &> /dev/null 2>&1; then
         # Use system Python with Rich dashboard
-        DASHBOARD_CMD="python3 $HOME/.yoyo-dev/lib/yoyo-dashboard.py"
+        DASHBOARD_CMD="python3 $HOME/yoyo-dev/lib/yoyo-dashboard.py"
     fi
 fi
 

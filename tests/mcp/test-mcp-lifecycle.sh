@@ -41,9 +41,9 @@ create_mock_lifecycle_manager() {
 set -euo pipefail
 
 # Configuration
-MCP_DIR="${MCP_DIR:-$HOME/.yoyo-dev/.yoyo-dev/mcp/servers}"
-PID_DIR="${PID_DIR:-$HOME/.yoyo-dev/.yoyo-dev/mcp/pids}"
-LOG_DIR="${LOG_DIR:-$HOME/.yoyo-dev/.yoyo-dev/mcp/logs}"
+MCP_DIR="${MCP_DIR:-$HOME/yoyo-dev/.yoyo-dev/mcp/servers}"
+PID_DIR="${PID_DIR:-$HOME/yoyo-dev/.yoyo-dev/mcp/pids}"
+LOG_DIR="${LOG_DIR:-$HOME/yoyo-dev/.yoyo-dev/mcp/logs}"
 
 mkdir -p "$PID_DIR" "$LOG_DIR"
 

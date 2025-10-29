@@ -66,26 +66,70 @@ class YoyoDevTUIApp(App):
 
         Initializes screens, services, and starts periodic refresh.
         """
-        # TODO: Initialize services
-        # self.event_bus = EventBus()
-        # self.cache_manager = CacheManager(default_ttl=self.config.cache_ttl_seconds)
-        # self.data_manager = DataManager(...)
-        # self.command_suggester = IntelligentCommandSuggester(...)
-        # self.error_detector = ErrorDetector(...)
-        # self.mcp_monitor = MCPServerMonitor(...)
-        # self.refresh_service = RefreshService(...)
+        from .services.event_bus import EventBus
+        from .services.cache_manager import CacheManager
+        from .services.data_manager import DataManager
+        from .services.command_suggester import IntelligentCommandSuggester
+        from .services.error_detector import ErrorDetector
+        from .services.mcp_monitor import MCPServerMonitor
+        from .services.refresh_service import RefreshService
+        from .screens.main_dashboard import MainDashboard
 
-        # TODO: Load initial data
-        # self.data_manager.initialize()
+        # Initialize services in dependency order
+        # 1. EventBus (no dependencies)
+        self.event_bus = EventBus()
 
-        # TODO: Push main dashboard screen
-        # self.push_screen(MainDashboard(...))
+        # 2. CacheManager (no dependencies)
+        self.cache_manager = CacheManager(default_ttl=self.config.cache_ttl_seconds)
 
-        # TODO: Start periodic refresh if enabled
-        # if self.config.refresh_interval_seconds > 0:
-        #     self.refresh_service.start()
+        # 3. DataManager (depends on EventBus, CacheManager)
+        self.data_manager = DataManager(
+            event_bus=self.event_bus,
+            cache_manager=self.cache_manager,
+            yoyo_dev_path=self.config.yoyo_dev_path
+        )
 
-        pass
+        # 4. IntelligentCommandSuggester (depends on DataManager, EventBus)
+        self.command_suggester = IntelligentCommandSuggester(
+            data_manager=self.data_manager,
+            event_bus=self.event_bus,
+            yoyo_dev_path=self.config.yoyo_dev_path
+        )
+
+        # 5. ErrorDetector (depends on EventBus)
+        self.error_detector = ErrorDetector(
+            event_bus=self.event_bus,
+            yoyo_dev_path=self.config.yoyo_dev_path
+        )
+
+        # 6. MCPServerMonitor (depends on EventBus)
+        self.mcp_monitor = MCPServerMonitor(event_bus=self.event_bus)
+
+        # 7. RefreshService (depends on all above)
+        self.refresh_service = RefreshService(
+            data_manager=self.data_manager,
+            command_suggester=self.command_suggester,
+            error_detector=self.error_detector,
+            mcp_monitor=self.mcp_monitor,
+            event_bus=self.event_bus
+        )
+
+        # Load initial data
+        self.data_manager.initialize()
+
+        # Push main dashboard screen
+        main_dashboard = MainDashboard(
+            data_manager=self.data_manager,
+            event_bus=self.event_bus,
+            command_suggester=self.command_suggester,
+            error_detector=self.error_detector,
+            mcp_monitor=self.mcp_monitor
+        )
+        self.push_screen(main_dashboard)
+
+        # Start periodic refresh if enabled
+        if self.config.refresh_interval_seconds > 0:
+            self.refresh_service.start()
 
     def action_help(self) -> None:
         """
@@ -93,8 +137,11 @@ class YoyoDevTUIApp(App):
 
         Bound to: ? key
         """
-        # TODO: Implement
-        self.notify("Help screen - Coming soon")
+        # Delegate to current screen if it has the action
+        if hasattr(self.screen, 'action_help'):
+            self.screen.action_help()
+        else:
+            self.notify("Help screen - Coming soon", severity="information")
 
     def action_command_search(self) -> None:
         """
@@ -102,8 +149,11 @@ class YoyoDevTUIApp(App):
 
         Bound to: / key
         """
-        # TODO: Implement
-        self.notify("Command search - Coming soon")
+        # Delegate to current screen
+        if hasattr(self.screen, 'action_command_search'):
+            self.screen.action_command_search()
+        else:
+            self.notify("Command search", severity="information")
 
     def action_refresh(self) -> None:
         """
@@ -114,8 +164,15 @@ class YoyoDevTUIApp(App):
 
         Bound to: r key
         """
-        # TODO: Implement
-        self.notify("Manual refresh - Coming soon")
+        # Trigger refresh service if available
+        if self.refresh_service:
+            self.refresh_service.refresh_now()
+
+        # Delegate to current screen for UI refresh
+        if hasattr(self.screen, 'action_refresh'):
+            self.screen.action_refresh()
+        else:
+            self.notify("Refreshed", severity="information")
 
     def action_git_menu(self) -> None:
         """
@@ -123,8 +180,11 @@ class YoyoDevTUIApp(App):
 
         Bound to: g key
         """
-        # TODO: Implement
-        self.notify("Git menu - Coming soon")
+        # Delegate to current screen
+        if hasattr(self.screen, 'action_git_menu'):
+            self.screen.action_git_menu()
+        else:
+            self.notify("Git menu - Coming soon", severity="information")
 
     def action_focus_active_work(self) -> None:
         """
@@ -132,8 +192,9 @@ class YoyoDevTUIApp(App):
 
         Bound to: t key
         """
-        # TODO: Implement
-        self.notify("Focus active work - Coming soon")
+        # Delegate to current screen
+        if hasattr(self.screen, 'action_focus_active_work'):
+            self.screen.action_focus_active_work()
 
     def action_focus_specs(self) -> None:
         """
@@ -141,8 +202,9 @@ class YoyoDevTUIApp(App):
 
         Bound to: s key
         """
-        # TODO: Implement
-        self.notify("Focus specs - Coming soon")
+        # Delegate to current screen
+        if hasattr(self.screen, 'action_focus_specs'):
+            self.screen.action_focus_specs()
 
     def action_focus_history(self) -> None:
         """
@@ -150,8 +212,9 @@ class YoyoDevTUIApp(App):
 
         Bound to: h key
         """
-        # TODO: Implement
-        self.notify("Focus history - Coming soon")
+        # Delegate to current screen
+        if hasattr(self.screen, 'action_focus_history'):
+            self.screen.action_focus_history()
 
     def action_quit(self) -> None:
         """
@@ -163,10 +226,12 @@ class YoyoDevTUIApp(App):
 
     def on_unmount(self) -> None:
         """Called when app is unmounting. Clean up resources."""
-        # TODO: Stop refresh service
-        # if self.refresh_service:
-        #     self.refresh_service.stop()
-        pass
+        # Stop refresh service
+        if self.refresh_service:
+            self.refresh_service.stop()
+
+        # Clean up other resources if needed
+        # (Most services clean up automatically)
 
 
 # Application instance creation helper

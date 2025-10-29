@@ -8,7 +8,7 @@
 set -euo pipefail
 
 # Source shared parsing utilities
-source "$HOME/.yoyo-dev/setup/parse-utils.sh"
+source "$HOME/yoyo-dev/setup/parse-utils.sh"
 
 # Color codes
 readonly CYAN='\033[0;36m'
@@ -25,7 +25,7 @@ readonly RESET='\033[0m'
 readonly VERSION="2.0.0"
 
 # TUI Python script location
-readonly TUI_SCRIPT="$HOME/.yoyo-dev/lib/yoyo-tui.py"
+readonly TUI_SCRIPT="$HOME/yoyo-dev/lib/yoyo-tui.py"
 
 # ============================================================================
 # Dependency Checking
@@ -277,7 +277,7 @@ start_monitor() {
 # Display branded header and launch TUI
 launch_tui() {
     # Check if we're in a Yoyo Dev project
-    if [ ! -d "./.yoyo-dev" ]; then
+    if [ ! -d "./yoyo-dev" ]; then
         echo ""
         echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
         echo ""

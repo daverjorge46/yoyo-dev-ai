@@ -81,7 +81,7 @@ CURRENT_DIR=$(pwd)
 PROJECT_NAME=$(basename "$CURRENT_DIR")
 
 # Check if Yoyo Dev is installed in this project
-if [ ! -d "./.yoyo-dev" ]; then
+if [ ! -d "./yoyo-dev" ]; then
     echo "❌ Error: Yoyo Dev not found in this project"
     echo ""
     echo "Please run the installation script first:"
@@ -166,19 +166,19 @@ fi
 # Update instructions
 echo ""
 echo "📥 Updating instruction files..."
-copy_directory "$INSTRUCTIONS_SOURCE" "./.yoyo-dev/instructions" "$OVERWRITE_INSTRUCTIONS"
+copy_directory "$INSTRUCTIONS_SOURCE" "./yoyo-dev/instructions" "$OVERWRITE_INSTRUCTIONS"
 
 # Update standards
 echo ""
 echo "📥 Updating standards files..."
-copy_directory "$STANDARDS_SOURCE" "./.yoyo-dev/standards" "$OVERWRITE_STANDARDS"
+copy_directory "$STANDARDS_SOURCE" "./yoyo-dev/standards" "$OVERWRITE_STANDARDS"
 
 # Update config.yml (always update to get latest features like design system)
 echo ""
 echo "📥 Updating configuration..."
 if [ -f "$BASE_AGENT_OS/config.yml" ]; then
     copy_file "$BASE_AGENT_OS/config.yml" \
-        "./.yoyo-dev/config.yml" \
+        "./yoyo-dev/config.yml" \
         "true" \
         "config.yml"
 else
@@ -240,25 +240,25 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         fi
 
         # Update launcher in project
-        mkdir -p "./.yoyo-dev/setup"
+        mkdir -p "./yoyo-dev/setup"
         copy_file "$BASE_AGENT_OS/setup/yoyo.sh" \
-            "./.yoyo-dev/setup/yoyo.sh" \
+            "./yoyo-dev/setup/yoyo.sh" \
             "true" \
             "setup/yoyo.sh (TUI launcher)"
-        chmod +x "./.yoyo-dev/setup/yoyo.sh"
+        chmod +x "./yoyo-dev/setup/yoyo.sh"
 
         # Update tmux launcher in project (deprecated but kept for compatibility)
         copy_file "$BASE_AGENT_OS/setup/yoyo-tmux.sh" \
-            "./.yoyo-dev/setup/yoyo-tmux.sh" \
+            "./yoyo-dev/setup/yoyo-tmux.sh" \
             "true" \
             "setup/yoyo-tmux.sh (deprecated)"
-        chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
+        chmod +x "./yoyo-dev/setup/yoyo-tmux.sh"
 
         # Install/update yoyo-update command
         if [ -f "$BASE_AGENT_OS/setup/yoyo-update-wrapper.sh" ]; then
             if [ -L "/usr/local/bin/yoyo-update" ] || [ -f "/usr/local/bin/yoyo-update" ]; then
                 echo "  → Updating global 'yoyo-update' command..."
-                if sudo ln -sf "$HOME/.yoyo-dev/setup/yoyo-update-wrapper.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
+                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update-wrapper.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
                     echo "  ✓ yoyo-update command updated globally"
                 else
                     echo "  ⚠️  Could not update global symlink (sudo required)"
@@ -266,7 +266,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
                 fi
             else
                 echo "  → Creating global 'yoyo-update' command..."
-                if sudo ln -sf "$HOME/.yoyo-dev/setup/yoyo-update-wrapper.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
+                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update-wrapper.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
                     echo "  ✓ yoyo-update command installed globally"
                 else
                     echo "  ⚠️  Could not create global symlink (sudo required)"
@@ -282,54 +282,54 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     # Update v2.0 support files
     echo ""
     echo "  📂 v2.0 Support Files:"
-    mkdir -p "./.yoyo-dev/lib"
-    mkdir -p "./.yoyo-dev/templates"
+    mkdir -p "./yoyo-dev/lib"
+    mkdir -p "./yoyo-dev/templates"
 
     # Update task monitor scripts
     if [ -f "$BASE_AGENT_OS/lib/task-monitor.sh" ]; then
-        copy_file "$BASE_AGENT_OS/lib/task-monitor.sh" "./.yoyo-dev/lib/task-monitor.sh" "true" "lib/task-monitor.sh"
-        chmod +x "./.yoyo-dev/lib/task-monitor.sh"
+        copy_file "$BASE_AGENT_OS/lib/task-monitor.sh" "./yoyo-dev/lib/task-monitor.sh" "true" "lib/task-monitor.sh"
+        chmod +x "./yoyo-dev/lib/task-monitor.sh"
     fi
 
     if [ -f "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" ]; then
-        copy_file "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" "./.yoyo-dev/lib/task-monitor-tmux.sh" "true" "lib/task-monitor-tmux.sh"
-        chmod +x "./.yoyo-dev/lib/task-monitor-tmux.sh"
+        copy_file "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" "./yoyo-dev/lib/task-monitor-tmux.sh" "true" "lib/task-monitor-tmux.sh"
+        chmod +x "./yoyo-dev/lib/task-monitor-tmux.sh"
     fi
 
     # Update status display scripts (visual mode)
     if [ -f "$BASE_AGENT_OS/lib/yoyo-status.sh" ]; then
-        copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./.yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
-        chmod +x "./.yoyo-dev/lib/yoyo-status.sh"
+        copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
+        chmod +x "./yoyo-dev/lib/yoyo-status.sh"
     fi
 
     # Update Python dashboard (new in v2.1)
     if [ -f "$BASE_AGENT_OS/lib/yoyo-dashboard.py" ]; then
-        copy_file "$BASE_AGENT_OS/lib/yoyo-dashboard.py" "./.yoyo-dev/lib/yoyo-dashboard.py" "true" "lib/yoyo-dashboard.py (Python dashboard)"
-        chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
+        copy_file "$BASE_AGENT_OS/lib/yoyo-dashboard.py" "./yoyo-dev/lib/yoyo-dashboard.py" "true" "lib/yoyo-dashboard.py (Python dashboard)"
+        chmod +x "./yoyo-dev/lib/yoyo-dashboard.py"
     fi
 
     # Update Textual TUI launcher (new in v2.2 - event-driven architecture)
     if [ -f "$BASE_AGENT_OS/lib/yoyo-tui.py" ]; then
-        copy_file "$BASE_AGENT_OS/lib/yoyo-tui.py" "./.yoyo-dev/lib/yoyo-tui.py" "true" "lib/yoyo-tui.py (TUI launcher)"
-        chmod +x "./.yoyo-dev/lib/yoyo-tui.py"
+        copy_file "$BASE_AGENT_OS/lib/yoyo-tui.py" "./yoyo-dev/lib/yoyo-tui.py" "true" "lib/yoyo-tui.py (TUI launcher)"
+        chmod +x "./yoyo-dev/lib/yoyo-tui.py"
     fi
 
     # Update Python requirements
     if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
-        copy_file "$BASE_AGENT_OS/requirements.txt" "./.yoyo-dev/requirements.txt" "true" "requirements.txt (Python deps)"
+        copy_file "$BASE_AGENT_OS/requirements.txt" "./yoyo-dev/requirements.txt" "true" "requirements.txt (Python deps)"
     fi
 
     # Update dashboard dependency installer
     if [ -f "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" ]; then
-        copy_file "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" "./.yoyo-dev/setup/install-dashboard-deps.sh" "true" "setup/install-dashboard-deps.sh"
-        chmod +x "./.yoyo-dev/setup/install-dashboard-deps.sh"
+        copy_file "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" "./yoyo-dev/setup/install-dashboard-deps.sh" "true" "setup/install-dashboard-deps.sh"
+        chmod +x "./yoyo-dev/setup/install-dashboard-deps.sh"
     fi
 
     # Update TUI library if it exists
     if [ -d "$BASE_AGENT_OS/lib/yoyo_tui" ]; then
         echo ""
         echo "  📂 TUI Library:"
-        if [ -d "./.yoyo-dev/lib/yoyo_tui" ]; then
+        if [ -d "./yoyo-dev/lib/yoyo_tui" ]; then
             # Preserve venv but update TUI code
             echo "  → Updating TUI library (preserving venv)..."
 
@@ -337,11 +337,11 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
             if [ "$VERBOSE" = true ]; then
                 echo "  → Verbose mode: showing file updates..."
                 rsync -av --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
-                    "$BASE_AGENT_OS/lib/yoyo_tui/" "./.yoyo-dev/lib/yoyo_tui/"
+                    "$BASE_AGENT_OS/lib/yoyo_tui/" "./yoyo-dev/lib/yoyo_tui/"
             else
                 # Silent mode, just show summary
                 rsync -a --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
-                    "$BASE_AGENT_OS/lib/yoyo_tui/" "./.yoyo-dev/lib/yoyo_tui/"
+                    "$BASE_AGENT_OS/lib/yoyo_tui/" "./yoyo-dev/lib/yoyo_tui/"
             fi
 
             # List key files that were updated
@@ -356,40 +356,40 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         else
             # First time TUI installation
             echo "  → Installing TUI library..."
-            mkdir -p "./.yoyo-dev/lib"
-            cp -r "$BASE_AGENT_OS/lib/yoyo_tui" "./.yoyo-dev/lib/"
+            mkdir -p "./yoyo-dev/lib"
+            cp -r "$BASE_AGENT_OS/lib/yoyo_tui" "./yoyo-dev/lib/"
             echo "  ✓ TUI library installed"
         fi
     fi
 
     # Update MASTER-TASKS template (always, to get latest improvements)
     if [ -f "$BASE_AGENT_OS/templates/MASTER-TASKS.md" ]; then
-        copy_file "$BASE_AGENT_OS/templates/MASTER-TASKS.md" "./.yoyo-dev/templates/MASTER-TASKS.md" "true" "templates/MASTER-TASKS.md"
+        copy_file "$BASE_AGENT_OS/templates/MASTER-TASKS.md" "./yoyo-dev/templates/MASTER-TASKS.md" "true" "templates/MASTER-TASKS.md"
     fi
 
     # Update COMMAND-REFERENCE.md (always, to get latest commands)
     if [ -f "$BASE_AGENT_OS/COMMAND-REFERENCE.md" ]; then
-        copy_file "$BASE_AGENT_OS/COMMAND-REFERENCE.md" "./.yoyo-dev/COMMAND-REFERENCE.md" "true" "COMMAND-REFERENCE.md"
+        copy_file "$BASE_AGENT_OS/COMMAND-REFERENCE.md" "./yoyo-dev/COMMAND-REFERENCE.md" "true" "COMMAND-REFERENCE.md"
     fi
 
     # Update MCP installation scripts (always, to get latest MCP features)
     echo ""
     echo "  📂 MCP Installation Scripts:"
-    mkdir -p "./.yoyo-dev/setup"
+    mkdir -p "./yoyo-dev/setup"
 
     if [ -f "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" ]; then
-        copy_file "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" "./.yoyo-dev/setup/mcp-prerequisites.sh" "true" "setup/mcp-prerequisites.sh"
-        chmod +x "./.yoyo-dev/setup/mcp-prerequisites.sh"
+        copy_file "$BASE_AGENT_OS/setup/mcp-prerequisites.sh" "./yoyo-dev/setup/mcp-prerequisites.sh" "true" "setup/mcp-prerequisites.sh"
+        chmod +x "./yoyo-dev/setup/mcp-prerequisites.sh"
     fi
 
     if [ -f "$BASE_AGENT_OS/setup/mcp-installer.sh" ]; then
-        copy_file "$BASE_AGENT_OS/setup/mcp-installer.sh" "./.yoyo-dev/setup/mcp-installer.sh" "true" "setup/mcp-installer.sh"
-        chmod +x "./.yoyo-dev/setup/mcp-installer.sh"
+        copy_file "$BASE_AGENT_OS/setup/mcp-installer.sh" "./yoyo-dev/setup/mcp-installer.sh" "true" "setup/mcp-installer.sh"
+        chmod +x "./yoyo-dev/setup/mcp-installer.sh"
     fi
 
     # Update parse-utils.sh if it exists (needed by yoyo.sh)
     if [ -f "$BASE_AGENT_OS/setup/parse-utils.sh" ]; then
-        copy_file "$BASE_AGENT_OS/setup/parse-utils.sh" "./.yoyo-dev/setup/parse-utils.sh" "true" "setup/parse-utils.sh"
+        copy_file "$BASE_AGENT_OS/setup/parse-utils.sh" "./yoyo-dev/setup/parse-utils.sh" "true" "setup/parse-utils.sh"
     fi
 fi
 
@@ -465,8 +465,8 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         fi
 
         # Check venv installation
-        if [ -d "$HOME/.yoyo-dev/venv" ]; then
-            if "$HOME/.yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml, textual" &> /dev/null 2>&1; then
+        if [ -d "$HOME/yoyo-dev/venv" ]; then
+            if "$HOME/yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml, textual" &> /dev/null 2>&1; then
                 DEPS_INSTALLED=true
                 TUI_INSTALLED=true
             fi
@@ -478,18 +478,18 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         echo ""
 
         # Check if requirements.txt was updated
-        if [ -f "./.yoyo-dev/requirements.txt" ]; then
+        if [ -f "./yoyo-dev/requirements.txt" ]; then
             echo "📋 Updated requirements.txt with latest dependency versions"
             echo "📦 Auto-installing Python dependencies..."
             echo ""
 
             # Auto-install dependencies without prompting
-            if [ -d "$HOME/.yoyo-dev/venv" ]; then
+            if [ -d "$HOME/yoyo-dev/venv" ]; then
                 echo "Upgrading dependencies in virtual environment..."
-                "$HOME/.yoyo-dev/venv/bin/pip" install --upgrade -r "$HOME/.yoyo-dev/requirements.txt"
+                "$HOME/yoyo-dev/venv/bin/pip" install --upgrade -r "$HOME/yoyo-dev/requirements.txt"
             elif command -v pip3 &> /dev/null; then
                 echo "Upgrading dependencies..."
-                pip3 install --upgrade -r "$HOME/.yoyo-dev/requirements.txt" --user
+                pip3 install --upgrade -r "$HOME/yoyo-dev/requirements.txt" --user
             fi
             echo "✓ Dependencies upgraded"
             echo ""
@@ -505,8 +505,8 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         # Auto-install using unified installer (no user prompt)
         if [ -f "$BASE_AGENT_OS/setup/install-deps.sh" ]; then
             bash "$BASE_AGENT_OS/setup/install-deps.sh"
-        elif [ -f "./.yoyo-dev/setup/install-deps.sh" ]; then
-            bash "./.yoyo-dev/setup/install-deps.sh"
+        elif [ -f "./yoyo-dev/setup/install-deps.sh" ]; then
+            bash "./yoyo-dev/setup/install-deps.sh"
         else
             echo ""
             echo "⚠️  Dependency installer not found"
@@ -528,7 +528,7 @@ echo "Your Yoyo Dev installation has been updated with the latest improvements."
 echo ""
 
 # Check if TUI was updated and highlight new features
-if [ -d "./.yoyo-dev/lib/yoyo_tui" ]; then
+if [ -d "./yoyo-dev/lib/yoyo_tui" ]; then
     echo "🎨 Full-Screen TUI Dashboard (NEW Default!):"
     echo "  • The 'yoyo' command now launches the Textual TUI full-screen"
     echo "  • Project overview fixed at top of dashboard"

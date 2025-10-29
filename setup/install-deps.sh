@@ -22,7 +22,7 @@ echo -e "${CYAN}${BOLD}╚══════════════════
 echo ""
 
 # Determine which Python/pip to use
-YOYO_DEV_HOME="$HOME/.yoyo-dev"
+YOYO_DEV_HOME="$HOME/yoyo-dev"
 VENV_PYTHON="$YOYO_DEV_HOME/venv/bin/python3"
 VENV_PIP="$YOYO_DEV_HOME/venv/bin/pip"
 

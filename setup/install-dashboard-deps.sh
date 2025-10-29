@@ -335,7 +335,7 @@ echo -e "${CYAN}3. Installing dashboard dependencies...${RESET}"
 echo ""
 
 # Change to yoyo-dev directory
-YOYO_DIR="$HOME/.yoyo-dev"
+YOYO_DIR="$HOME/yoyo-dev"
 if [ ! -f "$YOYO_DIR/requirements.txt" ]; then
     echo -e "${RED}✗ requirements.txt not found in $YOYO_DIR${RESET}"
     echo ""
@@ -398,11 +398,11 @@ echo ""
 
 # Final TUI validation
 echo -e "${CYAN}Final validation...${RESET}"
-if [ -d "$HOME/.yoyo-dev/venv" ]; then
+if [ -d "$HOME/yoyo-dev/venv" ]; then
     # Check venv installation
-    if check_tui_dependencies "$HOME/.yoyo-dev/venv/bin/python3"; then
+    if check_tui_dependencies "$HOME/yoyo-dev/venv/bin/python3"; then
         echo -e "${GREEN}✓ All TUI dependencies installed and validated${RESET}"
-        echo -e "${GREEN}✓ Virtual environment: $HOME/.yoyo-dev/venv${RESET}"
+        echo -e "${GREEN}✓ Virtual environment: $HOME/yoyo-dev/venv${RESET}"
     else
         echo -e "${YELLOW}⚠ Some TUI dependencies may be missing${RESET}"
         echo -e "${YELLOW}  Dashboard will still work, but TUI mode may be limited${RESET}"

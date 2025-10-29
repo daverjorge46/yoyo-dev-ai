@@ -1,8 +1,8 @@
 #!/bin/bash
 
-# Yoyo Dev TUI Launcher
-# Launch full-screen interactive Textual TUI for Yoyo Dev monitoring
-# Use this for rich interactive experience with file watching, navigation, etc.
+# Yoyo Dev TUI v3.0 Launcher
+# Launch production-grade intelligent Textual TUI dashboard
+# Features: Context-aware suggestions, error detection, real-time updates
 
 set -euo pipefail
 
@@ -13,7 +13,7 @@ readonly RED='\033[0;31m'
 readonly RESET='\033[0m'
 
 # Check if we're in a Yoyo Dev project
-if [ ! -d "./.yoyo-dev" ]; then
+if [ ! -d "./yoyo-dev" ]; then
     echo ""
     echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
     echo ""
@@ -26,9 +26,9 @@ fi
 PYTHON_CMD=""
 
 # Check venv first
-if [ -f "$HOME/.yoyo-dev/venv/bin/python3" ]; then
-    if "$HOME/.yoyo-dev/venv/bin/python3" -c "import textual, watchdog, yaml" &> /dev/null 2>&1; then
-        PYTHON_CMD="$HOME/.yoyo-dev/venv/bin/python3"
+if [ -f "$HOME/yoyo-dev/venv/bin/python3" ]; then
+    if "$HOME/yoyo-dev/venv/bin/python3" -c "import textual, watchdog, yaml" &> /dev/null 2>&1; then
+        PYTHON_CMD="$HOME/yoyo-dev/venv/bin/python3"
     fi
 elif command -v python3 &> /dev/null; then
     if python3 -c "import textual, watchdog, yaml" &> /dev/null 2>&1; then
@@ -47,9 +47,9 @@ if [ -z "$PYTHON_CMD" ]; then
     exit 1
 fi
 
-# Launch TUI
+# Launch TUI v3.0
 echo ""
-echo -e "${CYAN}🚀 Launching Yoyo Dev TUI...${RESET}"
+echo -e "${CYAN}🚀 Launching Yoyo Dev TUI v3.0...${RESET}"
 echo ""
 
-exec "$PYTHON_CMD" "$HOME/.yoyo-dev/lib/yoyo-tui.py"
+exec "$PYTHON_CMD" "$HOME/yoyo-dev/lib/yoyo-tui.py"
