@@ -284,16 +284,16 @@ if [ "$CLAUDE_CODE" = true ]; then
             fi
 
             # Install yoyo-update command
-            if [ -f "$BASE_AGENT_OS/setup/yoyo-update-wrapper.sh" ]; then
+            if [ -f "$BASE_AGENT_OS/setup/yoyo-update.sh" ]; then
                 if [ -L "/usr/local/bin/yoyo-update" ] || [ -f "/usr/local/bin/yoyo-update" ]; then
                     echo "  ✓ yoyo-update command already installed globally"
                 else
                     echo "  → Creating global 'yoyo-update' command..."
-                    if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update-wrapper.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
+                    if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
                         echo "  ✓ yoyo-update command installed globally"
                     else
                         echo "  ⚠️  Could not create global symlink (sudo required)"
-                        echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update-wrapper.sh /usr/local/bin/yoyo-update"
+                        echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update.sh /usr/local/bin/yoyo-update"
                     fi
                 fi
             fi

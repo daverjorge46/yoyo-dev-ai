@@ -231,23 +231,23 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     # Update yoyo command launcher
     echo ""
     echo "  📂 CLI Launcher:"
-    if [ -f "$BASE_AGENT_OS/setup/yoyo-launcher-v2.sh" ]; then
+    if [ -f "$BASE_AGENT_OS/setup/yoyo.sh" ]; then
         # Update global yoyo command if it exists
         if [ -L "/usr/local/bin/yoyo" ] || [ -f "/usr/local/bin/yoyo" ]; then
             echo "  → Updating global 'yoyo' command (launches TUI)..."
-            if sudo cp "$BASE_AGENT_OS/setup/yoyo-launcher-v2.sh" /usr/local/bin/yoyo 2>/dev/null && sudo chmod +x /usr/local/bin/yoyo 2>/dev/null; then
+            if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
                 echo "  ✓ yoyo command updated globally"
             else
                 echo "  ⚠️  Could not update global command (sudo required)"
-                echo "     Run manually: sudo cp ~/yoyo-dev/setup/yoyo-launcher-v2.sh /usr/local/bin/yoyo"
+                echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
             fi
         else
             echo "  → Creating global 'yoyo' command (launches TUI)..."
-            if sudo cp "$BASE_AGENT_OS/setup/yoyo-launcher-v2.sh" /usr/local/bin/yoyo 2>/dev/null && sudo chmod +x /usr/local/bin/yoyo 2>/dev/null; then
+            if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
                 echo "  ✓ yoyo command installed globally"
             else
                 echo "  ⚠️  Could not create global command (sudo required)"
-                echo "     Run manually: sudo cp ~/yoyo-dev/setup/yoyo-launcher-v2.sh /usr/local/bin/yoyo"
+                echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
             fi
         fi
 
@@ -267,27 +267,27 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
 
         # Install/update yoyo-update command
-        if [ -f "$BASE_AGENT_OS/setup/yoyo-update-wrapper.sh" ]; then
+        if [ -f "$BASE_AGENT_OS/setup/yoyo-update.sh" ]; then
             if [ -L "/usr/local/bin/yoyo-update" ] || [ -f "/usr/local/bin/yoyo-update" ]; then
                 echo "  → Updating global 'yoyo-update' command..."
-                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update-wrapper.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
+                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
                     echo "  ✓ yoyo-update command updated globally"
                 else
                     echo "  ⚠️  Could not update global symlink (sudo required)"
-                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update-wrapper.sh /usr/local/bin/yoyo-update"
+                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update.sh /usr/local/bin/yoyo-update"
                 fi
             else
                 echo "  → Creating global 'yoyo-update' command..."
-                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update-wrapper.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
+                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
                     echo "  ✓ yoyo-update command installed globally"
                 else
                     echo "  ⚠️  Could not create global symlink (sudo required)"
-                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update-wrapper.sh /usr/local/bin/yoyo-update"
+                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update.sh /usr/local/bin/yoyo-update"
                 fi
             fi
         fi
     else
-        echo "  ⚠️  Warning: yoyo-launcher-v2.sh not found in base installation"
+        echo "  ⚠️  Warning: yoyo.sh not found in base installation"
         echo "     TUI launcher will not be available"
     fi
 
