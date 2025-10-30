@@ -207,8 +207,15 @@ class MainDashboard(Screen):
             self._on_execution_completed
         )
 
+        # Apply initial responsive layout
+        self._apply_responsive_layout()
+
         # Initial data load
         self.refresh_all_panels()
+
+    def on_resize(self, event) -> None:
+        """Handle terminal resize events."""
+        self._apply_responsive_layout()
 
     def on_unmount(self) -> None:
         """Called when screen is unmounted."""
@@ -372,3 +379,54 @@ class MainDashboard(Screen):
         """Update history panel."""
         if self._history_panel:
             self._history_panel.refresh_display()
+
+    # ========================================================================
+    # Responsive Layout
+    # ========================================================================
+
+    def _apply_responsive_layout(self) -> None:
+        """
+        Apply responsive layout based on terminal size.
+
+        Breakpoints:
+        - < 80 cols: Vertical stacked layout (all panels 100% width)
+        - >= 80 cols: Horizontal 3-panel layout (30% | 40% | 30%)
+        """
+        try:
+            terminal_width = self.size.width
+
+            # Get the main panels container
+            main_panels_container = self.query_one("#main-panels", Container)
+
+            if terminal_width < 80:
+                # Small screen: Vertical layout
+                main_panels_container.styles.layout = "vertical"
+
+                # All panels take full width
+                if self._active_work_panel:
+                    self._active_work_panel.styles.width = "100%"
+
+                if self._command_palette_panel:
+                    self._command_palette_panel.styles.width = "100%"
+
+                if self._history_panel:
+                    self._history_panel.styles.width = "100%"
+
+            else:
+                # Large screen: Horizontal layout
+                main_panels_container.styles.layout = "horizontal"
+
+                # Standard 3-panel layout
+                if self._active_work_panel:
+                    self._active_work_panel.styles.width = "30%"
+
+                if self._command_palette_panel:
+                    self._command_palette_panel.styles.width = "40%"
+
+                if self._history_panel:
+                    self._history_panel.styles.width = "30%"
+
+        except Exception as e:
+            # Silently fail if layout adjustment has issues
+            # (screen might not be fully mounted yet)
+            pass

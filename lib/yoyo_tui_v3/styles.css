@@ -215,24 +215,16 @@ KeyboardShortcuts {
    Responsive Adjustments
    ============================================================================ */
 
-/* Small screens (<80 cols) */
-/* Note: Textual doesn't support @media queries in the same way as CSS
-   Responsive layouts should be handled in Python code using self.size
-   Commenting out until proper implementation */
-/* @media (max-width: 80) {
-    #active-work-panel {
-        width: 100%;
-    }
+/* Responsive layouts (<80 cols)
 
-    #command-palette-panel {
-        width: 100%;
-    }
+   Note: Textual doesn't support CSS @media queries.
+   Responsive behavior is implemented in Python code.
 
-    #history-panel {
-        width: 100%;
-    }
+   See: screens/main_dashboard.py
+   - MainDashboard._apply_responsive_layout()
+   - MainDashboard.on_resize()
 
-    #main-panels {
-        layout: vertical;
-    }
-} */
+   Breakpoints:
+   - < 80 cols: Vertical stacked layout (100% width per panel)
+   - >= 80 cols: Horizontal 3-panel layout (30% | 40% | 30%)
+*/
