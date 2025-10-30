@@ -216,7 +216,10 @@ KeyboardShortcuts {
    ============================================================================ */
 
 /* Small screens (<80 cols) */
-@media (max-width: 80) {
+/* Note: Textual doesn't support @media queries in the same way as CSS
+   Responsive layouts should be handled in Python code using self.size
+   Commenting out until proper implementation */
+/* @media (max-width: 80) {
     #active-work-panel {
         width: 100%;
     }
@@ -232,4 +235,4 @@ KeyboardShortcuts {
     #main-panels {
         layout: vertical;
     }
-}
+} */
