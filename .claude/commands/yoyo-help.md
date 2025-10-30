@@ -4,11 +4,11 @@ Display comprehensive help for all Yoyo Dev commands and flags.
 
 ## Instructions
 
-Show the complete Yoyo Dev v2.0 command reference with all available commands, flags, and usage examples.
+Show the complete Yoyo Dev v3.0 command reference with all available commands, flags, and usage examples.
 
 ```
 ╔════════════════════════════════════════════════════════════════════╗
-║                  YOYO DEV v2.0 - COMMAND REFERENCE                 ║
+║                  YOYO DEV v3.0 - COMMAND REFERENCE                 ║
 ╚════════════════════════════════════════════════════════════════════╝
 
 🎯 PRODUCT SETUP
@@ -25,15 +25,14 @@ Show the complete Yoyo Dev v2.0 command reference with all available commands, f
 📦 FEATURE DEVELOPMENT
 ─────────────────────────────────────────────────────────────────────
 
-  /create-new [feature] [--lite] [--monitor]
+  /create-new [feature] [--lite]
     Create feature with spec + tasks (streamlined workflow)
 
     Flags:
       --lite       Skip detailed spec, fast iteration mode
-      --monitor    Start task monitor in split pane
 
     Example:
-      /create-new "User profile page" --lite --monitor
+      /create-new "User profile page" --lite
 
   /create-spec [feature]
     Create detailed specification only (no tasks)
@@ -43,33 +42,31 @@ Show the complete Yoyo Dev v2.0 command reference with all available commands, f
     Create task breakdown from existing spec
     → Run after /create-spec completes
 
-  /execute-tasks [--all] [--task=N] [--parallel] [--monitor]
-    Build and ship code (interactive by default in v2.0)
+  /execute-tasks [--all] [--task=N] [--parallel]
+    Build and ship code (interactive by default)
 
     Flags:
       --all        Run without pausing (legacy mode)
       --task=N     Execute specific task only (e.g., --task=2)
       --parallel   Enable parallel task execution
-      --monitor    Start task monitor
 
     Examples:
       /execute-tasks                    # Interactive mode
       /execute-tasks --task=3           # Run task 3 only
       /execute-tasks --parallel         # Parallel execution
-      /execute-tasks --all --monitor    # Legacy mode with monitor
+      /execute-tasks --all              # Legacy batch mode
 
 🐛 BUG FIXES & ISSUES
 ─────────────────────────────────────────────────────────────────────
 
-  /create-fix [problem] [--quick] [--monitor]
+  /create-fix [problem] [--quick]
     Analyze and fix bugs, design issues, layout problems
 
     Flags:
       --quick      Skip investigation (for obvious problems)
-      --monitor    Start task monitor
 
     Examples:
-      /create-fix "Login button not working" --monitor
+      /create-fix "Login button not working"
       /create-fix "Mobile layout broken" --quick
 
 🎨 DESIGN SYSTEM (v1.5.0)
@@ -130,42 +127,47 @@ Show the complete Yoyo Dev v2.0 command reference with all available commands, f
       /review --devil --performance
       /review "API endpoints" --production
 
-📊 TASK MONITORING
+📊 TUI DASHBOARD (v3.0)
 ─────────────────────────────────────────────────────────────────────
 
-  Manual monitor launch:
-    ~/.yoyo-dev/lib/task-monitor-tmux.sh split path/to/MASTER-TASKS.md
+  Launch TUI:
+    yoyo                          # Production-grade Textual TUI
 
-  From terminal:
-    yoyo --monitor path/to/MASTER-TASKS.md
+  TUI Features:
+    • 3-panel intelligent layout (Active Work, Commands, History)
+    • Context-aware command suggestions
+    • Real-time progress tracking
+    • Proactive error detection
+    • MCP server health monitoring
+    • Beautiful responsive terminal UI
 
-  tmux Controls:
-    Ctrl+B then arrows      Switch panes
-    Ctrl+B then z           Full screen toggle
-    Ctrl+B then x           Close monitor pane
+  Keyboard Shortcuts:
+    ?     Help & shortcuts       r     Refresh all panels
+    /     Command search         g     Git menu
+    t     Focus active work      s     Focus specs/commands
+    h     Focus history          q     Quit
 
 🔧 YOYO LAUNCHER FLAGS
 ─────────────────────────────────────────────────────────────────────
 
-  yoyo                  Launch Claude Code with Yoyo Dev interface
+  yoyo                  Launch production-grade Textual TUI dashboard
   yoyo --help           Show this command reference
   yoyo --version        Show Yoyo Dev version
   yoyo --commands       List all available commands
-  yoyo --monitor [task] Start task monitor
 
 📝 WORKFLOW EXAMPLES
 ─────────────────────────────────────────────────────────────────────
 
   Simple Feature (Fast):
-    /create-new "Add profile avatar" --lite --monitor
+    /create-new "Add profile avatar" --lite
     /execute-tasks
 
   Complex Feature (With Planning):
     /create-new "User authentication"
-    /execute-tasks --parallel --monitor
+    /execute-tasks --parallel
 
   Bug Fix:
-    /create-fix "Layout broken on mobile" --monitor
+    /create-fix "Layout broken on mobile"
     /execute-tasks
 
   Design System Workflow:
@@ -177,15 +179,26 @@ Show the complete Yoyo Dev v2.0 command reference with all available commands, f
   Code Review Before Shipping:
     /review "payment processing" --security --production
 
-🆕 NEW IN V2.0
+🆕 NEW IN V3.0
 ─────────────────────────────────────────────────────────────────────
 
-  ✨ Interactive mode by default (pause after each subtask)
-  ✨ MASTER-TASKS.md (single source of truth for all tasks)
-  ✨ Task monitor with tmux split-pane
-  ✨ Lite mode for fast iteration (--lite flag)
-  ✨ Comprehensive flag documentation
-  ✨ Better error handling and graceful failures
+  🚀 Production-grade Textual TUI dashboard
+    • Intelligent 3-panel layout with real-time updates
+    • Context-aware command suggestions
+    • Proactive error detection
+    • MCP server health monitoring
+
+  ⚡ Performance optimizations
+    • 97% faster startup (9ms vs 300ms)
+    • 94% faster status refresh (3ms vs 50ms)
+    • 100% CPU reduction during idle (0% vs 2-5%)
+    • Smart caching for frequently-accessed data
+
+  🎨 Design system improvements (v1.5.0)
+    • Professional UI consistency
+    • WCAG AA accessibility compliance
+    • Design token system
+    • Automated validation
 
 📚 DOCUMENTATION
 ─────────────────────────────────────────────────────────────────────
@@ -205,14 +218,15 @@ Show the complete Yoyo Dev v2.0 command reference with all available commands, f
 
 💡 Tips:
   • Use --lite for quick iterations
-  • Use --monitor to watch task progress in real-time
+  • Launch yoyo command for beautiful TUI dashboard
   • Use --parallel for independent tasks (2-3x speedup)
   • Interactive mode is default (pause after each subtask)
   • Use /review modes strategically, not by default
+  • Press ? in TUI for keyboard shortcuts
 
 ────────────────────────────────────────────────────────────────────
 
-Yoyo Dev v2.0 - "Powerful when you need it. Invisible when you don't."
+Yoyo Dev v3.0 - "Powerful when you need it. Invisible when you don't."
 ```
 
 Display this complete reference and exit.
