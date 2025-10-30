@@ -106,7 +106,12 @@ echo "📍 Updating Yoyo Dev in project: $PROJECT_NAME"
 echo ""
 
 # Get the base Yoyo Dev directory
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+# Resolve symlink if this script is executed via symlink
+if [ -L "$SCRIPT_PATH" ]; then
+    SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH")"
+fi
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 BASE_AGENT_OS="$(dirname "$SCRIPT_DIR")"
 
 if [ ! -d "$BASE_AGENT_OS" ]; then
