@@ -108,7 +108,7 @@ CommandPalettePanel .suggestion {
 
 CommandPalettePanel .suggestion-reason {
     color: $text-muted;
-    font-style: italic;
+    text-style: italic;
 }
 
 CommandPalettePanel .error {
@@ -134,7 +134,7 @@ HistoryPanel .history-entry-failure {
 
 HistoryPanel .history-timestamp {
     color: $text-muted;
-    font-style: italic;
+    text-style: italic;
 }
 
 /* ============================================================================
