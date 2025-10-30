@@ -21,8 +21,13 @@ readonly RESET='\033[0m'
 # Yoyo Dev version
 readonly VERSION="3.0.0"
 
-# Determine script directory (where this script is located)
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Determine script directory (resolve symlinks to get actual script location)
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+# Resolve symlink if this script is executed via symlink
+if [ -L "$SCRIPT_PATH" ]; then
+    SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH")"
+fi
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # TUI Python script location (project-local)
