@@ -29,6 +29,8 @@ from ..models import (
     RecapData,
     ExecutionProgress,
     GitStatus,
+    ProjectStats,
+    MCPServerStatus,
     Event,
     EventType
 )
@@ -39,6 +41,9 @@ from ..parsers.fix_parser import FixParser
 from ..parsers.recap_parser import RecapParser
 from ..parsers.progress_parser import ProgressParser
 from ..parsers.task_parser import TaskParser
+from ..parsers.mission_parser import MissionParser
+from ..parsers.tech_stack_parser import TechStackParser
+from ..parsers.roadmap_parser import RoadmapParser
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +78,10 @@ class DataManager:
         self._state = ApplicationState()
         self._state_lock = threading.Lock()
 
+        # Product data cache (loaded once on initialize)
+        self._mission: Optional[str] = None
+        self._tech_stack: List[str] = []
+
         # Subscribe to file system events
         self._subscribe_to_events()
 
@@ -99,6 +108,7 @@ class DataManager:
         - All fixes from .yoyo-dev/fixes/
         - All recaps from .yoyo-dev/recaps/
         - Execution progress (if exists)
+        - Product files (mission, tech stack)
 
         Emits STATE_UPDATED event after loading.
         """
@@ -123,6 +133,9 @@ class DataManager:
             # Update timestamp
             self._state.last_updated = datetime.now()
 
+        # Load product files (outside lock for better performance)
+        self._load_product_files()
+
         # Emit STATE_UPDATED event
         self._event_bus.publish(
             EventType.STATE_UPDATED,
@@ -131,6 +144,40 @@ class DataManager:
         )
 
         logger.info("DataManager initialization complete")
+
+    def _load_product_files(self) -> None:
+        """
+        Load product files (mission, tech stack) with caching.
+
+        Called during initialize() to load product context.
+        """
+        product_path = self._yoyo_dev_path / "product"
+
+        # Load mission statement
+        cache_key = "mission"
+        cached_mission = self._cache_manager.get(cache_key)
+
+        if cached_mission is not None:
+            self._mission = cached_mission
+            logger.debug("Cache hit for mission")
+        else:
+            self._mission = MissionParser.parse(product_path)
+            if self._mission is not None:
+                self._cache_manager.set(cache_key, self._mission)
+                logger.debug("Parsed and cached mission")
+
+        # Load tech stack
+        cache_key = "tech_stack"
+        cached_tech_stack = self._cache_manager.get(cache_key)
+
+        if cached_tech_stack is not None:
+            self._tech_stack = cached_tech_stack
+            logger.debug("Cache hit for tech_stack")
+        else:
+            self._tech_stack = TechStackParser.parse(product_path)
+            if self._tech_stack:
+                self._cache_manager.set(cache_key, self._tech_stack)
+                logger.debug(f"Parsed and cached {len(self._tech_stack)} tech items")
 
     def _load_all_specs(self) -> List[SpecData]:
         """
@@ -344,6 +391,72 @@ class DataManager:
         with self._state_lock:
             return self._state.execution_progress
 
+    def get_mission_statement(self) -> Optional[str]:
+        """
+        Get mission statement from product files.
+
+        Returns:
+            Mission statement string (first paragraph, max 100 chars), or None if not found
+        """
+        return self._mission
+
+    def get_tech_stack_summary(self) -> List[str]:
+        """
+        Get tech stack summary from product files.
+
+        Returns:
+            List of technology names (empty list if not found)
+        """
+        return self._tech_stack
+
+    def get_project_stats(self) -> Optional[ProjectStats]:
+        """
+        Get project statistics (specs, fixes, tasks, errors).
+
+        Returns:
+            ProjectStats with current counts, or None if no data available
+        """
+        with self._state_lock:
+            specs = self._state.specs
+            fixes = self._state.fixes
+
+            # Count active specs (not completed)
+            active_specs = len([s for s in specs if s.status != "complete"])
+
+            # Count active fixes (not completed)
+            active_fixes = len([f for f in fixes if f.status != "complete"])
+
+            # Count pending tasks from all specs and fixes
+            pending_tasks = 0
+            for spec in specs:
+                if hasattr(spec, 'total_tasks') and hasattr(spec, 'completed_tasks'):
+                    pending_tasks += (spec.total_tasks - spec.completed_tasks)
+
+            for fix in fixes:
+                if hasattr(fix, 'total_tasks') and hasattr(fix, 'completed_tasks'):
+                    pending_tasks += (fix.total_tasks - fix.completed_tasks)
+
+            # Recent errors (placeholder - would need error detection)
+            recent_errors = 0
+
+            return ProjectStats(
+                active_specs=active_specs,
+                active_fixes=active_fixes,
+                pending_tasks=pending_tasks,
+                recent_errors=recent_errors
+            )
+
+    def get_mcp_status(self) -> Optional[MCPServerStatus]:
+        """
+        Get MCP server connection status.
+
+        Returns:
+            MCPServerStatus if available, None otherwise
+        """
+        # TODO: Implement MCP monitoring when mcp_monitor service is available
+        # For now, return None
+        return None
+
     def get_recent_actions(self, limit: int = 10) -> List[Dict]:
         """
         Get recent actions (specs, fixes, recaps) in chronological order.
@@ -401,7 +514,7 @@ class DataManager:
         """
         Refresh all data from file system.
 
-        Reloads specs, fixes, recaps, and execution progress.
+        Reloads specs, fixes, recaps, execution progress, and product files.
         Emits STATE_UPDATED event after refresh.
         """
         logger.info("Refreshing all data...")
@@ -412,6 +525,9 @@ class DataManager:
             self._state.recaps = self._load_all_recaps()
             self._state.execution_progress = self._load_execution_progress()
             self._state.last_updated = datetime.now()
+
+        # Reload product files
+        self._load_product_files()
 
         # Emit STATE_UPDATED event
         self._event_bus.publish(
@@ -451,6 +567,8 @@ class DataManager:
             self._handle_recap_change(file_path)
         elif "execution-progress.json" in str(file_path):
             self._handle_progress_change(file_path)
+        elif "/product/" in str(file_path):
+            self._handle_product_change(file_path)
 
     def _on_file_created(self, event: Event) -> None:
         """
@@ -475,6 +593,8 @@ class DataManager:
             self._handle_fix_change(file_path)
         elif "/recaps/" in str(file_path):
             self._handle_recap_change(file_path)
+        elif "/product/" in str(file_path):
+            self._handle_product_change(file_path)
 
     def _on_file_deleted(self, event: Event) -> None:
         """
@@ -630,6 +750,26 @@ class DataManager:
         )
 
         logger.info("Updated execution progress")
+
+    def _handle_product_change(self, file_path: Path) -> None:
+        """Handle product file change (mission, tech-stack, roadmap)."""
+        # Invalidate product caches
+        if "mission" in str(file_path):
+            self._cache_manager.invalidate("mission")
+        elif "tech-stack" in str(file_path):
+            self._cache_manager.invalidate("tech_stack")
+
+        # Reload product files
+        self._load_product_files()
+
+        # Emit STATE_UPDATED event
+        self._event_bus.publish(
+            EventType.STATE_UPDATED,
+            {"source": "product_change"},
+            source="DataManager"
+        )
+
+        logger.info(f"Updated product file: {file_path.name}")
 
     def _handle_spec_deletion(self, file_path: Path) -> None:
         """Handle spec file deletion."""
