@@ -8,6 +8,9 @@
 
 set -e  # Exit on error
 
+# Trap Ctrl+C (SIGINT) and SIGTERM for clean exit
+trap 'echo ""; echo "⚠️  Installation interrupted by user"; exit 130' INT TERM
+
 # Color codes for output
 CYAN='\033[0;36m'
 GREEN='\033[0;32m'
@@ -68,10 +71,18 @@ for package in "${PACKAGES[@]}"; do
     package_name=$(echo "$package" | cut -d'>' -f1 | cut -d'=' -f1)
     echo -e "${CYAN}→${RESET} Installing ${BOLD}$package_name${RESET}..."
 
-    if $PIP install "$package" --quiet; then
+    # Use timeout to prevent hanging (5 minutes max per package)
+    # Add --no-input and --disable-pip-version-check for non-interactive mode
+    if timeout 300 $PIP install "$package" --quiet --no-input --disable-pip-version-check; then
         echo -e "${GREEN}  ✓${RESET} $package_name installed"
     else
-        echo -e "${RED}  ✗${RESET} Failed to install $package_name"
+        exit_code=$?
+        if [ $exit_code -eq 124 ]; then
+            echo -e "${RED}  ✗${RESET} Timeout installing $package_name (> 5 minutes)"
+            echo -e "${YELLOW}     Try manual install: $PIP install $package${RESET}"
+        else
+            echo -e "${RED}  ✗${RESET} Failed to install $package_name"
+        fi
         FAILED_PACKAGES+=("$package_name")
     fi
 done

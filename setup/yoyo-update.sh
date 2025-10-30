@@ -5,6 +5,9 @@
 
 set -e  # Exit on error
 
+# Trap Ctrl+C (SIGINT) and SIGTERM for clean exit
+trap 'echo ""; echo "⚠️  Update interrupted by user"; exit 130' INT TERM
+
 # Initialize flags (default to overwriting framework files)
 OVERWRITE_INSTRUCTIONS=true
 OVERWRITE_STANDARDS=true
@@ -240,18 +243,20 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         # Update global yoyo command if it exists
         if [ -L "/usr/local/bin/yoyo" ] || [ -f "/usr/local/bin/yoyo" ]; then
             echo "  → Updating global 'yoyo' command (launches TUI)..."
-            if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
+            if [ -w "/usr/local/bin" ]; then
+                ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo
                 echo "  ✓ yoyo command updated globally"
             else
-                echo "  ⚠️  Could not update global command (sudo required)"
+                echo "  ⚠️  Cannot update global command (requires write permissions)"
                 echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
             fi
         else
             echo "  → Creating global 'yoyo' command (launches TUI)..."
-            if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
+            if [ -w "/usr/local/bin" ]; then
+                ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo
                 echo "  ✓ yoyo command installed globally"
             else
-                echo "  ⚠️  Could not create global command (sudo required)"
+                echo "  ⚠️  Cannot create global command (requires write permissions)"
                 echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
             fi
         fi
@@ -275,18 +280,20 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         if [ -f "$BASE_AGENT_OS/setup/yoyo-update.sh" ]; then
             if [ -L "/usr/local/bin/yoyo-update" ] || [ -f "/usr/local/bin/yoyo-update" ]; then
                 echo "  → Updating global 'yoyo-update' command..."
-                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
+                if [ -w "/usr/local/bin" ]; then
+                    ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update
                     echo "  ✓ yoyo-update command updated globally"
                 else
-                    echo "  ⚠️  Could not update global symlink (sudo required)"
+                    echo "  ⚠️  Cannot update global symlink (requires write permissions)"
                     echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update.sh /usr/local/bin/yoyo-update"
                 fi
             else
                 echo "  → Creating global 'yoyo-update' command..."
-                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
+                if [ -w "/usr/local/bin" ]; then
+                    ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update
                     echo "  ✓ yoyo-update command installed globally"
                 else
-                    echo "  ⚠️  Could not create global symlink (sudo required)"
+                    echo "  ⚠️  Cannot create global symlink (requires write permissions)"
                     echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update.sh /usr/local/bin/yoyo-update"
                 fi
             fi
@@ -503,10 +510,16 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
             # Auto-install dependencies without prompting
             if [ -d "$HOME/yoyo-dev/venv" ]; then
                 echo "Upgrading dependencies in virtual environment..."
-                "$HOME/yoyo-dev/venv/bin/pip" install --upgrade -r "$HOME/yoyo-dev/requirements.txt"
+                timeout 300 "$HOME/yoyo-dev/venv/bin/pip" install --upgrade -r "$HOME/yoyo-dev/requirements.txt" --no-input --disable-pip-version-check || {
+                    echo "⚠️  Dependency upgrade timed out or failed"
+                    echo "   You can upgrade manually: $HOME/yoyo-dev/venv/bin/pip install --upgrade -r $HOME/yoyo-dev/requirements.txt"
+                }
             elif command -v pip3 &> /dev/null; then
                 echo "Upgrading dependencies..."
-                pip3 install --upgrade -r "$HOME/yoyo-dev/requirements.txt" --user
+                timeout 300 pip3 install --upgrade -r "$HOME/yoyo-dev/requirements.txt" --user --no-input --disable-pip-version-check || {
+                    echo "⚠️  Dependency upgrade timed out or failed"
+                    echo "   You can upgrade manually: pip3 install --upgrade -r $HOME/yoyo-dev/requirements.txt --user"
+                }
             fi
             echo "✓ Dependencies upgraded"
             echo ""
