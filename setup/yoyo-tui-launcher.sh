@@ -13,7 +13,7 @@ readonly RED='\033[0;31m'
 readonly RESET='\033[0m'
 
 # Check if we're in a Yoyo Dev project
-if [ ! -d "./yoyo-dev" ]; then
+if [ ! -d "./.yoyo-dev" ]; then
     echo ""
     echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
     echo ""

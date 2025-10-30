@@ -48,7 +48,7 @@ if ! tty -s; then
 fi
 
 # Check if we're in a Yoyo Dev project
-if [ ! -d "./yoyo-dev" ]; then
+if [ ! -d "./.yoyo-dev" ]; then
     echo ""
     echo "⚠️  Yoyo Dev not detected in this directory"
     echo ""

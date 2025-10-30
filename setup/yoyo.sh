@@ -287,7 +287,7 @@ install_mcps() {
     echo ""
 
     # Check if Yoyo Dev is installed
-    if [ ! -d "./yoyo-dev" ]; then
+    if [ ! -d "./.yoyo-dev" ]; then
         echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
         echo ""
         echo "Please run this command from a project with Yoyo Dev installed."
@@ -299,10 +299,10 @@ install_mcps() {
     local MCP_PREREQUISITES=""
     local MCP_INSTALLER=""
 
-    if [ -f "./yoyo-dev/setup/mcp-prerequisites.sh" ] && [ -f "./yoyo-dev/setup/mcp-installer.sh" ]; then
+    if [ -f "./.yoyo-dev/setup/mcp-prerequisites.sh" ] && [ -f "./.yoyo-dev/setup/mcp-installer.sh" ]; then
         # Use local project copies (installed during project setup)
-        MCP_PREREQUISITES="./yoyo-dev/setup/mcp-prerequisites.sh"
-        MCP_INSTALLER="./yoyo-dev/setup/mcp-installer.sh"
+        MCP_PREREQUISITES="./.yoyo-dev/setup/mcp-prerequisites.sh"
+        MCP_INSTALLER="./.yoyo-dev/setup/mcp-installer.sh"
     elif [ -f ~/yoyo-dev/setup/mcp-prerequisites.sh ] && [ -f ~/yoyo-dev/setup/mcp-installer.sh ]; then
         # Fall back to base installation
         MCP_PREREQUISITES=~/yoyo-dev/setup/mcp-prerequisites.sh
@@ -321,7 +321,7 @@ install_mcps() {
     echo ""
     if bash "$MCP_PREREQUISITES"; then
         # Prerequisites met, run installer
-        bash "$MCP_INSTALLER" prompt --config ./yoyo-dev/config.yml
+        bash "$MCP_INSTALLER" prompt --config ./.yoyo-dev/config.yml
 
         if [ $? -eq 0 ]; then
             echo ""
@@ -345,7 +345,7 @@ install_mcps() {
 # Display branded header and launch TUI
 launch_tui() {
     # Check if we're in a Yoyo Dev project
-    if [ ! -d "./yoyo-dev" ]; then
+    if [ ! -d "./.yoyo-dev" ]; then
         echo ""
         echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
         echo ""
@@ -389,23 +389,23 @@ launch_tui() {
     local mission=""
     local tech_stack=""
 
-    if [ -f "./yoyo-dev/product/mission-lite.md" ]; then
-        mission=$(sed -n '/^## Mission/,/^##/p' ./yoyo-dev/product/mission-lite.md 2>/dev/null | sed '1d;$d' | head -n 1 | sed 's/^[[:space:]]*//' || true)
+    if [ -f "./.yoyo-dev/product/mission-lite.md" ]; then
+        mission=$(sed -n '/^## Mission/,/^##/p' ./.yoyo-dev/product/mission-lite.md 2>/dev/null | sed '1d;$d' | head -n 1 | sed 's/^[[:space:]]*//' || true)
 
-        if grep -q "## Tech Stack" ./yoyo-dev/product/mission-lite.md 2>/dev/null; then
-            tech_stack=$(sed -n '/^## Tech Stack/,/^##/p' ./yoyo-dev/product/mission-lite.md 2>/dev/null | grep -v "^##" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/- //g' | tr '\n' ' ' || true)
+        if grep -q "## Tech Stack" ./.yoyo-dev/product/mission-lite.md 2>/dev/null; then
+            tech_stack=$(sed -n '/^## Tech Stack/,/^##/p' ./.yoyo-dev/product/mission-lite.md 2>/dev/null | grep -v "^##" | tr -d '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | sed 's/- //g' | tr '\n' ' ' || true)
         fi
     fi
 
-    if [ -z "$tech_stack" ] && [ -f "./yoyo-dev/product/tech-stack.md" ]; then
+    if [ -z "$tech_stack" ] && [ -f "./.yoyo-dev/product/tech-stack.md" ]; then
         local frontend
         local backend
-        frontend=$(grep -iE "^-?\s*\*?\*?Frontend\*?\*?:" ./yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
-        backend=$(grep -iE "^-?\s*\*?\*?Backend\*?\*?:" ./yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
+        frontend=$(grep -iE "^-?\s*\*?\*?Frontend\*?\*?:" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
+        backend=$(grep -iE "^-?\s*\*?\*?Backend\*?\*?:" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/.*://;s/^[[:space:]]*//;s/[[:space:]]*$//' || true)
 
         if [ -z "$frontend" ] && [ -z "$backend" ]; then
-            frontend=$(grep -iE "(React|Next\.js|Vue|Angular|Svelte)" ./yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1 || true)
-            backend=$(grep -iE "(Node|Express|Django|Flask|FastAPI|Convex|Supabase|Firebase)" ./yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1 || true)
+            frontend=$(grep -iE "(React|Next\.js|Vue|Angular|Svelte)" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1 || true)
+            backend=$(grep -iE "(Node|Express|Django|Flask|FastAPI|Convex|Supabase|Firebase)" ./.yoyo-dev/product/tech-stack.md 2>/dev/null | head -n 1 | sed 's/^-\s*//;s/^[[:space:]]*//;s/[[:space:]]*$//' | cut -d',' -f1 || true)
         fi
 
         if [ -n "$frontend" ] && [ -n "$backend" ]; then
