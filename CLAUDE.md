@@ -136,6 +136,11 @@ Commands in `.claude/commands/` are entry points that reference the detailed ins
 ├── commands/             # Command entry points
 ├── setup/                # Installation scripts
 └── config.yml            # Configuration file
+
+workflows/                # Reusable workflow components (NEW v1.6.0)
+├── planning/             # Product planning workflows
+├── specification/        # Spec creation workflows
+└── implementation/       # Task execution and verification workflows
 ```
 
 ### Key Files
@@ -175,6 +180,55 @@ Commands in `.claude/commands/` are entry points that reference the detailed ins
 - `claude-code/agents/date-checker.md` - Date validation agent
 - `claude-code/agents/design-analyzer.md` - Design pattern extraction (**NEW v1.5.0**)
 - `claude-code/agents/design-validator.md` - Design compliance validation (**NEW v1.5.0**)
+- `claude-code/agents/spec-initializer.md` - Spec folder initialization (**NEW v1.6.0**)
+- `claude-code/agents/spec-shaper.md` - Requirements gathering (**NEW v1.6.0**)
+- `claude-code/agents/spec-writer.md` - Specification document creation (**NEW v1.6.0**)
+- `claude-code/agents/tasks-list-creator.md` - Strategic task breakdown (**NEW v1.6.0**)
+- `claude-code/agents/implementer.md` - TDD-based task implementation (**NEW v1.6.0**)
+- `claude-code/agents/implementation-verifier.md` - Implementation quality verification (**NEW v1.6.0**)
+- `claude-code/agents/product-planner.md` - Product documentation creation (**NEW v1.6.0**)
+
+**Workflows:** (**NEW v1.6.0**)
+- `workflows/` - Reusable workflow components referenced by agents
+  - `planning/` - Product planning workflows (gather-product-info, create-mission, create-roadmap, create-tech-stack)
+  - `specification/` - Spec creation workflows (initialize-spec, research-spec, write-spec, verify-spec)
+  - `implementation/` - Task execution workflows (create-tasks-list, implement-tasks, compile-standards)
+  - `implementation/verification/` - Verification workflows (verify-functionality, verify-tests, verify-accessibility, verify-performance, verify-security, verify-documentation)
+
+### Workflow Reference System (**NEW v1.6.0**)
+
+Agents can now reference reusable workflow components using `{{workflows/*}}` syntax:
+
+```yaml
+---
+name: implementer
+description: Executes task implementation
+tools: [Write, Read, Bash]
+---
+
+# Implementer Agent
+
+{{workflows/implementation/implement-tasks.md}}
+
+## Additional Instructions
+- Always write tests first
+- Follow tech stack standards
+```
+
+**How it works:**
+1. Agent files include YAML frontmatter with metadata (name, description, tools, model)
+2. Workflow references using `{{workflows/path/to/workflow.md}}` are expanded inline
+3. Nested workflow references supported (max 3 levels deep)
+4. Cycle detection prevents infinite loops
+5. Workflows are cached for performance (< 100ms overhead)
+
+**Benefits:**
+- **Reusable:** Same workflow used by multiple agents
+- **Maintainable:** Update workflow once, affects all referencing agents
+- **Composable:** Build complex behaviors from simple workflows
+- **Testable:** Workflows can be validated independently
+
+See `workflows/README.md` for detailed documentation on creating and composing workflows.
 
 ## Workflow System
 

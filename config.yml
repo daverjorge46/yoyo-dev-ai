@@ -8,6 +8,52 @@ agents:
   cursor:
     enabled: false
 
+# Multi-agent workflow options
+multi_agent:
+  enabled: true
+  use_workflow_references: true  # Enable {{workflows/*}} syntax
+
+# Workflow preferences
+workflows:
+  task_execution:
+    mode: automatic  # automatic (/execute-tasks) or orchestrated (/orchestrate-tasks)
+    implementation_reports: false  # Create implementation/ folder
+    verification_reports: true     # Create verification/ folder
+
+# Specialized Agents Configuration
+specialized_agents:
+  # Context and utility agents
+  context_fetcher: true
+  file_creator: true
+  git_workflow: true
+  project_manager: true
+  test_runner: true
+  date_checker: true
+
+  # Design system agents
+  design_analyzer: true
+  design_validator: true
+
+  # New workflow-based agents
+  spec_initializer: true
+  spec_shaper: true
+  spec_writer: true
+  tasks_list_creator: true
+  implementer: true
+  implementation_verifier: true
+  product_planner: true
+
+# Skills optimization
+skills:
+  auto_improve: false  # Automatically improve skills on updates
+  optimization_report: true  # Create optimization reports
+
+# Workflow system configuration
+workflow_system:
+  max_nesting_depth: 3  # Maximum workflow reference nesting
+  cache_enabled: true   # Cache expanded workflows
+  cache_size: 100       # Max workflows in cache
+
 # Design System Configuration
 design_system:
   enabled: true
