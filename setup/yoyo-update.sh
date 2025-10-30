@@ -236,71 +236,27 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         fi
     done
 
-    # Update yoyo command launcher
+    # Update launcher scripts in project (global symlinks managed by installation only)
     echo ""
     echo "  📂 CLI Launcher:"
-    if [ -f "$BASE_AGENT_OS/setup/yoyo.sh" ]; then
-        # Update global yoyo command if it exists
-        if [ -L "/usr/local/bin/yoyo" ] || [ -f "/usr/local/bin/yoyo" ]; then
-            echo "  → Updating global 'yoyo' command (launches TUI)..."
-            if [ -w "/usr/local/bin" ]; then
-                ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo
-                echo "  ✓ yoyo command updated globally"
-            else
-                echo "  ⚠️  Cannot update global command (requires write permissions)"
-                echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
-            fi
-        else
-            echo "  → Creating global 'yoyo' command (launches TUI)..."
-            if [ -w "/usr/local/bin" ]; then
-                ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo
-                echo "  ✓ yoyo command installed globally"
-            else
-                echo "  ⚠️  Cannot create global command (requires write permissions)"
-                echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
-            fi
-        fi
+    mkdir -p "./.yoyo-dev/setup"
 
-        # Update launcher in project
-        mkdir -p "./.yoyo-dev/setup"
+    if [ -f "$BASE_AGENT_OS/setup/yoyo.sh" ]; then
         copy_file "$BASE_AGENT_OS/setup/yoyo.sh" \
             "./.yoyo-dev/setup/yoyo.sh" \
             "true" \
             "setup/yoyo.sh (TUI launcher)"
         chmod +x "./.yoyo-dev/setup/yoyo.sh"
+    else
+        echo "  ⚠️  Warning: yoyo.sh not found in base installation"
+    fi
 
-        # Update tmux launcher in project (deprecated but kept for compatibility)
+    if [ -f "$BASE_AGENT_OS/setup/yoyo-tmux.sh" ]; then
         copy_file "$BASE_AGENT_OS/setup/yoyo-tmux.sh" \
             "./.yoyo-dev/setup/yoyo-tmux.sh" \
             "true" \
             "setup/yoyo-tmux.sh (deprecated)"
         chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
-
-        # Install/update yoyo-update command
-        if [ -f "$BASE_AGENT_OS/setup/yoyo-update.sh" ]; then
-            if [ -L "/usr/local/bin/yoyo-update" ] || [ -f "/usr/local/bin/yoyo-update" ]; then
-                echo "  → Updating global 'yoyo-update' command..."
-                if [ -w "/usr/local/bin" ]; then
-                    ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update
-                    echo "  ✓ yoyo-update command updated globally"
-                else
-                    echo "  ⚠️  Cannot update global symlink (requires write permissions)"
-                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update.sh /usr/local/bin/yoyo-update"
-                fi
-            else
-                echo "  → Creating global 'yoyo-update' command..."
-                if [ -w "/usr/local/bin" ]; then
-                    ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update
-                    echo "  ✓ yoyo-update command installed globally"
-                else
-                    echo "  ⚠️  Cannot create global symlink (requires write permissions)"
-                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update.sh /usr/local/bin/yoyo-update"
-                fi
-            fi
-        fi
-    else
-        echo "  ⚠️  Warning: yoyo.sh not found in base installation"
-        echo "     TUI launcher will not be available"
     fi
 
     # Update v2.0 support files
@@ -489,8 +445,8 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         fi
 
         # Check venv installation
-        if [ -d "$HOME/yoyo-dev/venv" ]; then
-            if "$HOME/yoyo-dev/venv/bin/python3" -c "import rich, watchdog, yaml, textual" &> /dev/null 2>&1; then
+        if [ -d "$BASE_AGENT_OS/venv" ]; then
+            if "$BASE_AGENT_OS/venv/bin/python3" -c "import rich, watchdog, yaml, textual" &> /dev/null 2>&1; then
                 DEPS_INSTALLED=true
                 TUI_INSTALLED=true
             fi
@@ -508,18 +464,27 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
             echo ""
 
             # Auto-install dependencies without prompting
-            if [ -d "$HOME/yoyo-dev/venv" ]; then
-                echo "Upgrading dependencies in virtual environment..."
-                timeout 300 "$HOME/yoyo-dev/venv/bin/pip" install --upgrade -r "$HOME/yoyo-dev/requirements.txt" --no-input --disable-pip-version-check || {
-                    echo "⚠️  Dependency upgrade timed out or failed"
-                    echo "   You can upgrade manually: $HOME/yoyo-dev/venv/bin/pip install --upgrade -r $HOME/yoyo-dev/requirements.txt"
-                }
+            if [ -d "$BASE_AGENT_OS/venv" ]; then
+                if [ -f "$BASE_AGENT_OS/venv/bin/pip" ]; then
+                    echo "Upgrading dependencies in virtual environment..."
+                    timeout 300 "$BASE_AGENT_OS/venv/bin/pip" install --upgrade -r "$BASE_AGENT_OS/requirements.txt" --no-input --disable-pip-version-check || {
+                        echo "⚠️  Dependency upgrade timed out or failed"
+                        echo "   You can upgrade manually: $BASE_AGENT_OS/venv/bin/pip install --upgrade -r $BASE_AGENT_OS/requirements.txt"
+                    }
+                else
+                    echo "⚠️  Virtual environment exists but pip not found"
+                    echo "   Reinstall dependencies: $BASE_AGENT_OS/setup/install-deps.sh"
+                fi
             elif command -v pip3 &> /dev/null; then
                 echo "Upgrading dependencies..."
-                timeout 300 pip3 install --upgrade -r "$HOME/yoyo-dev/requirements.txt" --user --no-input --disable-pip-version-check || {
-                    echo "⚠️  Dependency upgrade timed out or failed"
-                    echo "   You can upgrade manually: pip3 install --upgrade -r $HOME/yoyo-dev/requirements.txt --user"
-                }
+                if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
+                    timeout 300 pip3 install --upgrade -r "$BASE_AGENT_OS/requirements.txt" --user --no-input --disable-pip-version-check || {
+                        echo "⚠️  Dependency upgrade timed out or failed"
+                        echo "   You can upgrade manually: pip3 install --upgrade -r $BASE_AGENT_OS/requirements.txt --user"
+                    }
+                else
+                    echo "ℹ️  requirements.txt not found at $BASE_AGENT_OS/requirements.txt"
+                fi
             fi
             echo "✓ Dependencies upgraded"
             echo ""
