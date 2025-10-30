@@ -47,9 +47,95 @@ Use the test-runner subagent to run the ALL tests in the application's test suit
 
 </step>
 
-<step number="2" subagent="git-workflow" name="git_workflow">
+<step number="2" subagent="implementation-verifier" name="implementation_verification">
 
-### Step 2: Git Workflow
+### Step 2: Implementation Quality Verification
+
+Use the implementation-verifier subagent to run systematic quality verification before proceeding to git workflow.
+
+<instructions>
+  ACTION: Use implementation-verifier subagent
+  REQUEST: "Run complete implementation verification for [SPEC_NAME]:
+            - Spec folder: [SPEC_FOLDER_PATH]
+            - Run all 6 verification workflows:
+              * verify-functionality (features work as specified)
+              * verify-tests (coverage and pass rate)
+              * verify-accessibility (WCAG AA compliance)
+              * verify-performance (no regressions)
+              * verify-security (no vulnerabilities)
+              * verify-documentation (docs current)
+            - Create verification/final-verification.md report
+            - STOP if critical issues found"
+
+  WAIT: For verification completion
+
+  PROCESS: Review verification results
+    IF critical_issues_found:
+      ERROR: "Critical issues detected in verification"
+      DISPLAY: Issues list
+      SUGGEST: "Fix issues and re-run verification before proceeding"
+      HALT: Do not proceed to git workflow
+    ELSE IF warnings_found:
+      WARN: "Warnings found but proceeding"
+      DISPLAY: Warnings list
+      CONTINUE: To next step
+    ELSE:
+      SUCCESS: "All verification checks passed ✓"
+      CONTINUE: To next step
+</instructions>
+
+<verification_categories>
+  <functionality>
+    <check>All features work as specified</check>
+    <check>All acceptance criteria met</check>
+    <check>Edge cases handled</check>
+    <severity>critical</severity>
+  </functionality>
+
+  <tests>
+    <check>All tests pass</check>
+    <check>Coverage ≥ 50% (minimum)</check>
+    <check>Edge cases tested</check>
+    <severity>critical</severity>
+  </tests>
+
+  <accessibility>
+    <check>WCAG AA compliance</check>
+    <check>Color contrast ≥ 4.5:1</check>
+    <check>Keyboard navigation works</check>
+    <severity>high</severity>
+  </accessibility>
+
+  <performance>
+    <check>No performance regressions</check>
+    <check>Bundle size within budgets</check>
+    <severity>medium</severity>
+  </performance>
+
+  <security>
+    <check>No security vulnerabilities</check>
+    <check>Auth/authz correct</check>
+    <severity>critical</severity>
+  </security>
+
+  <documentation>
+    <check>README updated</check>
+    <check>API docs current</check>
+    <severity>low</severity>
+  </documentation>
+</verification_categories>
+
+<critical_issue_handling>
+  <action>HALT execution</action>
+  <display>Detailed issue report</display>
+  <require>User fixes before proceeding</require>
+</critical_issue_handling>
+
+</step>
+
+<step number="3" subagent="git-workflow" name="git_workflow">
+
+### Step 3: Git Workflow
 
 Use the git-workflow subagent to create git commit, push to GitHub, and create pull request for the implemented features.
 
@@ -87,9 +173,9 @@ Use the git-workflow subagent to create git commit, push to GitHub, and create p
 
 </step>
 
-<step number="3" subagent="project-manager" name="tasks_list_check">
+<step number="4" subagent="project-manager" name="tasks_list_check">
 
-### Step 3: Tasks Completion Verification
+### Step 4: Tasks Completion Verification
 
 Use the project-manager subagent to read the current spec's tasks.md file and verify that all tasks have been properly marked as complete with [x] or documented with blockers.
 
@@ -104,9 +190,9 @@ Use the project-manager subagent to read the current spec's tasks.md file and ve
 
 </step>
 
-<step number="4" subagent="project-manager" name="roadmap_progress_check">
+<step number="5" subagent="project-manager" name="roadmap_progress_check">
 
-### Step 4: Roadmap Progress Update (conditional)
+### Step 5: Roadmap Progress Update (conditional)
 
 Use the project-manager subagent to read @.yoyo-dev/product/roadmap.md and mark roadmap items as complete with [x] ONLY IF the executed tasks have completed any roadmap item(s) and the spec completes that item.
 
@@ -115,7 +201,7 @@ Use the project-manager subagent to read @.yoyo-dev/product/roadmap.md and mark 
     EVALUATE: Did executed tasks complete any roadmap item(s)?
     IF NO:
       SKIP this entire step
-      PROCEED to step 5
+      PROCEED to step 6
     IF YES:
       CONTINUE with roadmap check
   </preliminary_check>
@@ -138,9 +224,9 @@ Use the project-manager subagent to read @.yoyo-dev/product/roadmap.md and mark 
 
 </step>
 
-<step number="5" subagent="project-manager" name="document_recap">
+<step number="6" subagent="project-manager" name="document_recap">
 
-### Step 5: Create Recap Document
+### Step 6: Create Recap Document
 
 Use the project-manager subagent to create a recap document in .yoyo-dev/recaps/ folder that summarizes what was built for this spec.
 
@@ -183,9 +269,9 @@ Use the project-manager subagent to create a recap document in .yoyo-dev/recaps/
 
 </step>
 
-<step number="6" name="update_patterns_library">
+<step number="7" name="update_patterns_library">
 
-### Step 6: Update Patterns Library
+### Step 7: Update Patterns Library
 
 Review the implementation and extract successful patterns to add to the global patterns library.
 
@@ -235,9 +321,9 @@ Review the implementation and extract successful patterns to add to the global p
 
 </step>
 
-<step number="7" name="finalize_state">
+<step number="8" name="finalize_state">
 
-### Step 7: Finalize Workflow State
+### Step 8: Finalize Workflow State
 
 Update state.json to mark execution as complete and record PR information.
 
@@ -262,9 +348,9 @@ Update state.json to mark execution as complete and record PR information.
 
 </step>
 
-<step number="8" subagent="project-manager" name="completion_summary">
+<step number="9" subagent="project-manager" name="completion_summary">
 
-### Step 8: Completion Summary
+### Step 9: Completion Summary
 
 Use the project-manager subagent to create a structured summary message with emojis showing what was done, any issues, testing instructions, and PR link.
 
@@ -310,9 +396,9 @@ Use the project-manager subagent to create a structured summary message with emo
 
 </step>
 
-<step number="9" subagent="project-manager" name="completion_notification">
+<step number="10" subagent="project-manager" name="completion_notification">
 
-### Step 9: Task Completion Notification
+### Step 10: Task Completion Notification
 
 Use the project-manager subagent to play a system sound to alert the user that tasks are complete.
 

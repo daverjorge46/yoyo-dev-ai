@@ -43,6 +43,33 @@ Tasks can be executed with optional review mode flags to apply critical review d
 /execute-tasks --security --performance  # Apply both security and performance review
 ```
 
+## Optional Implementation Reports
+
+Tasks can be executed with optional implementation tracking to generate detailed per-task-group reports:
+
+```bash
+/execute-tasks --implementation-reports  # Generate detailed implementation reports
+```
+
+**When implementation reports are enabled:**
+- Creates `implementation/` folder in spec directory
+- For each completed task group, generates `implementation/task-group-N.md` with:
+  - Implementation approach taken
+  - Key technical decisions made
+  - Files created and modified
+  - Tests run and results
+  - Challenges encountered and solutions
+  - Time taken for task group
+- Reports help document implementation history and decision rationale
+- Useful for knowledge transfer, audits, and retrospectives
+
+**Default behavior:** No implementation reports (standard execution)
+
+**Combined with review modes:**
+```bash
+/execute-tasks --implementation-reports --security  # Reports + security review
+```
+
 <pre_flight_check>
   EXECUTE: @.yoyo-dev/instructions/meta/pre-flight.md
 </pre_flight_check>
@@ -306,16 +333,68 @@ Check git status to ensure we're aware of the current branch and any uncommitted
             \033[32m✓\033[0m Group [N] completed in [time] ([M] tasks parallel)
 
           UPDATE: tasks.md with completed statuses
+
+          IF --implementation-reports flag enabled:
+            CREATE: implementation/ folder if not exists
+            GENERATE: implementation/task-group-N.md report
+
+            TEMPLATE:
+              # Task Group [N]: [NAME] - Implementation Report
+
+              **Completed:** [DATE_TIME]
+              **Duration:** [TIME_TAKEN]
+
+              ## Implementation Approach
+              [Summary of approach taken for this task group]
+
+              ## Key Decisions
+              [Technical decisions made during implementation]
+              - Decision 1: [rationale]
+              - Decision 2: [rationale]
+
+              ## Files Changed
+
+              **Created:**
+              - [file1]
+              - [file2]
+
+              **Modified:**
+              - [file1]
+              - [file2]
+
+              ## Tests
+              [Test results for this task group]
+              - Test suite: [name]
+              - Tests run: [count]
+              - Pass rate: [percentage]
+
+              ## Challenges & Solutions
+              [Any challenges encountered and how they were resolved]
+              - Challenge 1: [description]
+                - Solution: [resolution]
+
+              ## Time Breakdown
+              - Planning: [time]
+              - Implementation: [time]
+              - Testing: [time]
+              - Total: [TIME_TAKEN]
+
           CONTINUE: To next group
 
     ELSE:
       # SEQUENTIAL EXECUTION (single task in group)
       OUTPUT: "Executing Task [N]..."
 
+      START_TIME: Record start time
       EXECUTE: Single task using execute-task.md
       WAIT: For completion
       CHECK: Success
+      END_TIME: Record end time
       UPDATE: tasks.md
+
+      IF --implementation-reports flag enabled:
+        CREATE: implementation/ folder if not exists
+        GENERATE: implementation/task-group-N.md report (same template as parallel)
 
   END FOR
 
@@ -341,9 +420,15 @@ Check git status to ensure we're aware of the current branch and any uncommitted
     EXECUTE: Traditional sequential execution
 
     FOR each parent_task assigned:
+      START_TIME: Record start time
       EXECUTE: Task using execute-task.md
       WAIT: For completion
+      END_TIME: Record end time
       UPDATE: tasks.md status
+
+      IF --implementation-reports flag enabled:
+        CREATE: implementation/ folder if not exists
+        GENERATE: implementation/task-group-N.md report (same template as parallel)
     END FOR
 
 </sequential_execution_fallback>

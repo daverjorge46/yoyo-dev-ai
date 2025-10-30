@@ -105,6 +105,10 @@ Then launches the full-screen Textual TUI dashboard.
 **Bug Fixes & Issues:**
 - `/create-fix` - Analyze and fix bugs, design issues, or layout problems with systematic problem analysis and task generation
 
+**Task Orchestration:**
+- `/orchestrate-tasks` - Advanced manual multi-agent orchestration for complex features (assign agents, standards per task group)
+- `/improve-skills` - Optimize Claude Code Skills for better discoverability and triggering reliability
+
 **Code Review (Optional):**
 - `/review` - Critical code review with specialized modes (devil, security, performance, production)
 
@@ -330,14 +334,23 @@ Three-phase execution process:
 
 **Phase 3: Post-Execution Tasks**
 5. Run all tests - Full test suite using test-runner agent
-6. Git workflow - Commit, push, create PR using git-workflow agent
-7. Verify tasks complete - Check tasks.md using project-manager agent
-8. Update roadmap - Mark roadmap items complete (conditional) using project-manager
-9. Create recap - Document in `.yoyo-dev/recaps/` using project-manager
-10. Completion summary - Generate summary with PR link using project-manager
-11. Notification - Play completion sound (macOS: `afplay`, Linux: `paplay` or skip if unavailable)
+6. Implementation verification - Run systematic quality verification using implementation-verifier agent (functionality, tests, accessibility, performance, security, documentation)
+7. Git workflow - Commit, push, create PR using git-workflow agent
+8. Verify tasks complete - Check tasks.md using project-manager agent
+9. Update roadmap - Mark roadmap items complete (conditional) using project-manager
+10. Create recap - Document in `.yoyo-dev/recaps/` using project-manager
+11. Update patterns library - Extract successful patterns (optional)
+12. Finalize state - Update state.json to mark workflow complete
+13. Completion summary - Generate summary with PR link using project-manager
+14. Notification - Play completion sound (macOS: `afplay`, Linux: `paplay` or skip if unavailable)
 
 **IMPORTANT:** All three phases MUST be completed. Do not stop after Phase 2.
+
+**Optional Flags:**
+- `--implementation-reports` - Generate detailed per-task-group implementation reports in `implementation/` folder
+- `--devil`, `--security`, `--performance`, `--production` - Apply critical review modes during implementation
+- `--sequential` - Force sequential execution (disable parallel)
+- `--parallel` - Force parallel execution
 
 ## Parallel Task Execution
 
