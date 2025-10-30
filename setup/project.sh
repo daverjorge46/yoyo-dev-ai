@@ -328,17 +328,6 @@ if [ "$CLAUDE_CODE" = true ]; then
     mkdir -p "$INSTALL_DIR/templates"
 
     if [ "$IS_FROM_BASE" = true ]; then
-        # Copy task monitor scripts
-        if [ -f "$BASE_AGENT_OS/lib/task-monitor.sh" ]; then
-            copy_file "$BASE_AGENT_OS/lib/task-monitor.sh" "$INSTALL_DIR/lib/task-monitor.sh" "true" "lib/task-monitor.sh"
-            chmod +x "$INSTALL_DIR/lib/task-monitor.sh"
-        fi
-
-        if [ -f "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" ]; then
-            copy_file "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" "$INSTALL_DIR/lib/task-monitor-tmux.sh" "true" "lib/task-monitor-tmux.sh"
-            chmod +x "$INSTALL_DIR/lib/task-monitor-tmux.sh"
-        fi
-
         # Copy status display scripts (visual mode)
         if [ -f "$BASE_AGENT_OS/lib/yoyo-status.sh" ]; then
             copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "$INSTALL_DIR/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
@@ -349,12 +338,6 @@ if [ "$CLAUDE_CODE" = true ]; then
         if [ -f "$BASE_AGENT_OS/lib/yoyo-dashboard.py" ]; then
             copy_file "$BASE_AGENT_OS/lib/yoyo-dashboard.py" "$INSTALL_DIR/lib/yoyo-dashboard.py" "true" "lib/yoyo-dashboard.py (Python dashboard)"
             chmod +x "$INSTALL_DIR/lib/yoyo-dashboard.py"
-        fi
-
-        # Copy Textual TUI launcher (new in v2.2 - event-driven architecture)
-        if [ -f "$BASE_AGENT_OS/lib/yoyo-tui.py" ]; then
-            copy_file "$BASE_AGENT_OS/lib/yoyo-tui.py" "$INSTALL_DIR/lib/yoyo-tui.py" "true" "lib/yoyo-tui.py (TUI launcher)"
-            chmod +x "$INSTALL_DIR/lib/yoyo-tui.py"
         fi
 
         # Copy Python requirements
@@ -410,11 +393,8 @@ if [ "$CLAUDE_CODE" = true ]; then
             "lib/yoyo-dashboard.py (Python dashboard)"
         chmod +x "$INSTALL_DIR/lib/yoyo-dashboard.py"
 
-        download_file "${BASE_URL}/lib/yoyo-tui.py" \
-            "$INSTALL_DIR/lib/yoyo-tui.py" \
-            "true" \
-            "lib/yoyo-tui.py (TUI launcher)"
-        chmod +x "$INSTALL_DIR/lib/yoyo-tui.py"
+        echo "  ⚠️  Note: yoyo_tui_v3 (advanced TUI) requires base installation"
+        echo "     Clone repository for full TUI support"
 
         download_file "${BASE_URL}/requirements.txt" \
             "$INSTALL_DIR/requirements.txt" \

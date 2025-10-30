@@ -137,7 +137,6 @@ Commands in `.claude/commands/` are entry points that reference the detailed ins
 │   └── code-style/       # Code style guides
 ├── claude-code/          # Claude Code specific files
 │   └── agents/           # Specialized agents
-├── commands/             # Command entry points
 ├── setup/                # Installation scripts
 └── config.yml            # Configuration file
 
@@ -145,6 +144,15 @@ workflows/                # Reusable workflow components (NEW v1.6.0)
 ├── planning/             # Product planning workflows
 ├── specification/        # Spec creation workflows
 └── implementation/       # Task execution and verification workflows
+
+.claude/                  # Claude Code configuration (canonical location)
+├── commands/             # Slash commands entry points
+└── agents/               # Agent configurations
+
+lib/                      # Library files
+├── yoyo_tui_v3/          # Modern TUI implementation
+├── yoyo-status.sh        # Bash dashboard fallback
+└── archive/              # Historical implementations
 ```
 
 ### Key Files

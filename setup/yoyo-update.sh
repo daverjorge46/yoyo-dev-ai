@@ -265,17 +265,6 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     mkdir -p "./.yoyo-dev/lib"
     mkdir -p "./.yoyo-dev/templates"
 
-    # Update task monitor scripts
-    if [ -f "$BASE_AGENT_OS/lib/task-monitor.sh" ]; then
-        copy_file "$BASE_AGENT_OS/lib/task-monitor.sh" "./.yoyo-dev/lib/task-monitor.sh" "true" "lib/task-monitor.sh"
-        chmod +x "./.yoyo-dev/lib/task-monitor.sh"
-    fi
-
-    if [ -f "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" ]; then
-        copy_file "$BASE_AGENT_OS/lib/task-monitor-tmux.sh" "./.yoyo-dev/lib/task-monitor-tmux.sh" "true" "lib/task-monitor-tmux.sh"
-        chmod +x "./.yoyo-dev/lib/task-monitor-tmux.sh"
-    fi
-
     # Update status display scripts (visual mode)
     if [ -f "$BASE_AGENT_OS/lib/yoyo-status.sh" ]; then
         copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./.yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
@@ -288,10 +277,11 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
     fi
 
-    # Update Textual TUI launcher (new in v2.2 - event-driven architecture)
-    if [ -f "$BASE_AGENT_OS/lib/yoyo-tui.py" ]; then
-        copy_file "$BASE_AGENT_OS/lib/yoyo-tui.py" "./.yoyo-dev/lib/yoyo-tui.py" "true" "lib/yoyo-tui.py (TUI launcher)"
-        chmod +x "./.yoyo-dev/lib/yoyo-tui.py"
+    # Update yoyo_tui_v3 (modern TUI implementation)
+    if [ -d "$BASE_AGENT_OS/lib/yoyo_tui_v3" ]; then
+        echo "  📦 Updating yoyo_tui_v3..."
+        mkdir -p "./.yoyo-dev/lib/yoyo_tui_v3"
+        cp -r "$BASE_AGENT_OS/lib/yoyo_tui_v3"/* "./.yoyo-dev/lib/yoyo_tui_v3/"
     fi
 
     # Update Python requirements
