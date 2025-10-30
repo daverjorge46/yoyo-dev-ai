@@ -66,6 +66,21 @@ def test_project_overview_creation(project_overview):
     assert isinstance(project_overview, ProjectOverview)
 
 
+def test_project_overview_with_mcp_monitor(mock_data_manager, mock_event_bus):
+    """Test that ProjectOverview accepts mcp_monitor parameter."""
+    mock_mcp_monitor = Mock()
+
+    # Should not raise TypeError
+    widget = ProjectOverview(
+        data_manager=mock_data_manager,
+        event_bus=mock_event_bus,
+        mcp_monitor=mock_mcp_monitor
+    )
+
+    assert widget is not None
+    assert widget.mcp_monitor is mock_mcp_monitor
+
+
 def test_initial_state_collapsed(project_overview):
     """Test that ProjectOverview starts in appropriate state."""
     # Should have initial expanded state (configurable)

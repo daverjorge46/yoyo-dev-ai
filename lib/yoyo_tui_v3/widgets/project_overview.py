@@ -23,17 +23,19 @@ class ProjectOverview(Widget):
     # Reactive properties
     is_expanded: reactive[bool] = reactive(True)
 
-    def __init__(self, data_manager, event_bus, **kwargs):
+    def __init__(self, data_manager, event_bus, mcp_monitor=None, **kwargs):
         """
         Initialize ProjectOverview.
 
         Args:
             data_manager: DataManager instance
             event_bus: EventBus instance
+            mcp_monitor: MCPServerMonitor instance (optional)
         """
         super().__init__(**kwargs)
         self.data_manager = data_manager
         self.event_bus = event_bus
+        self.mcp_monitor = mcp_monitor
 
         self._mission = ""
         self._tech_stack = []
