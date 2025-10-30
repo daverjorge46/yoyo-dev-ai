@@ -1,0 +1,79 @@
+# Yoyo Dev Configuration
+
+yoyo_dev_version: 1.5.0
+
+agents:
+  claude_code:
+    enabled: true
+  cursor:
+    enabled: false
+
+# Multi-agent workflow options
+multi_agent:
+  enabled: true
+  use_workflow_references: true  # Enable {{workflows/*}} syntax
+
+# Workflow preferences
+workflows:
+  task_execution:
+    mode: automatic  # automatic (/execute-tasks) or orchestrated (/orchestrate-tasks)
+    implementation_reports: false  # Create implementation/ folder
+    verification_reports: true     # Create verification/ folder
+
+# Specialized Agents Configuration
+specialized_agents:
+  # Context and utility agents
+  context_fetcher: true
+  file_creator: true
+  git_workflow: true
+  project_manager: true
+  test_runner: true
+  date_checker: true
+
+  # Design system agents
+  design_analyzer: true
+  design_validator: true
+
+  # New workflow-based agents
+  spec_initializer: true
+  spec_shaper: true
+  spec_writer: true
+  tasks_list_creator: true
+  implementer: true
+  implementation_verifier: true
+  product_planner: true
+
+# Skills optimization
+skills:
+  auto_improve: false  # Automatically improve skills on updates
+  optimization_report: true  # Create optimization reports
+
+# Workflow system configuration
+workflow_system:
+  max_nesting_depth: 3  # Maximum workflow reference nesting
+  cache_enabled: true   # Cache expanded workflows
+  cache_size: 100       # Max workflows in cache
+
+# Design System Configuration
+design_system:
+  enabled: true
+  auto_validate: true
+  accessibility_level: WCAG-AA  # WCAG-AA or WCAG-AAA
+  dark_mode: true
+  spacing_base: 4  # 4px or 8px
+  strict_mode: false  # If true, blocks merge on any violation
+
+project_types:
+  default:
+    instructions: ~/.yoyo-dev/instructions
+    standards: ~/.yoyo-dev/standards
+
+  # type_a:
+  #   instructions: ~/.yoyo-dev/project_types/type_a/instructions
+  #   standards: ~/.yoyo-dev/project_types/type_a/standards
+
+  # type_b:
+  #   instructions: ~/.yoyo-dev/project_types/type_b/instructions
+  #   standards: ~/.yoyo-dev/project_types/type_b/standards
+
+default_project_type: default
