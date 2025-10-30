@@ -29,19 +29,19 @@ Read the raw idea from `[spec-path]/planning/initialization.md` to understand wh
 
 Before generating questions, understand the broader product context:
 
-1. **Read Product Mission**: Load `agent-os/product/mission.md` to understand:
+1. **Read Product Mission**: Load `yoyo-dev/product/mission.md` to understand:
    - The product's overall mission and purpose
    - Target users and their primary use cases
    - Core problems the product aims to solve
    - How users are expected to benefit
 
-2. **Read Product Roadmap**: Load `agent-os/product/roadmap.md` to understand:
+2. **Read Product Roadmap**: Load `yoyo-dev/product/roadmap.md` to understand:
    - Features and capabilities already completed
    - The current state of the product
    - Where this new feature fits in the broader roadmap
    - Related features that might inform or constrain this work
 
-3. **Read Product Tech Stack**: Load `agent-os/product/tech-stack.md` to understand:
+3. **Read Product Tech Stack**: Load `yoyo-dev/product/tech-stack.md` to understand:
    - Technologies and frameworks in use
    - Technical constraints and capabilities
    - Libraries and tools available
@@ -276,32 +276,32 @@ Ready for specification creation.
 
 IMPORTANT: Ensure that all of your questions and final documented requirements ARE ALIGNED and DO NOT CONFLICT with any of user's preferred tech-stack, coding conventions, or common patterns as detailed in the following files:
 
-@agent-os/standards/backend/api.md
-@agent-os/standards/backend/migrations.md
-@agent-os/standards/backend/models.md
-@agent-os/standards/backend/queries.md
-@agent-os/standards/frontend/accessibility.md
-@agent-os/standards/frontend/components.md
-@agent-os/standards/frontend/css.md
-@agent-os/standards/frontend/responsive.md
-@agent-os/standards/global/best-practices.md
-@agent-os/standards/global/code-style/css-style.md
-@agent-os/standards/global/code-style/html-style.md
-@agent-os/standards/global/code-style/javascript-style.md
-@agent-os/standards/global/code-style.md
-@agent-os/standards/global/coding-style.md
-@agent-os/standards/global/commenting.md
-@agent-os/standards/global/component-patterns.md
-@agent-os/standards/global/conventions.md
-@agent-os/standards/global/design-system.md
-@agent-os/standards/global/design-validation.md
-@agent-os/standards/global/error-handling.md
-@agent-os/standards/global/formatting-helpers.md
-@agent-os/standards/global/interactive-execution.md
-@agent-os/standards/global/output-formatting.md
-@agent-os/standards/global/parallel-execution.md
-@agent-os/standards/global/personas.md
-@agent-os/standards/global/review-modes.md
-@agent-os/standards/global/tech-stack.md
-@agent-os/standards/global/validation.md
-@agent-os/standards/testing/test-writing.md
+@yoyo-dev/standards/backend/api.md
+@yoyo-dev/standards/backend/migrations.md
+@yoyo-dev/standards/backend/models.md
+@yoyo-dev/standards/backend/queries.md
+@yoyo-dev/standards/frontend/accessibility.md
+@yoyo-dev/standards/frontend/components.md
+@yoyo-dev/standards/frontend/css.md
+@yoyo-dev/standards/frontend/responsive.md
+@yoyo-dev/standards/global/best-practices.md
+@yoyo-dev/standards/global/code-style/css-style.md
+@yoyo-dev/standards/global/code-style/html-style.md
+@yoyo-dev/standards/global/code-style/javascript-style.md
+@yoyo-dev/standards/global/code-style.md
+@yoyo-dev/standards/global/coding-style.md
+@yoyo-dev/standards/global/commenting.md
+@yoyo-dev/standards/global/component-patterns.md
+@yoyo-dev/standards/global/conventions.md
+@yoyo-dev/standards/global/design-system.md
+@yoyo-dev/standards/global/design-validation.md
+@yoyo-dev/standards/global/error-handling.md
+@yoyo-dev/standards/global/formatting-helpers.md
+@yoyo-dev/standards/global/interactive-execution.md
+@yoyo-dev/standards/global/output-formatting.md
+@yoyo-dev/standards/global/parallel-execution.md
+@yoyo-dev/standards/global/personas.md
+@yoyo-dev/standards/global/review-modes.md
+@yoyo-dev/standards/global/tech-stack.md
+@yoyo-dev/standards/global/validation.md
+@yoyo-dev/standards/testing/test-writing.md

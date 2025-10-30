@@ -22,15 +22,15 @@ You are a software product tasks list writer and planner. Your role is to create
 ### Step 1: Analyze Spec & Requirements
 
 Read each of these files (whichever are available) and analyze them to understand the requirements for this feature implementation:
-- `agent-os/specs/[this-spec]/spec.md`
-- `agent-os/specs/[this-spec]/planning/requirements.md`
+- `yoyo-dev/specs/[this-spec]/spec.md`
+- `yoyo-dev/specs/[this-spec]/planning/requirements.md`
 
 Use your learnings to inform the tasks list and groupings you will create in the next step.
 
 
 ### Step 2: Create Tasks Breakdown
 
-Generate `agent-os/specs/[current-spec]/tasks.md`.
+Generate `yoyo-dev/specs/[current-spec]/tasks.md`.
 
 **Important**: The exact tasks, task groups, and organization will vary based on the feature's specific requirements. The following is an example format - adapt the content of the tasks list to match what THIS feature actually needs.
 
@@ -213,32 +213,32 @@ Recommended implementation sequence:
 
 IMPORTANT: Ensure that the tasks list you create IS ALIGNED and DOES NOT CONFLICT with any of user's preferred tech stack, coding conventions, or common patterns as detailed in the following files:
 
-@agent-os/standards/backend/api.md
-@agent-os/standards/backend/migrations.md
-@agent-os/standards/backend/models.md
-@agent-os/standards/backend/queries.md
-@agent-os/standards/frontend/accessibility.md
-@agent-os/standards/frontend/components.md
-@agent-os/standards/frontend/css.md
-@agent-os/standards/frontend/responsive.md
-@agent-os/standards/global/best-practices.md
-@agent-os/standards/global/code-style/css-style.md
-@agent-os/standards/global/code-style/html-style.md
-@agent-os/standards/global/code-style/javascript-style.md
-@agent-os/standards/global/code-style.md
-@agent-os/standards/global/coding-style.md
-@agent-os/standards/global/commenting.md
-@agent-os/standards/global/component-patterns.md
-@agent-os/standards/global/conventions.md
-@agent-os/standards/global/design-system.md
-@agent-os/standards/global/design-validation.md
-@agent-os/standards/global/error-handling.md
-@agent-os/standards/global/formatting-helpers.md
-@agent-os/standards/global/interactive-execution.md
-@agent-os/standards/global/output-formatting.md
-@agent-os/standards/global/parallel-execution.md
-@agent-os/standards/global/personas.md
-@agent-os/standards/global/review-modes.md
-@agent-os/standards/global/tech-stack.md
-@agent-os/standards/global/validation.md
-@agent-os/standards/testing/test-writing.md
+@yoyo-dev/standards/backend/api.md
+@yoyo-dev/standards/backend/migrations.md
+@yoyo-dev/standards/backend/models.md
+@yoyo-dev/standards/backend/queries.md
+@yoyo-dev/standards/frontend/accessibility.md
+@yoyo-dev/standards/frontend/components.md
+@yoyo-dev/standards/frontend/css.md
+@yoyo-dev/standards/frontend/responsive.md
+@yoyo-dev/standards/global/best-practices.md
+@yoyo-dev/standards/global/code-style/css-style.md
+@yoyo-dev/standards/global/code-style/html-style.md
+@yoyo-dev/standards/global/code-style/javascript-style.md
+@yoyo-dev/standards/global/code-style.md
+@yoyo-dev/standards/global/coding-style.md
+@yoyo-dev/standards/global/commenting.md
+@yoyo-dev/standards/global/component-patterns.md
+@yoyo-dev/standards/global/conventions.md
+@yoyo-dev/standards/global/design-system.md
+@yoyo-dev/standards/global/design-validation.md
+@yoyo-dev/standards/global/error-handling.md
+@yoyo-dev/standards/global/formatting-helpers.md
+@yoyo-dev/standards/global/interactive-execution.md
+@yoyo-dev/standards/global/output-formatting.md
+@yoyo-dev/standards/global/parallel-execution.md
+@yoyo-dev/standards/global/personas.md
+@yoyo-dev/standards/global/review-modes.md
+@yoyo-dev/standards/global/tech-stack.md
+@yoyo-dev/standards/global/validation.md
+@yoyo-dev/standards/testing/test-writing.md

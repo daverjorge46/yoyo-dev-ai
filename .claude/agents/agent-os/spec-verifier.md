@@ -33,7 +33,7 @@ Read these materials that were provided to you so that you can use them as the b
 Perform these checks:
 
 #### Check 1: Requirements Accuracy
-Read `agent-os/specs/[this-spec]/planning/requirements.md` and verify:
+Read `yoyo-dev/specs/[this-spec]/planning/requirements.md` and verify:
 - All user answers from the Q&A are accurately captured
 - No answers are missing or misrepresented
 - Any follow-up questions and answers are included
@@ -57,21 +57,21 @@ Perform these detailed content checks:
 
 #### Check 3: Visual Asset Analysis (if visuals exist)
 If visual files were found in Check 4:
-1. **Read each visual file** in `agent-os/specs/[this-spec]/planning/visuals/`
+1. **Read each visual file** in `yoyo-dev/specs/[this-spec]/planning/visuals/`
 2. **Document what you observe**: UI components, layouts, colors, typography, spacing, interaction patterns
 3. **Verify these design elements appear in**:
-   - `agent-os/specs/[this-spec]/spec.md` - Check if visual elements, layout or important visual details are present:
+   - `yoyo-dev/specs/[this-spec]/spec.md` - Check if visual elements, layout or important visual details are present:
      - Verification examples (depending on the visuals):
        * UI Components section matches visual components
        * Page Layouts section reflects visual layouts
        * Styling Guidelines align with visual design
-   - `agent-os/specs/[this-spec]/tasks.md` - Confirm at least some tasks specifically reference:
+   - `yoyo-dev/specs/[this-spec]/tasks.md` - Confirm at least some tasks specifically reference:
      * Visual file names
      * Components shown in visuals
      * Layouts depicted in mockups
 
 #### Check 4: Requirements Deep Dive
-Read `agent-os/specs/[this-spec]/planning/requirements.md` and create a mental list of:
+Read `yoyo-dev/specs/[this-spec]/planning/requirements.md` and create a mental list of:
 - **Explicit features requested**: What the user specifically said they want
 - **Constraints stated**: Limitations, performance needs, or technical requirements
 - **Out-of-scope items**: What the user explicitly said NOT to include
@@ -79,7 +79,7 @@ Read `agent-os/specs/[this-spec]/planning/requirements.md` and create a mental l
 - **Implicit needs**: Things implied but not directly stated
 
 #### Check 5: Core Specification Validation
-Read `agent-os/specs/[this-spec]/spec.md` and verify each section:
+Read `yoyo-dev/specs/[this-spec]/spec.md` and verify each section:
 1. **Goal**: Must directly address the problem stated in initial requirements
 2. **User Stories**: The stories are relevant and aligned to the initial requirements
 3. **Core Requirements**: Only include features from the requirement stated explicit features
@@ -93,7 +93,7 @@ Look for these issues:
 - Missing reusability opportunities (if user provided any)
 
 #### Check 6: Task List Detailed Validation
-Read `agent-os/specs/[this-spec]/tasks.md` and check each task group's tasks:
+Read `yoyo-dev/specs/[this-spec]/tasks.md` and check each task group's tasks:
 1. **Test Writing Limits**: Verify test writing follows limited approach:
    - Each implementation task group (1-3) should specify writing 2-8 focused tests maximum
    - Test verification subtasks should run ONLY the newly written tests, not entire suite
@@ -115,7 +115,7 @@ Review all specifications for:
 
 ### Step 4: Document Findings and Issues
 
-Create `agent-os/specs/[this-spec]/verification/spec-verification.md` with the following structure:
+Create `yoyo-dev/specs/[this-spec]/verification/spec-verification.md` with the following structure:
 
 ```markdown
 # Specification Verification Report
@@ -273,7 +273,7 @@ All specifications accurately reflect requirements, follow limited testing appro
 - [Number] minor issues
 - [Number] over-engineering concerns
 
-See agent-os/specs/[this-spec]/verification/spec-verification.md for full details.
+See yoyo-dev/specs/[this-spec]/verification/spec-verification.md for full details.
 ```
 
 ## Important Constraints
@@ -296,32 +296,32 @@ See agent-os/specs/[this-spec]/verification/spec-verification.md for full detail
 
 IMPORTANT: Ensure that the spec and tasks list are ALIGNED and DO NOT CONFLICT with any of user's preferred tech stack, coding conventions, or common patterns as detailed in the following files:
 
-@agent-os/standards/backend/api.md
-@agent-os/standards/backend/migrations.md
-@agent-os/standards/backend/models.md
-@agent-os/standards/backend/queries.md
-@agent-os/standards/frontend/accessibility.md
-@agent-os/standards/frontend/components.md
-@agent-os/standards/frontend/css.md
-@agent-os/standards/frontend/responsive.md
-@agent-os/standards/global/best-practices.md
-@agent-os/standards/global/code-style/css-style.md
-@agent-os/standards/global/code-style/html-style.md
-@agent-os/standards/global/code-style/javascript-style.md
-@agent-os/standards/global/code-style.md
-@agent-os/standards/global/coding-style.md
-@agent-os/standards/global/commenting.md
-@agent-os/standards/global/component-patterns.md
-@agent-os/standards/global/conventions.md
-@agent-os/standards/global/design-system.md
-@agent-os/standards/global/design-validation.md
-@agent-os/standards/global/error-handling.md
-@agent-os/standards/global/formatting-helpers.md
-@agent-os/standards/global/interactive-execution.md
-@agent-os/standards/global/output-formatting.md
-@agent-os/standards/global/parallel-execution.md
-@agent-os/standards/global/personas.md
-@agent-os/standards/global/review-modes.md
-@agent-os/standards/global/tech-stack.md
-@agent-os/standards/global/validation.md
-@agent-os/standards/testing/test-writing.md
+@yoyo-dev/standards/backend/api.md
+@yoyo-dev/standards/backend/migrations.md
+@yoyo-dev/standards/backend/models.md
+@yoyo-dev/standards/backend/queries.md
+@yoyo-dev/standards/frontend/accessibility.md
+@yoyo-dev/standards/frontend/components.md
+@yoyo-dev/standards/frontend/css.md
+@yoyo-dev/standards/frontend/responsive.md
+@yoyo-dev/standards/global/best-practices.md
+@yoyo-dev/standards/global/code-style/css-style.md
+@yoyo-dev/standards/global/code-style/html-style.md
+@yoyo-dev/standards/global/code-style/javascript-style.md
+@yoyo-dev/standards/global/code-style.md
+@yoyo-dev/standards/global/coding-style.md
+@yoyo-dev/standards/global/commenting.md
+@yoyo-dev/standards/global/component-patterns.md
+@yoyo-dev/standards/global/conventions.md
+@yoyo-dev/standards/global/design-system.md
+@yoyo-dev/standards/global/design-validation.md
+@yoyo-dev/standards/global/error-handling.md
+@yoyo-dev/standards/global/formatting-helpers.md
+@yoyo-dev/standards/global/interactive-execution.md
+@yoyo-dev/standards/global/output-formatting.md
+@yoyo-dev/standards/global/parallel-execution.md
+@yoyo-dev/standards/global/personas.md
+@yoyo-dev/standards/global/review-modes.md
+@yoyo-dev/standards/global/tech-stack.md
+@yoyo-dev/standards/global/validation.md
+@yoyo-dev/standards/testing/test-writing.md

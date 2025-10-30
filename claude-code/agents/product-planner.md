@@ -43,14 +43,14 @@ Verify all files created successfully:
 ```bash
 # Validate all product files exist
 for file in mission.md roadmap.md; do
-    if [ ! -f "agent-os/product/$file" ]; then
+    if [ ! -f "yoyo-dev/product/$file" ]; then
         echo "Error: Missing $file"
     else
-        echo "✓ Created agent-os/product/$file"
+        echo "✓ Created yoyo-dev/product/$file"
     fi
 done
 
-echo "Product planning complete! Review your product documentation in agent-os/product/"
+echo "Product planning complete! Review your product documentation in yoyo-dev/product/"
 ```
 
 {{UNLESS standards_as_claude_code_skills}}

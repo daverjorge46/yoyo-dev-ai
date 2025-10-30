@@ -23,7 +23,7 @@ If you don't have one yet, then run any of these commands first:
 
 ### NEXT: Create orchestration.yml to serve as a roadmap for orchestration of task groups
 
-In this spec's folder, create this file: `agent-os/specs/[this-spec]/orchestration.yml`.
+In this spec's folder, create this file: `yoyo-dev/specs/[this-spec]/orchestration.yml`.
 
 Populate this file with with the names of each task group found in this spec's `tasks.md` and use this EXACT structure for the content of `orchestration.yml`:
 
@@ -136,14 +136,14 @@ Note: If the `use_claude_code_subagents` flag is enabled, the final `orchestrati
 
 ### NEXT: Delegate task groups implementations to assigned subagents
 
-Loop through each task group in `agent-os/specs/[this-spec]/tasks.md` and delegate its implementation to the assigned subagent specified in `orchestration.yml`.
+Loop through each task group in `yoyo-dev/specs/[this-spec]/tasks.md` and delegate its implementation to the assigned subagent specified in `orchestration.yml`.
 
 For each delegation, provide the subagent with:
 - The task group (including the parent task and all sub-tasks)
-- The spec file: `agent-os/specs/[this-spec]/spec.md`
+- The spec file: `yoyo-dev/specs/[this-spec]/spec.md`
 - Instruct subagent to:
   - Perform their implementation
-  - Check off the task and sub-task(s) in `agent-os/specs/[this-spec]/tasks.md`
+  - Check off the task and sub-task(s) in `yoyo-dev/specs/[this-spec]/tasks.md`
 
 In addition to the above items, also instruct the subagent to closely adhere to the user's standards & preferences as specified in the following files.  To build the list of file references to give to the subagent, follow these instructions:
 
@@ -157,8 +157,8 @@ Use the following logic to compile a list of file references to standards that s
 2. Check the list of `standards` specified for this task group in `orchestration.yml`
 3. Compile the list of file references to those standards, one file reference per line, using this logic for determining which files to include:
    a. If the value for `standards` is simply `all`, then include every single file, folder, sub-folder and files within sub-folders in your list of files.
-   b. If the item under standards ends with "*" then it means that all files within this folder or sub-folder should be included. For example, `frontend/*` means include all files and sub-folders and their files located inside of `agent-os/standards/frontend/`.
-   c. If a file ends in `.md` then it means this is one specific file you must include in your list of files. For example `backend/api.md` means you must include the file located at `agent-os/standards/backend/api.md`.
+   b. If the item under standards ends with "*" then it means that all files within this folder or sub-folder should be included. For example, `frontend/*` means include all files and sub-folders and their files located inside of `yoyo-dev/standards/frontend/`.
+   c. If a file ends in `.md` then it means this is one specific file you must include in your list of files. For example `backend/api.md` means you must include the file located at `yoyo-dev/standards/backend/api.md`.
    d. De-duplicate files in your list of file references.
 
 ##### Output Format
@@ -166,14 +166,14 @@ Use the following logic to compile a list of file references to standards that s
 The compiled list of standards should look something like this, where each file reference is on its own line and begins with `@`. The exact list of files will vary:
 
 ```
-@agent-os/standards/global/coding-style.md
-@agent-os/standards/global/conventions.md
-@agent-os/standards/global/tech-stack.md
-@agent-os/standards/backend/api/authentication.md
-@agent-os/standards/backend/api/endpoints.md
-@agent-os/standards/backend/api/responses.md
-@agent-os/standards/frontend/css.md
-@agent-os/standards/frontend/responsive.md
+@yoyo-dev/standards/global/coding-style.md
+@yoyo-dev/standards/global/conventions.md
+@yoyo-dev/standards/global/tech-stack.md
+@yoyo-dev/standards/backend/api/authentication.md
+@yoyo-dev/standards/backend/api/endpoints.md
+@yoyo-dev/standards/backend/api/responses.md
+@yoyo-dev/standards/frontend/css.md
+@yoyo-dev/standards/frontend/responsive.md
 ```
 
 

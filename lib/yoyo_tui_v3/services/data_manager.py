@@ -416,15 +416,17 @@ class DataManager:
         Returns:
             ProjectStats with current counts, or None if no data available
         """
+        from ..models import SpecStatus
+
         with self._state_lock:
             specs = self._state.specs
             fixes = self._state.fixes
 
             # Count active specs (not completed)
-            active_specs = len([s for s in specs if s.status != "complete"])
+            active_specs = len([s for s in specs if s.status != SpecStatus.COMPLETED])
 
             # Count active fixes (not completed)
-            active_fixes = len([f for f in fixes if f.status != "complete"])
+            active_fixes = len([f for f in fixes if f.status != SpecStatus.COMPLETED])
 
             # Count pending tasks from all specs and fixes
             pending_tasks = 0
@@ -457,6 +459,135 @@ class DataManager:
         # For now, return None
         return None
 
+    def get_active_work(self) -> Optional['ActiveWork']:
+        """
+        Get current active work (spec or fix with incomplete tasks).
+
+        Finds the most recent spec or fix that has incomplete tasks (progress < 100%).
+        Returns None if no active work is found.
+
+        Returns:
+            ActiveWork with most recent active item, or None if no active work
+        """
+        from ..models import ActiveWork
+
+        with self._state_lock:
+            # Collect all items with incomplete tasks
+            active_items = []
+
+            # Check specs for incomplete tasks
+            for spec in self._state.specs:
+                if spec.progress < 100:
+                    # Parse tasks from tasks.md
+                    tasks_file = spec.path / "tasks.md"
+                    tasks = self._parse_tasks_to_task_list(tasks_file)
+
+                    active_items.append({
+                        'type': 'spec',
+                        'name': spec.name,
+                        'date': spec.date,
+                        'path': spec.path,
+                        'tasks': tasks,
+                        'progress': spec.progress,
+                        'status': spec.status.value if hasattr(spec.status, 'value') else str(spec.status)
+                    })
+                    logger.debug(f"Found active spec: {spec.name} (progress: {spec.progress}%)")
+
+            # Check fixes for incomplete tasks
+            for fix in self._state.fixes:
+                if fix.progress < 100:
+                    # Parse tasks from tasks.md
+                    tasks_file = fix.path / "tasks.md"
+                    tasks = self._parse_tasks_to_task_list(tasks_file)
+
+                    active_items.append({
+                        'type': 'fix',
+                        'name': fix.name,
+                        'date': fix.date,
+                        'path': fix.path,
+                        'tasks': tasks,
+                        'progress': fix.progress,
+                        'status': fix.status.value if hasattr(fix.status, 'value') else str(fix.status)
+                    })
+                    logger.debug(f"Found active fix: {fix.name} (progress: {fix.progress}%)")
+
+            # Return None if no active items found
+            if not active_items:
+                logger.debug("No active work found (all tasks complete or no specs/fixes)")
+                return None
+
+            # Sort by date (most recent first)
+            active_items.sort(key=lambda x: x['date'], reverse=True)
+
+            # Get most recent item
+            most_recent = active_items[0]
+
+            logger.info(f"Active work: {most_recent['type']} '{most_recent['name']}' ({most_recent['progress']:.1f}% complete)")
+
+            # Transform to ActiveWork model
+            return ActiveWork(
+                type=most_recent['type'],
+                name=most_recent['name'],
+                path=most_recent['path'],
+                tasks=most_recent['tasks'],
+                progress=most_recent['progress'],
+                status=most_recent['status']
+            )
+
+    def _parse_tasks_to_task_list(self, tasks_file: Path) -> List['Task']:
+        """
+        Parse tasks.md file and convert to List[Task].
+
+        Args:
+            tasks_file: Path to tasks.md
+
+        Returns:
+            List of Task objects (empty list if file doesn't exist)
+        """
+        from ..models import Task, TaskStatus
+
+        if not tasks_file.exists():
+            logger.warning(f"tasks.md not found: {tasks_file}")
+            return []
+
+        try:
+            # Parse tasks.md content directly
+            with open(tasks_file, 'r') as f:
+                content = f.read()
+
+            # Use TaskParser's internal parsing method
+            parent_tasks = TaskParser._parse_parent_tasks(content)
+
+            tasks = []
+            for parent_task in parent_tasks:
+                # Convert subtasks to list of strings
+                subtask_strings = [st.text for st in parent_task.subtasks]
+
+                # Determine task status based on completion
+                if parent_task.completed:
+                    status = TaskStatus.COMPLETED
+                elif any(st.completed for st in parent_task.subtasks):
+                    status = TaskStatus.IN_PROGRESS
+                else:
+                    status = TaskStatus.PENDING
+
+                # Create Task object
+                task = Task(
+                    id=f"task-{parent_task.number}",
+                    title=parent_task.name,
+                    subtasks=subtask_strings,
+                    status=status
+                )
+
+                tasks.append(task)
+
+            logger.debug(f"Parsed {len(tasks)} tasks from {tasks_file}")
+            return tasks
+
+        except Exception as e:
+            logger.error(f"Error parsing tasks from {tasks_file}: {e}")
+            return []
+
     def get_recent_actions(self, limit: int = 10) -> List[Dict]:
         """
         Get recent actions (specs, fixes, recaps) in chronological order.
@@ -477,9 +608,9 @@ class DataManager:
                 actions.append({
                     "type": "spec",
                     "name": spec.name,
-                    "date": spec.created_date,
-                    "title": spec.title,
-                    "status": spec.status,
+                    "date": spec.date,
+                    "title": getattr(spec, 'title', spec.name),
+                    "status": spec.status.value if hasattr(spec.status, 'value') else spec.status,
                     "progress": spec.progress
                 })
 
@@ -488,9 +619,9 @@ class DataManager:
                 actions.append({
                     "type": "fix",
                     "name": fix.name,
-                    "date": fix.created_date,
-                    "title": fix.title,
-                    "status": fix.status,
+                    "date": fix.date,
+                    "title": getattr(fix, 'title', fix.name),
+                    "status": fix.status.value if hasattr(fix.status, 'value') else fix.status,
                     "progress": fix.progress
                 })
 
@@ -498,10 +629,10 @@ class DataManager:
             for recap in self._state.recaps:
                 actions.append({
                     "type": "recap",
-                    "name": recap.name,
-                    "date": recap.created_date,
-                    "title": recap.title,
-                    "summary": recap.summary
+                    "name": recap.get('name', 'unknown'),
+                    "date": recap.get('created_date', 'unknown'),
+                    "title": recap.get('title', 'unknown'),
+                    "summary": recap.get('summary', '')
                 })
 
         # Sort by date (most recent first)
@@ -509,6 +640,144 @@ class DataManager:
 
         # Return limited list
         return actions[:limit]
+
+    def get_recent_history(self, count: int = 10) -> List['HistoryEntry']:
+        """
+        Get recent history combining specs, fixes, and recaps as HistoryEntry objects.
+
+        Transforms all data sources into HistoryEntry view models with chronological
+        ordering (most recent first). Used by history_panel widget.
+
+        Args:
+            count: Maximum number of entries to return (default: 10)
+
+        Returns:
+            List of HistoryEntry objects sorted by timestamp (most recent first)
+        """
+        from ..models import HistoryEntry, ActionType, SpecStatus
+
+        history_entries = []
+
+        with self._state_lock:
+            # Transform specs to HistoryEntry
+            for spec in self._state.specs:
+                try:
+                    # Parse date string to datetime
+                    timestamp = self._parse_date_to_datetime(spec.date)
+
+                    # Determine success based on status (handle enum)
+                    status_value = spec.status.value if hasattr(spec.status, 'value') else spec.status
+                    success = status_value == "completed"
+
+                    # Create description
+                    description = f"Spec: {spec.name}"
+
+                    # Create details with status and progress
+                    details = f"Status: {status_value}, Progress: {spec.progress:.0f}%"
+
+                    entry = HistoryEntry(
+                        timestamp=timestamp,
+                        action_type=ActionType.SPEC,
+                        description=description,
+                        success=success,
+                        details=details
+                    )
+                    history_entries.append(entry)
+
+                except Exception as e:
+                    logger.warning(f"Error transforming spec '{spec.name}' to HistoryEntry: {e}")
+                    continue
+
+            # Transform fixes to HistoryEntry
+            for fix in self._state.fixes:
+                try:
+                    # Parse date string to datetime
+                    timestamp = self._parse_date_to_datetime(fix.date)
+
+                    # Determine success based on status (handle enum)
+                    status_value = fix.status.value if hasattr(fix.status, 'value') else fix.status
+                    success = status_value == "completed"
+
+                    # Create description
+                    description = f"Fix: {fix.name}"
+
+                    # Create details with status and progress
+                    details = f"Status: {status_value}, Progress: {fix.progress:.0f}%"
+
+                    entry = HistoryEntry(
+                        timestamp=timestamp,
+                        action_type=ActionType.FIX,
+                        description=description,
+                        success=success,
+                        details=details
+                    )
+                    history_entries.append(entry)
+
+                except Exception as e:
+                    logger.warning(f"Error transforming fix '{fix.name}' to HistoryEntry: {e}")
+                    continue
+
+            # Transform recaps to HistoryEntry
+            for recap in self._state.recaps:
+                try:
+                    # Parse date string to datetime
+                    # Recaps are dicts with 'created_date' key
+                    date_str = recap.get('created_date', 'unknown')
+                    timestamp = self._parse_date_to_datetime(date_str)
+
+                    # Recaps are always successful
+                    success = True
+
+                    # Create description
+                    recap_name = recap.get('name', 'unknown')
+                    description = f"Recap: {recap_name}"
+
+                    # Create details with summary
+                    summary = recap.get('summary', '')
+                    details = summary if summary else None
+
+                    entry = HistoryEntry(
+                        timestamp=timestamp,
+                        action_type=ActionType.COMMAND,  # Recaps are command outputs
+                        description=description,
+                        success=success,
+                        details=details
+                    )
+                    history_entries.append(entry)
+
+                except Exception as e:
+                    logger.warning(f"Error transforming recap to HistoryEntry: {e}")
+                    continue
+
+        # Sort by timestamp (most recent first)
+        history_entries.sort(key=lambda x: x.timestamp, reverse=True)
+
+        # Limit results to count parameter
+        limited_entries = history_entries[:count] if count > 0 else []
+
+        logger.debug(f"get_recent_history: Returning {len(limited_entries)} entries (requested: {count})")
+
+        return limited_entries
+
+    def _parse_date_to_datetime(self, date_str: str) -> datetime:
+        """
+        Parse date string to datetime object.
+
+        Handles YYYY-MM-DD format. Falls back to current datetime if parsing fails.
+
+        Args:
+            date_str: Date string in YYYY-MM-DD format
+
+        Returns:
+            datetime object
+        """
+        try:
+            # Parse YYYY-MM-DD format
+            return datetime.strptime(date_str, "%Y-%m-%d")
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Error parsing date '{date_str}': {e}. Using current datetime.")
+            # Fallback to current datetime
+            return datetime.now()
 
     def refresh_all(self) -> None:
         """

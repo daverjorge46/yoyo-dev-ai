@@ -26,10 +26,10 @@ Collect comprehensive product information from the user:
 
 ```bash
 # Check if product folder already exists
-if [ -d "agent-os/product" ]; then
+if [ -d "yoyo-dev/product" ]; then
     echo "Product documentation already exists. Review existing files or start fresh?"
     # List existing product files
-    ls -la agent-os/product/
+    ls -la yoyo-dev/product/
 fi
 ```
 
@@ -51,7 +51,7 @@ Please provide the following to create your product plan:
 
 ### Step 2: Create Mission Document
 
-Create `agent-os/product/mission.md` with comprehensive product definition following this structure for its' content:
+Create `yoyo-dev/product/mission.md` with comprehensive product definition following this structure for its' content:
 
 #### Mission Structure:
 ```markdown
@@ -107,13 +107,13 @@ This results in [MEASURABLE_BENEFIT].
 
 ### Step 3: Create Development Roadmap
 
-Generate `agent-os/product/roadmap.md` with an ordered feature checklist:
+Generate `yoyo-dev/product/roadmap.md` with an ordered feature checklist:
 
 Do not include any tasks for initializing a new codebase or bootstrapping a new application. Assume the user is already inside the project's codebase and has a bare-bones application initialized.
 
 #### Creating the Roadmap:
 
-1. **Review the Mission** - Read `agent-os/product/mission.md` to understand the product's goals, target users, and success criteria.
+1. **Review the Mission** - Read `yoyo-dev/product/mission.md` to understand the product's goals, target users, and success criteria.
 
 2. **Identify Features** - Based on the mission, determine the list of concrete features needed to achieve the product vision.
 
@@ -158,7 +158,7 @@ Effort scale:
 
 ### Step 4: Document Tech Stack
 
-Create `agent-os/product/tech-stack.md` with a list of all tech stack choices that cover all aspects of this product's codebase.
+Create `yoyo-dev/product/tech-stack.md` with a list of all tech stack choices that cover all aspects of this product's codebase.
 
 ### Creating the Tech Stack document
 
@@ -177,7 +177,7 @@ Reconcile and fill in the remaining gaps in the tech stack list by finding, read
 
 #### Step 3: Create the Tech Stack Document
 
-Create `agent-os/product/tech-stack.md` and populate it with the final list of all technical stack choices, reconciled between the information the user has provided to you and the information found in provided sources.
+Create `yoyo-dev/product/tech-stack.md` and populate it with the final list of all technical stack choices, reconciled between the information the user has provided to you and the information found in provided sources.
 
 
 ### Step 5: Final Validation
@@ -187,37 +187,37 @@ Verify all files created successfully:
 ```bash
 # Validate all product files exist
 for file in mission.md roadmap.md; do
-    if [ ! -f "agent-os/product/$file" ]; then
+    if [ ! -f "yoyo-dev/product/$file" ]; then
         echo "Error: Missing $file"
     else
-        echo "✓ Created agent-os/product/$file"
+        echo "✓ Created yoyo-dev/product/$file"
     fi
 done
 
-echo "Product planning complete! Review your product documentation in agent-os/product/"
+echo "Product planning complete! Review your product documentation in yoyo-dev/product/"
 ```
 
 ## User Standards & Preferences Compliance
 
 IMPORTANT: Ensure the product mission and roadmap are ALIGNED and DO NOT CONFLICT with the user's preferences and standards as detailed in the following files:
 
-@agent-os/standards/global/best-practices.md
-@agent-os/standards/global/code-style/css-style.md
-@agent-os/standards/global/code-style/html-style.md
-@agent-os/standards/global/code-style/javascript-style.md
-@agent-os/standards/global/code-style.md
-@agent-os/standards/global/coding-style.md
-@agent-os/standards/global/commenting.md
-@agent-os/standards/global/component-patterns.md
-@agent-os/standards/global/conventions.md
-@agent-os/standards/global/design-system.md
-@agent-os/standards/global/design-validation.md
-@agent-os/standards/global/error-handling.md
-@agent-os/standards/global/formatting-helpers.md
-@agent-os/standards/global/interactive-execution.md
-@agent-os/standards/global/output-formatting.md
-@agent-os/standards/global/parallel-execution.md
-@agent-os/standards/global/personas.md
-@agent-os/standards/global/review-modes.md
-@agent-os/standards/global/tech-stack.md
-@agent-os/standards/global/validation.md
+@yoyo-dev/standards/global/best-practices.md
+@yoyo-dev/standards/global/code-style/css-style.md
+@yoyo-dev/standards/global/code-style/html-style.md
+@yoyo-dev/standards/global/code-style/javascript-style.md
+@yoyo-dev/standards/global/code-style.md
+@yoyo-dev/standards/global/coding-style.md
+@yoyo-dev/standards/global/commenting.md
+@yoyo-dev/standards/global/component-patterns.md
+@yoyo-dev/standards/global/conventions.md
+@yoyo-dev/standards/global/design-system.md
+@yoyo-dev/standards/global/design-validation.md
+@yoyo-dev/standards/global/error-handling.md
+@yoyo-dev/standards/global/formatting-helpers.md
+@yoyo-dev/standards/global/interactive-execution.md
+@yoyo-dev/standards/global/output-formatting.md
+@yoyo-dev/standards/global/parallel-execution.md
+@yoyo-dev/standards/global/personas.md
+@yoyo-dev/standards/global/review-modes.md
+@yoyo-dev/standards/global/tech-stack.md
+@yoyo-dev/standards/global/validation.md
