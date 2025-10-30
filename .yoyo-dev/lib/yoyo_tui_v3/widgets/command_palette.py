@@ -21,17 +21,22 @@ class CommandPalettePanel(Widget):
     - Command search hint
     """
 
-    def __init__(self, data_manager, event_bus, **kwargs):
+    def __init__(self, data_manager, event_bus, command_suggester=None, error_detector=None, **kwargs):
         """
         Initialize CommandPalettePanel.
 
         Args:
             data_manager: DataManager instance
             event_bus: EventBus instance
+            command_suggester: IntelligentCommandSuggester instance (optional)
+            error_detector: ErrorDetector instance (optional)
+            **kwargs: Additional Widget parameters (id, classes, etc.)
         """
         super().__init__(**kwargs)
         self.data_manager = data_manager
         self.event_bus = event_bus
+        self.command_suggester = command_suggester
+        self.error_detector = error_detector
 
         self._suggestions: List[CommandSuggestion] = []
         self._errors: List[DetectedError] = []
