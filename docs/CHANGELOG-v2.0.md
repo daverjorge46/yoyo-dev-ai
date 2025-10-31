@@ -7,7 +7,7 @@
 
 ## 🎯 Inspiration
 
-This release is heavily inspired by [ai-dev-tasks](https://github.com/snarktank/ai-dev-tasks) by @snarktank, which demonstrated that **radical simplicity** and **permission-based execution** create better AI-assisted workflows than automation-first approaches.
+This release is heavily inspired by [ai-dev-tasks](https://github.com/snarktank/ai-dev-tasks) by @snarktank and [agent-os](https://github.com/buildermethods/agent-os) by @buildermethodstank, which demonstrated that **radical simplicity** and **permission-based execution** create better AI-assisted workflows than automation-first approaches.
 
 **Key insight:** The best workflow is one that gets out of your way while keeping humans in control.
 
