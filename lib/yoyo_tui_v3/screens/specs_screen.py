@@ -148,9 +148,9 @@ class SpecsScreen(Screen):
         content.append(f"       Created: {spec.created_date}", style="dim")
 
         # Show progress if available
-        if spec.tasks_count and spec.tasks_count > 0:
-            completed = spec.tasks_completed or 0
-            total = spec.tasks_count
+        if spec.total_tasks and spec.total_tasks > 0:
+            completed = spec.completed_tasks or 0
+            total = spec.total_tasks
             progress = (completed / total * 100) if total > 0 else 0
             content.append(f" • Progress: {completed}/{total} ({progress:.0f}%)", style="dim")
 
