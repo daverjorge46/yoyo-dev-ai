@@ -360,6 +360,130 @@ Three-phase execution process:
 - `--sequential` - Force sequential execution (disable parallel)
 - `--parallel` - Force parallel execution
 
+---
+
+## Advanced Orchestration
+
+**NEW in v1.6.0:** Manual multi-agent orchestration for complex scenarios where you need fine-grained control over agent assignment and standards per task group.
+
+### When to Use `/orchestrate-tasks` vs `/execute-tasks`
+
+**Use `/execute-tasks` (default) when:**
+- Standard feature development with clear task breakdown
+- Tasks follow normal dependencies (sequential or auto-parallel)
+- Using default implementer agent and best-practices standards
+- Want automatic task execution without manual configuration
+- 90% of use cases ✅
+
+**Use `/orchestrate-tasks` (advanced) when:**
+- Complex features requiring different agents for different task groups
+- Need to apply specific standards to specific task groups (e.g., security standards only for auth tasks)
+- Manual control over execution order and parallelization
+- Creating orchestration roadmaps for large multi-phase projects
+- Testing or debugging with specific agent/standards combinations
+- 10% of use cases for power users 🔧
+
+###  Orchestration Workflow
+
+The `/orchestrate-tasks` command provides a guided workflow for manual orchestration:
+
+**Step 1: Task Selection**
+- Review tasks.md from the spec
+- Select which task groups to execute (or all)
+- System shows task metadata (dependencies, files, parallel-safe flag)
+
+**Step 2: Agent Assignment**
+- For each task group, assign a specialized agent:
+  - `implementer` - Standard TDD-based implementation
+  - `spec-writer` - Documentation-focused tasks
+  - `test-runner` - Test execution and validation
+  - `implementation-verifier` - Quality verification tasks
+  - Custom agents as needed
+
+**Step 3: Standards Assignment**
+- For each task group, select applicable standards:
+  - `best-practices.md` - General best practices
+  - `code-style/typescript.md` - TypeScript style guide
+  - `code-style/react.md` - React patterns
+  - `security.md` - Security standards
+  - `design-system.md` - Design consistency
+  - `accessibility.md` - WCAG compliance
+  - Multiple standards can be applied per group
+
+**Step 4: Orchestration File Generation**
+- Creates `orchestration.yml` in spec directory with:
+  ```yaml
+  orchestration:
+    spec_folder: .yoyo-dev/specs/2025-10-31-feature-name
+    task_groups:
+      - group_number: 1
+        group_name: "Database Schema"
+        agent: implementer
+        standards: [best-practices.md, code-style/typescript.md]
+        status: pending
+      - group_number: 2
+        group_name: "API Endpoints"
+        agent: implementer
+        standards: [best-practices.md, security.md]
+        status: pending
+      - group_number: 3
+        group_name: "Frontend Components"
+        agent: implementer
+        standards: [best-practices.md, design-system.md, accessibility.md]
+        status: pending
+    execution:
+      parallel_groups:
+        - [1]      # Database schema first
+        - [2]      # API endpoints after schema
+        - [3]      # Frontend after API
+  ```
+
+**Step 5: Execution**
+- Executes each task group with assigned agent and standards
+- Respects parallel_groups for execution order
+- Tracks status in orchestration.yml
+- Generates orchestration report with timing and results
+
+### Orchestration Benefits
+
+**Fine-grained control:**
+- Different agents for different concerns (implementation vs verification)
+- Targeted standards application (security only where needed)
+- Custom execution order beyond automatic dependency detection
+
+**Documentation:**
+- orchestration.yml serves as implementation roadmap
+- Clear record of which agent/standards were used for each task
+- Useful for audits and knowledge transfer
+
+**Complex scenarios:**
+- Multi-team coordination (assign different agents to different groups)
+- Phased rollouts (explicit execution groups)
+- A/B testing different approaches (run same tasks with different standards)
+
+### Example: E-Commerce Checkout Feature
+
+```bash
+/orchestrate-tasks
+
+# Task Groups:
+# 1. Payment Gateway Integration
+# 2. Order Processing Logic
+# 3. Checkout UI Components
+# 4. End-to-End Tests
+
+# Assignments:
+# Group 1 → implementer + [security.md, best-practices.md]  # Payment needs security focus
+# Group 2 → implementer + [best-practices.md]                # Standard implementation
+# Group 3 → implementer + [design-system.md, accessibility.md, best-practices.md]  # UI needs design/a11y
+# Group 4 → test-runner + [best-practices.md]                # Testing-specific agent
+
+# Execution order: [1,2] parallel → [3] → [4]
+# (Payment + Order Logic in parallel, then UI, then tests)
+```
+
+---
+
 ## Parallel Task Execution
 
 **NEW**: Yoyo Dev automatically analyzes task dependencies and executes independent tasks concurrently for 2-3x faster development.
