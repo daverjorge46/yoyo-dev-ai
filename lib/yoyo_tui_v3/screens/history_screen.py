@@ -71,7 +71,7 @@ class HistoryScreen(Screen):
         content.append("╚════════════════════════════════════════════════════════════════════════════════╝\n\n", style="bold cyan")
 
         # Get history items
-        history_items = self.data_manager.get_history(limit=30) or []
+        history_items = self.data_manager.get_recent_history(count=30) or []
 
         if not history_items:
             content.append("  No history items found.\n\n", style="dim")

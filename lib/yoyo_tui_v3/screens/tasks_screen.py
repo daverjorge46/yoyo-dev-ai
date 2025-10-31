@@ -71,8 +71,8 @@ class TasksScreen(Screen):
         content.append("╚════════════════════════════════════════════════════════════════════════════════╝\n\n", style="bold cyan")
 
         # Get active specs and fixes
-        specs = self.data_manager.get_active_specs() or []
-        fixes = self.data_manager.get_active_fixes() or []
+        specs = self.data_manager.get_all_specs() or []
+        fixes = self.data_manager.get_all_fixes() or []
 
         if not specs and not fixes:
             content.append("  No active work found.\n\n", style="dim")
