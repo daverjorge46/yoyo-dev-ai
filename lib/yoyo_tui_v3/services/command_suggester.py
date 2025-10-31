@@ -60,8 +60,8 @@ class IntelligentCommandSuggester:
 
         # Get current project state
         active_work = self.data_manager.get_active_work()
-        recent_errors = self.data_manager.get_recent_errors()
-        git_status = self.data_manager.get_git_status()
+        recent_errors = self.data_manager.get_recent_errors() if hasattr(self.data_manager, 'get_recent_errors') else []
+        git_status = self.data_manager.get_git_status() if hasattr(self.data_manager, 'get_git_status') else None
 
         # Rule 7: Test Failures (highest priority if present)
         test_error_suggestions = self._rule7_test_failures(recent_errors)
@@ -82,10 +82,10 @@ class IntelligentCommandSuggester:
             suggestions.extend(no_work_suggestions)
         else:
             # Determine which rule applies based on active work state
-            tasks = active_work.get("tasks", [])
-            progress = active_work.get("progress", 0.0)
-            status = active_work.get("status", "pending")
-            pr_url = active_work.get("pr_url")
+            tasks = active_work.tasks
+            progress = active_work.progress
+            status = active_work.status
+            pr_url = getattr(active_work, 'pr_url', None)  # Use getattr for optional field
 
             if not tasks:
                 # Rule 2: Spec Created, No Tasks

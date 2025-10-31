@@ -102,6 +102,10 @@ class YoyoDevTUIApp(App):
             yoyo_dev_path=self.config.yoyo_dev_path
         )
 
+        # Set services on DataManager (circular dependency resolution)
+        self.data_manager.command_suggester = self.command_suggester
+        self.data_manager.error_detector = self.error_detector
+
         # 6. MCPServerMonitor (depends on EventBus)
         self.mcp_monitor = MCPServerMonitor(event_bus=self.event_bus)
 

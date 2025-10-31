@@ -60,7 +60,9 @@ class DataManager:
         self,
         yoyo_dev_path: Path,
         event_bus: EventBus,
-        cache_manager: CacheManager
+        cache_manager: CacheManager,
+        command_suggester=None,
+        error_detector=None
     ):
         """
         Initialize DataManager.
@@ -69,10 +71,14 @@ class DataManager:
             yoyo_dev_path: Path to .yoyo-dev directory
             event_bus: EventBus instance for pub/sub
             cache_manager: CacheManager instance for caching
+            command_suggester: IntelligentCommandSuggester instance (optional)
+            error_detector: ErrorDetector instance (optional)
         """
         self._yoyo_dev_path = yoyo_dev_path
         self._event_bus = event_bus
         self._cache_manager = cache_manager
+        self.command_suggester = command_suggester
+        self.error_detector = error_detector
 
         # Initialize empty state
         self._state = ApplicationState()
@@ -1156,3 +1162,51 @@ class DataManager:
                 return parent
 
         return None
+
+    # ========================================================================
+    # Service Integration Methods
+    # ========================================================================
+
+    def get_command_suggestions(self):
+        """
+        Get intelligent command suggestions from CommandSuggester service.
+
+        Returns:
+            List of CommandSuggestion objects, or empty list if service unavailable
+        """
+        if self.command_suggester is None:
+            logger.warning("CommandSuggester service not available")
+            return []
+
+        try:
+            # Generate suggestions based on current state
+            # CommandSuggester will call back to get_active_work() internally
+            suggestions = self.command_suggester.generate_suggestions()
+
+            return suggestions
+        except Exception as e:
+            logger.error(f"Error getting command suggestions: {e}")
+            return []
+
+    def get_recent_errors(self, limit: int = 5):
+        """
+        Get recent detected errors from ErrorDetector service.
+
+        Args:
+            limit: Maximum number of errors to return (default: 5)
+
+        Returns:
+            List of DetectedError objects, or empty list if service unavailable
+        """
+        if self.error_detector is None:
+            logger.warning("ErrorDetector service not available")
+            return []
+
+        try:
+            # Get recent errors from error detector
+            errors = self.error_detector.get_recent_errors(limit=limit)
+
+            return errors
+        except Exception as e:
+            logger.error(f"Error getting recent errors: {e}")
+            return []
