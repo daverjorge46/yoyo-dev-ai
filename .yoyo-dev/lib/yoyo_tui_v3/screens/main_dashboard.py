@@ -287,7 +287,7 @@ class MainDashboard(Screen):
             self._update_panel_focus_styles()
 
     def action_focus_specs(self) -> None:
-        """Focus command palette panel."""
+        """Focus specs (command palette panel)."""
         if self._command_palette_panel:
             self._command_palette_panel.focus()
             self.focused_panel = "command_palette"

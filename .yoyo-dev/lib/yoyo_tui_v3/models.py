@@ -87,24 +87,56 @@ class ParentTask:
 class Spec:
     """Represents a feature specification."""
     name: str
-    date: str
-    path: Path
+    created_date: str
+    folder_path: Path
+    title: str
     status: SpecStatus
-    tasks: List[Task] = field(default_factory=list)
     progress: float = 0.0  # 0-100
+    total_tasks: int = 0
+    completed_tasks: int = 0
+    has_technical_spec: bool = False
+    has_database_schema: bool = False
+    has_api_spec: bool = False
+    tasks: List[Task] = field(default_factory=list)
     pr_url: Optional[str] = None
+
+    # Aliases for backward compatibility
+    @property
+    def date(self) -> str:
+        """Alias for created_date."""
+        return self.created_date
+
+    @property
+    def path(self) -> Path:
+        """Alias for folder_path."""
+        return self.folder_path
 
 
 @dataclass
 class Fix:
     """Represents a bug fix."""
     name: str
-    date: str
-    path: Path
+    created_date: str
+    folder_path: Path
+    title: str
+    problem_summary: str
     status: SpecStatus  # Reuse SpecStatus
-    tasks: List[Task] = field(default_factory=list)
     progress: float = 0.0  # 0-100
+    total_tasks: int = 0
+    completed_tasks: int = 0
+    tasks: List[Task] = field(default_factory=list)
     pr_url: Optional[str] = None
+
+    # Aliases for backward compatibility
+    @property
+    def date(self) -> str:
+        """Alias for created_date."""
+        return self.created_date
+
+    @property
+    def path(self) -> Path:
+        """Alias for folder_path."""
+        return self.folder_path
 
 
 @dataclass
@@ -237,6 +269,33 @@ class Event:
     source: str = "unknown"
 
 
+@dataclass
+class TaskFileData:
+    """
+    Represents parsed data from a tasks.md file.
+
+    This is different from individual Task objects - it contains
+    metadata about the entire tasks file including all parent tasks,
+    progress statistics, and source information.
+    """
+    file_path: Path
+    parent_tasks: List[ParentTask] = field(default_factory=list)
+    total_tasks: int = 0
+    completed_tasks: int = 0
+    total_subtasks: int = 0
+    completed_subtasks: int = 0
+    progress: int = 0  # 0-100
+    source_type: Optional[str] = None  # "spec", "fix", "master", "unknown"
+    spec_name: Optional[str] = None
+    fix_name: Optional[str] = None
+
+    @staticmethod
+    def empty() -> 'TaskFileData':
+        """Return empty TaskFileData for error cases."""
+        from pathlib import Path
+        return TaskFileData(file_path=Path("/dev/null"))
+
+
 # ============================================================================
 # Type Aliases (for DataManager compatibility)
 # ============================================================================
@@ -244,7 +303,7 @@ class Event:
 # Type aliases used by DataManager service layer
 SpecData = Spec
 FixData = Fix
-TaskData = Task
+TaskData = TaskFileData  # TaskData refers to parsed tasks.md file data
 RecapData = dict  # Recap entries are stored as dictionaries
 ExecutionProgress = ExecutionState  # Execution progress tracking
 
