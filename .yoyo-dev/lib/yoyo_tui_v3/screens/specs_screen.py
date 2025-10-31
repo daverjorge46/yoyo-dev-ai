@@ -70,10 +70,9 @@ class SpecsScreen(Screen):
         content.append("                                   ║\n", style="bold cyan")
         content.append("╚════════════════════════════════════════════════════════════════════════════════╝\n\n", style="bold cyan")
 
-        # Get all specs
-        all_specs = self.data_manager.get_all_specs() or []
-        specs = [s for s in all_specs if s.type == "spec"]
-        fixes = [s for s in all_specs if s.type == "fix"]
+        # Get specs and fixes separately
+        specs = self.data_manager.get_all_specs() or []
+        fixes = self.data_manager.get_all_fixes() or []
 
         # Show specs
         if specs:
@@ -141,8 +140,9 @@ class SpecsScreen(Screen):
 
     def _add_spec_entry(self, content: Text, spec) -> None:
         """Add a spec entry to content."""
-        # Icon based on type
-        icon = "📋" if spec.type == "spec" else "🔧"
+        # Icon based on class type
+        from ..models import Spec, Fix
+        icon = "📋" if isinstance(spec, Spec) else "🔧"
         content.append(f"    {icon} ", style="bold")
         content.append(f"{spec.name}\n", style="bold cyan")
         content.append(f"       Created: {spec.created_date}", style="dim")
