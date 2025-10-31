@@ -92,9 +92,9 @@ class TasksScreen(Screen):
                     content.append(f"    Status: ", style="dim")
                     content.append(f"{spec.status}\n", style="green" if spec.status == "active" else "yellow")
                     content.append(f"    Created: {spec.created_date}\n", style="dim")
-                    if spec.tasks_count:
-                        completed = spec.tasks_completed or 0
-                        total = spec.tasks_count
+                    if spec.total_tasks:
+                        completed = spec.completed_tasks or 0
+                        total = spec.total_tasks
                         progress = (completed / total * 100) if total > 0 else 0
                         content.append(f"    Progress: {completed}/{total} tasks ({progress:.0f}%)\n", style="dim")
                     content.append("\n")
@@ -109,9 +109,9 @@ class TasksScreen(Screen):
                     content.append(f"    Status: ", style="dim")
                     content.append(f"{fix.status}\n", style="green" if fix.status == "active" else "yellow")
                     content.append(f"    Created: {fix.created_date}\n", style="dim")
-                    if fix.tasks_count:
-                        completed = fix.tasks_completed or 0
-                        total = fix.tasks_count
+                    if fix.total_tasks:
+                        completed = fix.completed_tasks or 0
+                        total = fix.total_tasks
                         progress = (completed / total * 100) if total > 0 else 0
                         content.append(f"    Progress: {completed}/{total} tasks ({progress:.0f}%)\n", style="dim")
                     content.append("\n")
