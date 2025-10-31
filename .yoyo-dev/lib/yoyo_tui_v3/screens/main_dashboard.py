@@ -17,6 +17,12 @@ from ..widgets.history_panel import HistoryPanel
 from ..widgets.execution_monitor import ExecutionMonitor
 from ..widgets.keyboard_shortcuts import KeyboardShortcuts
 from ..models import EventType, Event
+from .help_screen import HelpScreen
+from .commands_screen import CommandsScreen
+from .git_screen import GitScreen
+from .tasks_screen import TasksScreen
+from .specs_screen import SpecsScreen
+from .history_screen import HistoryScreen
 
 
 class MainDashboard(Screen):
@@ -259,15 +265,11 @@ class MainDashboard(Screen):
 
     def action_help(self) -> None:
         """Show help screen."""
-        # TODO: Push help screen
-        self.app.bell()
+        self.app.push_screen(HelpScreen())
 
     def action_command_search(self) -> None:
-        """Focus command search."""
-        if self._command_palette_panel:
-            self._command_palette_panel.focus()
-            self.focused_panel = "command_palette"
-            self._update_panel_focus_styles()
+        """Open commands screen."""
+        self.app.push_screen(CommandsScreen())
 
     def action_refresh(self) -> None:
         """Manually refresh all panels."""
@@ -276,29 +278,28 @@ class MainDashboard(Screen):
 
     def action_git_menu(self) -> None:
         """Show git menu."""
-        # TODO: Show git actions menu
-        self.notify("Git menu (coming soon)", severity="information")
+        self.app.push_screen(GitScreen())
 
     def action_focus_active_work(self) -> None:
-        """Focus active work panel."""
-        if self._active_work_panel:
-            self._active_work_panel.focus()
-            self.focused_panel = "active_work"
-            self._update_panel_focus_styles()
+        """Open tasks detail screen."""
+        self.app.push_screen(TasksScreen(
+            data_manager=self.data_manager,
+            event_bus=self.event_bus
+        ))
 
     def action_focus_specs(self) -> None:
-        """Focus specs (command palette panel)."""
-        if self._command_palette_panel:
-            self._command_palette_panel.focus()
-            self.focused_panel = "command_palette"
-            self._update_panel_focus_styles()
+        """Open specs list screen."""
+        self.app.push_screen(SpecsScreen(
+            data_manager=self.data_manager,
+            event_bus=self.event_bus
+        ))
 
     def action_focus_history(self) -> None:
-        """Focus history panel."""
-        if self._history_panel:
-            self._history_panel.focus()
-            self.focused_panel = "history"
-            self._update_panel_focus_styles()
+        """Open history detail screen."""
+        self.app.push_screen(HistoryScreen(
+            data_manager=self.data_manager,
+            event_bus=self.event_bus
+        ))
 
     def action_quit(self) -> None:
         """Quit the application."""

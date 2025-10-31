@@ -147,10 +147,14 @@ class ProjectOverview(Widget):
         content.append("📋 Mission\n", style="bold cyan")
         content.append(f"  {self._mission}\n\n", style="italic")
 
-        # Tech Stack
+        # Tech Stack (show only first 5 main technologies)
         content.append("🔧 Tech Stack\n", style="bold cyan")
         if self._tech_stack:
-            tech_str = ", ".join(self._tech_stack)
+            # Show only first 5 technologies for dashboard overview
+            main_tech = self._tech_stack[:5]
+            tech_str = ", ".join(main_tech)
+            if len(self._tech_stack) > 5:
+                tech_str += f" (+{len(self._tech_stack) - 5} more)"
             content.append(f"  {tech_str}\n\n")
         else:
             content.append("  Not specified\n\n", style="dim")

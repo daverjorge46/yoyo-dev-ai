@@ -381,6 +381,23 @@ class DataManager:
         with self._state_lock:
             return self._state.tasks.copy()
 
+    def get_task_by_id(self, task_id: str, spec_name: str) -> Optional[TaskData]:
+        """
+        Get task by ID and spec name.
+
+        Args:
+            task_id: Task identifier
+            spec_name: Spec name the task belongs to
+
+        Returns:
+            TaskData if found, None otherwise
+        """
+        with self._state_lock:
+            for task in self._state.tasks:
+                if task.id == task_id and task.spec_name == spec_name:
+                    return task
+            return None
+
     def get_all_recaps(self) -> List[RecapData]:
         """Get all recaps (thread-safe)."""
         with self._state_lock:
