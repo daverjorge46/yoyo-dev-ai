@@ -67,7 +67,7 @@ class TasksScreen(Screen):
         content.append("╔════════════════════════════════════════════════════════════════════════════════╗\n", style="bold cyan")
         content.append("║                          ", style="bold cyan")
         content.append("ACTIVE TASKS", style="bold white")
-        content.append("                                   ║\n", style="bold cyan")
+        content.append("║\n", style="bold cyan")
         content.append("╚════════════════════════════════════════════════════════════════════════════════╝\n\n", style="bold cyan")
 
         # Get active specs and fixes

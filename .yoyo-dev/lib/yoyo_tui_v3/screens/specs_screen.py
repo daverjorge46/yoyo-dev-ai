@@ -67,7 +67,7 @@ class SpecsScreen(Screen):
         content.append("╔════════════════════════════════════════════════════════════════════════════════╗\n", style="bold cyan")
         content.append("║                        ", style="bold cyan")
         content.append("SPECS & FIXES", style="bold white")
-        content.append("                                   ║\n", style="bold cyan")
+        content.append("║\n", style="bold cyan")
         content.append("╚════════════════════════════════════════════════════════════════════════════════╝\n\n", style="bold cyan")
 
         # Get specs and fixes separately
