@@ -11,7 +11,7 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from lib.yoyo_tui_v3.split_view.manager import (
+from ..split_view.manager import (
     SplitViewConfig,
     BorderStyle,
     KeyboardShortcuts,
