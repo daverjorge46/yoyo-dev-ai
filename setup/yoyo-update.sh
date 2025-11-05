@@ -417,6 +417,30 @@ echo ""
 echo "--------------------------------"
 echo ""
 
+# Function to validate venv shebang
+validate_venv_shebang() {
+    local venv_path="$1"
+    local pip_path="$venv_path/bin/pip"
+
+    # Check if pip exists
+    if [ ! -f "$pip_path" ]; then
+        return 1
+    fi
+
+    # Extract shebang from pip
+    local shebang=$(head -1 "$pip_path")
+
+    # Remove the #! prefix
+    local python_path="${shebang#\#!}"
+
+    # Check if the python interpreter exists
+    if [ -f "$python_path" ]; then
+        return 0  # Valid shebang
+    else
+        return 1  # Broken shebang
+    fi
+}
+
 # Offer to install/update Python dashboard and TUI dependencies
 if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     # Check if Python dashboard and TUI dependencies are already installed
@@ -454,12 +478,43 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
             echo ""
 
             # Auto-install dependencies without prompting
-            if [ -d "$BASE_AGENT_OS/venv" ] && [ -f "$BASE_AGENT_OS/venv/bin/pip" ]; then
+            if [ -d "$BASE_AGENT_OS/venv" ] && [ -f "$BASE_AGENT_OS/venv/bin/pip" ] && validate_venv_shebang "$BASE_AGENT_OS/venv"; then
                 echo "Upgrading dependencies in virtual environment..."
                 timeout 300 "$BASE_AGENT_OS/venv/bin/pip" install --upgrade -r "$BASE_AGENT_OS/requirements.txt" --no-input --disable-pip-version-check || {
                     echo "⚠️  Dependency upgrade timed out or failed"
                     echo "   You can upgrade manually: $BASE_AGENT_OS/venv/bin/pip install --upgrade -r $BASE_AGENT_OS/requirements.txt"
                 }
+            elif [ -d "$BASE_AGENT_OS/venv" ] && ! validate_venv_shebang "$BASE_AGENT_OS/venv"; then
+                echo "⚠️  Virtual environment has broken shebang (pip points to non-existent Python)"
+                echo "   This typically happens when venv is moved or paths change"
+                echo "   🔄 Automatically recreating virtual environment..."
+                echo ""
+
+                # Backup broken venv
+                local backup_name="venv.backup.$(date +%s)"
+                echo "   📦 Backing up broken venv to $backup_name"
+                mv "$BASE_AGENT_OS/venv" "$BASE_AGENT_OS/$backup_name"
+
+                # Recreate venv
+                if [ -f "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" ]; then
+                    echo "   🏗️  Creating fresh virtual environment..."
+                    bash "$BASE_AGENT_OS/setup/install-dashboard-deps.sh"
+
+                    # Verify new venv is functional
+                    if [ -f "$BASE_AGENT_OS/venv/bin/pip" ] && validate_venv_shebang "$BASE_AGENT_OS/venv"; then
+                        echo ""
+                        echo "   ✓ Virtual environment recreated successfully!"
+                        echo "   💡 Old backup kept at: $BASE_AGENT_OS/$backup_name"
+                        echo "      (You can remove it manually if not needed)"
+                    else
+                        echo ""
+                        echo "   ⚠️  Failed to recreate virtual environment"
+                        echo "      Run manually: $BASE_AGENT_OS/setup/install-dashboard-deps.sh"
+                    fi
+                else
+                    echo "   ⚠️  install-dashboard-deps.sh not found"
+                    echo "      Run manually: $BASE_AGENT_OS/setup/install-dashboard-deps.sh"
+                fi
             elif [ -d "$BASE_AGENT_OS/venv" ] && [ ! -f "$BASE_AGENT_OS/venv/bin/pip" ]; then
                 echo "⚠️  Virtual environment exists but pip not found"
                 echo "   Reinstalling dependencies..."
