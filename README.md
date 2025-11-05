@@ -68,12 +68,63 @@ This creates a global `yoyo` command that works from any Yoyo Dev project.
 ### Launch TUI Dashboard
 
 ```bash
-# Launch production TUI v3.0
+# Launch production TUI v3.0 with split view (default)
 yoyo
+
+# Launch TUI only (no split view)
+yoyo --no-split
+
+# Launch with custom split ratio
+yoyo --split-ratio 0.5  # 50/50 split
+
+# Start with TUI focused (default is Claude focused)
+yoyo --focus tui
 
 # OR from project directory
 bash .yoyo-dev/setup/yoyo.sh
 ```
+
+### Split View Mode (New in v3.1)
+
+**Integrated Claude Code + TUI Dashboard:**
+
+When you run `yoyo`, you get a fully integrated split-screen experience:
+
+```
+┌──────────────────────┬─────────────────────────────────┐
+│                      │                                 │
+│  Claude Code CLI     │    Yoyo TUI Dashboard           │
+│  (40% width)         │    (60% width)                  │
+│                      │                                 │
+│  Interactive AI      │    Real-time task tracking      │
+│  Code assistant      │    Progress monitoring          │
+│  Context-aware       │    Command suggestions          │
+│                      │                                 │
+└──────────────────────┴─────────────────────────────────┘
+```
+
+**Split View Features:**
+- **Integrated experience**: One command, two powerful tools side-by-side
+- **Independent operation**: Close either pane without affecting the other
+- **Visual indicators**: Active pane highlighted with bright cyan border
+- **Persistent layout**: Split ratio saved between sessions
+- **Auto-detection**: Gracefully falls back to TUI-only if Claude not installed
+- **Real-time sync**: TUI updates automatically when Claude creates/modifies files
+
+**Keyboard Shortcuts (Split View):**
+- `Ctrl+B →` - Switch focus between panes
+- `Ctrl+B <` - Make left pane larger
+- `Ctrl+B >` - Make right pane larger
+
+**Platform Support:**
+- **Linux**: Full support (tested on GNOME Terminal, Konsole, Alacritty, Kitty, Terminator)
+- **macOS/Windows**: Coming in future release
+
+**Installation Requirements:**
+1. Yoyo Dev installed (see Installation section)
+2. [Claude Code CLI](https://claude.com/claude-code) installed (optional, will fallback gracefully)
+
+See [Split View Guide](docs/split-view-guide.md) for detailed usage and troubleshooting.
 
 ### TUI Features
 
@@ -269,6 +320,47 @@ tests/
 ---
 
 ## 🔧 Configuration
+
+### Split View Configuration
+
+Edit `.yoyo-dev/config.yml` to customize split view behavior:
+
+```yaml
+split_view:
+  enabled: true                    # Master toggle for split view mode
+  ratio: 0.4                       # Split ratio (0.0-1.0): 0.4 = 40% left, 60% right
+  active_pane: claude              # Which pane starts with focus: "claude" or "tui"
+
+  # Visual styling
+  border_style:
+    active: bright_cyan            # Active pane border color
+    inactive: dim_white            # Inactive pane border color
+
+  # Keyboard shortcuts
+  shortcuts:
+    switch_focus: ctrl+b+arrow     # Switch pane focus (Ctrl+B →)
+    resize_left: ctrl+b+<          # Make left pane larger (Ctrl+B <)
+    resize_right: ctrl+b+>         # Make right pane larger (Ctrl+B >)
+
+  # Claude Code settings
+  claude:
+    command: claude                # Command to launch Claude Code
+    auto_cwd: true                 # Auto-attach to current directory
+    fallback_delay: 3              # Seconds to wait before launching TUI only
+```
+
+**Configuration Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable/disable split view mode |
+| `ratio` | float | `0.4` | Left pane width ratio (0.0-1.0) |
+| `active_pane` | string | `"claude"` | Starting focus: "claude" or "tui" |
+| `border_style.active` | string | `"bright_cyan"` | Active pane border color |
+| `border_style.inactive` | string | `"dim_white"` | Inactive pane border color |
+| `claude.command` | string | `"claude"` | Command to launch Claude Code |
+| `claude.auto_cwd` | boolean | `true` | Auto-attach to project directory |
+| `claude.fallback_delay` | integer | `3` | Wait time before TUI-only fallback |
 
 ### Project Type Configuration
 
@@ -495,6 +587,60 @@ h     Focus history     q     Quit
 ---
 
 ## 🐛 Troubleshooting
+
+### Split View Issues
+
+**Split view not launching:**
+```bash
+# Check if Claude Code is installed
+which claude
+
+# If not installed, get it here:
+# https://claude.com/claude-code
+
+# Or use TUI-only mode
+yoyo --no-split
+```
+
+**Terminal too small error:**
+```bash
+# Split view requires minimum 120x30 terminal size
+# Resize your terminal window or use TUI-only mode
+yoyo --no-split
+```
+
+**Pane borders not rendering correctly:**
+```bash
+# Ensure your terminal supports Unicode box-drawing characters
+# Tested terminals: GNOME Terminal, Konsole, Alacritty, Kitty, Terminator
+
+# Check locale settings
+locale | grep UTF-8
+
+# If not UTF-8, add to ~/.bashrc:
+export LC_ALL=en_US.UTF-8
+export LANG=en_US.UTF-8
+```
+
+**Keyboard shortcuts not working:**
+```bash
+# Ensure Ctrl+B is not bound by another application
+# Try alternative: disable split view and use separate terminals
+yoyo --no-split
+```
+
+**Split ratio not persisting:**
+```bash
+# Check config file exists and is writable
+ls -la .yoyo-dev/config.yml
+
+# Check config structure
+grep -A 20 "split_view:" .yoyo-dev/config.yml
+
+# Reset to defaults if corrupted
+rm .yoyo-dev/config.yml
+yoyo  # Will regenerate with defaults
+```
 
 ### TUI Won't Launch
 

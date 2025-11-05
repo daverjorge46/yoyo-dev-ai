@@ -40,9 +40,31 @@ The system guides AI agents through product planning, specification creation, ta
 ## Quick Start
 
 ```bash
-# Launch full-screen Textual TUI dashboard
+# Launch split view (Claude Code + TUI dashboard)
 yoyo
+
+# Launch TUI only (no split view)
+yoyo --no-split
+
+# Custom split ratio
+yoyo --split-ratio 0.5
+
+# Start with TUI focused
+yoyo --focus tui
 ```
+
+**Split View Mode (v3.1+):**
+- Integrated Claude Code CLI + TUI dashboard in split screen
+- 40/60 default split ratio (configurable)
+- Independent pane operation
+- Persistent layout across sessions
+- Auto-fallback to TUI-only if Claude not installed
+- Linux only (macOS/Windows planned)
+
+**Command Flags:**
+- `--no-split` - Launch TUI only
+- `--split-ratio RATIO` - Custom split ratio (0.0-1.0)
+- `--focus PANE` - Start with focus on "claude" or "tui"
 
 Features: Real-time task/spec tracking, live updates, interactive commands (one-click copy), keyboard shortcuts (`?` for help, `q` to quit).
 
@@ -228,6 +250,42 @@ Use when you need:
 
 **90% of use cases:** Use `/execute-tasks` (default)
 **10% power users:** Use `/orchestrate-tasks`
+
+## Split View Configuration
+
+Split view mode integrates Claude Code CLI and Yoyo TUI in a single terminal window.
+
+**Configuration (`.yoyo-dev/config.yml`):**
+```yaml
+split_view:
+  enabled: true                    # Master toggle for split view mode
+  ratio: 0.4                       # Split ratio (0.0-1.0): 0.4 = 40% left, 60% right
+  active_pane: claude              # Starting focus: "claude" or "tui"
+
+  border_style:
+    active: bright_cyan            # Active pane border color
+    inactive: dim_white            # Inactive pane border color
+
+  shortcuts:
+    switch_focus: ctrl+b+arrow     # Switch pane focus (Ctrl+B →)
+    resize_left: ctrl+b+<          # Make left pane larger (Ctrl+B <)
+    resize_right: ctrl+b+>         # Make right pane larger (Ctrl+B >)
+
+  claude:
+    command: claude                # Command to launch Claude Code
+    auto_cwd: true                 # Auto-attach to current directory
+    fallback_delay: 3              # Seconds to wait before TUI-only fallback
+```
+
+**Keyboard Shortcuts:**
+- `Ctrl+B →` - Switch focus between Claude and TUI panes
+- `Ctrl+B <` - Make left pane larger
+- `Ctrl+B >` - Make right pane larger
+
+**Requirements:**
+- Linux terminal with Unicode support (GNOME Terminal, Konsole, Alacritty, Kitty, Terminator)
+- Minimum terminal size: 120x30
+- Claude Code CLI installed (optional, graceful fallback if missing)
 
 ## Parallel Execution
 
