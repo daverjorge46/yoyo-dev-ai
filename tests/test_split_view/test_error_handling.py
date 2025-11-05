@@ -129,13 +129,9 @@ class TestClaudeNotFoundFallback:
         config = SplitViewConfig()
         manager = SplitViewManager(config)
 
-        # Create a mock module with run_tui function
-        mock_tui_main = Mock()
-        mock_tui_main.run_tui = Mock(return_value=0)
-
         with patch('builtins.print') as mock_print:
             with patch('time.sleep'):
-                with patch.dict('sys.modules', {'lib.yoyo_tui_v3.main': mock_tui_main}):
+                with patch('lib.yoyo_tui_v3.cli.launch_tui_only', return_value=0):
                     manager._launch_fallback()
 
         # Verify message was printed
@@ -149,16 +145,12 @@ class TestClaudeNotFoundFallback:
         config = SplitViewConfig()
         manager = SplitViewManager(config)
 
-        # Create a mock module with run_tui function
-        mock_tui_main = Mock()
-        mock_tui_main.run_tui = Mock(return_value=0)
-
         with patch.object(manager, '_show_claude_not_found_message'):
             with patch('time.sleep'):
-                with patch.dict('sys.modules', {'lib.yoyo_tui_v3.main': mock_tui_main}):
+                with patch('lib.yoyo_tui_v3.cli.launch_tui_only', return_value=0) as mock_launch:
                     exit_code = manager._launch_fallback()
 
-        mock_tui_main.run_tui.assert_called_once()
+        mock_launch.assert_called_once()
         assert exit_code == 0
 
     def test_fallback_waits_configured_delay(self):
@@ -167,13 +159,9 @@ class TestClaudeNotFoundFallback:
         config.claude.fallback_delay = 5  # 5 seconds
         manager = SplitViewManager(config)
 
-        # Create a mock module with run_tui function
-        mock_tui_main = Mock()
-        mock_tui_main.run_tui = Mock(return_value=0)
-
         with patch.object(manager, '_show_claude_not_found_message'):
             with patch('time.sleep') as mock_sleep:
-                with patch.dict('sys.modules', {'lib.yoyo_tui_v3.main': mock_tui_main}):
+                with patch('lib.yoyo_tui_v3.cli.launch_tui_only', return_value=0):
                     manager._launch_fallback()
 
         mock_sleep.assert_called_once_with(5)
