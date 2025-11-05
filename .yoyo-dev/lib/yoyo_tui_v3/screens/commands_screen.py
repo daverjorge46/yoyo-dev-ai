@@ -60,7 +60,7 @@ class CommandsScreen(Screen):
         content.append("╔════════════════════════════════════════════════════════════════════════════════╗\n", style="bold cyan")
         content.append("║                        ", style="bold cyan")
         content.append("YOYO DEV COMMANDS", style="bold white")
-        content.append("║\n", style="bold cyan")
+        content.append("                                                                                 ║\n", style="bold cyan")
         content.append("╚════════════════════════════════════════════════════════════════════════════════╝\n\n", style="bold cyan")
 
         # Product Planning Commands
