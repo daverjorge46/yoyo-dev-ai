@@ -61,7 +61,7 @@ class HelpScreen(Screen):
         content.append("╔═══════════════════════════════════════════════════════════════════╗\n", style="bold cyan")
         content.append("║                      ", style="bold cyan")
         content.append("YOYO DEV TUI - HELP", style="bold white")
-        content.append("                        ║\n", style="bold cyan")
+        content.append("║\n", style="bold cyan")
         content.append("╚═══════════════════════════════════════════════════════════════════╝\n\n", style="bold cyan")
 
         # Keyboard Shortcuts Section
