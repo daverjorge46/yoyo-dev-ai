@@ -5,6 +5,21 @@
 
 set -uo pipefail
 
+# Parse command line arguments
+FORCE_RECREATE=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --force-recreate)
+            FORCE_RECREATE=true
+            shift
+            ;;
+        *)
+            echo "Unknown option: $1"
+            exit 1
+            ;;
+    esac
+done
+
 # Color codes
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
@@ -146,6 +161,30 @@ validate_tui_versions() {
     return 0
 }
 
+# Function to validate venv shebang
+validate_venv_shebang() {
+    local venv_path="$1"
+    local pip_path="$venv_path/bin/pip"
+
+    # Check if pip exists
+    if [ ! -f "$pip_path" ]; then
+        return 1
+    fi
+
+    # Extract shebang from pip
+    local shebang=$(head -1 "$pip_path")
+
+    # Remove the #! prefix
+    local python_path="${shebang#\#!}"
+
+    # Check if the python interpreter exists
+    if [ -f "$python_path" ]; then
+        return 0  # Valid shebang
+    else
+        return 1  # Broken shebang
+    fi
+}
+
 # Function to install with virtual environment
 install_with_venv() {
     echo ""
@@ -153,16 +192,45 @@ install_with_venv() {
 
     VENV_DIR="$YOYO_DIR/venv"
 
+    # Handle existing venv
+    if [ -d "$VENV_DIR" ]; then
+        if [ "$FORCE_RECREATE" = true ]; then
+            # Force recreate - backup and remove existing venv
+            local backup_name="venv.backup.$(date +%s)"
+            echo -e "${YELLOW}⚠️  Backing up broken venv to $backup_name${RESET}"
+            mv "$VENV_DIR" "$YOYO_DIR/$backup_name"
+            echo -e "${CYAN}🗑️  Removed old virtual environment${RESET}"
+        elif ! validate_venv_shebang "$VENV_DIR"; then
+            # Broken venv detected - backup and remove
+            echo -e "${YELLOW}⚠️  Existing venv has broken shebang${RESET}"
+            local backup_name="venv.backup.$(date +%s)"
+            echo -e "${YELLOW}   Backing up broken venv to $backup_name${RESET}"
+            mv "$VENV_DIR" "$YOYO_DIR/$backup_name"
+            echo -e "${CYAN}🔄 Preparing to create fresh virtual environment${RESET}"
+        else
+            # Valid venv exists
+            echo -e "${YELLOW}⚠ Virtual environment already exists at $VENV_DIR${RESET}"
+            echo -e "${GREEN}✓ Existing venv is valid${RESET}"
+        fi
+    fi
+
     # Create venv if it doesn't exist
     if [ ! -d "$VENV_DIR" ]; then
+        echo -e "${CYAN}🏗️  Creating fresh virtual environment...${RESET}"
         if python3 -m venv "$VENV_DIR"; then
             echo -e "${GREEN}✓ Virtual environment created at $VENV_DIR${RESET}"
+
+            # Validate the newly created venv
+            if [ -f "$VENV_DIR/bin/pip" ] && validate_venv_shebang "$VENV_DIR"; then
+                echo -e "${GREEN}✓ Venv validation passed${RESET}"
+            else
+                echo -e "${RED}✗ Venv validation failed - pip shebang is broken${RESET}"
+                return 1
+            fi
         else
             echo -e "${RED}✗ Failed to create virtual environment${RESET}"
             return 1
         fi
-    else
-        echo -e "${YELLOW}⚠ Virtual environment already exists at $VENV_DIR${RESET}"
     fi
 
     # Activate venv and install requirements
