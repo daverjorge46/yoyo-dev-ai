@@ -454,16 +454,19 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
             echo ""
 
             # Auto-install dependencies without prompting
-            if [ -d "$BASE_AGENT_OS/venv" ]; then
-                if [ -f "$BASE_AGENT_OS/venv/bin/pip" ]; then
-                    echo "Upgrading dependencies in virtual environment..."
-                    timeout 300 "$BASE_AGENT_OS/venv/bin/pip" install --upgrade -r "$BASE_AGENT_OS/requirements.txt" --no-input --disable-pip-version-check || {
-                        echo "⚠️  Dependency upgrade timed out or failed"
-                        echo "   You can upgrade manually: $BASE_AGENT_OS/venv/bin/pip install --upgrade -r $BASE_AGENT_OS/requirements.txt"
-                    }
+            if [ -d "$BASE_AGENT_OS/venv" ] && [ -f "$BASE_AGENT_OS/venv/bin/pip" ]; then
+                echo "Upgrading dependencies in virtual environment..."
+                timeout 300 "$BASE_AGENT_OS/venv/bin/pip" install --upgrade -r "$BASE_AGENT_OS/requirements.txt" --no-input --disable-pip-version-check || {
+                    echo "⚠️  Dependency upgrade timed out or failed"
+                    echo "   You can upgrade manually: $BASE_AGENT_OS/venv/bin/pip install --upgrade -r $BASE_AGENT_OS/requirements.txt"
+                }
+            elif [ -d "$BASE_AGENT_OS/venv" ] && [ ! -f "$BASE_AGENT_OS/venv/bin/pip" ]; then
+                echo "⚠️  Virtual environment exists but pip not found"
+                echo "   Reinstalling dependencies..."
+                if [ -f "$BASE_AGENT_OS/setup/install-deps.sh" ]; then
+                    bash "$BASE_AGENT_OS/setup/install-deps.sh"
                 else
-                    echo "⚠️  Virtual environment exists but pip not found"
-                    echo "   Reinstall dependencies: $BASE_AGENT_OS/setup/install-deps.sh"
+                    echo "   Run manually: $BASE_AGENT_OS/setup/install-deps.sh"
                 fi
             elif command -v pip3 &> /dev/null; then
                 echo "Upgrading dependencies..."
