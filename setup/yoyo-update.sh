@@ -491,9 +491,9 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
                 echo ""
 
                 # Backup broken venv
-                local backup_name="venv.backup.$(date +%s)"
-                echo "   📦 Backing up broken venv to $backup_name"
-                mv "$BASE_AGENT_OS/venv" "$BASE_AGENT_OS/$backup_name"
+                BACKUP_NAME="venv.backup.$(date +%s)"
+                echo "   📦 Backing up broken venv to $BACKUP_NAME"
+                mv "$BASE_AGENT_OS/venv" "$BASE_AGENT_OS/$BACKUP_NAME"
 
                 # Recreate venv
                 if [ -f "$BASE_AGENT_OS/setup/install-dashboard-deps.sh" ]; then
@@ -504,7 +504,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
                     if [ -f "$BASE_AGENT_OS/venv/bin/pip" ] && validate_venv_shebang "$BASE_AGENT_OS/venv"; then
                         echo ""
                         echo "   ✓ Virtual environment recreated successfully!"
-                        echo "   💡 Old backup kept at: $BASE_AGENT_OS/$backup_name"
+                        echo "   💡 Old backup kept at: $BASE_AGENT_OS/$BACKUP_NAME"
                         echo "      (You can remove it manually if not needed)"
                     else
                         echo ""
