@@ -344,25 +344,6 @@ install_mcps() {
 
 # Display branded header and launch TUI
 launch_tui() {
-    # Parse any additional arguments for split view
-    local cli_args=()
-    while [[ $# -gt 0 ]]; do
-        case "$1" in
-            --no-split|--split-ratio|--focus)
-                cli_args+=("$1")
-                shift
-                # If the flag takes an argument, pass it too
-                if [[ "$1" != --* ]] && [[ -n "$1" ]]; then
-                    cli_args+=("$1")
-                    shift
-                fi
-                ;;
-            *)
-                shift
-                ;;
-        esac
-    done
-
     # Check if we're in a Yoyo Dev project
     if [ ! -d "./.yoyo-dev" ]; then
         echo ""
@@ -490,13 +471,8 @@ launch_tui() {
     echo -e " ${YELLOW}Launching Yoyo Dev TUI...${RESET}"
     echo ""
 
-    # Launch TUI with CLI integration
-    # Pass any split view flags to the Python CLI module
-    if [ ${#cli_args[@]} -gt 0 ]; then
-        exec python3 -m lib.yoyo_tui_v3.cli "${cli_args[@]}"
-    else
-        exec python3 -m lib.yoyo_tui_v3.cli
-    fi
+    # Launch Textual TUI
+    exec python3 "$TUI_SCRIPT"
 }
 
 # Main
@@ -513,14 +489,9 @@ main() {
         --commands|-c)
             show_commands
             ;;
-        --no-split|--split-ratio|--focus)
-            # Split view flags - pass all args to launch_tui
-            launch_tui "$@"
-            ;;
         launch|*)
-            # Launch Textual TUI (pass remaining args for split view)
-            shift 2>/dev/null || true
-            launch_tui "$@"
+            # Launch Textual TUI
+            launch_tui
             ;;
     esac
 }

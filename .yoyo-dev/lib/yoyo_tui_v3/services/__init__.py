@@ -9,6 +9,11 @@ from .command_suggester import IntelligentCommandSuggester
 from .error_detector import ErrorDetector
 from .mcp_monitor import MCPServerMonitor
 from .refresh_service import RefreshService
+from .layout_persistence import (
+    LayoutPersistence,
+    LayoutPersistenceError,
+    ConfigValidationError,
+)
 
 __all__ = [
     "EventBus",
@@ -18,4 +23,7 @@ __all__ = [
     "ErrorDetector",
     "MCPServerMonitor",
     "RefreshService",
+    "LayoutPersistence",
+    "LayoutPersistenceError",
+    "ConfigValidationError",
 ]
