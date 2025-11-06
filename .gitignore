@@ -36,6 +36,10 @@ temp/
 .yoyo-dev/reviews/
 .yoyo-dev/design/audits/
 
+# Prevent duplicate lib in yoyo-dev base repo
+# The lib/ directory should only exist at project root, not in .yoyo-dev/
+.yoyo-dev/lib/
+
 # Keep example files but ignore user-generated content
 !.yoyo-dev/product/.gitkeep
 !.yoyo-dev/specs/.gitkeep

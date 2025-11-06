@@ -21,10 +21,10 @@ import logging
 from dataclasses import dataclass, field
 from typing import Optional, List
 
-from lib.yoyo_tui_v3.split_view.terminal_control import TerminalController
-from lib.yoyo_tui_v3.split_view.layout import LayoutManager
-from lib.yoyo_tui_v3.split_view.focus import FocusManager
-from lib.yoyo_tui_v3.split_view.pane import Pane, PaneBounds
+from .terminal_control import TerminalController
+from .layout import LayoutManager
+from .focus import FocusManager
+from .pane import Pane, PaneBounds
 
 
 @dataclass
