@@ -115,13 +115,19 @@ class SplitViewManager:
             Exit code (0 for success, non-zero for error)
 
         Steps:
-        1. Detect Claude Code availability
-        2. Setup terminal (alt screen, raw mode)
-        3. Create panes (Claude + TUI)
-        4. Run main event loop
-        5. Cleanup on exit
+        1. Check if running in a TTY
+        2. Detect Claude Code availability
+        3. Setup terminal (alt screen, raw mode)
+        4. Create panes (Claude + TUI)
+        5. Run main event loop
+        6. Cleanup on exit
         """
         try:
+            # Check if stdin is a TTY (required for split view)
+            if not sys.stdin.isatty():
+                self.logger.info("Not running in a TTY, falling back to TUI only")
+                return self._launch_fallback_silent()
+
             # Claude Code detection
             if not self._detect_claude():
                 return self._launch_fallback()
@@ -162,6 +168,16 @@ class SplitViewManager:
         time.sleep(self.config.claude.fallback_delay)
 
         # Launch TUI normally
+        from lib.yoyo_tui_v3.cli import launch_tui_only
+        return launch_tui_only()
+
+    def _launch_fallback_silent(self) -> int:
+        """
+        Launch TUI only without showing message (for non-TTY contexts).
+
+        Returns:
+            Exit code from TUI
+        """
         from lib.yoyo_tui_v3.cli import launch_tui_only
         return launch_tui_only()
 
