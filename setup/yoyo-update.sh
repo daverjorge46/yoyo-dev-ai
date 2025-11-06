@@ -125,6 +125,13 @@ fi
 
 echo "✓ Using Yoyo Dev base installation at $BASE_AGENT_OS"
 
+# Detect if running in base yoyo-dev repository (prevents lib duplication)
+IS_BASE_REPO=false
+if [ "$CURRENT_DIR" = "$BASE_AGENT_OS" ]; then
+    IS_BASE_REPO=true
+    echo "ℹ️  Detected base repository - skipping .yoyo-dev/lib/ operations"
+fi
+
 # Source shared functions
 source "$SCRIPT_DIR/functions.sh"
 
@@ -259,30 +266,14 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         chmod +x "./.yoyo-dev/setup/yoyo-tmux.sh"
     fi
 
-    # Update v2.0 support files
+    # NOTE: .yoyo-dev/lib/ directory removed to prevent duplicate lib issues
+    # Projects should reference the base installation's lib/ directory directly
+    # See: .yoyo-dev/fixes/2025-11-06-duplicate-lib-import-error/
+
+    # Update templates directory only
     echo ""
-    echo "  📂 v2.0 Support Files:"
-    mkdir -p "./.yoyo-dev/lib"
+    echo "  📂 Templates:"
     mkdir -p "./.yoyo-dev/templates"
-
-    # Update status display scripts (visual mode)
-    if [ -f "$BASE_AGENT_OS/lib/yoyo-status.sh" ]; then
-        copy_file "$BASE_AGENT_OS/lib/yoyo-status.sh" "./.yoyo-dev/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
-        chmod +x "./.yoyo-dev/lib/yoyo-status.sh"
-    fi
-
-    # Update Python dashboard (new in v2.1)
-    if [ -f "$BASE_AGENT_OS/lib/yoyo-dashboard.py" ]; then
-        copy_file "$BASE_AGENT_OS/lib/yoyo-dashboard.py" "./.yoyo-dev/lib/yoyo-dashboard.py" "true" "lib/yoyo-dashboard.py (Python dashboard)"
-        chmod +x "./.yoyo-dev/lib/yoyo-dashboard.py"
-    fi
-
-    # Update yoyo_tui_v3 (modern TUI implementation)
-    if [ -d "$BASE_AGENT_OS/lib/yoyo_tui_v3" ]; then
-        echo "  📦 Updating yoyo_tui_v3..."
-        mkdir -p "./.yoyo-dev/lib/yoyo_tui_v3"
-        cp -r "$BASE_AGENT_OS/lib/yoyo_tui_v3"/* "./.yoyo-dev/lib/yoyo_tui_v3/"
-    fi
 
     # Update Python requirements
     if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
@@ -295,42 +286,14 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         chmod +x "./.yoyo-dev/setup/install-dashboard-deps.sh"
     fi
 
-    # Update TUI v3.0 library if it exists
-    if [ -d "$BASE_AGENT_OS/lib/yoyo_tui_v3" ]; then
-        echo ""
-        echo "  📂 TUI v3.0 Library:"
-        if [ -d "./.yoyo-dev/lib/yoyo_tui_v3" ]; then
-            # Preserve venv but update TUI code
-            echo "  → Updating TUI v3.0 library (preserving venv)..."
-
-            # Copy TUI library files (excluding venv and __pycache__)
-            if [ "$VERBOSE" = true ]; then
-                echo "  → Verbose mode: showing file updates..."
-                rsync -av --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
-                    "$BASE_AGENT_OS/lib/yoyo_tui_v3/" "./.yoyo-dev/lib/yoyo_tui_v3/"
-            else
-                # Silent mode, just show summary
-                rsync -a --exclude='venv' --exclude='__pycache__' --exclude='*.pyc' \
-                    "$BASE_AGENT_OS/lib/yoyo_tui_v3/" "./.yoyo-dev/lib/yoyo_tui_v3/"
-            fi
-
-            # List key files that were updated
-            echo "  → Updated components:"
-            echo "    • app.py - TUI v3.0 application core"
-            echo "    • screens/ - SpecDetail, TaskDetail, HistoryDetail screens"
-            echo "    • widgets/ - ProjectOverview, StatusBar, etc."
-            echo "    • services/ - DataManager, EventBus, CacheManager, etc."
-            echo "    • parsers/ - SpecParser, TaskParser, HistoryParser"
-            echo "    • models.py - Enhanced data models with v3.0 features"
-            echo "  ✓ TUI v3.0 library updated successfully"
-        else
-            # First time TUI v3.0 installation
-            echo "  → Installing TUI v3.0 library..."
-            mkdir -p "./.yoyo-dev/lib"
-            cp -r "$BASE_AGENT_OS/lib/yoyo_tui_v3" "./.yoyo-dev/lib/"
-            echo "  ✓ TUI v3.0 library installed"
-        fi
-    fi
+    # NOTE: TUI v3.0 library is NOT copied to .yoyo-dev/lib/ to prevent duplicates
+    # The yoyo command references the base installation's lib/yoyo_tui_v3/ directly
+    # This prevents Python module resolution conflicts
+    # See: .yoyo-dev/fixes/2025-11-06-duplicate-lib-import-error/
+    echo ""
+    echo "  📂 TUI v3.0 Library:"
+    echo "  ✓ Using TUI from base installation at $BASE_AGENT_OS/lib/yoyo_tui_v3/"
+    echo "  ℹ️  No local copy needed - prevents duplicate lib issues"
 
     # Update MASTER-TASKS template (always, to get latest improvements)
     if [ -f "$BASE_AGENT_OS/templates/MASTER-TASKS.md" ]; then
@@ -595,3 +558,9 @@ echo "  • All TUI dependencies will auto-install if needed"
 echo ""
 echo "Continue building! 🚀"
 echo ""
+
+# Wait for any background processes to complete before exiting
+wait
+
+# Explicit exit to prevent script hanging
+exit 0
