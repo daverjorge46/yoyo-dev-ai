@@ -486,16 +486,29 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
                 else
                     echo "   Run manually: $BASE_AGENT_OS/setup/install-deps.sh"
                 fi
-            elif command -v pip3 &> /dev/null; then
-                echo "Upgrading dependencies..."
+            elif [ ! -d "$BASE_AGENT_OS/venv" ]; then
+                # No venv exists - create it first (required for PEP 668 systems)
+                echo "⚠️  No virtual environment found at $BASE_AGENT_OS/venv"
+                echo "   Creating virtual environment (required for PEP 668-protected systems)..."
+                if [ -f "$BASE_AGENT_OS/setup/install-deps.sh" ]; then
+                    bash "$BASE_AGENT_OS/setup/install-deps.sh"
+                else
+                    echo "   Run manually: $BASE_AGENT_OS/setup/install-deps.sh"
+                fi
+            elif command -v "$BASE_AGENT_OS/venv/bin/pip" &> /dev/null; then
+                # Use venv pip (always prefer this over system pip3)
+                echo "Upgrading dependencies in virtual environment..."
                 if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
-                    timeout 300 pip3 install --upgrade -r "$BASE_AGENT_OS/requirements.txt" --user --no-input --disable-pip-version-check || {
+                    timeout 300 "$BASE_AGENT_OS/venv/bin/pip" install --upgrade -r "$BASE_AGENT_OS/requirements.txt" --no-input --disable-pip-version-check || {
                         echo "⚠️  Dependency upgrade timed out or failed"
-                        echo "   You can upgrade manually: pip3 install --upgrade -r $BASE_AGENT_OS/requirements.txt --user"
+                        echo "   You can upgrade manually: $BASE_AGENT_OS/venv/bin/pip install --upgrade -r $BASE_AGENT_OS/requirements.txt"
                     }
                 else
                     echo "ℹ️  requirements.txt not found at $BASE_AGENT_OS/requirements.txt"
                 fi
+            else
+                echo "⚠️  Could not find pip in virtual environment"
+                echo "   Please run: $BASE_AGENT_OS/setup/install-deps.sh"
             fi
             echo "✓ Dependencies upgraded"
             echo ""

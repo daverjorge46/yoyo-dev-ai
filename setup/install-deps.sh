@@ -34,7 +34,7 @@ if [ -f "$VENV_PYTHON" ]; then
     PYTHON="$VENV_PYTHON"
     PIP="$VENV_PIP"
 else
-    echo -e "${YELLOW}⚠${RESET}  No venv found, using system Python"
+    echo -e "${YELLOW}⚠${RESET}  No venv found, creating one..."
 
     # Check if python3 is available
     if ! command -v python3 &> /dev/null; then
@@ -43,12 +43,27 @@ else
         exit 1
     fi
 
-    PYTHON="python3"
-    PIP="pip3"
-
     # Check Python version
-    PYTHON_VERSION=$($PYTHON --version 2>&1 | awk '{print $2}')
-    echo -e "  Using system Python: ${BOLD}$PYTHON_VERSION${RESET}"
+    PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}')
+    echo -e "  Using Python: ${BOLD}$PYTHON_VERSION${RESET}"
+
+    # Create venv at ~/yoyo-dev/venv
+    echo -e "${CYAN}→${RESET} Creating virtual environment at ${BOLD}$YOYO_DEV_HOME/venv${RESET}..."
+    if python3 -m venv "$YOYO_DEV_HOME/venv"; then
+        echo -e "${GREEN}  ✓${RESET} Virtual environment created"
+        PYTHON="$VENV_PYTHON"
+        PIP="$VENV_PIP"
+
+        # Upgrade pip in the new venv
+        echo -e "${CYAN}→${RESET} Upgrading pip..."
+        "$PIP" install --upgrade pip --quiet --no-input --disable-pip-version-check || true
+    else
+        echo -e "${RED}✗${RESET} Failed to create virtual environment"
+        echo -e "  This is required on PEP 668-protected systems (Ubuntu 23.04+)"
+        echo -e "  Please ensure python3-venv is installed:"
+        echo -e "    ${BOLD}sudo apt install python3-venv${RESET}"
+        exit 1
+    fi
 fi
 
 echo ""
