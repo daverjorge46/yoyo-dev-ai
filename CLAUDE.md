@@ -33,9 +33,14 @@ The system guides AI agents through product planning, specification creation, ta
 
 # Preserve customizations
 ~/.yoyo-dev/setup/yoyo-update.sh --no-overwrite
+
+# Skip MCP verification during update
+~/.yoyo-dev/setup/yoyo-update.sh --skip-mcp-check
 ```
 
 **Note:** Product docs (`.yoyo-dev/product/`), specs, fixes, recaps, and patterns are ALWAYS protected during updates.
+
+**MCP Updates:** The update script automatically checks for missing MCPs and prompts to install them. Use `--skip-mcp-check` to bypass MCP verification.
 
 ## Quick Start
 
@@ -67,6 +72,281 @@ yoyo --focus tui
 - `--focus PANE` - Start with focus on "claude" or "tui"
 
 Features: Real-time task/spec tracking, live updates, interactive commands (one-click copy), keyboard shortcuts (`?` for help, `q` to quit).
+
+## MCP Server Installation
+
+Yoyo Dev integrates with Claude Code's Model Context Protocol (MCP) servers to enhance AI capabilities with specialized tools.
+
+### Prerequisites
+
+**Required:**
+- Node.js and npm (for `npx` commands)
+- Claude Code CLI installed and configured
+
+**Optional:**
+- pnpm (required only for shadcn MCP)
+- Docker (required only when using containerization MCP to generate Docker files)
+
+**Installing Claude Code CLI:**
+```bash
+# Download from: https://claude.ai/download
+# Or install via package manager (platform-specific)
+
+# Verify installation
+claude --version
+```
+
+### Supported MCP Servers
+
+Yoyo Dev installs 6 MCP servers automatically when Claude Code CLI is detected:
+
+1. **context7** - Intelligent context management for development workflows
+   - Template: `devtools/context7`
+   - Purpose: Enhanced code context awareness
+
+2. **memory** - Persistent memory across Claude sessions
+   - Template: `integration/memory-integration`
+   - Purpose: Session state persistence and recall
+
+3. **playwright** - Browser automation and testing
+   - Template: `browser_automation/playwright-mcp-server`
+   - Purpose: Web automation, E2E testing, screenshots
+
+4. **containerization** - Docker and container management
+   - Template: `deployment/containerize-application`
+   - Purpose: Generate Dockerfiles, compose files, container configs
+   - Note: Docker only required when using this MCP, not for installation
+
+5. **chrome-devtools** - Chrome DevTools Protocol integration
+   - Package: `chrome-devtools-mcp@latest`
+   - Purpose: Browser debugging, performance profiling
+
+6. **shadcn** - shadcn/ui component integration
+   - Package: `shadcn@latest`
+   - Purpose: UI component library integration
+   - Note: Requires pnpm to be installed
+
+### Automatic Installation
+
+MCPs are installed automatically during Yoyo Dev setup:
+
+```bash
+# During project setup
+~/.yoyo-dev/setup/project.sh --claude-code
+
+# During base installation
+~/.yoyo-dev/setup/install-deps.sh
+```
+
+The installer will:
+1. Detect Claude Code CLI availability
+2. Prompt to install MCPs if CLI is found
+3. Install all 6 MCPs using Claude's native installation system
+4. Skip gracefully if Claude Code CLI not installed
+5. Report installation results (installed/skipped/failed)
+
+### Manual Installation
+
+To manually install MCPs or troubleshoot installation issues:
+
+```bash
+# Install all MCPs
+~/.yoyo-dev/setup/mcp-claude-installer.sh
+
+# Skip installation if Claude Code not found
+~/.yoyo-dev/setup/mcp-claude-installer.sh --skip-if-no-claude
+
+# Verbose output for debugging
+~/.yoyo-dev/setup/mcp-claude-installer.sh --verbose
+
+# Non-interactive mode
+~/.yoyo-dev/setup/mcp-claude-installer.sh --non-interactive
+```
+
+**Individual MCP installation commands:**
+
+```bash
+# context7
+npx claude-code-templates@latest --mcp=devtools/context7 --yes
+
+# memory
+npx claude-code-templates@latest --mcp=integration/memory-integration --yes
+
+# playwright
+npx claude-code-templates@latest --mcp=browser_automation/playwright-mcp-server --yes
+
+# containerization
+npx claude-code-templates@latest --command=deployment/containerize-application --yes
+
+# chrome-devtools
+claude mcp add chrome-devtools npx chrome-devtools-mcp@latest
+
+# shadcn (requires pnpm)
+pnpm dlx shadcn@latest mcp init --client claude
+```
+
+### Verifying MCP Installation
+
+**Method 1: Check Claude configuration file**
+
+```bash
+# Claude stores MCP configuration at ~/.claude.json
+cat ~/.claude.json | jq '.projects[].mcpServers | keys'
+```
+
+Expected output should include: `context7`, `memory`, `playwright`, `containerization`, `chrome-devtools`, `shadcn`
+
+**Method 2: Use Yoyo TUI**
+
+```bash
+# Launch TUI dashboard
+yoyo --no-split
+
+# Check MCP status in the dashboard
+# Running MCPs will be displayed with their status
+```
+
+**Method 3: Verify with update script**
+
+```bash
+# Run update script (checks MCP status)
+~/.yoyo-dev/setup/yoyo-update.sh
+
+# If MCPs are missing, you'll see:
+# "Missing/outdated MCPs detected. Update? [Y/n]"
+```
+
+### Troubleshooting MCP Installation
+
+**Issue: "Claude Code CLI not found"**
+
+```bash
+# Verify Claude is in PATH
+which claude
+
+# If not found, reinstall Claude Code CLI
+# Download from: https://claude.ai/download
+
+# Verify after installation
+claude --version
+```
+
+**Issue: "MCP installation failed"**
+
+Check specific error messages:
+
+```bash
+# Run installer in verbose mode
+~/.yoyo-dev/setup/mcp-claude-installer.sh --verbose
+
+# Common causes:
+# 1. Node.js/npm not installed or outdated
+node --version  # Should be v18+
+npm --version
+
+# 2. Network issues preventing package download
+npm config get registry  # Should be https://registry.npmjs.org/
+
+# 3. Permission issues
+# Run with appropriate permissions or fix npm global installation path
+```
+
+**Issue: "shadcn MCP failed to install"**
+
+```bash
+# shadcn requires pnpm
+npm install -g pnpm
+
+# Verify pnpm installation
+pnpm --version
+
+# Retry shadcn installation
+pnpm dlx shadcn@latest mcp init --client claude
+```
+
+**Issue: "Docker requirement errors"**
+
+Docker is **NOT required** for MCP installation. It's only needed when:
+- Using the containerization MCP to generate Docker files
+- Running containerized development environments
+
+If you see Docker-related errors during MCP installation, this indicates an outdated installation script. Update Yoyo Dev:
+
+```bash
+~/.yoyo-dev/setup/yoyo-update.sh
+```
+
+**Issue: "MCPs not showing in Claude"**
+
+```bash
+# 1. Verify MCPs are in config
+cat ~/.claude.json | jq '.projects'
+
+# 2. If empty, MCPs may have been installed to wrong location
+# Check if config exists
+ls -la ~/.claude.json
+
+# 3. Reinstall MCPs
+~/.yoyo-dev/setup/mcp-claude-installer.sh
+
+# 4. Restart Claude Code CLI
+# Close and reopen Claude Code
+```
+
+**Issue: "MCP processes not running"**
+
+```bash
+# Check if MCP server processes are running
+ps aux | grep -E '(context7|memory|playwright|chrome-devtools)'
+
+# MCPs are launched on-demand by Claude
+# They won't run unless Claude Code is actively using them
+
+# Verify in TUI dashboard
+yoyo --no-split
+# Check MCP status panel
+```
+
+**Issue: "Out of date MCPs"**
+
+```bash
+# Update all MCPs via update script
+~/.yoyo-dev/setup/yoyo-update.sh
+
+# Or manually reinstall
+~/.yoyo-dev/setup/mcp-claude-installer.sh
+
+# Note: Version detection is limited
+# Manual reinstallation ensures latest versions
+```
+
+### MCP Configuration Location
+
+Claude Code stores MCP configuration at:
+- **Config file:** `~/.claude.json`
+- **Project-specific:** Under `projects[project_path].mcpServers`
+
+**Example configuration structure:**
+```json
+{
+  "projects": {
+    "/home/user/project": {
+      "mcpServers": {
+        "context7": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-context7"]
+        },
+        "memory": {
+          "command": "npx",
+          "args": ["-y", "@modelcontextprotocol/server-memory"]
+        }
+      }
+    }
+  }
+}
+```
+
+**IMPORTANT:** Do not manually edit `~/.claude.json` unless necessary. Use Claude's installation commands to ensure proper configuration.
 
 ## Core Commands
 

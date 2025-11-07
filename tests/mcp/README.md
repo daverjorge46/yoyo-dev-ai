@@ -6,7 +6,7 @@ Comprehensive test suite for MCP (Model Context Protocol) integration in Yoyo De
 
 ### `test-mcp-installer.sh`
 
-Comprehensive tests for the MCP installer (`setup/mcp-installer.sh`).
+Comprehensive tests for the MCP installer (`setup/mcp-claude-installer.sh`).
 
 **What it tests:**
 - User selection scenarios (all MCPs, specific MCPs, single MCP, skip)
@@ -131,7 +131,7 @@ Test unusual scenarios:
 
 ## Requirements for Implementation
 
-Based on these tests, the actual `setup/mcp-installer.sh` must:
+Based on these tests, the actual `setup/mcp-claude-installer.sh` must:
 
 ### Required Functionality
 
@@ -244,7 +244,7 @@ bash -x ./tests/mcp/test-mcp-installer.sh
 
 ## Next Steps
 
-After implementation of `setup/mcp-installer.sh`:
+After implementation of `setup/mcp-claude-installer.sh`:
 
 1. Run tests: `./tests/mcp/test-mcp-installer.sh`
 2. Fix any failures

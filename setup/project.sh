@@ -435,9 +435,9 @@ if [ "$CLAUDE_CODE" = true ]; then
             chmod +x "$INSTALL_DIR/setup/mcp-prerequisites.sh"
         fi
 
-        if [ -f "$BASE_AGENT_OS/setup/mcp-installer.sh" ]; then
-            copy_file "$BASE_AGENT_OS/setup/mcp-installer.sh" "$INSTALL_DIR/setup/mcp-installer.sh" "true" "setup/mcp-installer.sh"
-            chmod +x "$INSTALL_DIR/setup/mcp-installer.sh"
+        if [ -f "$BASE_AGENT_OS/setup/mcp-claude-installer.sh" ]; then
+            copy_file "$BASE_AGENT_OS/setup/mcp-claude-installer.sh" "$INSTALL_DIR/setup/mcp-claude-installer.sh" "true" "setup/mcp-claude-installer.sh"
+            chmod +x "$INSTALL_DIR/setup/mcp-claude-installer.sh"
         fi
 
         # Copy parse-utils.sh (needed by yoyo.sh for project context parsing)
@@ -452,11 +452,11 @@ if [ "$CLAUDE_CODE" = true ]; then
             "setup/mcp-prerequisites.sh"
         chmod +x "$INSTALL_DIR/setup/mcp-prerequisites.sh"
 
-        download_file "${BASE_URL}/setup/mcp-installer.sh" \
-            "$INSTALL_DIR/setup/mcp-installer.sh" \
+        download_file "${BASE_URL}/setup/mcp-claude-installer.sh" \
+            "$INSTALL_DIR/setup/mcp-claude-installer.sh" \
             "true" \
-            "setup/mcp-installer.sh"
-        chmod +x "$INSTALL_DIR/setup/mcp-installer.sh"
+            "setup/mcp-claude-installer.sh"
+        chmod +x "$INSTALL_DIR/setup/mcp-claude-installer.sh"
 
         download_file "${BASE_URL}/setup/parse-utils.sh" \
             "$INSTALL_DIR/setup/parse-utils.sh" \
@@ -538,7 +538,7 @@ if [ "$CLAUDE_CODE" = true ]; then
     if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
         # Use the local copied MCP scripts from project .yoyo-dev/setup/
         MCP_PREREQUISITES="$INSTALL_DIR/setup/mcp-prerequisites.sh"
-        MCP_INSTALLER="$INSTALL_DIR/setup/mcp-installer.sh"
+        MCP_INSTALLER="$INSTALL_DIR/setup/mcp-claude-installer.sh"
 
         # Run prerequisite check
         if bash "$MCP_PREREQUISITES"; then

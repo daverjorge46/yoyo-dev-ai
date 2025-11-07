@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Comprehensive tests for MCP installer (setup/mcp-installer.sh)
+# Comprehensive tests for MCP installer (setup/mcp-claude-installer.sh)
 # Tests user selection, installation, failure handling, and config.yml updates
 
 set -euo pipefail
@@ -50,7 +50,7 @@ chmod +x "$NPM_MOCK"
 export PATH="$TEST_DIR:$PATH"
 
 # Mock installer script for testing
-INSTALLER_SCRIPT="$TEST_DIR/mcp-installer.sh"
+INSTALLER_SCRIPT="$TEST_DIR/mcp-claude-installer.sh"
 
 # Helper: Create mock installer script
 create_mock_installer() {
@@ -134,7 +134,7 @@ case "${1:-all}" in
         exit 0
         ;;
     *)
-        echo "Usage: mcp-installer.sh [all|specific <names>|skip]"
+        echo "Usage: mcp-claude-installer.sh [all|specific <names>|skip]"
         exit 1
         ;;
 esac

@@ -149,7 +149,7 @@ def _get_git_commits(self) -> List[HistoryEntry]:
 **Use Case:** When integrating optional features that may fail during installation or runtime, ensure the core workflow continues successfully even if optional features aren't available.
 
 **Implementation:**
-- Key files: `setup/mcp-installer.sh`, decisions.md (D1, D7)
+- Key files: `setup/mcp-claude-installer.sh`, decisions.md (D1, D7)
 - Core approach: Track successes and failures separately, continue execution on failure, provide clear summary
 - Dependencies: None (pattern applicable to any feature integration)
 

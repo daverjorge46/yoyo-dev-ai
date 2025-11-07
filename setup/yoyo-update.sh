@@ -14,6 +14,7 @@ OVERWRITE_STANDARDS=true
 OVERWRITE_COMMANDS=true
 OVERWRITE_AGENTS=true
 VERBOSE=false
+SKIP_MCP_CHECK=false
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -41,6 +42,10 @@ while [[ $# -gt 0 ]]; do
             OVERWRITE_AGENTS=false
             shift
             ;;
+        --skip-mcp-check)
+            SKIP_MCP_CHECK=true
+            shift
+            ;;
         -v|--verbose)
             VERBOSE=true
             shift
@@ -59,6 +64,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --no-overwrite-commands        Keep existing command files"
             echo "  --no-overwrite-agents          Keep existing agent files"
             echo "  --no-overwrite                 Keep all existing files (same as all flags above)"
+            echo "  --skip-mcp-check               Skip MCP verification and update"
             echo "  -v, --verbose                  Show detailed update information"
             echo "  -h, --help                     Show this help message"
             echo ""
@@ -306,6 +312,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     fi
 
     # Update MCP installation scripts (always, to get latest MCP features)
+    # NOTE: Legacy mcp-installer.sh removed - replaced by mcp-claude-installer.sh (Task 2)
     echo ""
     echo "  📂 MCP Installation Scripts:"
     mkdir -p "./.yoyo-dev/setup"
@@ -315,9 +322,10 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         chmod +x "./.yoyo-dev/setup/mcp-prerequisites.sh"
     fi
 
-    if [ -f "$BASE_AGENT_OS/setup/mcp-installer.sh" ]; then
-        copy_file "$BASE_AGENT_OS/setup/mcp-installer.sh" "./.yoyo-dev/setup/mcp-installer.sh" "true" "setup/mcp-installer.sh"
-        chmod +x "./.yoyo-dev/setup/mcp-installer.sh"
+    # New Claude Code MCP installer (will be created in Task 2)
+    if [ -f "$BASE_AGENT_OS/setup/mcp-claude-installer.sh" ]; then
+        copy_file "$BASE_AGENT_OS/setup/mcp-claude-installer.sh" "./.yoyo-dev/setup/mcp-claude-installer.sh" "true" "setup/mcp-claude-installer.sh"
+        chmod +x "./.yoyo-dev/setup/mcp-claude-installer.sh"
     fi
 
     # Update parse-utils.sh if it exists (needed by yoyo.sh)
@@ -345,6 +353,150 @@ if [ "$CURSOR_INSTALLED" = true ]; then
             echo "  ⚠️  Warning: ${cmd}.md not found in base installation"
         fi
     done
+fi
+
+# ============================================
+# MCP Verification and Update Logic
+# ============================================
+
+# Function to check if Claude CLI is available
+check_claude_cli_available() {
+    if command -v claude &> /dev/null; then
+        if claude --version &> /dev/null 2>&1; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+# Function to read Claude config and extract MCP server names
+get_installed_mcps() {
+    local claude_config="$HOME/.claude.json"
+
+    if [ ! -f "$claude_config" ]; then
+        echo ""
+        return 1
+    fi
+
+    # Extract mcpServers for current project
+    if command -v python3 &> /dev/null; then
+        python3 -c "
+import json
+import sys
+
+try:
+    with open('$claude_config', 'r') as f:
+        data = json.load(f)
+
+    # Get project config
+    project_path = '$CURRENT_DIR'
+    if project_path in data.get('projects', {}):
+        mcp_servers = data['projects'][project_path].get('mcpServers', {})
+        for name in mcp_servers.keys():
+            print(name)
+except Exception as e:
+    sys.exit(1)
+" 2>/dev/null || echo ""
+    fi
+}
+
+# Function to detect missing MCPs
+detect_missing_mcps() {
+    local expected_mcps="context7 memory playwright containerization chrome-devtools shadcn"
+    local installed_mcps=$(get_installed_mcps)
+    local missing_mcps=""
+
+    for mcp in $expected_mcps; do
+        if ! echo "$installed_mcps" | grep -q "^${mcp}$"; then
+            missing_mcps="$missing_mcps $mcp"
+        fi
+    done
+
+    echo "$missing_mcps" | xargs
+}
+
+# Function to prompt user for MCP update
+prompt_mcp_update() {
+    local missing_mcps="$1"
+
+    echo ""
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "📦 MCP Server Status"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "⚠️  Missing MCP servers detected:"
+    echo ""
+    for mcp in $missing_mcps; do
+        echo "  • $mcp"
+    done
+    echo ""
+    echo "MCP servers enhance Claude Code with additional capabilities."
+    echo ""
+    read -p "Would you like to install missing MCPs? [Y/n] " -n 1 -r
+    echo ""
+
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        return 1
+    fi
+    return 0
+}
+
+# Function to install missing MCPs
+install_missing_mcps() {
+    local mcp_installer="$BASE_AGENT_OS/setup/mcp-claude-installer.sh"
+
+    if [ ! -f "$mcp_installer" ]; then
+        echo ""
+        echo "⚠️  MCP installer not found at $mcp_installer"
+        echo "   Skipping MCP installation"
+        return 1
+    fi
+
+    echo ""
+    echo "📦 Installing missing MCP servers..."
+    echo ""
+
+    if bash "$mcp_installer" --non-interactive; then
+        echo ""
+        echo "✅ MCP servers installed successfully"
+        return 0
+    else
+        echo ""
+        echo "⚠️  Some MCPs may have failed to install. Check output above."
+        return 1
+    fi
+}
+
+# Main MCP verification flow
+if [ "$CLAUDE_CODE_INSTALLED" = true ] && [ "$SKIP_MCP_CHECK" = false ]; then
+    # Check if Claude CLI is available
+    if check_claude_cli_available; then
+        # Detect missing MCPs
+        MISSING_MCPS=$(detect_missing_mcps)
+
+        if [ -n "$MISSING_MCPS" ]; then
+            # Prompt user for update
+            if prompt_mcp_update "$MISSING_MCPS"; then
+                install_missing_mcps
+            else
+                echo ""
+                echo "ℹ️  Skipping MCP installation"
+                echo "   You can install MCPs later by running:"
+                echo "   $BASE_AGENT_OS/setup/mcp-claude-installer.sh"
+            fi
+        else
+            if [ "$VERBOSE" = true ]; then
+                echo ""
+                echo "✅ All expected MCP servers are installed"
+            fi
+        fi
+    else
+        if [ "$VERBOSE" = true ]; then
+            echo ""
+            echo "ℹ️  Claude Code CLI not found - skipping MCP verification"
+            echo "   Install Claude CLI to enable MCP management"
+        fi
+    fi
 fi
 
 # Success message

@@ -299,14 +299,14 @@ install_mcps() {
     local MCP_PREREQUISITES=""
     local MCP_INSTALLER=""
 
-    if [ -f "./.yoyo-dev/setup/mcp-prerequisites.sh" ] && [ -f "./.yoyo-dev/setup/mcp-installer.sh" ]; then
+    if [ -f "./.yoyo-dev/setup/mcp-prerequisites.sh" ] && [ -f "./.yoyo-dev/setup/mcp-claude-installer.sh" ]; then
         # Use local project copies (installed during project setup)
         MCP_PREREQUISITES="./.yoyo-dev/setup/mcp-prerequisites.sh"
-        MCP_INSTALLER="./.yoyo-dev/setup/mcp-installer.sh"
-    elif [ -f ~/yoyo-dev/setup/mcp-prerequisites.sh ] && [ -f ~/yoyo-dev/setup/mcp-installer.sh ]; then
+        MCP_INSTALLER="./.yoyo-dev/setup/mcp-claude-installer.sh"
+    elif [ -f ~/yoyo-dev/setup/mcp-prerequisites.sh ] && [ -f ~/yoyo-dev/setup/mcp-claude-installer.sh ]; then
         # Fall back to base installation
         MCP_PREREQUISITES=~/yoyo-dev/setup/mcp-prerequisites.sh
-        MCP_INSTALLER=~/yoyo-dev/setup/mcp-installer.sh
+        MCP_INSTALLER=~/yoyo-dev/setup/mcp-claude-installer.sh
     else
         echo -e "${RED}ERROR: MCP installation scripts not found${RESET}"
         echo ""

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # MCP Prerequisite Checking Script for Yoyo Dev
-# Checks Node.js v18+, npm v9+, and Docker (optional)
+# Checks Node.js v18+, npm v9+, and optionally Claude Code CLI and Docker
 # Auto-installs Node.js if missing
 
 set -euo pipefail
@@ -154,6 +154,19 @@ get_docker_version() {
     return 0
 }
 
+get_claude_cli_version() {
+    if ! command -v claude &> /dev/null; then
+        echo ""
+        return 1
+    fi
+
+    # Try to get version - claude CLI may not have --version flag
+    local version=$(claude --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "installed")
+
+    echo "$version"
+    return 0
+}
+
 # ============================================
 # Node.js Installation
 # ============================================
@@ -299,15 +312,40 @@ check_npm() {
     return 0
 }
 
+check_claude_cli() {
+    local claude_version=$(get_claude_cli_version)
+
+    if [ -z "$claude_version" ]; then
+        print_info "Claude Code CLI not found (optional)"
+        echo -e "  ${BLUE}→${RESET} Claude Code CLI enables native MCP server installation"
+        echo -e "  ${BLUE}→${RESET} Install: https://github.com/anthropics/claude-code"
+        echo -e "  ${BLUE}→${RESET} MCPs provide enhanced capabilities (memory, browser automation, etc.)"
+        return 0  # Claude CLI is optional, return success
+    fi
+
+    if [ "$claude_version" = "installed" ]; then
+        print_success "Claude Code CLI detected (optional)"
+    else
+        print_success "Claude Code CLI v$claude_version detected (optional)"
+    fi
+
+    echo -e "  ${BLUE}→${RESET} MCP servers can be installed via Claude Code integration"
+    return 0
+}
+
 check_docker() {
     local docker_version=$(get_docker_version)
 
     if [ -z "$docker_version" ]; then
-        print_warning "Docker not found. Some MCPs (Containerization) require Docker. Install: https://docs.docker.com/get-docker/"
+        print_info "Docker not found (optional)"
+        echo -e "  ${BLUE}→${RESET} Docker is only needed if using the Containerization MCP server"
+        echo -e "  ${BLUE}→${RESET} All other MCPs work without Docker"
+        echo -e "  ${BLUE}→${RESET} Install Docker if needed: https://docs.docker.com/get-docker/"
         return 0  # Docker is optional, return success
     fi
 
-    print_success "Docker $docker_version detected (optional)"
+    print_success "Docker v$docker_version detected (optional)"
+    echo -e "  ${BLUE}→${RESET} Containerization MCP server will be able to generate Docker files"
     return 0
 }
 
@@ -322,24 +360,27 @@ main() {
     echo "=========================================="
     echo ""
 
-    # Check Node.js
+    # Check Node.js (required)
     if ! check_nodejs; then
         PREREQUISITES_MET=false
     fi
 
-    # Check npm
+    # Check npm (required)
     if ! check_npm; then
         PREREQUISITES_MET=false
     fi
 
-    # Check Docker (optional)
+    # Check Claude CLI (optional, informational)
+    check_claude_cli
+
+    # Check Docker (optional, informational)
     check_docker
 
     echo ""
     echo "=========================================="
 
     if [ "$PREREQUISITES_MET" = "true" ]; then
-        echo -e "${GREEN}✓ All prerequisites met${RESET}"
+        echo -e "${GREEN}✓ All required prerequisites met${RESET}"
         echo "=========================================="
         echo ""
         return 0

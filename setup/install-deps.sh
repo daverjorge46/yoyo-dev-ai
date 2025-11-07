@@ -125,3 +125,68 @@ else
     echo -e "${YELLOW}Dashboard may still work, but some features may be unavailable.${RESET}"
     echo ""
 fi
+
+# ============================================
+# MCP Installation Integration
+# ============================================
+
+echo ""
+echo -e "${CYAN}${BOLD}╔═══════════════════════════════════════════════════════════╗${RESET}"
+echo -e "${CYAN}${BOLD}║${RESET}  🔌 MCP Server Installation                              ${CYAN}${BOLD}║${RESET}"
+echo -e "${CYAN}${BOLD}╚═══════════════════════════════════════════════════════════╝${RESET}"
+echo ""
+
+# Detect script directory (works for both symlinks and direct execution)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+MCP_INSTALLER="$SCRIPT_DIR/mcp-claude-installer.sh"
+
+# Check if Claude Code CLI is installed
+if command -v claude &> /dev/null; then
+    CLAUDE_VERSION=$(claude --version 2>/dev/null | head -1 || echo "unknown")
+    echo -e "${GREEN}✓${RESET} Claude Code CLI detected: ${BOLD}$CLAUDE_VERSION${RESET}"
+    echo ""
+
+    # Prompt user to install MCPs
+    echo -e "${CYAN}MCP servers enhance Claude Code with additional capabilities:${RESET}"
+    echo -e "  • ${BOLD}context7${RESET} - DevTools context management"
+    echo -e "  • ${BOLD}memory${RESET} - Memory integration"
+    echo -e "  • ${BOLD}playwright${RESET} - Browser automation"
+    echo -e "  • ${BOLD}containerization${RESET} - Docker/container deployment"
+    echo -e "  • ${BOLD}chrome-devtools${RESET} - Chrome DevTools Protocol"
+    echo -e "  • ${BOLD}shadcn${RESET} - UI component library"
+    echo ""
+
+    # Prompt for installation
+    read -p "Install MCP servers now? [Y/n] " -n 1 -r
+    echo ""
+
+    if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+        # User answered yes (or pressed Enter for default)
+        echo ""
+        if [ -f "$MCP_INSTALLER" ]; then
+            bash "$MCP_INSTALLER"
+        else
+            echo -e "${RED}✗${RESET} MCP installer not found at: $MCP_INSTALLER"
+            echo -e "  Please run from the yoyo-dev setup directory"
+        fi
+    else
+        echo -e "${YELLOW}⚠${RESET}  Skipping MCP installation (you can install later)"
+        echo -e "  To install MCPs later, run: ${BOLD}$MCP_INSTALLER${RESET}"
+        echo ""
+    fi
+else
+    # Claude Code CLI not installed
+    echo -e "${YELLOW}⚠${RESET}  Claude Code CLI not detected"
+    echo ""
+    echo -e "${CYAN}MCP servers require Claude Code CLI to install.${RESET}"
+    echo -e "Download from: ${BOLD}https://claude.ai/download${RESET}"
+    echo ""
+    echo -e "After installing Claude Code, you can install MCPs by running:"
+    echo -e "  ${BOLD}$MCP_INSTALLER${RESET}"
+    echo ""
+fi
+
+# Final summary
+echo ""
+echo -e "${GREEN}${BOLD}Installation complete!${RESET}"
+echo ""
