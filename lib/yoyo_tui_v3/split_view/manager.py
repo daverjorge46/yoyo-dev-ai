@@ -235,7 +235,7 @@ class SplitViewManager:
 
         # Create TUI pane
         self.tui_pane = Pane(
-            command=["python3", "-m", "lib.yoyo_tui_v3.main"],
+            command=["python3", "-m", "lib.yoyo_tui_v3.cli", "--no-split"],
             bounds=tui_bounds,
             name="Yoyo TUI"
         )
