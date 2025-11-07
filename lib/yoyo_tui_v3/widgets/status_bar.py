@@ -35,14 +35,23 @@ class StatusBar(Widget):
 
         self._project_name = ""
         self._git_branch = ""
+        self._subscriptions = []  # Track handler references
 
     def on_mount(self) -> None:
         """Called when widget is mounted."""
-        # Subscribe to events
+        # Subscribe to events and track subscriptions
+        self._subscriptions.append((EventType.STATE_UPDATED, self._on_state_updated))
         self.event_bus.subscribe(EventType.STATE_UPDATED, self._on_state_updated)
 
         # Initial data load
         self._update_display()
+
+    def on_unmount(self) -> None:
+        """Called when widget is unmounted. Clean up subscriptions."""
+        # Unsubscribe all handlers
+        for event_type, handler in self._subscriptions:
+            self.event_bus.unsubscribe(event_type, handler)
+        self._subscriptions.clear()
 
     def _on_state_updated(self, event: Event) -> None:
         """Handle STATE_UPDATED events."""

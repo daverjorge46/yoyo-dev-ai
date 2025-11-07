@@ -131,6 +131,9 @@ class MainDashboard(Screen):
         # Track focused panel
         self.focused_panel = "active_work"
 
+        # Track event subscriptions for cleanup
+        self._subscriptions = []
+
         # Widget references (set during compose)
         self._status_bar = None
         self._project_overview = None
@@ -197,17 +200,26 @@ class MainDashboard(Screen):
 
     def on_mount(self) -> None:
         """Called when screen is mounted."""
-        # Subscribe to events
+        # Subscribe to events (store references for cleanup)
+        self._subscriptions.append((EventType.STATE_UPDATED, self._on_state_updated))
         self.event_bus.subscribe(EventType.STATE_UPDATED, self._on_state_updated)
+
+        self._subscriptions.append((EventType.ERROR_DETECTED, self._on_error_detected))
         self.event_bus.subscribe(EventType.ERROR_DETECTED, self._on_error_detected)
+
+        self._subscriptions.append((EventType.COMMAND_SUGGESTIONS_UPDATED, self._on_command_suggestions_updated))
         self.event_bus.subscribe(
             EventType.COMMAND_SUGGESTIONS_UPDATED,
             self._on_command_suggestions_updated
         )
+
+        self._subscriptions.append((EventType.EXECUTION_STARTED, self._on_execution_started))
         self.event_bus.subscribe(
             EventType.EXECUTION_STARTED,
             self._on_execution_started
         )
+
+        self._subscriptions.append((EventType.EXECUTION_COMPLETED, self._on_execution_completed))
         self.event_bus.subscribe(
             EventType.EXECUTION_COMPLETED,
             self._on_execution_completed
@@ -225,8 +237,10 @@ class MainDashboard(Screen):
 
     def on_unmount(self) -> None:
         """Called when screen is unmounted."""
-        # Cleanup if needed
-        pass
+        # Unsubscribe all event handlers to prevent memory leaks
+        for event_type, handler in self._subscriptions:
+            self.event_bus.unsubscribe(event_type, handler)
+        self._subscriptions.clear()
 
     # ========================================================================
     # Event Handlers

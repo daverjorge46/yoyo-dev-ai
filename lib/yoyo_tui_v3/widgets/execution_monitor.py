@@ -77,16 +77,29 @@ class ExecutionMonitor(Widget):
         super().__init__(**kwargs)
         self.event_bus = event_bus
         self.execution_state: Optional[ExecutionState] = None
+        self._subscriptions = []  # Track handler references
 
     def on_mount(self) -> None:
         """Called when widget is mounted. Subscribe to execution events."""
-        # Subscribe to execution events
+        # Subscribe to execution events and track subscriptions
+        self._subscriptions.append((EventType.EXECUTION_STARTED, self._on_execution_started))
         self.event_bus.subscribe(EventType.EXECUTION_STARTED, self._on_execution_started)
+
+        self._subscriptions.append((EventType.EXECUTION_PROGRESS, self._on_execution_progress))
         self.event_bus.subscribe(EventType.EXECUTION_PROGRESS, self._on_execution_progress)
+
+        self._subscriptions.append((EventType.EXECUTION_COMPLETED, self._on_execution_completed))
         self.event_bus.subscribe(EventType.EXECUTION_COMPLETED, self._on_execution_completed)
 
         # Initial state (hidden)
         self._update_display()
+
+    def on_unmount(self) -> None:
+        """Called when widget is unmounted. Clean up subscriptions."""
+        # Unsubscribe all handlers
+        for event_type, handler in self._subscriptions:
+            self.event_bus.unsubscribe(event_type, handler)
+        self._subscriptions.clear()
 
     def compose(self):
         """Compose the execution monitor layout."""

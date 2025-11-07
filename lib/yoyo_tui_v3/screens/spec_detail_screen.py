@@ -100,6 +100,9 @@ class SpecDetailScreen(Screen):
         self.data_manager = data_manager
         self.event_bus = event_bus
 
+        # Track event subscriptions for cleanup
+        self._subscriptions = []
+
         # Widget references
         self._header_widget = None
         self._content_widget = None
@@ -117,7 +120,8 @@ class SpecDetailScreen(Screen):
 
     def on_mount(self) -> None:
         """Called when screen is mounted."""
-        # Subscribe to events
+        # Subscribe to events (store reference for cleanup)
+        self._subscriptions.append((EventType.STATE_UPDATED, self._on_state_updated))
         self.event_bus.subscribe(EventType.STATE_UPDATED, self._on_state_updated)
 
         # Initial display
@@ -125,8 +129,10 @@ class SpecDetailScreen(Screen):
 
     def on_unmount(self) -> None:
         """Called when screen is unmounted."""
-        # Cleanup if needed
-        pass
+        # Unsubscribe all event handlers to prevent memory leaks
+        for event_type, handler in self._subscriptions:
+            self.event_bus.unsubscribe(event_type, handler)
+        self._subscriptions.clear()
 
     # ========================================================================
     # Event Handlers

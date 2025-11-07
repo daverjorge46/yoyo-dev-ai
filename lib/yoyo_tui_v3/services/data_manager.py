@@ -88,6 +88,9 @@ class DataManager:
         self._mission: Optional[str] = None
         self._tech_stack: List[str] = []
 
+        # Track event subscriptions for cleanup
+        self._subscriptions = []
+
         # Subscribe to file system events
         self._subscribe_to_events()
 
@@ -95,9 +98,27 @@ class DataManager:
 
     def _subscribe_to_events(self):
         """Subscribe to file system events from FileWatcher."""
+        self._subscriptions.append((EventType.FILE_CHANGED, self._on_file_changed))
         self._event_bus.subscribe(EventType.FILE_CHANGED, self._on_file_changed)
+
+        self._subscriptions.append((EventType.FILE_CREATED, self._on_file_created))
         self._event_bus.subscribe(EventType.FILE_CREATED, self._on_file_created)
+
+        self._subscriptions.append((EventType.FILE_DELETED, self._on_file_deleted))
         self._event_bus.subscribe(EventType.FILE_DELETED, self._on_file_deleted)
+
+    def cleanup(self) -> None:
+        """
+        Clean up resources and unsubscribe from events.
+
+        Should be called when DataManager is being shut down to prevent memory leaks.
+        """
+        # Unsubscribe all event handlers
+        for event_type, handler in self._subscriptions:
+            self._event_bus.unsubscribe(event_type, handler)
+        self._subscriptions.clear()
+
+        logger.info("DataManager cleanup complete")
 
     @property
     def state(self) -> ApplicationState:
