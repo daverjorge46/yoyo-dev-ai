@@ -1,0 +1,15 @@
+.vscode/**
+.vscode-test/**
+src/**
+webview-ui/**
+.gitignore
+.yarnrc
+vsc-extension-quickstart.md
+**/tsconfig.json
+**/.eslintrc.json
+**/*.map
+**/*.ts
+esbuild.js
+esbuild-webview.js
+node_modules/**
+out/**

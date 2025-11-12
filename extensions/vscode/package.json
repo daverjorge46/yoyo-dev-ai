@@ -1,0 +1,218 @@
+{
+  "name": "yoyo-dev",
+  "displayName": "Yoyo Dev",
+  "description": "AI-assisted development workflow framework - systematic planning, specification, and execution for Claude Code and Cursor",
+  "version": "0.1.0",
+  "publisher": "yoyo-dev",
+  "icon": "resources/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yoyo-dev/yoyo-dev"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other",
+    "Programming Languages",
+    "Snippets"
+  ],
+  "keywords": [
+    "ai",
+    "claude",
+    "cursor",
+    "workflow",
+    "productivity",
+    "planning",
+    "specification",
+    "tasks"
+  ],
+  "activationEvents": [
+    "workspaceContains:.yoyo-dev",
+    "onCommand:yoyoDev.planProduct",
+    "onView:yoyoDevTasks"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "yoyo-dev",
+          "title": "Yoyo Dev",
+          "icon": "resources/yoyo-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "yoyo-dev": [
+        {
+          "id": "yoyoDevTasks",
+          "name": "Tasks",
+          "icon": "resources/tasks-icon.svg",
+          "contextualTitle": "Yoyo Dev Tasks"
+        },
+        {
+          "id": "yoyoDevRoadmap",
+          "name": "Roadmap",
+          "icon": "resources/roadmap-icon.svg",
+          "contextualTitle": "Yoyo Dev Roadmap"
+        },
+        {
+          "id": "yoyoDevGit",
+          "name": "Git Info",
+          "icon": "resources/git-icon.svg",
+          "contextualTitle": "Yoyo Dev Git"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "yoyoDev.planProduct",
+        "title": "Yoyo Dev: Plan Product",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.analyzeProduct",
+        "title": "Yoyo Dev: Analyze Product",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.createNew",
+        "title": "Yoyo Dev: Create New Feature",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.createSpec",
+        "title": "Yoyo Dev: Create Specification",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.createTasks",
+        "title": "Yoyo Dev: Create Tasks",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.executeTasks",
+        "title": "Yoyo Dev: Execute Tasks",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.createFix",
+        "title": "Yoyo Dev: Create Fix",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.orchestrateTasks",
+        "title": "Yoyo Dev: Orchestrate Tasks",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.review",
+        "title": "Yoyo Dev: Review Code",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.designInit",
+        "title": "Yoyo Dev: Initialize Design System",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.designAudit",
+        "title": "Yoyo Dev: Audit Design",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.designFix",
+        "title": "Yoyo Dev: Fix Design",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.designComponent",
+        "title": "Yoyo Dev: Create Design Component",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.help",
+        "title": "Yoyo Dev: Help",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.containerize",
+        "title": "Yoyo Dev: Containerize Application",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.improveSkills",
+        "title": "Yoyo Dev: Improve Skills",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.refreshTasks",
+        "title": "Refresh Tasks",
+        "category": "Yoyo Dev",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "yoyoDev.refreshRoadmap",
+        "title": "Refresh Roadmap",
+        "category": "Yoyo Dev",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "yoyoDev.openSpec",
+        "title": "Open Spec",
+        "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.toggleTaskComplete",
+        "title": "Toggle Task Complete",
+        "category": "Yoyo Dev"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "yoyoDev.refreshTasks",
+          "when": "view == yoyoDevTasks",
+          "group": "navigation"
+        },
+        {
+          "command": "yoyoDev.refreshRoadmap",
+          "when": "view == yoyoDevRoadmap",
+          "group": "navigation"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "yoyoDev.toggleTaskComplete",
+          "when": "view == yoyoDevTasks && viewItem == task"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node esbuild.js && node esbuild-webview.js",
+    "watch": "node esbuild.js --watch",
+    "watch:webview": "node esbuild-webview.js --watch",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "@vscode/test-electron": "^2.3.8",
+    "esbuild": "^0.19.11",
+    "eslint": "^8.56.0",
+    "glob": "^10.3.10",
+    "mocha": "^10.2.0",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "marked": "^11.1.0"
+  }
+}
