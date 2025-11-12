@@ -543,7 +543,7 @@ if [ "$CLAUDE_CODE" = true ]; then
         # Run prerequisite check
         if bash "$MCP_PREREQUISITES"; then
             # Prerequisites met, run installer
-            bash "$MCP_INSTALLER"
+            bash "$MCP_INSTALLER" --project-dir="$CURRENT_DIR"
             MCP_STATUS=$?
         else
             echo ""

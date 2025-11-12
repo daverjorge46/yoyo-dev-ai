@@ -18,10 +18,10 @@ RESET='\033[0m'
 SKIP_IF_NO_CLAUDE=false
 INTERACTIVE=true
 VERBOSE=false
+PROJECT_DIR=""
 
 # Claude configuration location
-CLAUDE_CONFIG_DIR="${HOME}/.config/claude"
-CLAUDE_CONFIG_FILE="${CLAUDE_CONFIG_DIR}/config.json"
+CLAUDE_CONFIG_FILE="${HOME}/.claude.json"
 
 # MCP installation status
 MCPS_INSTALLED=0
@@ -60,6 +60,26 @@ log_verbose() {
     if [ "$VERBOSE" = true ]; then
         echo -e "${BLUE}[VERBOSE]${RESET} $1"
     fi
+}
+
+check_network_connectivity() {
+    log_verbose "Checking network connectivity..."
+
+    # Try to ping npm registry
+    if ! curl -s --max-time 5 https://registry.npmjs.org/ > /dev/null 2>&1; then
+        print_warning "Network connectivity issues detected"
+        echo ""
+        echo "  ${BOLD}Network Troubleshooting:${RESET}"
+        echo "  1. Check your internet connection"
+        echo "  2. Verify you can access: ${CYAN}https://registry.npmjs.org/${RESET}"
+        echo "  3. If behind a proxy, configure npm proxy settings:"
+        echo "     ${CYAN}npm config set proxy http://proxy:port${RESET}"
+        echo "     ${CYAN}npm config set https-proxy http://proxy:port${RESET}"
+        echo ""
+        return 1
+    fi
+
+    return 0
 }
 
 # ============================================
@@ -101,14 +121,40 @@ check_claude_config_exists() {
     fi
 }
 
-create_claude_config_if_missing() {
-    if ! check_claude_config_exists; then
-        log_verbose "Creating Claude config directory..."
-        mkdir -p "$CLAUDE_CONFIG_DIR"
-        echo '{"mcpServers":{}}' > "$CLAUDE_CONFIG_FILE"
-        log_verbose "Created empty Claude config at $CLAUDE_CONFIG_FILE"
+check_claude_config_permissions() {
+    if [ ! -f "$CLAUDE_CONFIG_FILE" ]; then
+        return 0  # File doesn't exist yet, Claude will create it
     fi
+
+    # Check if file is readable
+    if [ ! -r "$CLAUDE_CONFIG_FILE" ]; then
+        print_error "Cannot read Claude config file: $CLAUDE_CONFIG_FILE"
+        echo ""
+        echo "  ${BOLD}Permission Issue Detected:${RESET}"
+        echo "  The Claude config file exists but cannot be read."
+        echo ""
+        echo "  ${BOLD}Fix with:${RESET}"
+        echo "     ${CYAN}chmod 644 $CLAUDE_CONFIG_FILE${RESET}"
+        echo ""
+        return 1
+    fi
+
+    # Check if file is writable
+    if [ ! -w "$CLAUDE_CONFIG_FILE" ]; then
+        print_warning "Claude config file is read-only: $CLAUDE_CONFIG_FILE"
+        echo ""
+        echo "  ${BOLD}Warning:${RESET} File is readable but not writable."
+        echo "  MCPs may fail to install if Claude cannot update config."
+        echo ""
+        echo "  ${BOLD}Fix with:${RESET}"
+        echo "     ${CYAN}chmod 644 $CLAUDE_CONFIG_FILE${RESET}"
+        echo ""
+        # Return success but with warning
+    fi
+
+    return 0
 }
+
 
 read_claude_config() {
     if check_claude_config_exists; then
@@ -118,19 +164,71 @@ read_claude_config() {
     fi
 }
 
+validate_claude_config() {
+    local config_file="${1:-$CLAUDE_CONFIG_FILE}"
+
+    if [ ! -f "$config_file" ]; then
+        return 0  # File doesn't exist, Claude will create it
+    fi
+
+    # Validate JSON structure
+    python3 << EOF
+import json
+import sys
+
+try:
+    with open("$config_file", "r") as f:
+        data = json.load(f)
+
+    # Check for projects key
+    if "projects" not in data:
+        print("INFO: Claude config missing 'projects' key")
+        print("This will be created automatically by Claude")
+
+    sys.exit(0)
+except json.JSONDecodeError as e:
+    print(f"ERROR: Invalid JSON in Claude config: {e}", file=sys.stderr)
+    sys.exit(1)
+except Exception as e:
+    print(f"ERROR: Cannot read Claude config: {e}", file=sys.stderr)
+    sys.exit(1)
+EOF
+
+    return $?
+}
+
 is_mcp_installed() {
     local mcp_name="$1"
+    local project_dir="${2:-$(pwd)}"
 
     if ! check_claude_config_exists; then
         return 1
     fi
 
-    # Check if MCP exists in config.json
-    if grep -q "\"$mcp_name\"" "$CLAUDE_CONFIG_FILE" 2>/dev/null; then
-        return 0
-    else
-        return 1
-    fi
+    # Use Python to parse nested JSON structure correctly
+    python3 << EOF
+import json
+import sys
+
+try:
+    with open("$CLAUDE_CONFIG_FILE", "r") as f:
+        data = json.load(f)
+
+    # Navigate nested structure: projects > project_dir > mcpServers
+    projects = data.get("projects", {})
+    project_data = projects.get("$project_dir", {})
+    mcp_servers = project_data.get("mcpServers", {})
+
+    # Check if MCP exists in this project
+    if "$mcp_name" in mcp_servers:
+        sys.exit(0)  # Found
+    else:
+        sys.exit(1)  # Not found
+except Exception:
+    sys.exit(1)  # Error or not found
+EOF
+
+    return $?
 }
 
 # ============================================
@@ -144,11 +242,16 @@ install_mcp_via_templates() {
 
     log_verbose "Installing $mcp_name via claude-code-templates..."
 
-    if [ "$use_command" = "true" ]; then
-        npx claude-code-templates@latest --command="$template_path" --yes
-    else
-        npx claude-code-templates@latest --mcp="$template_path" --yes
-    fi
+    # Execute from project directory to set correct context
+    (
+        cd "$PROJECT_DIR" || return 1
+
+        if [ "$use_command" = "true" ]; then
+            npx claude-code-templates@latest --command="$template_path" --yes
+        else
+            npx claude-code-templates@latest --mcp="$template_path" --yes
+        fi
+    )
 }
 
 install_mcp_via_claude_add() {
@@ -157,11 +260,13 @@ install_mcp_via_claude_add() {
 
     log_verbose "Installing $mcp_name via 'claude mcp add'..."
 
-    # Ensure config directory exists
-    create_claude_config_if_missing
+    # Execute from project directory to set correct context
+    (
+        cd "$PROJECT_DIR" || return 1
 
-    # Use claude mcp add
-    claude mcp add "$mcp_name" "$mcp_command"
+        # Use claude mcp add (Claude creates config automatically)
+        claude mcp add "$mcp_name" "$mcp_command"
+    )
 }
 
 install_mcp_via_pnpm() {
@@ -174,7 +279,12 @@ install_mcp_via_pnpm() {
         return 1
     fi
 
-    pnpm dlx shadcn@latest mcp init --client claude
+    # Execute from project directory to set correct context
+    (
+        cd "$PROJECT_DIR" || return 1
+
+        pnpm dlx shadcn@latest mcp init --client claude
+    )
 }
 
 # ============================================
@@ -184,7 +294,7 @@ install_mcp_via_pnpm() {
 install_context7() {
     local mcp_name="context7"
 
-    if is_mcp_installed "$mcp_name"; then
+    if is_mcp_installed "$mcp_name" "$PROJECT_DIR"; then
         print_info "$mcp_name already installed (skipping)"
         MCPS_SKIPPED=$((MCPS_SKIPPED + 1))
         return 0
@@ -192,12 +302,20 @@ install_context7() {
 
     echo -e "${CYAN}→${RESET} Installing ${BOLD}$mcp_name${RESET}..."
 
-    if install_mcp_via_templates "$mcp_name" "devtools/context7" "false" &> /dev/null; then
+    local error_log=$(mktemp)
+    if install_mcp_via_templates "$mcp_name" "devtools/context7" "false" 2>"$error_log"; then
         print_success "$mcp_name installed successfully"
+        rm -f "$error_log"
         MCPS_INSTALLED=$((MCPS_INSTALLED + 1))
         return 0
     else
         print_error "$mcp_name installation failed"
+        if [ "$VERBOSE" = true ] && [ -s "$error_log" ]; then
+            echo "  ${YELLOW}Error details:${RESET}"
+            head -5 "$error_log" | sed 's/^/  /'
+        fi
+        echo "  ${CYAN}Retry with: $0 --verbose${RESET}"
+        rm -f "$error_log"
         MCPS_FAILED=$((MCPS_FAILED + 1))
         return 1
     fi
@@ -206,7 +324,7 @@ install_context7() {
 install_memory() {
     local mcp_name="memory"
 
-    if is_mcp_installed "$mcp_name"; then
+    if is_mcp_installed "$mcp_name" "$PROJECT_DIR"; then
         print_info "$mcp_name already installed (skipping)"
         MCPS_SKIPPED=$((MCPS_SKIPPED + 1))
         return 0
@@ -228,7 +346,7 @@ install_memory() {
 install_playwright() {
     local mcp_name="playwright"
 
-    if is_mcp_installed "$mcp_name"; then
+    if is_mcp_installed "$mcp_name" "$PROJECT_DIR"; then
         print_info "$mcp_name already installed (skipping)"
         MCPS_SKIPPED=$((MCPS_SKIPPED + 1))
         return 0
@@ -250,7 +368,7 @@ install_playwright() {
 install_containerization() {
     local mcp_name="containerization"
 
-    if is_mcp_installed "$mcp_name"; then
+    if is_mcp_installed "$mcp_name" "$PROJECT_DIR"; then
         print_info "$mcp_name already installed (skipping)"
         MCPS_SKIPPED=$((MCPS_SKIPPED + 1))
         return 0
@@ -272,7 +390,7 @@ install_containerization() {
 install_chrome_devtools() {
     local mcp_name="chrome-devtools"
 
-    if is_mcp_installed "$mcp_name"; then
+    if is_mcp_installed "$mcp_name" "$PROJECT_DIR"; then
         print_info "$mcp_name already installed (skipping)"
         MCPS_SKIPPED=$((MCPS_SKIPPED + 1))
         return 0
@@ -294,7 +412,7 @@ install_chrome_devtools() {
 install_shadcn() {
     local mcp_name="shadcn"
 
-    if is_mcp_installed "$mcp_name"; then
+    if is_mcp_installed "$mcp_name" "$PROJECT_DIR"; then
         print_info "$mcp_name already installed (skipping)"
         MCPS_SKIPPED=$((MCPS_SKIPPED + 1))
         return 0
@@ -322,13 +440,26 @@ install_all_mcps() {
 
     # Check for Claude CLI
     if ! check_claude_cli; then
-        print_warning "Claude Code CLI not found. Install from: https://claude.ai/download"
+        print_error "Claude Code CLI not found or not functional"
+        echo ""
+        echo "  ${BOLD}Troubleshooting Steps:${RESET}"
+        echo "  1. Check if Claude Code is installed:"
+        echo "     ${CYAN}which claude${RESET}"
+        echo ""
+        echo "  2. If not installed, download from:"
+        echo "     ${CYAN}https://claude.ai/download${RESET}"
+        echo ""
+        echo "  3. After installing, verify it works:"
+        echo "     ${CYAN}claude --version${RESET}"
+        echo ""
+        echo "  4. If installed but not in PATH, add Claude to your PATH:"
+        echo "     ${CYAN}export PATH=\"\$PATH:/path/to/claude\"${RESET}"
+        echo ""
 
         if [ "$SKIP_IF_NO_CLAUDE" = true ]; then
             print_info "Skipping MCP installation (--skip-if-no-claude flag set)"
             return 0
         else
-            print_error "Claude Code CLI required for MCP installation"
             return 1
         fi
     fi
@@ -337,8 +468,18 @@ install_all_mcps() {
     local claude_version=$(get_claude_version)
     print_info "Claude Code CLI detected: $claude_version"
 
-    # Create config if missing
-    create_claude_config_if_missing
+    # Check config file permissions
+    if ! check_claude_config_permissions; then
+        return 1
+    fi
+
+    # Display project context
+    print_info "Installing MCPs for project: $PROJECT_DIR"
+
+    # Check network connectivity
+    if ! check_network_connectivity; then
+        print_warning "Continuing with limited network connectivity..."
+    fi
 
     echo ""
     print_info "Installing 6 MCP servers..."
@@ -363,6 +504,23 @@ install_all_mcps() {
 
     if [ $MCPS_FAILED -gt 0 ]; then
         print_warning "Some MCPs failed to install. Check logs above for details."
+        echo ""
+        echo "  ${BOLD}Common Causes:${RESET}"
+        echo "  • Network connectivity issues (check firewall/proxy)"
+        echo "  • npm/pnpm not installed or outdated"
+        echo "  • Insufficient permissions to create files"
+        echo "  • Claude Code CLI not properly configured"
+        echo ""
+        echo "  ${BOLD}Next Steps:${RESET}"
+        echo "  1. Run with verbose mode for detailed logs:"
+        echo "     ${CYAN}$0 --verbose${RESET}"
+        echo ""
+        echo "  2. Check Claude config at:"
+        echo "     ${CYAN}$CLAUDE_CONFIG_FILE${RESET}"
+        echo ""
+        echo "  3. Verify project context:"
+        echo "     ${CYAN}Project: $PROJECT_DIR${RESET}"
+        echo ""
     fi
 
     if [ $MCPS_INSTALLED -gt 0 ]; then
@@ -392,6 +550,7 @@ OPTIONS:
     --skip-if-no-claude    Exit gracefully if Claude Code CLI not found (exit 0)
     --non-interactive      Run without user prompts
     --verbose              Show detailed installation logs
+    --project-dir=PATH     Set project directory for MCP installation (default: current directory)
     -h, --help             Show this help message
 
 SUPPORTED MCPS:
@@ -408,8 +567,11 @@ REQUIREMENTS:
     - pnpm (optional, for shadcn MCP)
 
 EXAMPLES:
-    # Standard installation
+    # Standard installation (uses current directory)
     $0
+
+    # Install for specific project
+    $0 --project-dir=/home/user/myproject
 
     # Skip if Claude Code not installed
     $0 --skip-if-no-claude
@@ -439,6 +601,10 @@ parse_args() {
                 VERBOSE=true
                 shift
                 ;;
+            --project-dir=*)
+                PROJECT_DIR="${1#*=}"
+                shift
+                ;;
             -h|--help)
                 show_usage
                 exit 0
@@ -450,6 +616,11 @@ parse_args() {
                 ;;
         esac
     done
+
+    # Set PROJECT_DIR to current directory if not specified
+    if [ -z "$PROJECT_DIR" ]; then
+        PROJECT_DIR="$(pwd)"
+    fi
 }
 
 # ============================================

@@ -164,7 +164,7 @@ if command -v claude &> /dev/null; then
         # User answered yes (or pressed Enter for default)
         echo ""
         if [ -f "$MCP_INSTALLER" ]; then
-            bash "$MCP_INSTALLER"
+            bash "$MCP_INSTALLER" --project-dir="$(pwd)"
         else
             echo -e "${RED}✗${RESET} MCP installer not found at: $MCP_INSTALLER"
             echo -e "  Please run from the yoyo-dev setup directory"

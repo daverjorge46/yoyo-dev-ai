@@ -456,7 +456,7 @@ install_missing_mcps() {
     echo "📦 Installing missing MCP servers..."
     echo ""
 
-    if bash "$mcp_installer" --non-interactive; then
+    if bash "$mcp_installer" --non-interactive --project-dir="$CURRENT_DIR"; then
         echo ""
         echo "✅ MCP servers installed successfully"
         return 0
