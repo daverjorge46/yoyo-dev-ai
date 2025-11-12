@@ -13,8 +13,8 @@ echo "Test 1: Broken venv (directory exists, pip missing)"
 echo "-----------------------------------------------"
 
 # Simulate the condition
-BASE_AGENT_OS="/home/yoga999/yoyo-dev"
-VENV_DIR="$BASE_AGENT_OS/venv"
+BASE_YOYO_DEV="/home/yoga999/yoyo-dev"
+VENV_DIR="$BASE_YOYO_DEV/venv"
 PIP_PATH="$VENV_DIR/bin/pip"
 
 echo "Checking venv directory: $VENV_DIR"

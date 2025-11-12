@@ -17,9 +17,9 @@ echo "Integration Test: yoyo-update End-to-End"
 echo "=================================================="
 echo ""
 
-# Test 1: Verify script resolves BASE_AGENT_OS correctly
+# Test 1: Verify script resolves BASE_YOYO_DEV correctly
 echo "Test 1: Path Resolution"
-echo "  Checking \$BASE_AGENT_OS resolution..."
+echo "  Checking \$BASE_YOYO_DEV resolution..."
 
 # Source the script logic for testing (simulate what script does)
 SCRIPT_PATH="${BASH_SOURCE[0]}"
@@ -27,21 +27,21 @@ SCRIPT_PATH="/usr/local/bin/yoyo-update"
 if [ -L "$SCRIPT_PATH" ]; then
     RESOLVED_PATH=$(readlink -f "$SCRIPT_PATH")
     SCRIPT_DIR=$(dirname "$RESOLVED_PATH")
-    BASE_AGENT_OS=$(dirname "$SCRIPT_DIR")
-    echo -e "  ${GREEN}✓${NC} Resolved BASE_AGENT_OS: $BASE_AGENT_OS"
+    BASE_YOYO_DEV=$(dirname "$SCRIPT_DIR")
+    echo -e "  ${GREEN}✓${NC} Resolved BASE_YOYO_DEV: $BASE_YOYO_DEV"
 else
     echo -e "  ${YELLOW}⚠${NC}  Symlink not found, using current directory"
-    BASE_AGENT_OS=$(pwd)
+    BASE_YOYO_DEV=$(pwd)
 fi
 
-# Test 2: Verify venv path uses $BASE_AGENT_OS
+# Test 2: Verify venv path uses $BASE_YOYO_DEV
 echo ""
 echo "Test 2: Virtual Environment Path"
-if [ -d "$BASE_AGENT_OS/venv" ]; then
-    echo -e "  ${GREEN}✓${NC} venv found at: $BASE_AGENT_OS/venv"
+if [ -d "$BASE_YOYO_DEV/venv" ]; then
+    echo -e "  ${GREEN}✓${NC} venv found at: $BASE_YOYO_DEV/venv"
 
     # Check if pip exists
-    if [ -f "$BASE_AGENT_OS/venv/bin/pip" ]; then
+    if [ -f "$BASE_YOYO_DEV/venv/bin/pip" ]; then
         echo -e "  ${GREEN}✓${NC} pip found in venv"
     else
         echo -e "  ${RED}✗${NC} pip not found in venv (expected for test)"
@@ -53,8 +53,8 @@ fi
 # Test 3: Verify requirements.txt path
 echo ""
 echo "Test 3: Requirements File Path"
-if [ -f "$BASE_AGENT_OS/requirements.txt" ]; then
-    echo -e "  ${GREEN}✓${NC} requirements.txt found at: $BASE_AGENT_OS/requirements.txt"
+if [ -f "$BASE_YOYO_DEV/requirements.txt" ]; then
+    echo -e "  ${GREEN}✓${NC} requirements.txt found at: $BASE_YOYO_DEV/requirements.txt"
 else
     echo -e "  ${RED}✗${NC} requirements.txt not found"
     exit 1
@@ -109,7 +109,7 @@ echo "=================================================="
 echo -e "${GREEN}✓ All integration tests passed!${NC}"
 echo ""
 echo "The yoyo-update script:"
-echo "  • Resolves paths correctly using \$BASE_AGENT_OS"
+echo "  • Resolves paths correctly using \$BASE_YOYO_DEV"
 echo "  • Has no hardcoded \$HOME/yoyo-dev paths"
 echo "  • Does not attempt to self-update symlinks"
 echo "  • Validates virtual environment and pip existence"

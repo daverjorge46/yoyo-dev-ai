@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test Suite: yoyo-update Path Resolution
-# Tests for proper path resolution using $BASE_AGENT_OS instead of hardcoded paths
+# Tests for proper path resolution using $BASE_YOYO_DEV instead of hardcoded paths
 
 set -e
 
@@ -47,21 +47,21 @@ echo "Test Suite: yoyo-update Path Resolution"
 echo "=================================================="
 echo ""
 
-# Test 1.1: $BASE_AGENT_OS resolution from symlinked execution
-echo "Test 1.1: \$BASE_AGENT_OS resolution from symlinked execution"
+# Test 1.1: $BASE_YOYO_DEV resolution from symlinked execution
+echo "Test 1.1: \$BASE_YOYO_DEV resolution from symlinked execution"
 SCRIPT_PATH="/usr/local/bin/yoyo-update"
 if [ -L "$SCRIPT_PATH" ]; then
     RESOLVED_PATH=$(readlink -f "$SCRIPT_PATH")
     SCRIPT_DIR=$(dirname "$RESOLVED_PATH")
-    BASE_AGENT_OS=$(dirname "$SCRIPT_DIR")
+    BASE_YOYO_DEV=$(dirname "$SCRIPT_DIR")
 
-    if [ -d "$BASE_AGENT_OS" ] && [ -f "$BASE_AGENT_OS/setup/yoyo-update.sh" ]; then
-        print_test_result "1.1 \$BASE_AGENT_OS resolution" "PASS" ""
+    if [ -d "$BASE_YOYO_DEV" ] && [ -f "$BASE_YOYO_DEV/setup/yoyo-update.sh" ]; then
+        print_test_result "1.1 \$BASE_YOYO_DEV resolution" "PASS" ""
     else
-        print_test_result "1.1 \$BASE_AGENT_OS resolution" "FAIL" "BASE_AGENT_OS=$BASE_AGENT_OS does not contain setup/yoyo-update.sh"
+        print_test_result "1.1 \$BASE_YOYO_DEV resolution" "FAIL" "BASE_YOYO_DEV=$BASE_YOYO_DEV does not contain setup/yoyo-update.sh"
     fi
 else
-    print_test_result "1.1 \$BASE_AGENT_OS resolution" "SKIP" "Symlink /usr/local/bin/yoyo-update not found"
+    print_test_result "1.1 \$BASE_YOYO_DEV resolution" "SKIP" "Symlink /usr/local/bin/yoyo-update not found"
 fi
 
 # Test 1.2: venv path detection with existing venv
@@ -69,19 +69,19 @@ echo ""
 echo "Test 1.2: venv path detection with existing venv"
 SCRIPT_FILE="./setup/yoyo-update.sh"
 if [ -f "$SCRIPT_FILE" ]; then
-    # Check if script uses BASE_AGENT_OS for venv path
-    if grep -q "\$BASE_AGENT_OS/venv" "$SCRIPT_FILE"; then
-        print_test_result "1.2 venv path uses \$BASE_AGENT_OS" "PASS" ""
+    # Check if script uses BASE_YOYO_DEV for venv path
+    if grep -q "\$BASE_YOYO_DEV/venv" "$SCRIPT_FILE"; then
+        print_test_result "1.2 venv path uses \$BASE_YOYO_DEV" "PASS" ""
     else
         # Check if it uses hardcoded path (this is the bug we're testing for)
         if grep -q "\$HOME/yoyo-dev/venv" "$SCRIPT_FILE"; then
-            print_test_result "1.2 venv path uses \$BASE_AGENT_OS" "FAIL" "Script uses hardcoded \$HOME/yoyo-dev/venv instead of \$BASE_AGENT_OS/venv"
+            print_test_result "1.2 venv path uses \$BASE_YOYO_DEV" "FAIL" "Script uses hardcoded \$HOME/yoyo-dev/venv instead of \$BASE_YOYO_DEV/venv"
         else
-            print_test_result "1.2 venv path uses \$BASE_AGENT_OS" "FAIL" "Cannot determine venv path resolution method"
+            print_test_result "1.2 venv path uses \$BASE_YOYO_DEV" "FAIL" "Cannot determine venv path resolution method"
         fi
     fi
 else
-    print_test_result "1.2 venv path uses \$BASE_AGENT_OS" "FAIL" "setup/yoyo-update.sh not found"
+    print_test_result "1.2 venv path uses \$BASE_YOYO_DEV" "FAIL" "setup/yoyo-update.sh not found"
 fi
 
 # Test 1.3: venv path detection with missing venv
@@ -102,26 +102,26 @@ fi
 echo ""
 echo "Test 1.4: requirements.txt path resolution"
 if [ -f "$SCRIPT_FILE" ]; then
-    # Check if script uses BASE_AGENT_OS for requirements.txt
-    if grep -q "\$BASE_AGENT_OS/requirements.txt" "$SCRIPT_FILE"; then
-        print_test_result "1.4 requirements.txt path uses \$BASE_AGENT_OS" "PASS" ""
+    # Check if script uses BASE_YOYO_DEV for requirements.txt
+    if grep -q "\$BASE_YOYO_DEV/requirements.txt" "$SCRIPT_FILE"; then
+        print_test_result "1.4 requirements.txt path uses \$BASE_YOYO_DEV" "PASS" ""
     else
         # Check if it uses hardcoded path (bug)
         if grep -q "\$HOME/yoyo-dev/requirements.txt" "$SCRIPT_FILE"; then
-            print_test_result "1.4 requirements.txt path uses \$BASE_AGENT_OS" "FAIL" "Script uses hardcoded \$HOME/yoyo-dev/requirements.txt"
+            print_test_result "1.4 requirements.txt path uses \$BASE_YOYO_DEV" "FAIL" "Script uses hardcoded \$HOME/yoyo-dev/requirements.txt"
         else
-            print_test_result "1.4 requirements.txt path uses \$BASE_AGENT_OS" "FAIL" "Cannot determine requirements.txt path resolution"
+            print_test_result "1.4 requirements.txt path uses \$BASE_YOYO_DEV" "FAIL" "Cannot determine requirements.txt path resolution"
         fi
     fi
 else
-    print_test_result "1.4 requirements.txt path uses \$BASE_AGENT_OS" "FAIL" "setup/yoyo-update.sh not found"
+    print_test_result "1.4 requirements.txt path uses \$BASE_YOYO_DEV" "FAIL" "setup/yoyo-update.sh not found"
 fi
 
 # Test 1.5: No hardcoded $HOME/yoyo-dev paths exist
 echo ""
 echo "Test 1.5: No hardcoded \$HOME/yoyo-dev paths exist"
 if [ -f "$SCRIPT_FILE" ]; then
-    # Count hardcoded paths (excluding comments and resolved BASE_AGENT_OS)
+    # Count hardcoded paths (excluding comments and resolved BASE_YOYO_DEV)
     HARDCODED_COUNT=$(grep -c "\$HOME/yoyo-dev" "$SCRIPT_FILE" || true)
 
     if [ "$HARDCODED_COUNT" -eq 0 ]; then

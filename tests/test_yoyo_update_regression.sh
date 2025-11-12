@@ -46,7 +46,7 @@ test_valid_venv_upgrade() {
     fi
 
     # Check if the function is called in the upgrade logic
-    if ! grep -q "validate_venv_shebang \"\$BASE_AGENT_OS/venv\"" setup/yoyo-update.sh; then
+    if ! grep -q "validate_venv_shebang \"\$BASE_YOYO_DEV/venv\"" setup/yoyo-update.sh; then
         echo "  ⚠ validate_venv_shebang not called in upgrade logic"
         return 1
     fi

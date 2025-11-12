@@ -134,10 +134,10 @@ test_symlink_check_syntax() {
     grep -q '\[ -L "\$SCRIPT_PATH" \]' "$PROJECT_ROOT/setup/yoyo-update.sh"
 }
 
-# Test 10: BASE_AGENT_OS still calculated correctly
-test_base_agent_os_calculation() {
-    # BASE_AGENT_OS should still be calculated from SCRIPT_DIR
-    grep -q 'BASE_AGENT_OS=.*dirname.*SCRIPT_DIR' "$PROJECT_ROOT/setup/yoyo-update.sh"
+# Test 10: BASE_YOYO_DEV still calculated correctly
+test_BASE_YOYO_DEV_calculation() {
+    # BASE_YOYO_DEV should still be calculated from SCRIPT_DIR
+    grep -q 'BASE_YOYO_DEV=.*dirname.*SCRIPT_DIR' "$PROJECT_ROOT/setup/yoyo-update.sh"
 }
 
 # Run all tests
@@ -153,7 +153,7 @@ run_test "Script syntax is valid" test_script_syntax_valid
 run_test "SCRIPT_DIR uses resolved path" test_script_dir_uses_resolved_path
 run_test "Uses 'readlink -f' for full resolution" test_uses_readlink_f
 run_test "Symlink check uses correct syntax" test_symlink_check_syntax
-run_test "BASE_AGENT_OS still calculated correctly" test_base_agent_os_calculation
+run_test "BASE_YOYO_DEV still calculated correctly" test_BASE_YOYO_DEV_calculation
 
 # Summary
 echo ""

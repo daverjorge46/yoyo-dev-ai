@@ -44,12 +44,12 @@ else
     test_fail "Missing home directory protection"
 fi
 
-# Test 2: project.sh references BASE_AGENT_OS for base
-test_start "project.sh should use BASE_AGENT_OS variable for base installation"
-if grep -q 'BASE_AGENT_OS' setup/project.sh; then
+# Test 2: project.sh references BASE_YOYO_DEV for base
+test_start "project.sh should use BASE_YOYO_DEV variable for base installation"
+if grep -q 'BASE_YOYO_DEV' setup/project.sh; then
     test_pass
 else
-    test_fail "Doesn't reference BASE_AGENT_OS for base installation"
+    test_fail "Doesn't reference BASE_YOYO_DEV for base installation"
 fi
 
 # Test 3: project.sh only writes to INSTALL_DIR
@@ -70,10 +70,10 @@ else
     test_pass
 fi
 
-# Test 5: BASE_AGENT_OS points to source, not destination
-test_start "BASE_AGENT_OS should be used as source only"
-# In project.sh, BASE_AGENT_OS should only appear as source (first arg of copy commands)
-if grep 'copy_file\|copy_directory' setup/project.sh | grep '$BASE_AGENT_OS' | grep -v '# ' | head -5 | grep -q 'BASE_AGENT_OS.*INSTALL_DIR'; then
+# Test 5: BASE_YOYO_DEV points to source, not destination
+test_start "BASE_YOYO_DEV should be used as source only"
+# In project.sh, BASE_YOYO_DEV should only appear as source (first arg of copy commands)
+if grep 'copy_file\|copy_directory' setup/project.sh | grep '$BASE_YOYO_DEV' | grep -v '# ' | head -5 | grep -q 'BASE_YOYO_DEV.*INSTALL_DIR'; then
     test_pass
 else
     # This test is informational - the pattern might vary
@@ -99,10 +99,10 @@ fi
 
 # Test 8: Scripts reference base as read-only source
 test_start "Scripts should treat ~/yoyo-dev/ as read-only source"
-# Check that BASE_AGENT_OS is only used in source position (no writes to base)
-if grep -E 'copy.*INSTALL_DIR.*BASE_AGENT_OS|>.*BASE_AGENT_OS' setup/project.sh setup/yoyo-update.sh 2>/dev/null | grep -q .; then
-    WRITE_COUNT=$(grep -E 'copy.*INSTALL_DIR.*BASE_AGENT_OS|>.*BASE_AGENT_OS' setup/project.sh setup/yoyo-update.sh 2>/dev/null | wc -l)
-    test_fail "Found $WRITE_COUNT operations that may write to BASE_AGENT_OS"
+# Check that BASE_YOYO_DEV is only used in source position (no writes to base)
+if grep -E 'copy.*INSTALL_DIR.*BASE_YOYO_DEV|>.*BASE_YOYO_DEV' setup/project.sh setup/yoyo-update.sh 2>/dev/null | grep -q .; then
+    WRITE_COUNT=$(grep -E 'copy.*INSTALL_DIR.*BASE_YOYO_DEV|>.*BASE_YOYO_DEV' setup/project.sh setup/yoyo-update.sh 2>/dev/null | wc -l)
+    test_fail "Found $WRITE_COUNT operations that may write to BASE_YOYO_DEV"
 else
     test_pass
 fi

@@ -114,9 +114,9 @@ fi
 
 # Test 8: Base installation path remains unchanged
 test_start "Script should not modify ~/yoyo-dev/ (base installation)"
-# Check that script references BASE_AGENT_OS for base installation
+# Check that script references BASE_YOYO_DEV for base installation
 # and has protection against installing in home directory
-if grep -q 'BASE_AGENT_OS' setup/project.sh && grep -q 'Cannot run project installation in home directory' setup/project.sh; then
+if grep -q 'BASE_YOYO_DEV' setup/project.sh && grep -q 'Cannot run project installation in home directory' setup/project.sh; then
     test_pass
 else
     test_fail "Script may not properly protect base installation"
