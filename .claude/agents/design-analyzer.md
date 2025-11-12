@@ -1,4 +1,3 @@
-name: design-analyzer
 # Design Analyzer Agent
 
 ## Role
