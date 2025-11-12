@@ -543,7 +543,7 @@ if [ "$CLAUDE_CODE" = true ]; then
         # Run prerequisite check
         if bash "$MCP_PREREQUISITES"; then
             # Prerequisites met, run installer
-            bash "$MCP_INSTALLER" prompt --config "$INSTALL_DIR/config.yml"
+            bash "$MCP_INSTALLER"
             MCP_STATUS=$?
         else
             echo ""
