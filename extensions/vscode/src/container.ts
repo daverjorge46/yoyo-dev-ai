@@ -1,4 +1,7 @@
 import * as vscode from 'vscode';
+import { StateService } from './services/StateService';
+import { YoyoFileService } from './services/YoyoFileService';
+import { ConfigService } from './services/ConfigService';
 
 /**
  * Dependency Injection Container with lazy loading for service management.
@@ -9,11 +12,11 @@ export class Container {
   private _context: vscode.ExtensionContext;
 
   // Lazy-loaded services
-  private _fileService: any | undefined;
+  private _fileService: YoyoFileService | undefined;
   private _claudeService: any | undefined;
   private _gitService: any | undefined;
-  private _stateService: any | undefined;
-  private _configService: any | undefined;
+  private _stateService: StateService | undefined;
+  private _configService: ConfigService | undefined;
 
   private constructor(context: vscode.ExtensionContext) {
     this._context = context;
@@ -47,15 +50,11 @@ export class Container {
   }
 
   /**
-   * Lazy-loaded file service (will be implemented in Task Group 3)
+   * Lazy-loaded file service
    */
-  public get fileService(): any {
+  public get fileService(): YoyoFileService {
     if (!this._fileService) {
-      // TODO: Implement in Task 3.1
-      this._fileService = {
-        // Placeholder
-        dispose: () => {}
-      };
+      this._fileService = new YoyoFileService();
     }
     return this._fileService;
   }
@@ -89,29 +88,21 @@ export class Container {
   }
 
   /**
-   * Lazy-loaded state service (will be implemented in Task Group 2)
+   * Lazy-loaded state service
    */
-  public get stateService(): any {
+  public get stateService(): StateService {
     if (!this._stateService) {
-      // TODO: Implement in Task 2.4
-      this._stateService = {
-        // Placeholder
-        dispose: () => {}
-      };
+      this._stateService = new StateService(this._context);
     }
     return this._stateService;
   }
 
   /**
-   * Lazy-loaded config service (will be implemented in Task Group 3)
+   * Lazy-loaded config service
    */
-  public get configService(): any {
+  public get configService(): ConfigService {
     if (!this._configService) {
-      // TODO: Implement in Task 3.2
-      this._configService = {
-        // Placeholder
-        dispose: () => {}
-      };
+      this._configService = new ConfigService(this.fileService);
     }
     return this._configService;
   }

@@ -200,6 +200,7 @@
   },
   "devDependencies": {
     "@types/glob": "^8.1.0",
+    "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
     "@types/vscode": "^1.85.0",
@@ -213,6 +214,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "js-yaml": "^4.1.1",
     "marked": "^11.1.0"
   }
 }
