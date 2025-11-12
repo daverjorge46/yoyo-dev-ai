@@ -203,6 +203,8 @@
     "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10.0.6",
     "@types/node": "20.x",
+    "@types/react": "^19.2.4",
+    "@types/react-dom": "^19.2.3",
     "@types/vscode": "^1.85.0",
     "@typescript-eslint/eslint-plugin": "^6.15.0",
     "@typescript-eslint/parser": "^6.15.0",
@@ -215,6 +217,8 @@
   },
   "dependencies": {
     "js-yaml": "^4.1.1",
-    "marked": "^11.1.0"
+    "marked": "^11.1.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
   }
 }

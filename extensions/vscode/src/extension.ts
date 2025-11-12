@@ -5,6 +5,8 @@ import { Logger } from './utils/Logger';
 import { FileWatcher } from './utils/FileWatcher';
 import { TaskTreeDataProvider } from './providers/TaskTreeDataProvider';
 import { RoadmapTreeDataProvider } from './providers/RoadmapTreeDataProvider';
+import { SpecWebviewProvider } from './providers/SpecWebviewProvider';
+import { GitInfoProvider } from './providers/GitInfoProvider';
 import { registerCommands } from './commands/registerCommands';
 
 /**
@@ -165,6 +167,33 @@ export function activate(context: vscode.ExtensionContext) {
       }
     })
   );
+
+  // Initialize spec webview provider
+  const specWebviewProvider = new SpecWebviewProvider(
+    context.extensionUri,
+    Container.instance.fileService
+  );
+  context.subscriptions.push(specWebviewProvider);
+
+  // Register command to view spec in webview
+  context.subscriptions.push(
+    vscode.commands.registerCommand('yoyoDev.viewSpec', async () => {
+      const currentSpec = taskTreeDataProvider.getCurrentSpec();
+      if (!currentSpec) {
+        vscode.window.showInformationMessage('No active specification');
+        return;
+      }
+      await specWebviewProvider.showSpec(currentSpec);
+    })
+  );
+
+  // Initialize git info tree view
+  const gitInfoProvider = new GitInfoProvider(Container.instance.gitService);
+  const gitTreeView = vscode.window.createTreeView('yoyoDevGit', {
+    treeDataProvider: gitInfoProvider,
+  });
+  context.subscriptions.push(gitTreeView);
+  logger.debug('Git info tree view registered');
 
   // Register all 16 workflow commands
   registerCommands(context);

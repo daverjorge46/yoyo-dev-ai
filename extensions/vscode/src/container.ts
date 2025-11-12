@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { StateService } from './services/StateService';
 import { YoyoFileService } from './services/YoyoFileService';
 import { ConfigService } from './services/ConfigService';
+import { GitService } from './services/GitService';
 
 /**
  * Dependency Injection Container with lazy loading for service management.
@@ -14,7 +15,7 @@ export class Container {
   // Lazy-loaded services
   private _fileService: YoyoFileService | undefined;
   private _claudeService: any | undefined;
-  private _gitService: any | undefined;
+  private _gitService: GitService | undefined;
   private _stateService: StateService | undefined;
   private _configService: ConfigService | undefined;
 
@@ -74,15 +75,11 @@ export class Container {
   }
 
   /**
-   * Lazy-loaded Git service (will be implemented in Task Group 9)
+   * Lazy-loaded Git service
    */
-  public get gitService(): any {
+  public get gitService(): GitService {
     if (!this._gitService) {
-      // TODO: Implement in Task 9.1
-      this._gitService = {
-        // Placeholder
-        dispose: () => {}
-      };
+      this._gitService = new GitService();
     }
     return this._gitService;
   }
