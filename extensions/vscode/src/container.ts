@@ -57,6 +57,10 @@ export class Container {
   public get fileService(): YoyoFileService {
     if (!this._fileService) {
       this._fileService = new YoyoFileService();
+      // Initialize asynchronously but don't block
+      this._fileService.initialize().catch(err => {
+        console.error('Failed to initialize YoyoFileService:', err);
+      });
     }
     return this._fileService;
   }

@@ -12,22 +12,39 @@ export class YoyoFileService {
 
   constructor() {
     this.logger = Logger.getInstance();
-    this.findYoyoDevPath();
   }
 
   /**
    * Find .yoyo-dev directory in workspace
    */
-  private findYoyoDevPath(): void {
+  private async findYoyoDevPath(): Promise<void> {
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders || workspaceFolders.length === 0) {
       this.logger.warn('No workspace folder found');
       return;
     }
 
-    const rootPath = workspaceFolders[0].uri.fsPath;
-    this.yoyoDevPath = path.join(rootPath, '.yoyo-dev');
-    this.logger.info(`Yoyo Dev path: ${this.yoyoDevPath}`);
+    // Try each workspace folder to find .yoyo-dev
+    for (const folder of workspaceFolders) {
+      const potentialPath = path.join(folder.uri.fsPath, '.yoyo-dev');
+      try {
+        await fs.access(potentialPath);
+        this.yoyoDevPath = potentialPath;
+        this.logger.info(`Found Yoyo Dev path: ${this.yoyoDevPath}`);
+        return;
+      } catch {
+        // Continue to next folder
+      }
+    }
+
+    this.logger.warn('No .yoyo-dev folder found in workspace');
+  }
+
+  /**
+   * Initialize the service (must be called after construction)
+   */
+  public async initialize(): Promise<void> {
+    await this.findYoyoDevPath();
   }
 
   /**

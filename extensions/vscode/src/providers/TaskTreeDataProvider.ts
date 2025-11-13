@@ -87,11 +87,22 @@ export class TaskTreeDataProvider implements vscode.TreeDataProvider<TaskTreeIte
    */
   private async loadTasks(): Promise<void> {
     try {
+      const yoyoPath = this.fileService.getYoyoDevPath();
+      this.logger.debug(`Yoyo Dev path: ${yoyoPath}`);
+
+      if (!yoyoPath) {
+        this.logger.warn('No .yoyo-dev folder found - extension may not be in a Yoyo Dev project');
+        this.tasks = [];
+        this.currentSpec = null;
+        return;
+      }
+
       // Get all specs
       const specs = await this.fileService.listSpecs();
+      this.logger.debug(`Found ${specs.length} specs: ${specs.join(', ')}`);
 
       if (specs.length === 0) {
-        this.logger.info('No specs found');
+        this.logger.info('No specs found in .yoyo-dev/specs/');
         this.tasks = [];
         this.currentSpec = null;
         return;
@@ -102,6 +113,7 @@ export class TaskTreeDataProvider implements vscode.TreeDataProvider<TaskTreeIte
       this.currentSpec = latestSpec;
 
       const tasksPath = `specs/${latestSpec}/tasks.md`;
+      this.logger.debug(`Reading tasks from: ${tasksPath}`);
       const content = await this.fileService.readFile(tasksPath);
 
       if (!content) {

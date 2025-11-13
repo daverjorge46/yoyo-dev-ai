@@ -13,7 +13,7 @@ import { registerCommands } from './commands/registerCommands';
  * Extension activation entry point
  * Called when extension is activated (workspace contains .yoyo-dev or command invoked)
  */
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
   const startTime = Date.now();
 
   // Initialize logger first
@@ -22,6 +22,20 @@ export function activate(context: vscode.ExtensionContext) {
 
   // Initialize dependency injection container
   Container.initialize(context);
+
+  // Initialize file service and wait for it
+  await Container.instance.fileService.initialize();
+
+  // Set context based on whether .yoyo-dev was found
+  const yoyoDevPath = Container.instance.fileService.getYoyoDevPath();
+  const isYoyoDevActive = yoyoDevPath !== null;
+  vscode.commands.executeCommand('setContext', 'yoyoDevActive', isYoyoDevActive);
+
+  if (isYoyoDevActive) {
+    logger.info(`✓ Yoyo Dev project detected at: ${yoyoDevPath}`);
+  } else {
+    logger.warn('✗ No .yoyo-dev folder found in workspace. Please open a Yoyo Dev project.');
+  }
 
   // Initialize event bus
   const eventBus = EventBus.getInstance();
