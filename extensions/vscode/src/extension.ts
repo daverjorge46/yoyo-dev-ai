@@ -57,6 +57,12 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(taskTreeView);
   logger.debug('Task tree view registered');
 
+  // Initialize task tree data (after file service is ready)
+  if (isYoyoDevActive) {
+    await taskTreeDataProvider.initialize();
+    logger.debug('Task tree data loaded');
+  }
+
   // Register task tree commands
   context.subscriptions.push(
     vscode.commands.registerCommand('yoyoDev.refreshTasks', () => {
@@ -83,6 +89,12 @@ export async function activate(context: vscode.ExtensionContext) {
   });
   context.subscriptions.push(roadmapTreeView);
   logger.debug('Roadmap tree view registered');
+
+  // Initialize roadmap tree data (after file service is ready)
+  if (isYoyoDevActive) {
+    await roadmapTreeDataProvider.initialize();
+    logger.debug('Roadmap tree data loaded');
+  }
 
   // Register roadmap tree commands
   context.subscriptions.push(

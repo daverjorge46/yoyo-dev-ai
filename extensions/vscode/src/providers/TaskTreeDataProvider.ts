@@ -70,8 +70,16 @@ export class TaskTreeDataProvider implements vscode.TreeDataProvider<TaskTreeIte
       this.refresh();
     });
 
-    // Load initial tasks
-    this.loadTasks();
+    // Don't load tasks in constructor - file service may not be initialized yet
+    // Will load on first getChildren() call
+  }
+
+  /**
+   * Initialize and load tasks (call after file service is ready)
+   */
+  public async initialize(): Promise<void> {
+    await this.loadTasks();
+    this._onDidChangeTreeData.fire(undefined);
   }
 
   /**

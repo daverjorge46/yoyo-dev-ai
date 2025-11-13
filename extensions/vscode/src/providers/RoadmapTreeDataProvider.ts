@@ -65,8 +65,15 @@ export class RoadmapTreeDataProvider implements vscode.TreeDataProvider<RoadmapT
       this.refresh();
     });
 
-    // Load initial roadmap
-    this.loadRoadmap();
+    // Don't load roadmap in constructor - file service may not be initialized yet
+  }
+
+  /**
+   * Initialize and load roadmap (call after file service is ready)
+   */
+  public async initialize(): Promise<void> {
+    await this.loadRoadmap();
+    this._onDidChangeTreeData.fire(undefined);
   }
 
   /**
