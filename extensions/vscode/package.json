@@ -46,34 +46,20 @@
         {
           "id": "yoyoDevTasks",
           "name": "Tasks",
-          "contextualTitle": "Yoyo Dev Tasks",
-          "when": "yoyoDevActive"
+          "contextualTitle": "Yoyo Dev Tasks"
         },
         {
           "id": "yoyoDevRoadmap",
           "name": "Roadmap",
-          "contextualTitle": "Yoyo Dev Roadmap",
-          "when": "yoyoDevActive"
+          "contextualTitle": "Yoyo Dev Roadmap"
         },
         {
           "id": "yoyoDevGit",
           "name": "Git Info",
-          "contextualTitle": "Yoyo Dev Git",
-          "when": "yoyoDevActive"
-        },
-        {
-          "id": "yoyoDevWelcome",
-          "name": "Welcome",
-          "when": "!yoyoDevActive"
+          "contextualTitle": "Yoyo Dev Git"
         }
       ]
     },
-    "viewsWelcome": [
-      {
-        "view": "yoyoDevWelcome",
-        "contents": "No Yoyo Dev project detected.\n\nTo use this extension:\n1. Open a folder that contains a `.yoyo-dev` directory\n2. Or run `/plan-product` to initialize a new Yoyo Dev project\n\n[Open Folder](command:vscode.openFolder)\n\nCurrent workspace: Check VS Code Output > Yoyo Dev for details"
-      }
-    ],
     "commands": [
       {
         "command": "yoyoDev.planProduct",
