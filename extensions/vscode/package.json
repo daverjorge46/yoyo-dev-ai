@@ -28,9 +28,7 @@
     "tasks"
   ],
   "activationEvents": [
-    "workspaceContains:.yoyo-dev",
-    "onCommand:yoyoDev.planProduct",
-    "onView:yoyoDevTasks"
+    "workspaceContains:.yoyo-dev"
   ],
   "main": "./dist/extension.js",
   "contributes": {
