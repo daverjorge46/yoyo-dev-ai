@@ -4,7 +4,7 @@
   "description": "AI-assisted development workflow framework - systematic planning, specification, and execution for Claude Code and Cursor",
   "version": "0.1.0",
   "publisher": "yoyo-dev",
-  "icon": "resources/icon.png",
+  "icon": "icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/yoyo-dev/yoyo-dev"

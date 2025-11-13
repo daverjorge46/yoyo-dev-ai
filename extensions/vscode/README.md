@@ -1,46 +1,38 @@
-# Yoyo Dev VS Code Extension
+# Yoyo Dev - VS Code Extension
 
-AI-assisted development workflow framework for systematic planning, specification, and execution with Claude Code and Cursor.
+AI-assisted development workflow framework for systematic planning, specification, and execution.
+
+## Quick Start
+
+**Important:** This extension activates when you open a folder containing a `.yoyo-dev` directory.
+
+1. Open a Yoyo Dev project folder in VS Code
+2. Click the Yoyo Dev icon in the Activity Bar (left sidebar)
+3. View your tasks, roadmap, and git status
+
+### Troubleshooting Empty Views
+
+If you see "No active spec" or empty views:
+
+1. Open **Output panel**: `View > Output`
+2. Select **"Yoyo Dev"** from dropdown
+3. Look for: `✓ Yoyo Dev project detected at: /path/to/.yoyo-dev`
+4. If missing, make sure you opened a folder with `.yoyo-dev` directory
 
 ## Features
 
-- **Task Management**: View and track tasks with interactive checkboxes
-- **Roadmap Visualization**: See project phases and features
-- **Workflow Commands**: Execute all 16 Yoyo Dev workflows from Command Palette
-- **Git Integration**: Track branch and repository status
-- **Real-time Updates**: Auto-refresh views when files change
+- **Tasks View**: Current specification tasks with completion status
+- **Roadmap View**: Development phases and features  
+- **Git Info**: Real-time git status monitoring
+- **16 Workflow Commands**: Full Yoyo Dev workflow integration
 
-## Requirements
+## Commands
 
-- VS Code 1.85.0 or higher
-- Yoyo Dev base installation (`~/.yoyo-dev/`)
-- Claude Code CLI (optional, for workflow execution)
+Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac) and type "Yoyo Dev" to see all available commands.
 
-## Extension Settings
+## Settings
 
-This extension contributes the following settings:
-
-* `yoyoDev.autoRefresh`: Enable auto-refresh of views on file changes (default: true)
-* `yoyoDev.debounceDelay`: Delay in ms for file watcher debouncing (default: 500)
-
-## Known Issues
-
-None yet - this is an early release!
-
-## Release Notes
-
-### 0.1.0
-
-Initial MVP release:
-- Task tree view
-- Roadmap tree view
-- Git info view
-- Command palette integration (16 workflows)
-- File watching with auto-refresh
-
-## Contributing
-
-Issues and PRs welcome at https://github.com/yoyo-dev/yoyo-dev
+Configure in `Preferences > Settings > Yoyo Dev`
 
 ## License
 
