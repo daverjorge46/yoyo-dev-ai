@@ -74,7 +74,8 @@
       {
         "command": "yoyoDev.createNew",
         "title": "Yoyo Dev: Create New Feature",
-        "category": "Yoyo Dev"
+        "category": "Yoyo Dev",
+        "icon": "$(add)"
       },
       {
         "command": "yoyoDev.createSpec",
@@ -89,7 +90,8 @@
       {
         "command": "yoyoDev.executeTasks",
         "title": "Yoyo Dev: Execute Tasks",
-        "category": "Yoyo Dev"
+        "category": "Yoyo Dev",
+        "icon": "$(play)"
       },
       {
         "command": "yoyoDev.createFix",
@@ -166,7 +168,8 @@
       {
         "command": "yoyoDev.viewSpec",
         "title": "View Spec in Webview",
-        "category": "Yoyo Dev"
+        "category": "Yoyo Dev",
+        "icon": "$(book)"
       }
     ],
     "menus": {
@@ -180,12 +183,27 @@
         {
           "command": "yoyoDev.refreshTasks",
           "when": "view == yoyoDevTasks",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "yoyoDev.executeTasks",
+          "when": "view == yoyoDevTasks",
+          "group": "navigation@2"
+        },
+        {
+          "command": "yoyoDev.createNew",
+          "when": "view == yoyoDevTasks",
+          "group": "navigation@3"
         },
         {
           "command": "yoyoDev.refreshRoadmap",
           "when": "view == yoyoDevRoadmap",
-          "group": "navigation"
+          "group": "navigation@1"
+        },
+        {
+          "command": "yoyoDev.viewSpec",
+          "when": "view == yoyoDevRoadmap",
+          "group": "navigation@2"
         }
       ],
       "view/item/context": [
@@ -260,7 +278,39 @@
           "description": "Prefer opening spec-lite.md over spec.md"
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "workbench.view.extension.yoyo-dev",
+        "key": "ctrl+shift+y",
+        "mac": "cmd+shift+y",
+        "when": "!terminalFocus"
+      },
+      {
+        "command": "yoyoDevTasks.focus",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t",
+        "when": "!terminalFocus && !editorTextFocus"
+      },
+      {
+        "command": "yoyoDevRoadmap.focus",
+        "key": "ctrl+shift+r",
+        "mac": "cmd+shift+r",
+        "when": "!terminalFocus"
+      },
+      {
+        "command": "yoyoDev.executeTasks",
+        "key": "ctrl+shift+e",
+        "mac": "cmd+shift+e",
+        "when": "!terminalFocus && !editorTextFocus"
+      },
+      {
+        "command": "yoyoDev.createNew",
+        "key": "ctrl+shift+n",
+        "mac": "cmd+shift+n",
+        "when": "!terminalFocus && !editorTextFocus"
+      }
+    ]
   },
   "scripts": {
     "vscode:prepublish": "npm run compile",
