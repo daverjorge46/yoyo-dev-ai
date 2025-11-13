@@ -167,9 +167,20 @@
         "command": "yoyoDev.toggleTaskComplete",
         "title": "Toggle Task Complete",
         "category": "Yoyo Dev"
+      },
+      {
+        "command": "yoyoDev.viewSpec",
+        "title": "View Spec in Webview",
+        "category": "Yoyo Dev"
       }
     ],
     "menus": {
+      "commandPalette": [
+        {
+          "command": "yoyoDev.toggleTaskComplete",
+          "when": "false"
+        }
+      ],
       "view/title": [
         {
           "command": "yoyoDev.refreshTasks",
@@ -187,7 +198,73 @@
           "command": "yoyoDev.toggleTaskComplete",
           "when": "view == yoyoDevTasks && viewItem == task"
         }
+      ],
+      "explorer/context": [
+        {
+          "command": "yoyoDev.createNew",
+          "when": "explorerResourceIsFolder",
+          "group": "yoyoDev@1"
+        },
+        {
+          "command": "yoyoDev.createFix",
+          "when": "explorerResourceIsFolder",
+          "group": "yoyoDev@2"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "yoyoDev.createFix",
+          "group": "yoyoDev@1"
+        }
       ]
+    },
+    "configuration": {
+      "title": "Yoyo Dev",
+      "properties": {
+        "yoyoDev.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically refresh views when .yoyo-dev files change"
+        },
+        "yoyoDev.logLevel": {
+          "type": "string",
+          "enum": [
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "default": "info",
+          "description": "Logging level for Yoyo Dev extension"
+        },
+        "yoyoDev.terminal.showOnExecute": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show terminal when executing Yoyo Dev commands"
+        },
+        "yoyoDev.terminal.clearBeforeExecute": {
+          "type": "boolean",
+          "default": false,
+          "description": "Clear terminal before executing commands"
+        },
+        "yoyoDev.git.autoRefreshInterval": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 1000,
+          "description": "Auto-refresh interval for git status in milliseconds"
+        },
+        "yoyoDev.fileWatcher.debounceDelay": {
+          "type": "number",
+          "default": 500,
+          "minimum": 100,
+          "description": "Debounce delay for file watcher in milliseconds"
+        },
+        "yoyoDev.spec.preferLiteVersion": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prefer opening spec-lite.md over spec.md"
+        }
+      }
     }
   },
   "scripts": {

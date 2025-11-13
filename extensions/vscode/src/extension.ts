@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { Container } from './container';
-import { EventBus } from './utils/EventBus';
+import { EventBus, YoyoEvent } from './utils/EventBus';
 import { Logger } from './utils/Logger';
 import { FileWatcher } from './utils/FileWatcher';
 import { TaskTreeDataProvider } from './providers/TaskTreeDataProvider';
@@ -145,18 +145,24 @@ export function activate(context: vscode.ExtensionContext) {
         return;
       }
 
-      // Open spec-lite.md or spec.md
+      // Get spec preference from settings
+      const config = vscode.workspace.getConfiguration('yoyoDev');
+      const preferLite = config.get<boolean>('spec.preferLiteVersion', true);
+
+      // Determine file priority based on preference
       const specLitePath = `${specPath}/spec-lite.md`;
       const specFullPath = `${specPath}/spec.md`;
+      const primaryPath = preferLite ? specLitePath : specFullPath;
+      const fallbackPath = preferLite ? specFullPath : specLitePath;
 
       try {
-        const uri = vscode.Uri.file(specLitePath);
+        const uri = vscode.Uri.file(primaryPath);
         const doc = await vscode.workspace.openTextDocument(uri);
         await vscode.window.showTextDocument(doc);
         logger.info(`Opened spec: ${currentSpec}`);
       } catch {
         try {
-          const uri = vscode.Uri.file(specFullPath);
+          const uri = vscode.Uri.file(fallbackPath);
           const doc = await vscode.workspace.openTextDocument(uri);
           await vscode.window.showTextDocument(doc);
           logger.info(`Opened spec: ${currentSpec}`);

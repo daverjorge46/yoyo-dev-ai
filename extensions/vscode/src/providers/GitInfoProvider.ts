@@ -44,8 +44,10 @@ export class GitInfoProvider implements vscode.TreeDataProvider<GitInfoTreeItem>
       this.refresh();
     });
 
-    // Refresh periodically (every 5 seconds)
-    setInterval(() => this.refresh(), 5000);
+    // Refresh periodically using configured interval
+    const config = vscode.workspace.getConfiguration('yoyoDev');
+    const interval = config.get<number>('git.autoRefreshInterval', 5000);
+    setInterval(() => this.refresh(), interval);
   }
 
   /**

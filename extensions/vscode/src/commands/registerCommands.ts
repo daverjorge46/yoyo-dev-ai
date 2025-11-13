@@ -1,4 +1,5 @@
 import * as vscode from 'vscode';
+import { Container } from '../container';
 import { Logger } from '../utils/Logger';
 
 /**
@@ -7,18 +8,10 @@ import { Logger } from '../utils/Logger';
 export function registerCommands(context: vscode.ExtensionContext): void {
   const logger = Logger.getInstance();
 
-  // Helper to create terminal and execute command
+  // Helper to execute command using TerminalService
   const executeClaudeCommand = async (command: string, commandName: string) => {
     logger.info(`Executing command: ${commandName}`);
-
-    // Create or reuse terminal
-    let terminal = vscode.window.terminals.find((t) => t.name === 'Yoyo Dev');
-    if (!terminal) {
-      terminal = vscode.window.createTerminal('Yoyo Dev');
-    }
-
-    terminal.show();
-    terminal.sendText(command);
+    Container.instance.terminalService.executeCommand(command);
   };
 
   // Product Commands

@@ -172,7 +172,7 @@ export class TaskTreeDataProvider implements vscode.TreeDataProvider<TaskTreeIte
   /**
    * Get parent (for revealing items)
    */
-  getParent(element: TaskTreeItem): vscode.ProviderResult<TaskTreeItem> {
+  getParent(_element: TaskTreeItem): vscode.ProviderResult<TaskTreeItem> {
     // For now, simple two-level hierarchy
     // Can enhance later if needed
     return null;

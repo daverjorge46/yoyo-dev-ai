@@ -10,11 +10,16 @@ export class FileWatcher {
   private eventBus: EventBus;
   private watcher: vscode.FileSystemWatcher | null = null;
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
-  private readonly DEBOUNCE_DELAY = 500; // ms
+  private debounceDelay: number;
 
   constructor() {
     this.logger = Logger.getInstance();
     this.eventBus = EventBus.getInstance();
+
+    // Get debounce delay from configuration
+    const config = vscode.workspace.getConfiguration('yoyoDev');
+    this.debounceDelay = config.get<number>('fileWatcher.debounceDelay', 500);
+
     this.setupWatcher();
   }
 
@@ -63,7 +68,7 @@ export class FileWatcher {
     const timer = setTimeout(() => {
       this.processFileChange(uri, changeType);
       this.debounceTimers.delete(filePath);
-    }, this.DEBOUNCE_DELAY);
+    }, this.debounceDelay);
 
     this.debounceTimers.set(filePath, timer);
   }

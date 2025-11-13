@@ -14,7 +14,8 @@ export class StateService {
    * Get value from workspace state
    */
   public get<T>(key: string, defaultValue?: T): T | undefined {
-    return this.context.workspaceState.get<T>(key, defaultValue);
+    const value = this.context.workspaceState.get<T>(key);
+    return value !== undefined ? value : defaultValue;
   }
 
   /**
@@ -28,7 +29,8 @@ export class StateService {
    * Get value from global state
    */
   public getGlobal<T>(key: string, defaultValue?: T): T | undefined {
-    return this.context.globalState.get<T>(key, defaultValue);
+    const value = this.context.globalState.get<T>(key);
+    return value !== undefined ? value : defaultValue;
   }
 
   /**

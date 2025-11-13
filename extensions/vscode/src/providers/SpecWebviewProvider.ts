@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
 import { YoyoFileService } from '../services/YoyoFileService';
 import { Logger } from '../utils/Logger';
 

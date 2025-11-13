@@ -159,7 +159,7 @@ export class RoadmapTreeDataProvider implements vscode.TreeDataProvider<RoadmapT
   /**
    * Get parent (for revealing items)
    */
-  getParent(element: RoadmapTreeItem): vscode.ProviderResult<RoadmapTreeItem> {
+  getParent(_element: RoadmapTreeItem): vscode.ProviderResult<RoadmapTreeItem> {
     return null;
   }
 }

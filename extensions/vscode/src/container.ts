@@ -3,6 +3,7 @@ import { StateService } from './services/StateService';
 import { YoyoFileService } from './services/YoyoFileService';
 import { ConfigService } from './services/ConfigService';
 import { GitService } from './services/GitService';
+import { TerminalService } from './services/TerminalService';
 
 /**
  * Dependency Injection Container with lazy loading for service management.
@@ -14,7 +15,7 @@ export class Container {
 
   // Lazy-loaded services
   private _fileService: YoyoFileService | undefined;
-  private _claudeService: any | undefined;
+  private _terminalService: TerminalService | undefined;
   private _gitService: GitService | undefined;
   private _stateService: StateService | undefined;
   private _configService: ConfigService | undefined;
@@ -61,17 +62,13 @@ export class Container {
   }
 
   /**
-   * Lazy-loaded Claude CLI service (will be implemented in Task Group 7)
+   * Lazy-loaded Terminal service
    */
-  public get claudeService(): any {
-    if (!this._claudeService) {
-      // TODO: Implement in Task 7.1
-      this._claudeService = {
-        // Placeholder
-        dispose: () => {}
-      };
+  public get terminalService(): TerminalService {
+    if (!this._terminalService) {
+      this._terminalService = new TerminalService();
     }
-    return this._claudeService;
+    return this._terminalService;
   }
 
   /**
@@ -112,14 +109,14 @@ export class Container {
     this._configService?.dispose();
     this._stateService?.dispose();
     this._gitService?.dispose();
-    this._claudeService?.dispose();
+    this._terminalService?.dispose();
     this._fileService?.dispose();
 
     // Clear references
     this._configService = undefined;
     this._stateService = undefined;
     this._gitService = undefined;
-    this._claudeService = undefined;
+    this._terminalService = undefined;
     this._fileService = undefined;
 
     // Clear singleton instance

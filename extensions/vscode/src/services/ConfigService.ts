@@ -1,3 +1,4 @@
+import * as vscode from 'vscode';
 import { YoyoFileService } from './YoyoFileService';
 import { Logger } from '../utils/Logger';
 import * as yaml from 'js-yaml';
@@ -78,6 +79,66 @@ export class ConfigService {
   public async reloadConfig(): Promise<YoyoConfig | null> {
     this.config = null;
     return this.loadConfig();
+  }
+
+  /**
+   * Get VS Code extension settings
+   */
+  public getExtensionConfig() {
+    return vscode.workspace.getConfiguration('yoyoDev');
+  }
+
+  /**
+   * Get specific setting value
+   */
+  public getSetting<T>(key: string, defaultValue: T): T {
+    const config = this.getExtensionConfig();
+    return config.get<T>(key, defaultValue);
+  }
+
+  /**
+   * Get log level from settings
+   */
+  public getLogLevel(): string {
+    return this.getSetting<string>('logLevel', 'info');
+  }
+
+  /**
+   * Get auto-refresh setting
+   */
+  public getAutoRefresh(): boolean {
+    return this.getSetting<boolean>('autoRefresh', true);
+  }
+
+  /**
+   * Get terminal settings
+   */
+  public getTerminalSettings() {
+    return {
+      showOnExecute: this.getSetting<boolean>('terminal.showOnExecute', true),
+      clearBeforeExecute: this.getSetting<boolean>('terminal.clearBeforeExecute', false),
+    };
+  }
+
+  /**
+   * Get git refresh interval
+   */
+  public getGitRefreshInterval(): number {
+    return this.getSetting<number>('git.autoRefreshInterval', 5000);
+  }
+
+  /**
+   * Get file watcher debounce delay
+   */
+  public getFileWatcherDebounce(): number {
+    return this.getSetting<number>('fileWatcher.debounceDelay', 500);
+  }
+
+  /**
+   * Get spec preference
+   */
+  public getSpecPreference(): boolean {
+    return this.getSetting<boolean>('spec.preferLiteVersion', true);
   }
 
   /**
