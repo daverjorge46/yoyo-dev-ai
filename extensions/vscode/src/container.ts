@@ -4,6 +4,7 @@ import { YoyoFileService } from './services/YoyoFileService';
 import { ConfigService } from './services/ConfigService';
 import { GitService } from './services/GitService';
 import { TerminalService } from './services/TerminalService';
+import { NotificationService } from './services/NotificationService';
 
 /**
  * Dependency Injection Container with lazy loading for service management.
@@ -19,6 +20,7 @@ export class Container {
   private _gitService: GitService | undefined;
   private _stateService: StateService | undefined;
   private _configService: ConfigService | undefined;
+  private _notificationService: NotificationService | undefined;
 
   private constructor(context: vscode.ExtensionContext) {
     this._context = context;
@@ -106,10 +108,21 @@ export class Container {
   }
 
   /**
+   * Lazy-loaded notification service
+   */
+  public get notificationService(): NotificationService {
+    if (!this._notificationService) {
+      this._notificationService = new NotificationService();
+    }
+    return this._notificationService;
+  }
+
+  /**
    * Dispose all services (called during extension deactivation)
    */
   public dispose(): void {
     // Dispose services in reverse order of creation
+    this._notificationService?.dispose();
     this._configService?.dispose();
     this._stateService?.dispose();
     this._gitService?.dispose();
@@ -117,6 +130,7 @@ export class Container {
     this._fileService?.dispose();
 
     // Clear references
+    this._notificationService = undefined;
     this._configService = undefined;
     this._stateService = undefined;
     this._gitService = undefined;

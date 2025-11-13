@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { Logger } from '../utils/Logger';
+import { Container } from '../container';
 
 /**
  * Service for managing Yoyo Dev terminal
@@ -60,6 +61,25 @@ export class TerminalService {
 
     terminal.sendText(command);
     this.logger.info(`Executed in terminal: ${command}`);
+
+    // Show notification for workflow commands
+    if (command.startsWith('/')) {
+      const workflowName = this.extractWorkflowName(command);
+      Container.instance.notificationService.showInfo(
+        `Starting workflow: ${workflowName}`
+      );
+    }
+  }
+
+  /**
+   * Extract workflow name from command
+   */
+  private extractWorkflowName(command: string): string {
+    const match = command.match(/^\/([a-z-]+)/);
+    if (match) {
+      return match[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+    return command;
   }
 
   /**
