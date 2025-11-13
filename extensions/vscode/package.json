@@ -46,21 +46,18 @@
         {
           "id": "yoyoDevTasks",
           "name": "Tasks",
-          "icon": "resources/tasks-icon.svg",
           "contextualTitle": "Yoyo Dev Tasks",
           "when": "yoyoDevActive"
         },
         {
           "id": "yoyoDevRoadmap",
           "name": "Roadmap",
-          "icon": "resources/roadmap-icon.svg",
           "contextualTitle": "Yoyo Dev Roadmap",
           "when": "yoyoDevActive"
         },
         {
           "id": "yoyoDevGit",
           "name": "Git Info",
-          "icon": "resources/git-icon.svg",
           "contextualTitle": "Yoyo Dev Git",
           "when": "yoyoDevActive"
         },
