@@ -31,11 +31,12 @@ def parse_args(argv: Optional[list] = None) -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  yoyo                           # Launch with split view (default)
+  yoyo                           # Launch with split view (Claude + TUI)
+  yoyo --shell                   # Launch with split view (Terminal + TUI)
   yoyo --no-split                # Launch TUI only
   yoyo --split-ratio 0.5         # 50/50 split
   yoyo --focus tui               # Start with TUI focused
-  yoyo --split-ratio 0.6 --focus tui  # Combined options
+  yoyo --shell --split-ratio 0.6 # Shell pane with 60% width
 
 For more information, visit: https://github.com/yoyo-dev
         """
@@ -67,8 +68,15 @@ For more information, visit: https://github.com/yoyo-dev
         '--focus',
         type=str,
         default='claude',
-        choices=['claude', 'tui'],
+        choices=['claude', 'tui', 'shell'],
         help='Which pane to focus on startup (default: claude)'
+    )
+
+    parser.add_argument(
+        '--shell',
+        action='store_true',
+        default=False,
+        help='Use terminal shell instead of Claude Code in left pane'
     )
 
     args = parser.parse_args(argv)
@@ -125,10 +133,16 @@ def merge_config_with_args(config: SplitViewConfig, args: argparse.Namespace) ->
     Returns:
         Merged configuration
     """
+    # Adjust focus if using shell mode
+    active_pane = args.focus
+    if args.shell and active_pane == 'claude':
+        active_pane = 'shell'
+
     return SplitViewConfig(
         enabled=args.split_view,
         ratio=args.split_ratio,
-        active_pane=args.focus,
+        active_pane=active_pane,
+        use_shell=args.shell,
         border_style=config.border_style,
         shortcuts=config.shortcuts,
         claude=config.claude

@@ -52,7 +52,6 @@ class KeyboardShortcuts:
 class ClaudeConfig:
     """Configuration for Claude Code integration."""
     command: str = "claude"
-    auto_cwd: bool = True
     fallback_delay: int = 3  # seconds
 
 
@@ -61,7 +60,8 @@ class SplitViewConfig:
     """Configuration for split view behavior."""
     enabled: bool = True
     ratio: float = 0.4                  # 0.0-1.0 (left pane ratio)
-    active_pane: str = "claude"         # "claude" or "tui"
+    active_pane: str = "claude"         # "claude", "tui", or "shell"
+    use_shell: bool = False             # Use terminal shell instead of Claude
     border_style: BorderStyle = field(default_factory=BorderStyle)
     shortcuts: KeyboardShortcuts = field(default_factory=KeyboardShortcuts)
     claude: ClaudeConfig = field(default_factory=ClaudeConfig)
@@ -128,8 +128,8 @@ class SplitViewManager:
                 self.logger.info("Not running in a TTY, falling back to TUI only")
                 return self._launch_fallback_silent()
 
-            # Claude Code detection
-            if not self._detect_claude():
+            # Claude Code detection (skip if using shell mode)
+            if not self.config.use_shell and not self._detect_claude():
                 return self._launch_fallback()
 
             # Terminal setup
@@ -222,15 +222,22 @@ class SplitViewManager:
             self.logger.error(f"Failed to calculate split: {e}")
             raise
 
-        # Create Claude pane
-        claude_cmd = [self.config.claude.command]
-        if self.config.claude.auto_cwd:
-            claude_cmd.extend(["--cwd", os.getcwd()])
+        # Create left pane (Claude Code or Shell based on config)
+        if self.config.use_shell:
+            # Use user's default shell or fallback to bash
+            shell_cmd = os.environ.get('SHELL', '/bin/bash')
+            left_cmd = [shell_cmd]
+            left_name = "Shell"
+            self.logger.info(f"Using shell mode with: {shell_cmd}")
+        else:
+            # Use Claude Code (automatically uses current directory)
+            left_cmd = [self.config.claude.command]
+            left_name = "Claude Code"
 
         self.claude_pane = Pane(
-            command=claude_cmd,
+            command=left_cmd,
             bounds=claude_bounds,
-            name="Claude Code"
+            name=left_name
         )
 
         # Create TUI pane

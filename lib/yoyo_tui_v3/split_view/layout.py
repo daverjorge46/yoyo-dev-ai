@@ -30,9 +30,9 @@ class LayoutManager:
     - Handle edge cases for terminal dimensions
     """
 
-    # Minimum terminal size requirement
-    MIN_WIDTH = 120
-    MIN_HEIGHT = 30
+    # Minimum terminal size requirement (standard terminal is 80x24)
+    MIN_WIDTH = 80
+    MIN_HEIGHT = 24
 
     # Minimum pane width to ensure usability
     MIN_PANE_WIDTH = 20
