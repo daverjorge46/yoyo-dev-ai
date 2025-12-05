@@ -225,9 +225,9 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
 
     # Update commands
     echo "  📂 Commands:"
-    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks design-init design-audit design-fix design-component yoyo-help; do
-        if [ -f "$BASE_YOYO_DEV/commands/${cmd}.md" ]; then
-            copy_file "$BASE_YOYO_DEV/commands/${cmd}.md" \
+    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+        if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
+            copy_file "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" \
                 "./.claude/commands/${cmd}.md" \
                 "$OVERWRITE_COMMANDS" \
                 "commands/${cmd}.md"
@@ -238,9 +238,9 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
 
     echo ""
     echo "  📂 Agents:"
-    for agent in context-fetcher date-checker file-creator git-workflow project-manager test-runner design-analyzer design-validator; do
-        if [ -f "$BASE_YOYO_DEV/claude-code/agents/${agent}.md" ]; then
-            copy_file "$BASE_YOYO_DEV/claude-code/agents/${agent}.md" \
+    for agent in context-fetcher date-checker file-creator git-workflow project-manager test-runner design-analyzer design-validator implementation-verifier implementer product-planner spec-initializer spec-shaper spec-verifier spec-writer tasks-list-creator; do
+        if [ -f "$BASE_YOYO_DEV/.claude/agents/${agent}.md" ]; then
+            copy_file "$BASE_YOYO_DEV/.claude/agents/${agent}.md" \
                 "./.claude/agents/${agent}.md" \
                 "$OVERWRITE_AGENTS" \
                 "agents/${agent}.md"
@@ -311,6 +311,32 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         copy_file "$BASE_YOYO_DEV/COMMAND-REFERENCE.md" "./.yoyo-dev/COMMAND-REFERENCE.md" "true" "COMMAND-REFERENCE.md"
     fi
 
+    # Update Conscious Agent Framework files (identity and reflections)
+    echo ""
+    echo "  📂 Conscious Agent Framework:"
+
+    # Copy identity directory
+    if [ -d "$BASE_YOYO_DEV/.yoyo-dev/identity" ]; then
+        mkdir -p "./.yoyo-dev/identity"
+        if [ -f "$BASE_YOYO_DEV/.yoyo-dev/identity/consciousness.md" ]; then
+            copy_file "$BASE_YOYO_DEV/.yoyo-dev/identity/consciousness.md" \
+                "./.yoyo-dev/identity/consciousness.md" \
+                "true" \
+                "identity/consciousness.md"
+        fi
+    fi
+
+    # Copy reflections template
+    if [ -d "$BASE_YOYO_DEV/.yoyo-dev/reflections" ]; then
+        mkdir -p "./.yoyo-dev/reflections"
+        if [ -f "$BASE_YOYO_DEV/.yoyo-dev/reflections/TEMPLATE.md" ]; then
+            copy_file "$BASE_YOYO_DEV/.yoyo-dev/reflections/TEMPLATE.md" \
+                "./.yoyo-dev/reflections/TEMPLATE.md" \
+                "true" \
+                "reflections/TEMPLATE.md"
+        fi
+    fi
+
     # Update MCP installation scripts (always, to get latest MCP features)
     # NOTE: Legacy mcp-installer.sh removed - replaced by mcp-claude-installer.sh (Task 2)
     echo ""
@@ -341,11 +367,11 @@ if [ "$CURSOR_INSTALLED" = true ]; then
     echo "  📂 Rules:"
 
     # Convert commands to Cursor rules
-    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks design-init design-audit design-fix design-component yoyo-help; do
-        if [ -f "$BASE_YOYO_DEV/commands/${cmd}.md" ]; then
+    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+        if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
             # Only update if forced or file doesn't exist
             if [ "$OVERWRITE_COMMANDS" = true ] || [ ! -f "./.cursor/rules/${cmd}.mdc" ]; then
-                convert_to_cursor_rule "$BASE_YOYO_DEV/commands/${cmd}.md" "./.cursor/rules/${cmd}.mdc"
+                convert_to_cursor_rule "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" "./.cursor/rules/${cmd}.mdc"
             else
                 echo "  ⚠️  $(basename ${cmd}.mdc) already exists - skipping"
             fi

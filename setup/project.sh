@@ -220,9 +220,9 @@ if [ "$CLAUDE_CODE" = true ]; then
     if [ "$IS_FROM_BASE" = true ]; then
         # Copy from base installation
         echo "  📂 Commands:"
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks design-init design-audit design-fix design-component yoyo-help; do
-            if [ -f "$BASE_YOYO_DEV/commands/${cmd}.md" ]; then
-                copy_file "$BASE_YOYO_DEV/commands/${cmd}.md" "./.claude/commands/${cmd}.md" "false" "commands/${cmd}.md"
+        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+            if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
+                copy_file "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" "./.claude/commands/${cmd}.md" "false" "commands/${cmd}.md"
             else
                 echo "  ⚠️  Warning: ${cmd}.md not found in base installation"
             fi
@@ -230,9 +230,9 @@ if [ "$CLAUDE_CODE" = true ]; then
 
         echo ""
         echo "  📂 Agents:"
-        for agent in context-fetcher date-checker file-creator git-workflow project-manager test-runner design-analyzer design-validator; do
-            if [ -f "$BASE_YOYO_DEV/claude-code/agents/${agent}.md" ]; then
-                copy_file "$BASE_YOYO_DEV/claude-code/agents/${agent}.md" "./.claude/agents/${agent}.md" "false" "agents/${agent}.md"
+        for agent in context-fetcher date-checker file-creator git-workflow project-manager test-runner design-analyzer design-validator implementation-verifier implementer product-planner spec-initializer spec-shaper spec-verifier spec-writer tasks-list-creator; do
+            if [ -f "$BASE_YOYO_DEV/.claude/agents/${agent}.md" ]; then
+                copy_file "$BASE_YOYO_DEV/.claude/agents/${agent}.md" "./.claude/agents/${agent}.md" "false" "agents/${agent}.md"
             else
                 echo "  ⚠️  Warning: ${agent}.md not found in base installation"
             fi
@@ -242,8 +242,8 @@ if [ "$CLAUDE_CODE" = true ]; then
         echo "  Downloading Claude Code files from GitHub..."
         echo ""
         echo "  📂 Commands:"
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks design-init design-audit design-fix design-component yoyo-help; do
-            download_file "${BASE_URL}/commands/${cmd}.md" \
+        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+            download_file "${BASE_URL}/.claude/commands/${cmd}.md" \
                 "./.claude/commands/${cmd}.md" \
                 "false" \
                 "commands/${cmd}.md"
@@ -251,8 +251,8 @@ if [ "$CLAUDE_CODE" = true ]; then
 
         echo ""
         echo "  📂 Agents:"
-        for agent in context-fetcher date-checker file-creator git-workflow project-manager test-runner design-analyzer design-validator; do
-            download_file "${BASE_URL}/claude-code/agents/${agent}.md" \
+        for agent in context-fetcher date-checker file-creator git-workflow project-manager test-runner design-analyzer design-validator implementation-verifier implementer product-planner spec-initializer spec-shaper spec-verifier spec-writer tasks-list-creator; do
+            download_file "${BASE_URL}/.claude/agents/${agent}.md" \
                 "./.claude/agents/${agent}.md" \
                 "false" \
                 "agents/${agent}.md"
