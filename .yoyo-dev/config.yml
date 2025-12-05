@@ -1,6 +1,27 @@
 # Yoyo Dev Configuration
 
-yoyo_dev_version: 1.5.0
+yoyo_dev_version: 1.6.0
+
+# Split View Configuration (v3.1+)
+# Integrates Claude Code CLI + Yoyo TUI in a single terminal window
+split_view:
+  enabled: true                    # Master toggle for split view mode
+  ratio: 0.4                       # Split ratio (0.0-1.0): 0.4 = 40% left (Claude), 60% right (TUI)
+  active_pane: claude              # Starting focus: "claude" or "tui"
+
+  border_style:
+    active: bright_cyan            # Active pane border color
+    inactive: dim_white            # Inactive pane border color
+
+  shortcuts:
+    switch_focus: ctrl+b+arrow     # Switch pane focus (Ctrl+B →)
+    resize_left: ctrl+b+<          # Make left pane larger (Ctrl+B <)
+    resize_right: ctrl+b+>         # Make right pane larger (Ctrl+B >)
+
+  claude:
+    command: claude                # Command to launch Claude Code
+    auto_cwd: true                 # Auto-attach to current directory
+    fallback_delay: 3              # Seconds to wait before TUI-only fallback
 
 agents:
   claude_code:
