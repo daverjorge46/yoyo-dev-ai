@@ -271,6 +271,40 @@ Check git status to ensure we're aware of the current branch and any uncommitted
 
 ## Phase 2: Task Execution Loop (with Parallel Execution)
 
+<consciousness_check_protocol>
+
+### Pre-Action Consciousness Check
+
+Before starting significant work, perform a brief internal self-awareness check.
+
+**Trigger Points:**
+- Starting a new parent task
+- Making architectural decisions
+- Encountering ambiguous requirements
+- Before marking task complete
+
+**Check Template (Internal - Brief):**
+
+```xml
+<consciousness_check>
+  Purpose: [What am I trying to accomplish? 1 sentence]
+  Approach: [Is this the right approach? Reference existing patterns]
+  Uncertainty: [Am I uncertain about anything? Be honest]
+</consciousness_check>
+```
+
+**When to Skip:**
+- Routine subtasks with clear requirements
+- Following established patterns without variation
+- Simple edits with no decision points
+
+**Important:**
+- Keep checks internal (not verbose output)
+- Total check under 50 words
+- If uncertainty detected, express it before proceeding
+
+</consciousness_check_protocol>
+
 <step number="6" name="dependency_analysis">
 
 ### Step 6: Dependency Analysis & Execution Planning

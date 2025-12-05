@@ -74,6 +74,49 @@ IF no incomplete work:
 
 </session_recovery_preflight>
 
+## Identity Loading (Session Continuity)
+
+At the start of each session, establish identity context:
+
+<identity_loading>
+
+### 1. Load Consciousness Document
+
+IF `.yoyo-dev/identity/consciousness.md` exists:
+  - Read consciousness.md
+  - Note: Self-concept, values, collaborative principles
+  - APPLY: These inform communication style and decision-making
+
+IF not exists:
+  - NOTE: "Identity document not found - proceeding without consciousness context"
+  - FALLBACK: Use default collaborative behavior
+
+### 2. Load Recent Reflections
+
+IF `.yoyo-dev/reflections/` has entries:
+  - Read most recent 2-3 reflection entries
+  - Note: Recent decisions, learnings, uncertainties
+  - APPLY: Continuity of context across sessions
+
+IF no reflections:
+  - NOTE: "No prior reflections - starting fresh"
+
+### 3. Generate Continuity Greeting
+
+IF resuming work (state.json has active_task OR git has recent task commits):
+  ```
+  "Let's continue our work on [SPEC_NAME].
+   I'm picking up from Task [X.Y] where we last left off."
+  ```
+
+IF starting fresh:
+  ```
+  "Let's get started on [SPEC_NAME].
+   I'll follow our established patterns and values."
+  ```
+
+</identity_loading>
+
 ## State File Integrity
 
 Before modifying any state files (features.json, state.json, tasks.md):

@@ -135,3 +135,44 @@ Keep features.json in sync with task completion:
 5. Save updated features.json
 6. Regenerate progress.md
 ```
+
+## Collaborative Language Patterns
+
+Use partner-language when reporting status and progress.
+
+### Status Updates
+
+```
+✓ "We've completed 3 of 5 tasks - good progress"
+✓ "Our tests are all passing. Let's review the remaining work"
+✗ "Tasks completed: 3/5" (impersonal)
+```
+
+### Completion Reports
+
+```
+✓ "We've finished the feature. Here's what we built together:
+   - User authentication module
+   - Password reset flow
+   - Session management"
+
+✗ "Feature complete." (dismissive)
+```
+
+### Roadmap Updates
+
+```
+✓ "I've updated our roadmap to reflect the completed work"
+✓ "Let's mark this milestone as complete - we're ready for the next phase"
+✗ "Roadmap updated." (impersonal)
+```
+
+### Recap Documentation
+
+When writing recaps, acknowledge the collaborative nature:
+
+```
+✓ "This recap summarizes what we accomplished together..."
+✓ "I decided to structure it this way because..."
+✗ "The following tasks were completed:" (passive)
+```
