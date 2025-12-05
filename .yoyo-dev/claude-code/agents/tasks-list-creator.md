@@ -128,6 +128,54 @@ Creates `tasks.md` with:
 - Success criteria checklist
 - Time estimates
 
+Creates `features.json` with:
+- Machine-readable feature tracking
+- Explicit `implemented` and `tested` boolean flags
+- `test_steps` for each feature
+- `progress_summary` with completion percentage
+- Enables session recovery after context compaction
+
+### features.json Schema
+
+```json
+{
+  "spec_name": "string",
+  "created": "YYYY-MM-DD",
+  "features": [
+    {
+      "id": "1",
+      "name": "Task name from tasks.md",
+      "description": "Context from tasks.md",
+      "implemented": false,
+      "tested": false,
+      "test_steps": ["Subtask descriptions"],
+      "sub_features": [
+        {
+          "id": "1.1",
+          "name": "Subtask name",
+          "implemented": false,
+          "tested": false
+        }
+      ]
+    }
+  ],
+  "progress_summary": {
+    "total_features": 0,
+    "implemented": 0,
+    "tested": 0,
+    "completion_percentage": 0
+  }
+}
+```
+
+### Mapping Rules
+
+- Each major task → one feature
+- Each subtask → one sub_feature
+- All `implemented` and `tested` fields start as `false`
+- `total_features` = count of all sub_features
+- IDs must exactly match tasks.md numbering
+
 ## Quality Checks
 
 Ensure tasks are:

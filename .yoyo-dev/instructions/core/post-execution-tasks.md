@@ -190,6 +190,41 @@ Use the project-manager subagent to read the current spec's tasks.md file and ve
 
 </step>
 
+<step number="4.5" subagent="project-manager" name="progress_md_generation">
+
+### Step 4.5: Generate Progress Report
+
+Use the project-manager subagent to generate or update progress.md in the spec folder for session recovery and human-readable progress tracking.
+
+<instructions>
+  ACTION: Use project-manager subagent
+  REQUEST: "Generate progress.md for current spec:
+            - Spec folder: [SPEC_FOLDER_PATH]
+            - Read features.json for current completion state
+            - Parse git log for recent task commits
+            - Generate progress.md with all required sections"
+  WAIT: For progress.md generation
+  PROCESS: Verify file contains all sections
+</instructions>
+
+<progress_md_sections>
+  <required>
+    - Summary with completion percentage
+    - Completed Features list
+    - In Progress features list
+    - Remaining Features list
+    - Git Log Summary (recent task commits)
+    - Resume Instructions with next task
+  </required>
+</progress_md_sections>
+
+<generation_trigger>
+  ALWAYS generate progress.md during post-execution
+  This ensures session recovery is always up to date
+</generation_trigger>
+
+</step>
+
 <step number="5" subagent="project-manager" name="roadmap_progress_check">
 
 ### Step 5: Roadmap Progress Update (conditional)

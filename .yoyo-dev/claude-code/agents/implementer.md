@@ -144,6 +144,54 @@ Before marking a task complete, verify:
 - ✅ No security vulnerabilities
 - ✅ Code documented
 
+## MANDATORY: Test Evidence Requirement
+
+**CRITICAL**: No task can be marked complete without valid test evidence from the test-runner agent.
+
+### Test Evidence Flow
+
+1. **After implementation**, invoke test-runner agent
+2. **Receive structured evidence** in JSON format
+3. **Verify evidence** shows all tests passing
+4. **Only then** can task be marked complete
+
+### Test Evidence Schema (Required)
+
+```json
+{
+  "task_id": "[TASK_NUMBER]",
+  "test_type": "unit|integration|browser|e2e",
+  "test_command": "[COMMAND_RUN]",
+  "exit_code": 0,
+  "tests_passed": 10,
+  "tests_failed": 0,
+  "timestamp": "YYYY-MM-DDTHH:MM:SSZ"
+}
+```
+
+### Completion Blocking Rules
+
+**Task CAN be completed if:**
+- `exit_code` == 0
+- `tests_failed` == 0
+- `tests_passed` > 0
+- `task_id` matches current task
+
+**Task CANNOT be completed if:**
+- No test evidence provided
+- `exit_code` != 0
+- `tests_failed` > 0
+- `tests_passed` == 0
+
+### Enforcement
+
+If you attempt to mark a task complete without valid test evidence:
+1. STOP - Do not update tasks.md
+2. Run tests via test-runner agent
+3. If tests fail, fix the issues
+4. Re-run tests until passing
+5. Only then proceed with completion
+
 ## Error Handling
 
 If implementation fails:
