@@ -78,74 +78,6 @@ Tasks can be executed with optional implementation tracking to generate detailed
 
 ## Phase 1: Pre-Execution Setup
 
-<step number="0" name="session_recovery_check">
-
-### Step 0: Session Recovery Check (Git-Based State Reconstruction)
-
-**Purpose**: Detect incomplete work from previous sessions and reconstruct state from git history.
-
-<session_recovery>
-  ACTION: Check if this is a resumed session by analyzing git log
-
-  RUN: `git log --oneline -50`
-
-  PARSE: Look for commits with task-related prefixes:
-    - `[TESTED]` - Task fully verified (implemented=true, tested=true)
-    - `[FEATURE]` - Task implemented (implemented=true, tested=false)
-    - `[PARTIAL]` - Task in progress (implemented=true, tested=false)
-
-  PATTERN: `task-(\d+\.\d+)` to extract task IDs
-
-  RULE: Most recent commit status wins (first match in reverse chronological order)
-
-  BUILD: Task status map from git history:
-    ```
-    git_status = {
-      "task_id": "status",  // tested | implemented | partial
-      ...
-    }
-    ```
-
-  CROSS-REFERENCE: Compare git status with features.json and tasks.md
-    IF features.json exists:
-      - Update implemented/tested flags based on git status
-      - Recalculate progress_summary.completion_percentage
-      - Save updated features.json
-
-  FIND: Next incomplete task
-    - First task not marked as [TESTED] in git history
-    - Or first task with status != "tested"
-
-  IF task_related_commits_found > 0:
-    OUTPUT: Session recovery summary
-
-    ╔═══════════════════════════════════════════════════════════╗
-    ║  🔄 SESSION RECOVERY FROM GIT HISTORY                     ║
-    ╠═══════════════════════════════════════════════════════════╣
-    ║                                                           ║
-    ║  Commits Analyzed:    50 most recent                      ║
-    ║  Task Commits Found:  [N]                                 ║
-    ║                                                           ║
-    ║  ✅ Completed (Tested):  [N] tasks                        ║
-    ║  🔧 Implemented:         [N] tasks                        ║
-    ║  🔄 Partial:             [N] tasks                        ║
-    ║  ⬜ Not Started:         [N] tasks                        ║
-    ║                                                           ║
-    ║  📍 Resume Point: Task [X.Y]                              ║
-    ║                                                           ║
-    ╚═══════════════════════════════════════════════════════════╝
-
-    AUTO_SELECT: Set resume_task as default for Step 2 (Task Assignment)
-    INFORM: User of detected state and proposed resume point
-
-  ELSE:
-    NOTE: "No prior task commits detected, starting fresh"
-    PROCEED: To Step 1
-
-</session_recovery>
-
-</step>
-
 <step number="1" name="review_mode_detection">
 
 ### Step 1: Review Mode Detection
@@ -270,40 +202,6 @@ Check git status to ensure we're aware of the current branch and any uncommitted
 </step>
 
 ## Phase 2: Task Execution Loop (with Parallel Execution)
-
-<consciousness_check_protocol>
-
-### Pre-Action Consciousness Check
-
-Before starting significant work, perform a brief internal self-awareness check.
-
-**Trigger Points:**
-- Starting a new parent task
-- Making architectural decisions
-- Encountering ambiguous requirements
-- Before marking task complete
-
-**Check Template (Internal - Brief):**
-
-```xml
-<consciousness_check>
-  Purpose: [What am I trying to accomplish? 1 sentence]
-  Approach: [Is this the right approach? Reference existing patterns]
-  Uncertainty: [Am I uncertain about anything? Be honest]
-</consciousness_check>
-```
-
-**When to Skip:**
-- Routine subtasks with clear requirements
-- Following established patterns without variation
-- Simple edits with no decision points
-
-**Important:**
-- Keep checks internal (not verbose output)
-- Total check under 50 words
-- If uncertainty detected, express it before proceeding
-
-</consciousness_check_protocol>
 
 <step number="6" name="dependency_analysis">
 
@@ -482,19 +380,6 @@ Before starting significant work, perform a brief internal self-awareness check.
               - Total: [TIME_TAKEN]
 
           CONTINUE: To next group
-
-          # Generate progress.md after parent feature completion
-          IF parent_feature_fully_tested:
-            GENERATE: progress.md in spec folder
-            TEMPLATE: Use project-manager progress.md template
-            INCLUDE:
-              - Spec metadata and timestamp
-              - Completion percentage from features.json
-              - Completed features list
-              - In-progress features list
-              - Remaining features list
-              - Git Log Summary (recent task commits)
-              - Resume Instructions with next task
 
     ELSE:
       # SEQUENTIAL EXECUTION (single task in group)

@@ -190,9 +190,9 @@ Execute the parent task and all sub-tasks in order using test-driven development
 
 <step number="6" subagent="test-runner" name="task_test_verification">
 
-### Step 6: Task-Specific Test Verification (MANDATORY)
+### Step 6: Task-Specific Test Verification
 
-**CRITICAL**: Use the test-runner subagent to run tests and obtain STRUCTURED TEST EVIDENCE. This evidence is REQUIRED before any task can be marked complete.
+Use the test-runner subagent to run and verify only the tests specific to this parent task (not the full test suite) to ensure the feature is working correctly.
 
 <focused_test_execution>
   <run_only>
@@ -206,136 +206,22 @@ Execute the parent task and all sub-tasks in order using test-driven development
   </skip>
 </focused_test_execution>
 
-<test_evidence_requirement>
-  **MANDATORY OUTPUT**: test-runner MUST return structured evidence:
-
-  ```json
-  {
-    "task_id": "[CURRENT_TASK_ID]",
-    "test_type": "unit|integration|browser|e2e",
-    "test_command": "[COMMAND_EXECUTED]",
-    "exit_code": 0,
-    "tests_passed": 10,
-    "tests_failed": 0,
-    "timestamp": "YYYY-MM-DDTHH:MM:SSZ"
-  }
-  ```
-
-  This evidence will be used to:
-  1. Block task completion if tests fail
-  2. Update features.json tested status
-  3. Provide audit trail for session recovery
-</test_evidence_requirement>
-
-<completion_blocking>
-  **BLOCKING RULES**:
-
-  ✅ Task CAN proceed to Step 7 if:
-    - exit_code == 0
-    - tests_failed == 0
-    - tests_passed > 0
-    - task_id matches current task
-
-  ❌ Task CANNOT proceed if:
-    - No test evidence returned
-    - exit_code != 0
-    - tests_failed > 0
-    - tests_passed == 0
-
-  IF blocked:
-    - DO NOT proceed to Step 7
-    - Debug and fix failing tests
-    - Re-run test-runner
-    - Repeat until all tests pass
-</completion_blocking>
-
 <final_verification>
-  IF test evidence shows failures:
-    - STOP: Do not proceed to Step 7
+  IF any test failures:
     - Debug and fix the specific issue
-    - Re-run test-runner subagent
-    - Repeat until exit_code == 0 and tests_failed == 0
-  ELSE IF test evidence shows success:
-    - STORE: Test evidence for Step 8
+    - Re-run only the failed tests
+  ELSE:
     - Confirm all task tests passing
-    - Ready to proceed to Step 7
+    - Ready to proceed
 </final_verification>
 
 <instructions>
   ACTION: Use test-runner subagent
-  REQUEST: "Run tests for [this parent task's test files] and return structured evidence"
-  WAIT: For test-runner to return JSON evidence
-  VALIDATE: Evidence has exit_code == 0 and tests_failed == 0
-  IF validation fails:
-    BLOCK: Do not proceed
-    FIX: Address test failures
-    RETRY: Run test-runner again
-  STORE: Valid test evidence for use in Step 8
-  PROCEED: Only after evidence validates successfully
-</instructions>
-
-</step>
-
-<step number="6.5" subagent="git-workflow" name="incremental_commit">
-
-### Step 6.5: Incremental Commit (Context Recovery)
-
-**CRITICAL**: After tests pass, create a [TESTED] commit to enable session recovery.
-
-<commit_requirement>
-  This commit serves as a recovery point if the session is interrupted.
-  Git log parsing uses these commits to reconstruct state.
-</commit_requirement>
-
-<commit_workflow>
-  1. **Stage implementation files:**
-     ```bash
-     git add [files_modified_in_this_task]
-     ```
-
-  2. **Create [TESTED] commit:**
-     ```bash
-     git commit -m "[TESTED] task-X.Y: [Brief description]
-
-     - All tests passing ([N]/[N])
-     - Feature verified and complete"
-     ```
-
-  3. **Stage state files:**
-     ```bash
-     git add features.json progress.md state.json
-     ```
-
-  4. **Create state files commit:**
-     ```bash
-     git commit -m "chore: Update progress tracking for task-X.Y
-
-     - features.json: Updated completion status
-     - progress.md: Regenerated with latest state"
-     ```
-</commit_workflow>
-
-<commit_validation>
-  VERIFY: [TESTED] commit created successfully
-    - Commit message has [TESTED] prefix
-    - Commit message includes task-X.Y identifier
-    - All implementation files staged
-
-  IF commit fails:
-    - Resolve git issues
-    - Retry commit
-    - Do not proceed without successful commit
-</commit_validation>
-
-<instructions>
-  ACTION: Use git-workflow subagent
-  REQUEST: "Create [TESTED] commit for task-X.Y:
-            - Implementation files: [FILE_LIST]
-            - Test count: [N] passing
-            - Then create state files commit"
-  WAIT: For commit confirmation
-  VERIFY: Both commits created successfully
-  PROCEED: Only after commits succeed
+  REQUEST: "Run tests for [this parent task's test files]"
+  WAIT: For test-runner analysis
+  PROCESS: Returned failure information
+  VERIFY: 100% pass rate for task-specific tests
+  CONFIRM: This feature's tests are complete
 </instructions>
 
 </step>
@@ -401,27 +287,9 @@ After completing the task, update the context.md file with implementation detail
 
 <step number="8" name="task_status_updates">
 
-### Step 8: Mark this task and sub-tasks complete (WITH TEST EVIDENCE VALIDATION)
+### Step 8: Mark this task and sub-tasks complete
 
-**CRITICAL**: Before marking any task complete, VALIDATE that test evidence from Step 6 shows all tests passing.
-
-<pre_completion_check>
-  **MANDATORY VALIDATION before marking complete:**
-
-  1. CHECK: Test evidence exists from Step 6
-  2. VALIDATE: exit_code == 0
-  3. VALIDATE: tests_failed == 0
-  4. VALIDATE: tests_passed > 0
-  5. VALIDATE: task_id matches current task
-
-  IF any validation fails:
-    - DO NOT mark task as complete
-    - Return to Step 6 to fix and re-test
-    - Document blocking issue if cannot resolve
-
-  IF all validations pass:
-    - Proceed with marking task complete
-</pre_completion_check>
+IMPORTANT: In the tasks.md file, mark this task and its sub-tasks complete by updating each task checkbox to [x]. Also update state.json to track completion.
 
 <update_format>
   <completed>- [x] Task description</completed>
@@ -430,40 +298,23 @@ After completing the task, update the context.md file with implementation detail
     - [ ] Task description
     ⚠️ Blocking issue: [DESCRIPTION]
   </blocked>
-  <test_failed>
-    - [ ] Task description
-    ❌ Test failures: [NUMBER] tests failed - cannot complete
-  </test_failed>
 </update_format>
 
 <blocking_criteria>
-  <test_failure>Tests must pass before completion - no exceptions</test_failure>
-  <attempts>maximum 3 different approaches for non-test issues</attempts>
+  <attempts>maximum 3 different approaches</attempts>
   <action>document blocking issue</action>
-  <emoji_blocked>⚠️</emoji_blocked>
-  <emoji_test_fail>❌</emoji_test_fail>
+  <emoji>⚠️</emoji>
 </blocking_criteria>
 
 <instructions>
-  PRE-CHECK: Validate test evidence from Step 6
-    IF no evidence OR exit_code != 0 OR tests_failed > 0:
-      BLOCK: Do not proceed with completion
-      RETURN: To Step 6 to fix and re-test
-
-  ACTION: Update tasks.md after validation passes
+  ACTION: Update tasks.md after each task completion
   MARK: [x] for completed items immediately
-  DOCUMENT: Test failures with ❌ emoji
-  DOCUMENT: Other blocking issues with ⚠️ emoji
-  LIMIT: 3 attempts before marking as blocked (except test failures - must fix)
+  DOCUMENT: Blocking issues with ⚠️ emoji
+  LIMIT: 3 attempts before marking as blocked
 
   STATE_UPDATE: Update state.json
     - Add task number to completed_tasks array
     - Update key_files_modified with files changed
-
-  FEATURES_JSON_UPDATE: If features.json exists
-    - Update sub_feature.implemented = true
-    - Update sub_feature.tested = true (only if test evidence valid)
-    - Recalculate progress_summary
 </instructions>
 
 <state_update_example>
@@ -477,21 +328,6 @@ After completing the task, update the context.md file with implementation detail
     ]
   }
 </state_update_example>
-
-<features_json_update_example>
-  // After task 1.1 completes with valid test evidence:
-  {
-    "sub_features": [
-      {"id": "1.1", "name": "...", "implemented": true, "tested": true}
-    ],
-    "progress_summary": {
-      "total_features": 10,
-      "implemented": 1,
-      "tested": 1,
-      "completion_percentage": 10
-    }
-  }
-</features_json_update_example>
 
 </step>
 

@@ -128,109 +128,9 @@ Use the file-creator subagent to create file: tasks.md inside of the current fea
 
 </step>
 
-<step number="2" subagent="file-creator" name="create_features_json">
+<step number="2" name="update_state">
 
-### Step 2: Create features.json
-
-Use the file-creator subagent to create file: features.json inside of the current feature's spec folder. This machine-readable format supplements tasks.md and enables reliable session recovery after context compaction.
-
-<file_purpose>
-  - Machine-readable state for session recovery
-  - Unambiguous parsing after context compaction
-  - Progress tracking with explicit implemented/tested flags
-  - Enables git-based context reconstruction
-</file_purpose>
-
-<features_json_schema>
-{
-  "spec_name": "[SPEC_NAME]",
-  "created": "[YYYY-MM-DD]",
-  "features": [
-    {
-      "id": "[TASK_NUMBER]",
-      "name": "[MAJOR_TASK_DESCRIPTION]",
-      "description": "[CONTEXT_FROM_TASKS_MD]",
-      "implemented": false,
-      "tested": false,
-      "test_steps": [
-        "[TEST_STEP_FROM_SUBTASKS]"
-      ],
-      "sub_features": [
-        {
-          "id": "[SUBTASK_NUMBER]",
-          "name": "[SUBTASK_DESCRIPTION]",
-          "implemented": false,
-          "tested": false
-        }
-      ]
-    }
-  ],
-  "progress_summary": {
-    "total_features": [COUNT],
-    "implemented": 0,
-    "tested": 0,
-    "completion_percentage": 0
-  }
-}
-</features_json_schema>
-
-<generation_rules>
-  <mapping>
-    - Each major task in tasks.md → one feature entry
-    - Each subtask → one sub_feature entry
-    - Task context → feature description
-    - All initial states: implemented=false, tested=false
-  </mapping>
-  <progress_summary>
-    - total_features: Count of all sub_features (subtasks)
-    - implemented: 0 (initial)
-    - tested: 0 (initial)
-    - completion_percentage: 0 (initial)
-  </progress_summary>
-  <constraints>
-    - JSON must be valid and parseable
-    - IDs must match tasks.md numbering exactly
-    - All boolean fields default to false
-  </constraints>
-</generation_rules>
-
-<example_output>
-{
-  "spec_name": "User Authentication",
-  "created": "2025-12-05",
-  "features": [
-    {
-      "id": "1",
-      "name": "Implement Login Flow",
-      "description": "JWT-based authentication with secure token storage",
-      "implemented": false,
-      "tested": false,
-      "test_steps": [
-        "1.1 Write tests for login handler",
-        "1.4 Verify all tests pass"
-      ],
-      "sub_features": [
-        {"id": "1.1", "name": "Write tests for login handler", "implemented": false, "tested": false},
-        {"id": "1.2", "name": "Create login API endpoint", "implemented": false, "tested": false},
-        {"id": "1.3", "name": "Implement token generation", "implemented": false, "tested": false},
-        {"id": "1.4", "name": "Verify all tests pass", "implemented": false, "tested": false}
-      ]
-    }
-  ],
-  "progress_summary": {
-    "total_features": 4,
-    "implemented": 0,
-    "tested": 0,
-    "completion_percentage": 0
-  }
-}
-</example_output>
-
-</step>
-
-<step number="3" name="update_state">
-
-### Step 3: Update Workflow State
+### Step 2: Update Workflow State
 
 Update the state.json file to reflect that tasks have been created.
 
@@ -251,9 +151,9 @@ Update the state.json file to reflect that tasks have been created.
 
 </step>
 
-<step number="4" name="execution_readiness">
+<step number="3" name="execution_readiness">
 
-### Step 4: Execution Readiness Check
+### Step 3: Execution Readiness Check
 
 Evaluate readiness to begin implementation by presenting the first task summary and requesting user confirmation to proceed.
 
