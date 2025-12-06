@@ -16,12 +16,13 @@ Screen {
    StatusBar Styling
    ============================================================================ */
 
-StatusBar {
+StatusBar, #status-bar {
     dock: top;
-    height: 1;
-    background: $panel;
+    height: 3;
+    background: $boost;
     color: $text;
-    content-align: center middle;
+    padding: 1;
+    border-bottom: solid $primary;
 }
 
 /* ============================================================================

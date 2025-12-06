@@ -148,7 +148,8 @@ class MainDashboard(Screen):
         # Status bar at top
         self._status_bar = StatusBar(
             data_manager=self.data_manager,
-            event_bus=self.event_bus
+            event_bus=self.event_bus,
+            id="status-bar"
         )
         yield self._status_bar
 
