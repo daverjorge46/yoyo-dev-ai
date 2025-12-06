@@ -21,6 +21,10 @@ readonly RESET='\033[0m'
 # Yoyo Dev version
 readonly VERSION="3.1.0"
 
+# IMPORTANT: Save user's current working directory FIRST (before any cd commands)
+# This is the project directory where the user invoked the yoyo command
+readonly USER_PROJECT_DIR="$(pwd)"
+
 # Determine script directory (resolve symlinks to get actual script location)
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 # Resolve symlink if this script is executed via symlink
@@ -28,7 +32,8 @@ if [ -L "$SCRIPT_PATH" ]; then
     SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH")"
 fi
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+# YOYO_INSTALL_DIR is where yoyo-dev framework is installed (for module imports)
+YOYO_INSTALL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # TUI module location (project-local)
 readonly TUI_MODULE="lib.yoyo_tui_v3.cli"
@@ -469,9 +474,10 @@ launch_tui() {
     echo -e " ${YELLOW}Launching Yoyo Dev TUI...${RESET}"
     echo ""
 
-    # Launch TUI
-    cd "$PROJECT_ROOT"
-    exec python3 -m "$TUI_MODULE" "$@"
+    # Launch TUI from USER_PROJECT_DIR (so .yoyo-dev is found correctly)
+    # Use PYTHONPATH to allow importing lib.yoyo_tui_v3 from YOYO_INSTALL_DIR
+    cd "$USER_PROJECT_DIR"
+    PYTHONPATH="$YOYO_INSTALL_DIR:$PYTHONPATH" exec python3 -m "$TUI_MODULE" "$@"
 }
 
 # Launch split view using tmux (TUI left + Claude right)
@@ -512,15 +518,17 @@ launch_split_tmux() {
     tmux kill-session -t "$session_name" 2>/dev/null || true
 
     # Create new tmux session with TUI in the first pane
-    cd "$PROJECT_ROOT"
+    # Run from USER_PROJECT_DIR so .yoyo-dev is found correctly
+    # Use PYTHONPATH to allow importing lib.yoyo_tui_v3 from YOYO_INSTALL_DIR
+    cd "$USER_PROJECT_DIR"
     tmux new-session -d -s "$session_name" -x "$(tput cols)" -y "$(tput lines)" \
-        "python3 -m $TUI_MODULE"
+        "cd '$USER_PROJECT_DIR' && PYTHONPATH='$YOYO_INSTALL_DIR:$PYTHONPATH' python3 -m $TUI_MODULE"
 
     # Enable mouse support (resize panes by dragging, click to select, scroll)
     tmux set-option -t "$session_name" mouse on
 
-    # Split horizontally and run Claude in the right pane
-    tmux split-window -h -t "$session_name" -p "$((100 - ratio))" "claude"
+    # Split horizontally and run Claude in the right pane (from project dir)
+    tmux split-window -h -t "$session_name" -p "$((100 - ratio))" "cd '$USER_PROJECT_DIR' && claude"
 
     # Select the right pane (Claude) as active
     tmux select-pane -t "$session_name":0.1
