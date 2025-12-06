@@ -39,6 +39,48 @@ YOYO_INSTALL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 readonly TUI_MODULE="lib.yoyo_tui_v3.cli"
 
 # ============================================================================
+# Project Detection & Installation
+# ============================================================================
+
+# Prompt user to install Yoyo Dev if not detected in current directory
+# Returns 0 if installed (or user chose to install), 1 if user declined
+check_yoyo_installed_or_install() {
+    if [ -d "./.yoyo-dev" ]; then
+        return 0  # Already installed
+    fi
+
+    echo ""
+    echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
+    echo ""
+    echo "Would you like to:"
+    echo "  1. Install Yoyo Dev in this project"
+    echo "  2. Exit"
+    echo ""
+    read -p "Choice (1/2): " choice
+
+    case $choice in
+        1)
+            echo ""
+            echo "Installing Yoyo Dev..."
+            if [ -f "$YOYO_INSTALL_DIR/setup/project.sh" ]; then
+                "$YOYO_INSTALL_DIR/setup/project.sh" --claude-code
+            elif [ -f ~/yoyo-dev/setup/project.sh ]; then
+                ~/yoyo-dev/setup/project.sh --claude-code
+            else
+                echo -e "${RED}ERROR: Installation script not found${RESET}"
+                echo "Please reinstall Yoyo Dev base installation."
+                exit 1
+            fi
+            exit 0
+            ;;
+        *)
+            echo "Exiting..."
+            exit 0
+            ;;
+    esac
+}
+
+# ============================================================================
 # Version Checking
 # ============================================================================
 
@@ -396,30 +438,8 @@ launch_tui() {
     # Check for available updates
     check_for_updates
 
-    # Check if we're in a Yoyo Dev project
-    if [ ! -d "./.yoyo-dev" ]; then
-        echo ""
-        echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
-        echo ""
-        echo "Would you like to:"
-        echo "  1. Install Yoyo Dev in this project"
-        echo "  2. Exit"
-        echo ""
-        read -p "Choice (1/2): " choice
-
-        case $choice in
-            1)
-                echo ""
-                echo "Installing Yoyo Dev..."
-                ~/yoyo-dev/setup/project.sh --claude-code
-                exit 0
-                ;;
-            *)
-                echo "Exiting..."
-                exit 0
-                ;;
-        esac
-    fi
+    # Check if we're in a Yoyo Dev project (offer to install if not)
+    check_yoyo_installed_or_install
 
     # Check Python availability
     if ! check_python; then
@@ -544,13 +564,8 @@ launch_split_tmux() {
         return
     fi
 
-    # Check if we're in a Yoyo Dev project
-    if [ ! -d "./.yoyo-dev" ]; then
-        echo ""
-        echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
-        echo ""
-        exit 1
-    fi
+    # Check if we're in a Yoyo Dev project (offer to install if not)
+    check_yoyo_installed_or_install
 
     # Check Python and dependencies
     if ! check_python || ! check_tui_dependencies; then
