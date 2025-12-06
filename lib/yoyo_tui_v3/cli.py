@@ -31,12 +31,9 @@ def parse_args(argv: Optional[list] = None) -> argparse.Namespace:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  yoyo                           # Launch with split view (Claude + TUI)
-  yoyo --shell                   # Launch with split view (Terminal + TUI)
-  yoyo --no-split                # Launch TUI only
-  yoyo --split-ratio 0.5         # 50/50 split
-  yoyo --focus tui               # Start with TUI focused
-  yoyo --shell --split-ratio 0.6 # Shell pane with 60% width
+  yoyo                           # Launch TUI dashboard (default)
+  yoyo --split                   # [EXPERIMENTAL] Split view (Claude + TUI)
+  yoyo --split --shell           # [EXPERIMENTAL] Split view (Terminal + TUI)
 
 For more information, visit: https://github.com/yoyo-dev
         """
@@ -49,11 +46,11 @@ For more information, visit: https://github.com/yoyo-dev
     )
 
     parser.add_argument(
-        '--no-split',
-        action='store_false',
+        '--split',
+        action='store_true',
         dest='split_view',
-        default=True,
-        help='Launch TUI only (disable split view with Claude Code)'
+        default=False,
+        help='[EXPERIMENTAL] Enable split view (Terminal/Claude + TUI). May have rendering issues.'
     )
 
     parser.add_argument(
