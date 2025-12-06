@@ -103,7 +103,7 @@ if [ "$NO_BASE" = true ]; then
     IS_FROM_BASE=false
     echo "📦 Installing directly from GitHub (no base installation)"
     # Set BASE_URL for GitHub downloads
-    BASE_URL=
+    BASE_URL="https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main"
     # Download and source functions when running from GitHub
     TEMP_FUNCTIONS="/tmp/yoyo-dev-functions-$$.sh"
     curl -sSL "${BASE_URL}/setup/functions.sh" -o "$TEMP_FUNCTIONS"
@@ -464,25 +464,19 @@ if [ "$CLAUDE_CODE" = true ]; then
             "setup/parse-utils.sh"
     fi
 
-    # Copy TUI library if available
+    # TUI library is NOT copied to projects - it's accessed from base installation via PYTHONPATH
+    # This prevents duplicate lib issues and reduces project size
     echo ""
-    echo "  📂 TUI Library v3.0 (Optional):"
+    echo "  📂 TUI Library v3.0:"
     if [ "$IS_FROM_BASE" = true ]; then
         if [ -d "$BASE_YOYO_DEV/lib/yoyo_tui_v3" ]; then
-            mkdir -p "$INSTALL_DIR/lib"
-            # Copy TUI v3 library (excluding venv and cache)
-            cp -r "$BASE_YOYO_DEV/lib/yoyo_tui_v3" "$INSTALL_DIR/lib/" 2>/dev/null || true
-            # Remove venv and cache if they were copied
-            rm -rf "$INSTALL_DIR/lib/yoyo_tui_v3/venv" 2>/dev/null || true
-            rm -rf "$INSTALL_DIR/lib/yoyo_tui_v3/__pycache__" 2>/dev/null || true
-            find "$INSTALL_DIR/lib/yoyo_tui_v3" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
-            echo "  ✓ TUI v3.0 library installed (lib/yoyo_tui_v3/)"
+            echo "  ✓ TUI v3.0 will be used from base installation"
+            echo "    Location: $BASE_YOYO_DEV/lib/yoyo_tui_v3/"
         else
             echo "  ⚠️  TUI v3.0 library not found in base installation"
         fi
     else
-        echo "  ⚠️  TUI library not available from GitHub installation"
-        echo "     Clone from repository to get TUI support"
+        echo "  ⚠️  TUI requires base installation (clone repository first)"
     fi
 fi
 
@@ -564,6 +558,13 @@ if [ "$CLAUDE_CODE" = true ]; then
 
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+fi
+
+# Record installed version for update detection
+if [ "$IS_FROM_BASE" = true ] && [ -f "$BASE_YOYO_DEV/VERSION" ]; then
+    cp "$BASE_YOYO_DEV/VERSION" "$INSTALL_DIR/.installed-version"
+    echo ""
+    echo "📌 Version $(cat "$BASE_YOYO_DEV/VERSION" | tr -d '\n') installed"
 fi
 
 # Success message

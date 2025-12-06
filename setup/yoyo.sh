@@ -19,7 +19,7 @@ readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 # Yoyo Dev version
-readonly VERSION="3.1.0"
+readonly VERSION="3.1.1"
 
 # IMPORTANT: Save user's current working directory FIRST (before any cd commands)
 # This is the project directory where the user invoked the yoyo command
@@ -37,6 +37,46 @@ YOYO_INSTALL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # TUI module location (project-local)
 readonly TUI_MODULE="lib.yoyo_tui_v3.cli"
+
+# ============================================================================
+# Version Checking
+# ============================================================================
+
+check_for_updates() {
+    # Compare installed version with base installation version
+    local base_version_file="$YOYO_INSTALL_DIR/VERSION"
+    local installed_version_file="./.yoyo-dev/.installed-version"
+
+    # Skip if version files don't exist
+    if [ ! -f "$base_version_file" ]; then
+        return 0
+    fi
+
+    local base_version=$(cat "$base_version_file" 2>/dev/null | tr -d '\n')
+    local installed_version=""
+
+    if [ -f "$installed_version_file" ]; then
+        installed_version=$(cat "$installed_version_file" 2>/dev/null | tr -d '\n')
+    fi
+
+    # If no installed version recorded, or versions differ, notify user
+    if [ -z "$installed_version" ] || [ "$base_version" != "$installed_version" ]; then
+        echo ""
+        echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+        echo -e "${YELLOW}📦 Update Available${RESET}"
+        echo ""
+        if [ -n "$installed_version" ]; then
+            echo -e "   Current: ${DIM}v${installed_version}${RESET}  →  New: ${GREEN}v${base_version}${RESET}"
+        else
+            echo -e "   New version available: ${GREEN}v${base_version}${RESET}"
+        fi
+        echo ""
+        echo -e "   Run ${CYAN}yoyo-update${RESET} to update this project"
+        echo -e "${YELLOW}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+        echo ""
+        sleep 1
+    fi
+}
 
 # ============================================================================
 # Dependency Checking
@@ -353,6 +393,9 @@ install_mcps() {
 
 # Display branded header and launch TUI
 launch_tui() {
+    # Check for available updates
+    check_for_updates
+
     # Check if we're in a Yoyo Dev project
     if [ ! -d "./.yoyo-dev" ]; then
         echo ""
@@ -477,12 +520,15 @@ launch_tui() {
     # Launch TUI from USER_PROJECT_DIR (so .yoyo-dev is found correctly)
     # Use PYTHONPATH to allow importing lib.yoyo_tui_v3 from YOYO_INSTALL_DIR
     cd "$USER_PROJECT_DIR"
-    PYTHONPATH="$YOYO_INSTALL_DIR:$PYTHONPATH" exec python3 -m "$TUI_MODULE" "$@"
+    PYTHONPATH="$YOYO_INSTALL_DIR${PYTHONPATH:+:$PYTHONPATH}" exec python3 -m "$TUI_MODULE" "$@"
 }
 
 # Launch split view using tmux (TUI left + Claude right)
 launch_split_tmux() {
     local ratio="${1:-40}"  # Default 40% for TUI, 60% for Claude
+
+    # Check for available updates
+    check_for_updates
 
     # Check if tmux is available
     if ! command -v tmux &> /dev/null; then
@@ -522,7 +568,7 @@ launch_split_tmux() {
     # Use PYTHONPATH to allow importing lib.yoyo_tui_v3 from YOYO_INSTALL_DIR
     cd "$USER_PROJECT_DIR"
     tmux new-session -d -s "$session_name" -x "$(tput cols)" -y "$(tput lines)" \
-        "cd '$USER_PROJECT_DIR' && PYTHONPATH='$YOYO_INSTALL_DIR:$PYTHONPATH' python3 -m $TUI_MODULE"
+        "cd '$USER_PROJECT_DIR' && PYTHONPATH='$YOYO_INSTALL_DIR${PYTHONPATH:+:$PYTHONPATH}' python3 -m $TUI_MODULE"
 
     # Enable mouse support (resize panes by dragging, click to select, scroll)
     tmux set-option -t "$session_name" mouse on

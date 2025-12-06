@@ -525,6 +525,11 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ] && [ "$SKIP_MCP_CHECK" = false ]; then
     fi
 fi
 
+# Update installed version for update detection
+if [ -f "$BASE_YOYO_DEV/VERSION" ]; then
+    cp "$BASE_YOYO_DEV/VERSION" "./.yoyo-dev/.installed-version"
+fi
+
 # Success message
 echo ""
 echo "✅ Yoyo Dev has been updated in your project ($PROJECT_NAME)!"
