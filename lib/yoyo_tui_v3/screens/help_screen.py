@@ -125,6 +125,27 @@ class HelpScreen(Screen):
 
         content.append("  Use keyboard shortcuts to focus panels and navigate.\n\n", style="dim")
 
+        # Mouse Tips Section (for tmux split view)
+        content.append("MOUSE TIPS (Split View Mode)\n", style="bold yellow")
+        content.append("─" * 70 + "\n\n", style="dim")
+
+        mouse_tips = [
+            ("Shift + Mouse Select", "Select text for copy"),
+            ("Shift + Middle Click", "Paste selected text"),
+            ("Click (no Shift)", "Switch panes / tmux interaction"),
+            ("Mouse Wheel", "Scroll within current pane"),
+            ("Drag Pane Border", "Resize panes"),
+        ]
+
+        for action, description in mouse_tips:
+            content.append(f"  {action:22}", style="bold cyan")
+            content.append(f" │ {description}\n", style="dim")
+
+        content.append("\n")
+        content.append("  ", style="dim")
+        content.append("TIP:", style="bold yellow")
+        content.append(" Hold Shift to select/copy text in tmux split view.\n\n", style="dim")
+
         # Footer
         content.append("─" * 70 + "\n", style="dim")
         content.append("Press ", style="dim")

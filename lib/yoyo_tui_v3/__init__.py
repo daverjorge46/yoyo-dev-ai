@@ -4,7 +4,7 @@ Yoyo Dev TUI v3.0 - Production-Ready Intelligent Dashboard
 A modern, intelligent terminal user interface for AI-assisted development.
 """
 
-__version__ = "3.0.0-beta"
+__version__ = "3.1.1"
 __author__ = "Yoyo Dev Team"
 
 from .models import (

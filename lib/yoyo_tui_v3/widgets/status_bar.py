@@ -9,6 +9,7 @@ from textual.reactive import reactive
 from rich.text import Text
 
 from ..models import EventType, Event
+from .. import __version__
 
 
 class StatusBar(Widget):
@@ -126,6 +127,12 @@ class StatusBar(Widget):
         """
         # Build status text
         text = Text()
+
+        # Version
+        text.append("🚀 ", style="bold")
+        text.append(f"Yoyo Dev v{__version__}", style="bold green")
+
+        text.append("  |  ")
 
         # Project name
         text.append("📦 ", style="bold")
