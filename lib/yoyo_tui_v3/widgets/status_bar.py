@@ -9,7 +9,9 @@ from textual.reactive import reactive
 from rich.text import Text
 
 from ..models import EventType, Event
-from .. import __version__
+
+# Version constant (synced with VERSION file)
+YOYO_VERSION = "3.1.1"
 
 
 class StatusBar(Widget):
@@ -130,7 +132,7 @@ class StatusBar(Widget):
 
         # Version
         text.append("🚀 ", style="bold")
-        text.append(f"Yoyo Dev v{__version__}", style="bold green")
+        text.append(f"Yoyo Dev v{YOYO_VERSION}", style="bold green")
 
         text.append("  |  ")
 

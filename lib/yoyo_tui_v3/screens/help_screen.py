@@ -6,7 +6,7 @@ Displays keyboard shortcuts, commands, and usage instructions.
 
 from textual.screen import Screen
 from textual.widgets import Static
-from textual.containers import Container, Vertical
+from textual.containers import Container, Vertical, VerticalScroll
 from textual.binding import Binding
 from rich.text import Text
 from rich.table import Table
@@ -31,11 +31,16 @@ class HelpScreen(Screen):
 
     #help-container {
         width: 90;
-        height: auto;
+        height: 85%;
         max-height: 90%;
         background: $panel;
         border: heavy $primary;
-        padding: 2;
+        padding: 1 2;
+    }
+
+    #help-scroll {
+        height: 100%;
+        scrollbar-gutter: stable;
     }
 
     #help-content {
@@ -46,7 +51,8 @@ class HelpScreen(Screen):
     def compose(self):
         """Compose the help screen layout."""
         with Container(id="help-container"):
-            yield Static(self._build_help_content(), id="help-content")
+            with VerticalScroll(id="help-scroll"):
+                yield Static(self._build_help_content(), id="help-content")
 
     def _build_help_content(self) -> Text:
         """
