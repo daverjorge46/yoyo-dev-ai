@@ -201,20 +201,19 @@ show_help() {
     echo ""
     echo -e "${BOLD}Yoyo Launcher:${RESET}"
     echo ""
-    echo -e "  ${GREEN}yoyo${RESET}                         Launch split view (Claude left + TUI right)"
+    echo -e "  ${GREEN}yoyo${RESET}                         Launch split view (TUI left + Claude right)"
     echo -e "  ${GREEN}yoyo --no-split${RESET}              Launch TUI only (no Claude)"
-    echo -e "  ${GREEN}yoyo --split-ratio 0.5${RESET}       Custom split ratio (0.0-1.0)"
-    echo -e "  ${GREEN}yoyo --focus tui${RESET}             Start with TUI focused"
+    echo -e "  ${GREEN}yoyo --split-ratio 50${RESET}        Custom split ratio (10-90, percentage for TUI)"
     echo -e "  ${GREEN}yoyo --help${RESET}                  Show this reference"
     echo -e "  ${GREEN}yoyo --version${RESET}               Show version"
     echo -e "  ${GREEN}yoyo --commands${RESET}              List all commands"
     echo ""
-    echo -e "  ${DIM}Split view provides:${RESET}"
-    echo -e "    • Claude Code CLI on the left (40%)"
-    echo -e "    • Yoyo TUI dashboard on the right (60%)"
+    echo -e "  ${DIM}Split view (uses tmux):${RESET}"
+    echo -e "    • Yoyo TUI dashboard on the left (40%)"
+    echo -e "    • Claude Code CLI on the right (60%)"
     echo -e "    • Ctrl+B → to switch focus between panes"
-    echo -e "    • Ctrl+B < / > to resize panes"
-    echo -e "    • Press ? for help, q to quit TUI"
+    echo -e "    • Ctrl+B [ to scroll in pane"
+    echo -e "    • Press ? for TUI help, q to quit TUI"
     echo ""
     echo "────────────────────────────────────────────────────────────────────"
     echo ""
@@ -459,28 +458,71 @@ launch_tui() {
     echo -e "   • ${GREEN}/execute-tasks${RESET}                  ${DIM}# Build and ship code${RESET}"
     echo ""
     echo -e " ${BOLD}New in v3.1:${RESET}"
-    echo -e "   ${CYAN}🖥️${RESET}  Split view: Claude Code + TUI side-by-side"
+    echo -e "   ${CYAN}🖥️${RESET}  Split view: TUI + Claude side-by-side (via tmux)"
     echo -e "   ${CYAN}🚀${RESET} Production-grade intelligent dashboard"
     echo -e "   ${CYAN}🧠${RESET} Context-aware command suggestions"
     echo -e "   ${CYAN}⚠️${RESET}  Proactive error detection"
     echo -e "   ${CYAN}📊${RESET} Real-time progress tracking"
     echo -e "   ${CYAN}🔌${RESET} MCP server monitoring"
     echo ""
-    echo " ──────────────────────────────────────────────────────────────────────────────"
-    echo ""
-    echo -e " ${DIM}Split View Shortcuts:${RESET}"
-    echo -e "   • ${CYAN}Ctrl+B →${RESET} Switch focus between Claude and TUI"
-    echo -e "   • ${CYAN}Ctrl+B <${RESET} Make left pane smaller"
-    echo -e "   • ${CYAN}Ctrl+B >${RESET} Make left pane larger"
-    echo -e "   • Press ${CYAN}?${RESET} for TUI help, ${CYAN}q${RESET} to quit TUI"
-    echo ""
-    echo -e " ${YELLOW}Launching Yoyo Dev (Claude + TUI)...${RESET}"
+    echo -e " ${YELLOW}Launching Yoyo Dev TUI...${RESET}"
     echo ""
 
-    # Launch split view (Claude Code + TUI) or TUI-only
-    # Pass through any remaining arguments to the CLI module
+    # Launch TUI
     cd "$PROJECT_ROOT"
     exec python3 -m "$TUI_MODULE" "$@"
+}
+
+# Launch split view using tmux (TUI left + Claude right)
+launch_split_tmux() {
+    local ratio="${1:-40}"  # Default 40% for TUI, 60% for Claude
+
+    # Check if tmux is available
+    if ! command -v tmux &> /dev/null; then
+        echo ""
+        echo -e "${YELLOW}⚠️  tmux not installed. Install it for split view:${RESET}"
+        echo "  sudo apt install tmux    # Debian/Ubuntu"
+        echo "  sudo dnf install tmux    # Fedora"
+        echo "  brew install tmux        # macOS"
+        echo ""
+        echo -e "${DIM}Falling back to TUI-only mode...${RESET}"
+        sleep 2
+        launch_tui
+        return
+    fi
+
+    # Check if we're in a Yoyo Dev project
+    if [ ! -d "./.yoyo-dev" ]; then
+        echo ""
+        echo -e "${YELLOW}⚠️  Yoyo Dev not detected in this directory${RESET}"
+        echo ""
+        exit 1
+    fi
+
+    # Check Python and dependencies
+    if ! check_python || ! check_tui_dependencies; then
+        exit 1
+    fi
+
+    # Session name based on project
+    local session_name="yoyo-$(basename "$(pwd)")"
+
+    # Kill existing session if it exists
+    tmux kill-session -t "$session_name" 2>/dev/null || true
+
+    # Create new tmux session with TUI in the first pane
+    cd "$PROJECT_ROOT"
+    tmux new-session -d -s "$session_name" -x "$(tput cols)" -y "$(tput lines)" \
+        "python3 -m $TUI_MODULE"
+
+    # Split horizontally and run Claude in the right pane
+    tmux split-window -h -t "$session_name" -p "$((100 - ratio))" "claude"
+
+    # Select the right pane (Claude) as active
+    tmux select-pane -t "$session_name":0.1
+
+    # Attach to the session
+    exec tmux attach-session -t "$session_name"
 }
 
 # Main
@@ -497,9 +539,15 @@ main() {
         --commands|-c)
             show_commands
             ;;
-        --no-split|--split-ratio|--focus)
-            # Split view flags - pass through to CLI module
+        --no-split)
+            # TUI only mode
+            shift
             launch_tui "$@"
+            ;;
+        --split-ratio)
+            # Custom split ratio (percentage for left/TUI pane)
+            local ratio="${2:-40}"
+            launch_split_tmux "$ratio"
             ;;
         --install-mcps)
             install_mcps
@@ -508,11 +556,11 @@ main() {
             start_monitor "${2:-}"
             ;;
         launch|"")
-            # Default: Launch split view (Claude + TUI)
-            launch_tui "$@"
+            # Default: Launch split view (TUI left + Claude right) using tmux
+            launch_split_tmux 40
             ;;
         *)
-            # Unknown flag - pass through to CLI module
+            # Unknown flag - pass through to TUI module
             launch_tui "$@"
             ;;
     esac
