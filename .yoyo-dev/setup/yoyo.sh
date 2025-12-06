@@ -19,7 +19,7 @@ readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 # Yoyo Dev version
-readonly VERSION="3.0.0"
+readonly VERSION="3.1.0"
 
 # Determine script directory (resolve symlinks to get actual script location)
 SCRIPT_PATH="${BASH_SOURCE[0]}"
@@ -30,8 +30,8 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-# TUI Python script location (project-local)
-readonly TUI_SCRIPT="$PROJECT_ROOT/lib/yoyo-tui.py"
+# TUI module location (project-local)
+readonly TUI_MODULE="lib.yoyo_tui_v3.cli"
 
 # ============================================================================
 # Dependency Checking
@@ -149,7 +149,7 @@ show_help() {
     clear
     echo ""
     echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════════╗${RESET}"
-    echo -e "${BOLD}${CYAN}║${RESET}                     ${BOLD}YOYO DEV v3.0 - COMMAND REFERENCE${RESET}              ${BOLD}${CYAN}║${RESET}"
+    echo -e "${BOLD}${CYAN}║${RESET}                     ${BOLD}YOYO DEV v${VERSION} - COMMAND REFERENCE${RESET}            ${BOLD}${CYAN}║${RESET}"
     echo -e "${BOLD}${CYAN}╚════════════════════════════════════════════════════════════════════╝${RESET}"
     echo ""
     echo -e "${BOLD}Core Workflows:${RESET}"
@@ -201,16 +201,20 @@ show_help() {
     echo ""
     echo -e "${BOLD}Yoyo Launcher:${RESET}"
     echo ""
-    echo -e "  ${GREEN}yoyo${RESET}                    Launch TUI dashboard (full-screen)"
-    echo -e "  ${GREEN}yoyo --help${RESET}             Show this reference"
-    echo -e "  ${GREEN}yoyo --version${RESET}          Show version"
-    echo -e "  ${GREEN}yoyo --commands${RESET}         List all commands"
+    echo -e "  ${GREEN}yoyo${RESET}                         Launch split view (Claude left + TUI right)"
+    echo -e "  ${GREEN}yoyo --no-split${RESET}              Launch TUI only (no Claude)"
+    echo -e "  ${GREEN}yoyo --split-ratio 0.5${RESET}       Custom split ratio (0.0-1.0)"
+    echo -e "  ${GREEN}yoyo --focus tui${RESET}             Start with TUI focused"
+    echo -e "  ${GREEN}yoyo --help${RESET}                  Show this reference"
+    echo -e "  ${GREEN}yoyo --version${RESET}               Show version"
+    echo -e "  ${GREEN}yoyo --commands${RESET}              List all commands"
     echo ""
-    echo -e "  ${DIM}The TUI provides an interactive dashboard with:${RESET}"
-    echo -e "    • Real-time task and spec tracking"
-    echo -e "    • Live project status updates"
-    echo -e "    • One-click command execution"
-    echo -e "    • Press ? for help, q to quit"
+    echo -e "  ${DIM}Split view provides:${RESET}"
+    echo -e "    • Claude Code CLI on the left (40%)"
+    echo -e "    • Yoyo TUI dashboard on the right (60%)"
+    echo -e "    • Ctrl+B → to switch focus between panes"
+    echo -e "    • Ctrl+B < / > to resize panes"
+    echo -e "    • Press ? for help, q to quit TUI"
     echo ""
     echo "────────────────────────────────────────────────────────────────────"
     echo ""
@@ -454,7 +458,8 @@ launch_tui() {
     echo -e "   • ${GREEN}/create-fix${RESET} \"problem\"              ${DIM}# Fix bugs systematically${RESET}"
     echo -e "   • ${GREEN}/execute-tasks${RESET}                  ${DIM}# Build and ship code${RESET}"
     echo ""
-    echo -e " ${BOLD}New in v3.0:${RESET}"
+    echo -e " ${BOLD}New in v3.1:${RESET}"
+    echo -e "   ${CYAN}🖥️${RESET}  Split view: Claude Code + TUI side-by-side"
     echo -e "   ${CYAN}🚀${RESET} Production-grade intelligent dashboard"
     echo -e "   ${CYAN}🧠${RESET} Context-aware command suggestions"
     echo -e "   ${CYAN}⚠️${RESET}  Proactive error detection"
@@ -463,16 +468,19 @@ launch_tui() {
     echo ""
     echo " ──────────────────────────────────────────────────────────────────────────────"
     echo ""
-    echo -e " ${DIM}Inside TUI:${RESET}"
-    echo -e "   • Press ${CYAN}?${RESET} for help and keyboard shortcuts"
-    echo -e "   • Press ${CYAN}q${RESET} to quit"
-    echo -e "   • Click commands to copy to clipboard"
+    echo -e " ${DIM}Split View Shortcuts:${RESET}"
+    echo -e "   • ${CYAN}Ctrl+B →${RESET} Switch focus between Claude and TUI"
+    echo -e "   • ${CYAN}Ctrl+B <${RESET} Make left pane smaller"
+    echo -e "   • ${CYAN}Ctrl+B >${RESET} Make left pane larger"
+    echo -e "   • Press ${CYAN}?${RESET} for TUI help, ${CYAN}q${RESET} to quit TUI"
     echo ""
-    echo -e " ${YELLOW}Launching Yoyo Dev TUI...${RESET}"
+    echo -e " ${YELLOW}Launching Yoyo Dev (Claude + TUI)...${RESET}"
     echo ""
 
-    # Launch Textual TUI
-    exec python3 "$TUI_SCRIPT"
+    # Launch split view (Claude Code + TUI) or TUI-only
+    # Pass through any remaining arguments to the CLI module
+    cd "$PROJECT_ROOT"
+    exec python3 -m "$TUI_MODULE" "$@"
 }
 
 # Main
@@ -489,9 +497,23 @@ main() {
         --commands|-c)
             show_commands
             ;;
-        launch|*)
-            # Launch Textual TUI
-            launch_tui
+        --no-split|--split-ratio|--focus)
+            # Split view flags - pass through to CLI module
+            launch_tui "$@"
+            ;;
+        --install-mcps)
+            install_mcps
+            ;;
+        --monitor)
+            start_monitor "${2:-}"
+            ;;
+        launch|"")
+            # Default: Launch split view (Claude + TUI)
+            launch_tui "$@"
+            ;;
+        *)
+            # Unknown flag - pass through to CLI module
+            launch_tui "$@"
             ;;
     esac
 }
