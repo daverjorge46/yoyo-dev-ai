@@ -208,11 +208,12 @@ show_help() {
     echo -e "  ${GREEN}yoyo --version${RESET}               Show version"
     echo -e "  ${GREEN}yoyo --commands${RESET}              List all commands"
     echo ""
-    echo -e "  ${DIM}Split view (uses tmux):${RESET}"
+    echo -e "  ${DIM}Split view (uses tmux with mouse support):${RESET}"
     echo -e "    • Yoyo TUI dashboard on the left (40%)"
     echo -e "    • Claude Code CLI on the right (60%)"
-    echo -e "    • Ctrl+B → to switch focus between panes"
-    echo -e "    • Ctrl+B [ to scroll in pane"
+    echo -e "    • Drag pane border to resize"
+    echo -e "    • Click to switch panes"
+    echo -e "    • Scroll with mouse wheel"
     echo -e "    • Press ? for TUI help, q to quit TUI"
     echo ""
     echo "────────────────────────────────────────────────────────────────────"
@@ -514,6 +515,9 @@ launch_split_tmux() {
     cd "$PROJECT_ROOT"
     tmux new-session -d -s "$session_name" -x "$(tput cols)" -y "$(tput lines)" \
         "python3 -m $TUI_MODULE"
+
+    # Enable mouse support (resize panes by dragging, click to select, scroll)
+    tmux set-option -t "$session_name" mouse on
 
     # Split horizontally and run Claude in the right pane
     tmux split-window -h -t "$session_name" -p "$((100 - ratio))" "claude"
