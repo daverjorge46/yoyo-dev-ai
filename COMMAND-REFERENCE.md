@@ -1,6 +1,6 @@
-# Yoyo Dev v2.0 - Command Reference
+# Yoyo Dev v3.1 - Command Reference
 
-**Quick access:** Run `/help` or `/yoyo-help` in Claude Code or `yoyo --help` in terminal
+**Quick access:** Run `/yoyo-help` in Claude Code or `yoyo --help` in terminal
 
 ---
 
@@ -195,7 +195,32 @@ Analyze and fix bugs, design issues, or layout problems
 
 ---
 
-## 🎨 Design System (v1.5.0)
+### `/orchestrate-tasks`
+Manual multi-agent orchestration for complex features
+
+**Usage:**
+```bash
+/orchestrate-tasks
+```
+
+**No flags available**
+
+**What it does:**
+- Allows manual control over agent assignment per task group
+- Useful when different tasks need specific agents
+- Provides explicit execution order control
+
+**Use this when:**
+- Different agents needed for different task groups
+- Specific standards per task group required
+- Manual execution order control needed
+
+**90% of use cases:** Use `/execute-tasks` (automatic mode)
+**10% power users:** Use `/orchestrate-tasks` (manual control)
+
+---
+
+## Design System
 
 ### `/design-init`
 Initialize comprehensive design system
@@ -329,64 +354,119 @@ Critical code review with specialized modes
 
 ---
 
-## 🛠️ Utility Commands
+## Utility Commands
 
-### `/help`
-Show command reference
+### `/yoyo-help`
+Show help and command reference in Claude Code
 
 **Usage:**
 ```bash
-/help                   # Show all commands
-/help create-new        # Show specific command help
-/help flags             # Show all available flags
+/yoyo-help
 ```
+
+---
+
+### `/improve-skills`
+Optimize agent skills and performance
+
+**Usage:**
+```bash
+/improve-skills
+```
+
+**What it does:**
+- Analyzes current agent performance
+- Suggests skill optimizations
+- Creates optimization reports
+
+---
+
+### `/containerize-application`
+Generate Docker configuration for applications
+
+**Usage:**
+```bash
+/containerize-application --node          # Node.js application
+/containerize-application --python        # Python application
+/containerize-application --java          # Java application
+/containerize-application --go            # Go application
+/containerize-application --multi-stage   # Multi-stage build optimization
+```
+
+**Flags:**
+- `--node` - Node.js application
+- `--python` - Python application
+- `--java` - Java application
+- `--go` - Go application
+- `--multi-stage` - Enable multi-stage build for smaller images
+
+**What it does:**
+- Analyzes application structure
+- Generates optimized Dockerfile
+- Creates docker-compose.yml (if applicable)
+- Applies security best practices
 
 ---
 
 ### `yoyo`
-Launch Claude Code with Yoyo Dev branding
+Launch Yoyo Dev TUI dashboard
 
 **Usage:**
 ```bash
-yoyo                    # Launch Claude Code normally
-yoyo --help             # Show this reference
-yoyo --version          # Show Yoyo Dev version
-yoyo --commands         # List all available commands
-yoyo --monitor [task]   # Launch with task monitor
+yoyo                    # Launch split view (Claude + TUI)
+yoyo --no-split         # Launch TUI only
+yoyo --split-ratio 0.5  # Custom split ratio
+yoyo --focus tui        # Start with TUI focused
+yoyo --help             # Show help
+yoyo --version          # Show version
 ```
 
 **Flags:**
+- `--no-split` - Launch TUI only (no Claude pane)
+- `--split-ratio RATIO` - Custom split ratio (0.0-1.0)
+- `--focus PANE` - Start with focus on "claude" or "tui"
 - `--help` - Show command reference
 - `--version` - Show Yoyo Dev version
-- `--commands` - List all available commands with descriptions
-- `--monitor` - Start task monitor (requires MASTER-TASKS.md path)
+
+**Split View Keyboard Shortcuts:**
+- `Ctrl+B` + Arrow keys - Switch pane focus
+- `Ctrl+B` + `<` - Make left pane larger
+- `Ctrl+B` + `>` - Make right pane larger
 
 ---
 
-## 🎯 Task Monitor
+## TUI Dashboard
 
-### Start Task Monitor
+### Features
 
-**Tmux split pane (recommended):**
-```bash
-~/.yoyo-dev/lib/task-monitor-tmux.sh split path/to/MASTER-TASKS.md
+The TUI dashboard provides:
+- Real-time task/spec tracking
+- Context-aware command suggestions
+- Proactive error detection
+- MCP server health monitoring
+
+### Keyboard Shortcuts
+
+```
+?     Help              r     Refresh
+/     Commands          g     Git menu
+t     Focus tasks       s     Focus specs
+h     Focus history     q     Quit
 ```
 
-**Current terminal:**
-```bash
-~/.yoyo-dev/lib/task-monitor-tmux.sh watch path/to/MASTER-TASKS.md
-```
+### Split View Mode
 
-**One-time status:**
-```bash
-~/.yoyo-dev/lib/task-monitor-tmux.sh status path/to/MASTER-TASKS.md
-```
+When using `yoyo` (default), you get Claude Code + TUI side-by-side:
 
-**Controls (tmux):**
-- Switch panes: `Ctrl+B` then arrow keys
-- Close monitor: `Ctrl+B` then `x` (on monitor pane)
-- Full screen pane: `Ctrl+B` then `z`
-- Detach session: `Ctrl+B` then `d`
+```
++------------------+-------------------------+
+| Claude Code CLI  |  Yoyo TUI Dashboard     |
+| (40% width)      |  (60% width)            |
+|                  |                         |
+| Interactive AI   |  Task tracking          |
+| assistant        |  Progress monitoring    |
++------------------+-------------------------+
+```
 
 ---
 
@@ -488,4 +568,4 @@ yoyo --monitor [task]   # Launch with task monitor
 
 ---
 
-**Yoyo Dev v2.0** - "Powerful when you need it. Invisible when you don't."
+**Yoyo Dev v3.1** - "Powerful when you need it. Invisible when you don't."

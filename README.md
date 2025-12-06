@@ -1,25 +1,28 @@
-# Yoyo Dev v3.0 - AI-Assisted Development Framework
+# Yoyo Dev v3.1 - AI-Assisted Development Framework
 
 **"Powerful when you need it. Invisible when you don't."**
 
 Production-grade intelligent TUI dashboard for AI-assisted software development with Claude Code.
 
-## ✨ What's New in v3.0
+## What's New in v3.1
 
-🚀 **Production-Grade Textual TUI Dashboard**
-- Intelligent 3-panel layout with real-time updates
-- Context-aware command suggestions
-- Proactive error detection
-- MCP server health monitoring
-- Beautiful, responsive terminal UI
+**Split View Mode**
+- Integrated Claude Code CLI + TUI dashboard in split screen
+- 40/60 default split ratio (configurable)
+- Independent pane operation with keyboard shortcuts
+- Auto-fallback to TUI-only if Claude not installed
 
-⚡ **Performance Optimizations**
+**MCP Server Integration**
+- 6 MCP servers auto-installed (context7, memory, playwright, containerization, chrome-devtools, shadcn)
+- Automatic installation during project setup
+- MCP health monitoring in TUI dashboard
+
+**Performance Optimizations**
 - 97% faster startup (9ms vs 300ms)
 - 94% faster status refresh (3ms vs 50ms)
-- 100% CPU reduction during idle (0% vs 2-5%)
 - Smart caching for frequently-accessed data
 
-🎨 **Design System (v1.5.0)**
+**Design System**
 - Professional UI consistency
 - WCAG AA accessibility compliance
 - Design token system
@@ -61,9 +64,37 @@ bash .yoyo-dev/setup/install-global-command.sh
 
 This creates a global `yoyo` command that works from any Yoyo Dev project.
 
+### MCP Server Installation
+
+Yoyo Dev automatically installs 6 MCP servers during setup when Claude Code CLI is detected:
+
+| Server | Purpose |
+|--------|---------|
+| context7 | Intelligent context management |
+| memory | Persistent memory across sessions |
+| playwright | Browser automation and testing |
+| containerization | Docker and container management |
+| chrome-devtools | Chrome DevTools Protocol integration |
+| shadcn | shadcn/ui component integration |
+
+**Manual Installation:**
+
+```bash
+# Install all MCPs
+~/.yoyo-dev/setup/mcp-claude-installer.sh
+
+# Verify installation
+cat ~/.claude.json | jq '.projects[].mcpServers | keys'
+```
+
+**Requirements:**
+- Node.js and npm (for `npx` commands)
+- Claude Code CLI installed
+- pnpm (required only for shadcn MCP)
+
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Launch TUI Dashboard
 
@@ -207,6 +238,17 @@ See [Split View Guide](docs/split-view-guide.md) for detailed usage and troubles
 
 # Create UI component with strict validation
 /design-component "User profile card"
+```
+
+### Advanced Orchestration
+
+```bash
+# Manual multi-agent task orchestration (power users)
+/orchestrate-tasks
+
+# Containerize application
+/containerize-application --node
+/containerize-application --python --multi-stage
 ```
 
 ### Code Review (Optional)
@@ -534,18 +576,31 @@ bash .yoyo-dev/setup/yoyo-update.sh --no-overwrite-instructions --no-overwrite-s
 
 # Development
 /create-new "feature"       # Fast feature creation
+/create-spec "feature"      # Create spec only
+/create-tasks               # Create tasks from spec
 /create-fix "problem"       # Fix bugs systematically
 /execute-tasks              # Build and ship
+/orchestrate-tasks          # Manual multi-agent control
 
 # Design
 /design-init                # Initialize design system
 /design-audit               # Check compliance
 /design-fix                 # Fix violations
+/design-component "name"    # Create UI component
+
+# Review
+/review --devil "scope"     # Devil's advocate
+/review --security "scope"  # Security audit
+
+# Utility
+/yoyo-help                  # Show help in Claude
+/improve-skills             # Optimize agent skills
+/containerize-application   # Docker containerization
 
 # TUI
-yoyo                        # Launch dashboard
+yoyo                        # Launch split view
+yoyo --no-split             # TUI only
 yoyo --help                 # Show help
-yoyo --version              # Show version
 ```
 
 ### Keyboard Shortcuts (TUI)
@@ -746,6 +801,6 @@ Built with:
 
 ---
 
-**Version**: 3.0.0
-**Last Updated**: 2025-10-29
-**Status**: ✅ Production Ready
+**Version**: 3.1.1
+**Last Updated**: 2025-12-06
+**Status**: Production Ready
