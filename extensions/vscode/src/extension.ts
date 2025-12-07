@@ -112,20 +112,38 @@ export async function activate(context: vscode.ExtensionContext) {
   statusBarItem.command = 'yoyoDev.openSpec';
   context.subscriptions.push(statusBarItem);
 
-  // Update status bar with current spec info
+  // Create a separate status bar item for task progress (right side)
+  const taskProgressItem = vscode.window.createStatusBarItem(
+    vscode.StatusBarAlignment.Right,
+    100
+  );
+  taskProgressItem.command = 'yoyoDevTasks.focus';
+  context.subscriptions.push(taskProgressItem);
+
+  // Update status bar with current spec info and task progress
   const updateStatusBar = async () => {
     const currentSpec = taskTreeDataProvider.getCurrentSpec();
     if (!currentSpec) {
       statusBarItem.text = '$(folder) Yoyo Dev: No active spec';
       statusBarItem.tooltip = 'No specification found';
+      statusBarItem.backgroundColor = undefined;
       statusBarItem.show();
+      taskProgressItem.hide();
       return;
     }
+
+    // Get task stats
+    const stats = taskTreeDataProvider.getTaskStats();
+    const progressText = stats.total > 0 ? `${stats.completed}/${stats.total}` : '0/0';
 
     // Try to read state.json for workflow info
     const stateContent = await Container.instance.fileService.readFile(
       `specs/${currentSpec}/state.json`
     );
+
+    let phase = 'unknown';
+    let taskId = '';
+    let phaseIcon = '$(rocket)';
 
     if (stateContent) {
       const { StateParser } = await import('./parsers/StateParser');
@@ -133,20 +151,47 @@ export async function activate(context: vscode.ExtensionContext) {
       const state = stateParser.parse(stateContent);
 
       if (state) {
-        const phase = state.current_phase || 'unknown';
-        const taskId = state.active_task || '';
-        statusBarItem.text = `$(rocket) ${currentSpec} - ${phase}`;
-        statusBarItem.tooltip = `Spec: ${currentSpec}\nPhase: ${phase}\nActive Task: ${taskId}`;
-      } else {
-        statusBarItem.text = `$(rocket) ${currentSpec}`;
-        statusBarItem.tooltip = `Active Spec: ${currentSpec}`;
+        phase = state.current_phase || 'unknown';
+        taskId = state.active_task || '';
+
+        // Set icon and color based on phase
+        switch (phase) {
+          case 'planning':
+          case 'spec_created':
+            phaseIcon = '$(edit)';
+            statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+            break;
+          case 'tasks_ready':
+          case 'executing':
+            phaseIcon = '$(sync~spin)';
+            statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+            break;
+          case 'review':
+            phaseIcon = '$(eye)';
+            statusBarItem.backgroundColor = new vscode.ThemeColor('statusBarItem.errorBackground');
+            break;
+          case 'complete':
+          case 'completed':
+            phaseIcon = '$(check)';
+            statusBarItem.backgroundColor = undefined;
+            break;
+          default:
+            phaseIcon = '$(rocket)';
+            statusBarItem.backgroundColor = undefined;
+        }
       }
-    } else {
-      statusBarItem.text = `$(rocket) ${currentSpec}`;
-      statusBarItem.tooltip = `Active Spec: ${currentSpec}`;
     }
 
+    // Update main status bar item (left side)
+    statusBarItem.text = `${phaseIcon} ${currentSpec}`;
+    statusBarItem.tooltip = `Spec: ${currentSpec}\nPhase: ${phase}${taskId ? `\nActive Task: ${taskId}` : ''}\n\nClick to open spec`;
     statusBarItem.show();
+
+    // Update task progress item (right side)
+    const progressPercent = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+    taskProgressItem.text = `$(tasklist) ${progressText} tasks`;
+    taskProgressItem.tooltip = `Task Progress: ${progressText} (${progressPercent}%)\n\nClick to focus tasks view`;
+    taskProgressItem.show();
   };
 
   // Initial status bar update

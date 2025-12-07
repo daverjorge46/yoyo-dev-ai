@@ -1,8 +1,8 @@
 {
   "name": "yoyo-dev",
-  "displayName": "Yoyo Dev",
-  "description": "AI-assisted development workflow framework - systematic planning, specification, and execution for Claude Code and Cursor",
-  "version": "0.1.0",
+  "displayName": "Yoyo Dev - AI Workflow Framework",
+  "description": "Systematic AI-assisted development with Claude Code: product planning, feature specs, task execution, design systems, and code review workflows",
+  "version": "0.2.0",
   "publisher": "yoyo-dev",
   "icon": "icon.png",
   "repository": {
@@ -73,29 +73,29 @@
       },
       {
         "command": "yoyoDev.createNew",
-        "title": "Yoyo Dev: Create New Feature",
+        "title": "Yoyo Dev: Create New Feature (--lite, --monitor)",
         "category": "Yoyo Dev",
         "icon": "$(add)"
       },
       {
         "command": "yoyoDev.createSpec",
-        "title": "Yoyo Dev: Create Specification",
+        "title": "Yoyo Dev: Create Specification (--no-questions)",
         "category": "Yoyo Dev"
       },
       {
         "command": "yoyoDev.createTasks",
-        "title": "Yoyo Dev: Create Tasks",
+        "title": "Yoyo Dev: Create Tasks (--master, --parallel)",
         "category": "Yoyo Dev"
       },
       {
         "command": "yoyoDev.executeTasks",
-        "title": "Yoyo Dev: Execute Tasks",
+        "title": "Yoyo Dev: Execute Tasks (--all, --parallel, --monitor)",
         "category": "Yoyo Dev",
         "icon": "$(play)"
       },
       {
         "command": "yoyoDev.createFix",
-        "title": "Yoyo Dev: Create Fix",
+        "title": "Yoyo Dev: Create Fix (--quick, --monitor)",
         "category": "Yoyo Dev"
       },
       {
@@ -105,27 +105,27 @@
       },
       {
         "command": "yoyoDev.review",
-        "title": "Yoyo Dev: Review Code",
+        "title": "Yoyo Dev: Review Code (--devil, --security, --performance)",
         "category": "Yoyo Dev"
       },
       {
         "command": "yoyoDev.designInit",
-        "title": "Yoyo Dev: Initialize Design System",
+        "title": "Yoyo Dev: Initialize Design System (--analyze, --minimal)",
         "category": "Yoyo Dev"
       },
       {
         "command": "yoyoDev.designAudit",
-        "title": "Yoyo Dev: Audit Design",
+        "title": "Yoyo Dev: Audit Design (--colors, --spacing, --contrast)",
         "category": "Yoyo Dev"
       },
       {
         "command": "yoyoDev.designFix",
-        "title": "Yoyo Dev: Fix Design",
+        "title": "Yoyo Dev: Fix Design (--colors, --spacing, --contrast)",
         "category": "Yoyo Dev"
       },
       {
         "command": "yoyoDev.designComponent",
-        "title": "Yoyo Dev: Create Design Component",
+        "title": "Yoyo Dev: Create Design Component (--pattern, --strict)",
         "category": "Yoyo Dev"
       },
       {
@@ -135,7 +135,7 @@
       },
       {
         "command": "yoyoDev.containerize",
-        "title": "Yoyo Dev: Containerize Application",
+        "title": "Yoyo Dev: Containerize Application (--node, --python, --multi-stage)",
         "category": "Yoyo Dev"
       },
       {

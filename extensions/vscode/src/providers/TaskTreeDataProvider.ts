@@ -151,6 +151,13 @@ export class TaskTreeDataProvider implements vscode.TreeDataProvider<TaskTreeIte
   }
 
   /**
+   * Get task statistics (completed/total)
+   */
+  public getTaskStats(): { completed: number; total: number } {
+    return this.parser.getTaskStats(this.tasks);
+  }
+
+  /**
    * Get tree item
    */
   getTreeItem(element: TaskTreeItem): vscode.TreeItem {

@@ -64,22 +64,36 @@ export class TerminalService {
 
     // Show notification for workflow commands
     if (command.startsWith('/')) {
-      const workflowName = this.extractWorkflowName(command);
+      const { workflowName, flags } = this.parseCommand(command);
+      const flagsText = flags.length > 0 ? ` with ${flags.join(', ')}` : '';
       Container.instance.notificationService.showInfo(
-        `Starting workflow: ${workflowName}`
+        `Starting workflow: ${workflowName}${flagsText}`
       );
     }
   }
 
   /**
-   * Extract workflow name from command
+   * Parse command into workflow name and flags
+   */
+  private parseCommand(command: string): { workflowName: string; flags: string[] } {
+    const parts = command.split(/\s+/);
+    const baseCommand = parts[0];
+    const flags = parts.slice(1).filter(p => p.startsWith('--'));
+
+    // Extract workflow name from base command
+    const match = baseCommand.match(/^\/([a-z-]+)/);
+    const workflowName = match
+      ? match[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+      : command;
+
+    return { workflowName, flags };
+  }
+
+  /**
+   * Extract workflow name from command (legacy - kept for compatibility)
    */
   private extractWorkflowName(command: string): string {
-    const match = command.match(/^\/([a-z-]+)/);
-    if (match) {
-      return match[1].split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
-    }
-    return command;
+    return this.parseCommand(command).workflowName;
   }
 
   /**
