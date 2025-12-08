@@ -395,40 +395,58 @@ check_claude_cli_available() {
     return 1
 }
 
-# Function to read Claude config and extract MCP server names
-get_installed_mcps() {
-    local claude_config="$HOME/.claude.json"
+# Function to check if Docker is available and running
+check_docker_available() {
+    # Check if docker command exists
+    if ! command -v docker &> /dev/null; then
+        return 1
+    fi
 
-    if [ ! -f "$claude_config" ]; then
+    # Check if Docker daemon is running
+    if ! docker info &> /dev/null 2>&1; then
+        return 1
+    fi
+
+    return 0
+}
+
+# Function to check if Docker MCP Toolkit is enabled
+check_docker_mcp_toolkit() {
+    # Check if docker mcp command is available
+    if docker mcp --help &> /dev/null 2>&1; then
+        return 0
+    fi
+    return 1
+}
+
+# Function to get installed MCP servers via Docker MCP Gateway
+get_installed_mcps() {
+    # Use docker mcp server status to get enabled servers
+    if ! check_docker_available; then
         echo ""
         return 1
     fi
 
-    # Extract mcpServers for current project
-    if command -v python3 &> /dev/null; then
-        python3 -c "
-import json
-import sys
-
-try:
-    with open('$claude_config', 'r') as f:
-        data = json.load(f)
-
-    # Get project config
-    project_path = '$CURRENT_DIR'
-    if project_path in data.get('projects', {}):
-        mcp_servers = data['projects'][project_path].get('mcpServers', {})
-        for name in mcp_servers.keys():
-            print(name)
-except Exception as e:
-    sys.exit(1)
-" 2>/dev/null || echo ""
+    if ! check_docker_mcp_toolkit; then
+        echo ""
+        return 1
     fi
+
+    # Parse docker mcp server status output
+    local status_output
+    status_output=$(docker mcp server status 2>/dev/null) || {
+        echo ""
+        return 1
+    }
+
+    # Extract server names from output like "  - playwright (running)"
+    echo "$status_output" | grep -E '^\s*-\s+\S+' | sed -E 's/^\s*-\s+(\S+).*/\1/' 2>/dev/null || echo ""
 }
 
-# Function to detect missing MCPs
+# Function to detect missing MCPs (Docker MCP servers)
 detect_missing_mcps() {
-    local expected_mcps="context7 memory playwright containerization chrome-devtools shadcn"
+    # Docker MCP Gateway servers (replaces legacy npx-based MCPs)
+    local expected_mcps="playwright github-official duckduckgo filesystem"
     local installed_mcps=$(get_installed_mcps)
     local missing_mcps=""
 
@@ -441,24 +459,25 @@ detect_missing_mcps() {
     echo "$missing_mcps" | xargs
 }
 
-# Function to prompt user for MCP update
+# Function to prompt user for MCP update (Docker MCP Gateway)
 prompt_mcp_update() {
     local missing_mcps="$1"
 
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📦 MCP Server Status"
+    echo "📦 Docker MCP Server Status"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "⚠️  Missing MCP servers detected:"
+    echo "⚠️  Missing Docker MCP servers detected:"
     echo ""
     for mcp in $missing_mcps; do
         echo "  • $mcp"
     done
     echo ""
-    echo "MCP servers enhance Claude Code with additional capabilities."
+    echo "Docker MCP servers run in containers via Docker MCP Toolkit."
+    echo "They enhance Claude Code with browser automation, GitHub, search, and file access."
     echo ""
-    read -p "Would you like to install missing MCPs? [Y/n] " -n 1 -r
+    read -p "Would you like to enable missing MCP servers? [Y/n] " -n 1 -r
     echo ""
 
     if [[ $REPLY =~ ^[Nn]$ ]]; then
@@ -467,37 +486,51 @@ prompt_mcp_update() {
     return 0
 }
 
-# Function to install missing MCPs
+# Function to enable missing Docker MCP servers
 install_missing_mcps() {
     local mcp_installer="$BASE_YOYO_DEV/setup/docker-mcp-setup.sh"
 
     if [ ! -f "$mcp_installer" ]; then
         echo ""
-        echo "⚠️  MCP installer not found at $mcp_installer"
-        echo "   Skipping MCP installation"
+        echo "⚠️  Docker MCP setup script not found at $mcp_installer"
+        echo "   Skipping MCP server enablement"
         return 1
     fi
 
     echo ""
-    echo "📦 Installing missing MCP servers..."
+    echo "📦 Enabling Docker MCP servers..."
     echo ""
 
     if bash "$mcp_installer" --non-interactive --project-dir="$CURRENT_DIR"; then
         echo ""
-        echo "✅ MCP servers installed successfully"
+        echo "✅ Docker MCP servers enabled successfully"
         return 0
     else
         echo ""
-        echo "⚠️  Some MCPs may have failed to install. Check output above."
+        echo "⚠️  Some MCP servers may have failed to enable. Check output above."
         return 1
     fi
 }
 
-# Main MCP verification flow
+# Main MCP verification flow (Docker MCP Gateway)
 if [ "$CLAUDE_CODE_INSTALLED" = true ] && [ "$SKIP_MCP_CHECK" = false ]; then
-    # Check if Claude CLI is available
-    if check_claude_cli_available; then
-        # Detect missing MCPs
+    # Check if Docker is available first
+    if ! check_docker_available; then
+        if [ "$VERBOSE" = true ]; then
+            echo ""
+            echo "ℹ️  Docker not available - skipping MCP verification"
+            echo "   Docker Desktop is required for MCP features."
+            echo "   Install from: https://www.docker.com/products/docker-desktop/"
+        fi
+    elif ! check_docker_mcp_toolkit; then
+        if [ "$VERBOSE" = true ]; then
+            echo ""
+            echo "ℹ️  Docker MCP Toolkit not enabled - skipping MCP verification"
+            echo "   Enable MCP Toolkit in Docker Desktop:"
+            echo "   Settings → Beta features → Enable 'MCP Toolkit'"
+        fi
+    elif check_claude_cli_available; then
+        # Docker available, check for missing MCPs
         MISSING_MCPS=$(detect_missing_mcps)
 
         if [ -n "$MISSING_MCPS" ]; then
@@ -513,7 +546,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ] && [ "$SKIP_MCP_CHECK" = false ]; then
         else
             if [ "$VERBOSE" = true ]; then
                 echo ""
-                echo "✅ All expected MCP servers are installed"
+                echo "✅ All Docker MCP servers are enabled"
             fi
         fi
     else
