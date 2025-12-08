@@ -433,6 +433,56 @@ install_mcps() {
     fi
 }
 
+# Check Docker MCP Gateway status
+# Returns: 0 if MCP servers are running, 1 otherwise
+# Sets: MCP_STATUS_TEXT with status message
+check_docker_mcp_gateway() {
+    MCP_STATUS_TEXT=""
+
+    # Check if Docker is installed
+    if ! command -v docker &> /dev/null; then
+        MCP_STATUS_TEXT="${DIM}Docker not installed${RESET}"
+        return 1
+    fi
+
+    # Check if Docker daemon is running
+    if ! docker info &> /dev/null 2>&1; then
+        MCP_STATUS_TEXT="${YELLOW}Docker not running${RESET}"
+        return 1
+    fi
+
+    # Check if MCP Toolkit is available
+    if ! docker mcp --help &> /dev/null 2>&1; then
+        MCP_STATUS_TEXT="${YELLOW}MCP Toolkit not enabled${RESET}"
+        return 1
+    fi
+
+    # Get enabled servers
+    local status_output
+    status_output=$(docker mcp server status 2>/dev/null) || {
+        MCP_STATUS_TEXT="${YELLOW}MCP Gateway unavailable${RESET}"
+        return 1
+    }
+
+    # Check for "no servers enabled"
+    if echo "$status_output" | grep -qi "no servers enabled"; then
+        MCP_STATUS_TEXT="${YELLOW}No MCP servers enabled${RESET}"
+        return 1
+    fi
+
+    # Count enabled servers
+    local server_count
+    server_count=$(echo "$status_output" | grep -cE '^\s*-\s+\S+' || echo "0")
+
+    if [ "$server_count" -gt 0 ]; then
+        MCP_STATUS_TEXT="${GREEN}${server_count} servers enabled${RESET}"
+        return 0
+    else
+        MCP_STATUS_TEXT="${YELLOW}No MCP servers${RESET}"
+        return 1
+    fi
+}
+
 # Display branded header and launch TUI
 launch_tui() {
     # Check for available updates
@@ -498,6 +548,10 @@ launch_tui() {
         tech_stack="Not configured yet - run /plan-product or /analyze-product"
     fi
 
+    # Check Docker MCP Gateway status (runs in background to not slow down startup)
+    check_docker_mcp_gateway
+    local mcp_status="$MCP_STATUS_TEXT"
+
     # Display branded header
     clear
     echo ""
@@ -518,6 +572,7 @@ launch_tui() {
     echo -e " ${BLUE}📂 Location:${RESET} $project_path"
     echo -e " ${MAGENTA}🎯 Mission:${RESET} $mission"
     echo -e " ${YELLOW}🛠️  Stack:${RESET} $tech_stack"
+    echo -e " ${CYAN}🔌 MCP:${RESET} $mcp_status"
     echo ""
     echo " ──────────────────────────────────────────────────────────────────────────────"
     echo ""
