@@ -288,6 +288,10 @@ class MainDashboard(Screen):
 
     def action_refresh(self) -> None:
         """Manually refresh all panels."""
+        # Trigger fresh data fetch via app's refresh service
+        if hasattr(self.app, 'refresh_service') and self.app.refresh_service:
+            self.app.refresh_service.refresh_now()
+
         self.refresh_all_panels()
         self.notify("Dashboard refreshed", severity="information")
 

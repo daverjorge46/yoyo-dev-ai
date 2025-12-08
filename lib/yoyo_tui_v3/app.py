@@ -112,6 +112,9 @@ class YoyoDevTUIApp(App):
         # Wire mcp_monitor to data_manager for MCP status display
         self.data_manager.mcp_monitor = self.mcp_monitor
 
+        # Do initial MCP status check before dashboard loads
+        self.mcp_monitor.check_mcp_status()
+
         # 7. RefreshService (depends on all above)
         self.refresh_service = RefreshService(
             data_manager=self.data_manager,
