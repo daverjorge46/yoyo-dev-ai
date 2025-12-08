@@ -1,6 +1,6 @@
 # Yoyo Dev Configuration
 
-yoyo_dev_version: 1.5.0
+yoyo_dev_version: 3.1.1
 
 agents:
   claude_code:
@@ -62,6 +62,33 @@ design_system:
   dark_mode: true
   spacing_base: 4  # 4px or 8px
   strict_mode: false  # If true, blocks merge on any violation
+
+# Split View Configuration
+split_view:
+  enabled: true                    # Master toggle for split view mode
+  ratio: 0.4                       # Split ratio (0.0-1.0): 0.4 = 40% left, 60% right
+  active_pane: claude              # Starting focus: "claude" or "tui"
+
+  border_style:
+    active: bright_cyan            # Active pane border color
+    inactive: dim_white            # Inactive pane border color
+
+  shortcuts:
+    switch_focus: ctrl+b+arrow     # Switch pane focus
+    resize_left: ctrl+b+<          # Make left pane larger
+    resize_right: ctrl+b+>         # Make right pane larger
+
+  claude:
+    command: claude                # Command to launch Claude Code
+    auto_cwd: true                 # Auto-attach to current directory
+    fallback_delay: 3              # Seconds to wait before TUI-only fallback
+
+# Parallel Execution Configuration
+parallel_execution:
+  enabled: true              # Auto-analyze task dependencies
+  max_concurrency: 5         # Max parallel tasks
+  auto_analyze: true         # Automatic dependency detection
+  ask_confirmation: true     # Ask before parallel execution
 
 project_types:
   default:
