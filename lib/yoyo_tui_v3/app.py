@@ -109,6 +109,9 @@ class YoyoDevTUIApp(App):
         # 6. MCPServerMonitor (depends on EventBus)
         self.mcp_monitor = MCPServerMonitor(event_bus=self.event_bus)
 
+        # Wire mcp_monitor to data_manager for MCP status display
+        self.data_manager.mcp_monitor = self.mcp_monitor
+
         # 7. RefreshService (depends on all above)
         self.refresh_service = RefreshService(
             data_manager=self.data_manager,

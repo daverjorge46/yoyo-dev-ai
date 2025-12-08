@@ -160,8 +160,8 @@ class TestDataManagerProductMethods:
         assert stats.pending_tasks >= 2  # At least 2 incomplete tasks
         assert stats.recent_errors >= 0
 
-    def test_get_mcp_status_not_implemented(self, product_fixture, mock_event_bus, mock_cache_manager):
-        """Test get_mcp_status returns None (not yet implemented)."""
+    def test_get_mcp_status_without_mcp_monitor(self, product_fixture, mock_event_bus, mock_cache_manager):
+        """Test get_mcp_status returns None when mcp_monitor is not set."""
         # Arrange
         data_manager = DataManager(
             yoyo_dev_path=product_fixture,
@@ -173,8 +173,69 @@ class TestDataManagerProductMethods:
         mcp_status = data_manager.get_mcp_status()
 
         # Assert
-        # For now, should return None (not implemented)
+        # Should return None when mcp_monitor is not wired
         assert mcp_status is None
+
+    def test_get_mcp_status_with_mcp_monitor(self, product_fixture, mock_event_bus, mock_cache_manager):
+        """Test get_mcp_status returns actual status when mcp_monitor is wired."""
+        # Arrange
+        data_manager = DataManager(
+            yoyo_dev_path=product_fixture,
+            event_bus=mock_event_bus,
+            cache_manager=mock_cache_manager
+        )
+
+        # Create mock mcp_monitor with a status
+        mock_mcp_monitor = Mock()
+        mock_status = MCPServerStatus(
+            connected=True,
+            server_name="Docker MCP Gateway: 3 servers",
+            last_check=datetime.now(),
+            error_message=None
+        )
+        mock_mcp_monitor.get_status.return_value = mock_status
+
+        # Wire mcp_monitor to data_manager
+        data_manager.mcp_monitor = mock_mcp_monitor
+
+        # Act
+        mcp_status = data_manager.get_mcp_status()
+
+        # Assert
+        assert mcp_status is not None
+        assert mcp_status.connected is True
+        assert "Docker MCP Gateway" in mcp_status.server_name
+        mock_mcp_monitor.get_status.assert_called_once()
+
+    def test_get_mcp_status_disconnected_with_error(self, product_fixture, mock_event_bus, mock_cache_manager):
+        """Test get_mcp_status returns disconnected status with error message."""
+        # Arrange
+        data_manager = DataManager(
+            yoyo_dev_path=product_fixture,
+            event_bus=mock_event_bus,
+            cache_manager=mock_cache_manager
+        )
+
+        # Create mock mcp_monitor with disconnected status
+        mock_mcp_monitor = Mock()
+        mock_status = MCPServerStatus(
+            connected=False,
+            server_name=None,
+            last_check=datetime.now(),
+            error_message="Docker not running"
+        )
+        mock_mcp_monitor.get_status.return_value = mock_status
+
+        # Wire mcp_monitor to data_manager
+        data_manager.mcp_monitor = mock_mcp_monitor
+
+        # Act
+        mcp_status = data_manager.get_mcp_status()
+
+        # Assert
+        assert mcp_status is not None
+        assert mcp_status.connected is False
+        assert mcp_status.error_message == "Docker not running"
 
     def test_initialize_loads_product_files(self, product_fixture, mock_event_bus, mock_cache_manager):
         """Test initialize() loads mission and tech stack."""

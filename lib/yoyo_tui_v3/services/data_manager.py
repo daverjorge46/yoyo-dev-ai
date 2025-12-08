@@ -62,7 +62,8 @@ class DataManager:
         event_bus: EventBus,
         cache_manager: CacheManager,
         command_suggester=None,
-        error_detector=None
+        error_detector=None,
+        mcp_monitor=None
     ):
         """
         Initialize DataManager.
@@ -73,12 +74,14 @@ class DataManager:
             cache_manager: CacheManager instance for caching
             command_suggester: IntelligentCommandSuggester instance (optional)
             error_detector: ErrorDetector instance (optional)
+            mcp_monitor: MCPServerMonitor instance (optional)
         """
         self._yoyo_dev_path = yoyo_dev_path
         self._event_bus = event_bus
         self._cache_manager = cache_manager
         self.command_suggester = command_suggester
         self.error_detector = error_detector
+        self.mcp_monitor = mcp_monitor
 
         # Initialize empty state
         self._state = ApplicationState()
@@ -499,8 +502,8 @@ class DataManager:
         Returns:
             MCPServerStatus if available, None otherwise
         """
-        # TODO: Implement MCP monitoring when mcp_monitor service is available
-        # For now, return None
+        if self.mcp_monitor is not None:
+            return self.mcp_monitor.get_status()
         return None
 
     def get_active_work(self) -> Optional['ActiveWork']:
