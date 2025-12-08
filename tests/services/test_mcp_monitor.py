@@ -1,7 +1,7 @@
 """
 Tests for MCPServerMonitor service.
 
-Tests MCP server status detection and process checking.
+Tests Docker MCP Gateway detection and status checking.
 """
 
 import pytest
@@ -28,103 +28,139 @@ def monitor(mock_event_bus):
 
 
 # ============================================================================
-# MCP Process Detection
+# Docker MCP Gateway Detection
 # ============================================================================
 
 @patch('subprocess.run')
-def test_detect_mcp_process_running(mock_run, monitor):
-    """Test detection of running MCP server process."""
-    # Mock ps aux output showing MCP process
+def test_detect_docker_mcp_gateway_connected(mock_run, monitor):
+    """Test detection of Docker MCP Gateway with enabled servers."""
+    # Mock docker mcp server status output
     mock_run.return_value = MagicMock(
         returncode=0,
-        stdout="1234 user mcp-server --port 3000\n5678 user python -m mcp.server",
+        stdout="""Enabled servers:
+  - playwright (running)
+  - github-official (running)
+  - duckduckgo (idle)
+""",
         stderr=""
     )
 
     status = monitor.check_mcp_status()
 
     assert status.connected is True
-    assert status.server_name is not None
-    assert "mcp" in status.server_name.lower()
+    assert "Docker MCP Gateway" in status.server_name
     assert status.error_message is None
 
 
 @patch('subprocess.run')
-def test_detect_no_mcp_process(mock_run, monitor):
-    """Test detection when no MCP process is running."""
-    # Mock ps aux output with no MCP process
+def test_detect_docker_mcp_no_servers_enabled(mock_run, monitor):
+    """Test detection when Docker MCP Gateway has no servers enabled."""
     mock_run.return_value = MagicMock(
         returncode=0,
-        stdout="1234 user python app.py\n5678 user node server.js",
+        stdout="No servers enabled",
         stderr=""
     )
 
     status = monitor.check_mcp_status()
 
     assert status.connected is False
-    assert status.server_name is None
-    assert status.error_message == "Not running"
+    assert "No MCP servers enabled" in status.error_message
 
 
 @patch('subprocess.run')
-def test_detect_multiple_mcp_processes(mock_run, monitor):
-    """Test detection of multiple MCP server processes."""
-    # Mock ps aux output with multiple MCP processes
+def test_detect_docker_mcp_not_running(mock_run, monitor):
+    """Test detection when Docker is not running."""
+    mock_run.side_effect = subprocess.CalledProcessError(1, "docker mcp server status")
+
+    status = monitor.check_mcp_status()
+
+    assert status.connected is False
+    assert status.error_message is not None
+
+
+@patch('subprocess.run')
+def test_detect_docker_not_installed(mock_run, monitor):
+    """Test detection when Docker is not installed."""
+    mock_run.side_effect = FileNotFoundError("docker not found")
+
+    status = monitor.check_mcp_status()
+
+    assert status.connected is False
+    assert "Docker" in status.error_message or "not found" in status.error_message.lower()
+
+
+@patch('subprocess.run')
+def test_detect_mcp_toolkit_not_enabled(mock_run, monitor):
+    """Test detection when MCP Toolkit is not enabled."""
+    mock_run.return_value = MagicMock(
+        returncode=1,
+        stdout="",
+        stderr="Error: 'mcp' is not a docker command"
+    )
+
+    status = monitor.check_mcp_status()
+
+    assert status.connected is False
+    assert "MCP Toolkit" in status.error_message or "not enabled" in status.error_message.lower()
+
+
+# ============================================================================
+# Docker MCP Server Parsing
+# ============================================================================
+
+@patch('subprocess.run')
+def test_parse_enabled_servers_list(mock_run, monitor):
+    """Test parsing of enabled servers from docker mcp server status."""
     mock_run.return_value = MagicMock(
         returncode=0,
-        stdout="""
-1234 user mcp-server-1 --port 3000
-5678 user mcp-server-2 --port 3001
-        """,
+        stdout="""Enabled servers:
+  - playwright (running)
+  - github-official (running)
+  - duckduckgo (idle)
+  - filesystem (running)
+""",
         stderr=""
     )
 
     status = monitor.check_mcp_status()
 
     assert status.connected is True
-    # Should detect at least one MCP server
-    assert status.server_name is not None
+    # Should include server count or names
+    assert "4" in status.server_name or "playwright" in status.server_name.lower()
 
 
 @patch('subprocess.run')
-def test_handle_ps_command_failure(mock_run, monitor):
-    """Test handling when ps command fails."""
-    # Mock ps command failure
-    mock_run.side_effect = subprocess.CalledProcessError(1, "ps aux")
+def test_parse_single_server(mock_run, monitor):
+    """Test parsing when only one server is enabled."""
+    mock_run.return_value = MagicMock(
+        returncode=0,
+        stdout="""Enabled servers:
+  - playwright (running)
+""",
+        stderr=""
+    )
 
     status = monitor.check_mcp_status()
 
-    # Should return disconnected status
-    assert status.connected is False
-    assert "error" in status.error_message.lower() or "failed" in status.error_message.lower()
+    assert status.connected is True
+    assert "playwright" in status.server_name.lower() or "1" in status.server_name
 
-
-# ============================================================================
-# MCP Server Name Detection
-# ============================================================================
 
 @patch('subprocess.run')
-def test_extract_server_name_from_process(mock_run, monitor):
-    """Test extraction of server name from process info."""
-    test_cases = [
-        ("mcp-server --config config.json", "mcp"),  # Will extract "mcp-server" or "mcp"
-        ("python -m mcp.server", "mcp"),              # Will extract "mcp"
-        ("/usr/bin/mcp-claude-server", "mcp"),        # Will extract "mcp-claude-server" or "mcp"
-        ("node mcp/index.js", "index"),                # Will extract "index" from last path component
-    ]
+def test_parse_server_with_idle_status(mock_run, monitor):
+    """Test that idle servers are still considered enabled."""
+    mock_run.return_value = MagicMock(
+        returncode=0,
+        stdout="""Enabled servers:
+  - duckduckgo (idle)
+""",
+        stderr=""
+    )
 
-    for process_cmd, expected_substring in test_cases:
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=f"1234 user {process_cmd}",
-            stderr=""
-        )
+    status = monitor.check_mcp_status()
 
-        status = monitor.check_mcp_status()
-
-        assert status.connected is True
-        # Just check that "mcp" appears somewhere in the server name
-        assert expected_substring.lower() in status.server_name.lower()
+    # Idle servers should still count as connected (they start on demand)
+    assert status.connected is True
 
 
 # ============================================================================
@@ -134,20 +170,20 @@ def test_extract_server_name_from_process(mock_run, monitor):
 def test_status_updates_on_check(monitor):
     """Test that status is updated each time check is called."""
     with patch('subprocess.run') as mock_run:
-        # First check: server running
+        # First check: servers running
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="1234 user mcp-server",
+            stdout="Enabled servers:\n  - playwright (running)",
             stderr=""
         )
 
         status1 = monitor.check_mcp_status()
         assert status1.connected is True
 
-        # Second check: server stopped
+        # Second check: no servers
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="",  # No MCP process
+            stdout="No servers enabled",
             stderr=""
         )
 
@@ -163,14 +199,14 @@ def test_get_cached_status(monitor):
     with patch('subprocess.run') as mock_run:
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="1234 user mcp-server",
+            stdout="Enabled servers:\n  - playwright (running)",
             stderr=""
         )
 
         # First check
         status1 = monitor.check_mcp_status()
 
-        # Get cached status (should not call ps again)
+        # Get cached status (should not call docker again)
         mock_run.reset_mock()
         status2 = monitor.get_status()
 
@@ -178,7 +214,7 @@ def test_get_cached_status(monitor):
         assert status1.connected == status2.connected
         assert status1.server_name == status2.server_name
 
-        # Should not have called ps again
+        # Should not have called docker again
         mock_run.assert_not_called()
 
 
@@ -187,12 +223,12 @@ def test_get_cached_status(monitor):
 # ============================================================================
 
 def test_publish_status_changed_event_on_connection(monitor, mock_event_bus):
-    """Test that MCP_STATUS_CHANGED event is published when server connects."""
+    """Test that MCP_STATUS_CHANGED event is published when gateway connects."""
     with patch('subprocess.run') as mock_run:
         # Initial status: disconnected
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="",  # No MCP
+            stdout="No servers enabled",
             stderr=""
         )
         monitor.check_mcp_status()
@@ -200,10 +236,10 @@ def test_publish_status_changed_event_on_connection(monitor, mock_event_bus):
         # Clear previous calls
         mock_event_bus.publish.reset_mock()
 
-        # Server starts
+        # Gateway starts with servers
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="1234 user mcp-server",
+            stdout="Enabled servers:\n  - playwright (running)",
             stderr=""
         )
         monitor.check_mcp_status()
@@ -218,12 +254,12 @@ def test_publish_status_changed_event_on_connection(monitor, mock_event_bus):
 
 
 def test_publish_status_changed_event_on_disconnection(monitor, mock_event_bus):
-    """Test that event is published when server disconnects."""
+    """Test that event is published when gateway disconnects."""
     with patch('subprocess.run') as mock_run:
         # Initial status: connected
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="1234 user mcp-server",
+            stdout="Enabled servers:\n  - playwright (running)",
             stderr=""
         )
         monitor.check_mcp_status()
@@ -231,10 +267,10 @@ def test_publish_status_changed_event_on_disconnection(monitor, mock_event_bus):
         # Clear previous calls
         mock_event_bus.publish.reset_mock()
 
-        # Server stops
+        # Gateway stops
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="",  # No MCP
+            stdout="No servers enabled",
             stderr=""
         )
         monitor.check_mcp_status()
@@ -249,7 +285,7 @@ def test_no_event_published_when_status_unchanged(monitor, mock_event_bus):
         # Initial check
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="1234 user mcp-server",
+            stdout="Enabled servers:\n  - playwright (running)",
             stderr=""
         )
         monitor.check_mcp_status()
@@ -260,7 +296,7 @@ def test_no_event_published_when_status_unchanged(monitor, mock_event_bus):
         # Second check with same status
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="1234 user mcp-server",
+            stdout="Enabled servers:\n  - playwright (running)",
             stderr=""
         )
         monitor.check_mcp_status()
@@ -275,42 +311,42 @@ def test_no_event_published_when_status_unchanged(monitor, mock_event_bus):
 
 @patch('platform.system')
 @patch('subprocess.run')
-def test_linux_process_detection(mock_run, mock_platform, monitor):
-    """Test MCP detection on Linux."""
+def test_linux_docker_detection(mock_run, mock_platform, monitor):
+    """Test Docker MCP detection on Linux."""
     mock_platform.return_value = "Linux"
 
     mock_run.return_value = MagicMock(
         returncode=0,
-        stdout="1234 user mcp-server",
+        stdout="Enabled servers:\n  - playwright (running)",
         stderr=""
     )
 
     status = monitor.check_mcp_status()
 
-    # Should use ps aux on Linux
+    # Should use docker mcp server status
     call_args = mock_run.call_args[0][0]
-    assert "ps" in call_args
+    assert "docker" in call_args
 
     assert status.connected is True
 
 
 @patch('platform.system')
 @patch('subprocess.run')
-def test_macos_process_detection(mock_run, mock_platform, monitor):
-    """Test MCP detection on macOS."""
+def test_macos_docker_detection(mock_run, mock_platform, monitor):
+    """Test Docker MCP detection on macOS."""
     mock_platform.return_value = "Darwin"
 
     mock_run.return_value = MagicMock(
         returncode=0,
-        stdout="1234 user mcp-server",
+        stdout="Enabled servers:\n  - playwright (running)",
         stderr=""
     )
 
     status = monitor.check_mcp_status()
 
-    # Should use ps aux on macOS
+    # Should use docker mcp server status
     call_args = mock_run.call_args[0][0]
-    assert "ps" in call_args
+    assert "docker" in call_args
 
     assert status.connected is True
 
@@ -322,51 +358,9 @@ def test_unsupported_platform(mock_platform, monitor):
 
     status = monitor.check_mcp_status()
 
-    # Should return "not configured" on unsupported platforms
+    # Should return "not supported" on Windows
     assert status.connected is False
     assert "not supported" in status.error_message.lower() or "windows" in status.error_message.lower()
-
-
-# ============================================================================
-# Alternative Detection Methods
-# ============================================================================
-
-@patch('subprocess.run')
-def test_detect_via_pidfile(mock_run, monitor, tmp_path):
-    """Test MCP detection via PID file (alternative method)."""
-    # Create mock PID file
-    pid_file = tmp_path / "mcp.pid"
-    pid_file.write_text("1234")
-
-    # Configure monitor to check PID file
-    monitor.pid_file_path = pid_file
-
-    # Mock process check
-    mock_run.return_value = MagicMock(
-        returncode=0,
-        stdout="1234 user mcp-server",
-        stderr=""
-    )
-
-    status = monitor.check_mcp_via_pidfile()
-
-    assert status.connected is True
-
-
-@patch('subprocess.run')
-def test_detect_via_port_check(mock_run, monitor):
-    """Test MCP detection via port listening check."""
-    # Mock netstat/lsof output showing MCP on port 3000
-    mock_run.return_value = MagicMock(
-        returncode=0,
-        stdout="mcp-server 1234 user TCP *:3000 (LISTEN)",
-        stderr=""
-    )
-
-    status = monitor.check_mcp_via_port(port=3000)
-
-    assert status.connected is True
-    assert "3000" in str(status.server_name) or status.connected
 
 
 # ============================================================================
@@ -376,7 +370,7 @@ def test_detect_via_port_check(mock_run, monitor):
 @patch('subprocess.run')
 def test_handle_timeout(mock_run, monitor):
     """Test handling of subprocess timeout."""
-    mock_run.side_effect = subprocess.TimeoutExpired("ps aux", timeout=5)
+    mock_run.side_effect = subprocess.TimeoutExpired("docker mcp server status", timeout=5)
 
     status = monitor.check_mcp_status()
 
@@ -400,7 +394,7 @@ def test_status_has_timestamp(monitor):
     with patch('subprocess.run') as mock_run:
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="",
+            stdout="No servers enabled",
             stderr=""
         )
 
@@ -411,32 +405,81 @@ def test_status_has_timestamp(monitor):
 
 
 # ============================================================================
+# Get Enabled Servers
+# ============================================================================
+
+@patch('subprocess.run')
+def test_get_enabled_servers(mock_run, monitor):
+    """Test getting list of enabled MCP servers."""
+    mock_run.return_value = MagicMock(
+        returncode=0,
+        stdout="""Enabled servers:
+  - playwright (running)
+  - github-official (running)
+  - duckduckgo (idle)
+""",
+        stderr=""
+    )
+
+    servers = monitor.get_enabled_servers()
+
+    assert len(servers) == 3
+    assert "playwright" in servers
+    assert "github-official" in servers
+    assert "duckduckgo" in servers
+
+
+@patch('subprocess.run')
+def test_get_enabled_servers_none(mock_run, monitor):
+    """Test getting enabled servers when none are enabled."""
+    mock_run.return_value = MagicMock(
+        returncode=0,
+        stdout="No servers enabled",
+        stderr=""
+    )
+
+    servers = monitor.get_enabled_servers()
+
+    assert len(servers) == 0
+
+
+@patch('subprocess.run')
+def test_get_enabled_servers_error(mock_run, monitor):
+    """Test getting enabled servers when Docker fails."""
+    mock_run.side_effect = subprocess.CalledProcessError(1, "docker")
+
+    servers = monitor.get_enabled_servers()
+
+    assert len(servers) == 0
+
+
+# ============================================================================
 # Integration Tests
 # ============================================================================
 
 def test_full_monitoring_cycle(monitor, mock_event_bus):
     """Test complete monitoring cycle with state changes."""
     with patch('subprocess.run') as mock_run:
-        # Cycle 1: Server not running
-        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        # Cycle 1: No servers enabled
+        mock_run.return_value = MagicMock(returncode=0, stdout="No servers enabled", stderr="")
         status1 = monitor.check_mcp_status()
         assert not status1.connected
 
-        # Cycle 2: Server starts
+        # Cycle 2: Servers start
         mock_run.return_value = MagicMock(
             returncode=0,
-            stdout="1234 user mcp-server",
+            stdout="Enabled servers:\n  - playwright (running)",
             stderr=""
         )
         status2 = monitor.check_mcp_status()
         assert status2.connected
 
-        # Cycle 3: Server continues running
+        # Cycle 3: Servers continue running
         status3 = monitor.check_mcp_status()
         assert status3.connected
 
-        # Cycle 4: Server stops
-        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        # Cycle 4: Servers stop
+        mock_run.return_value = MagicMock(returncode=0, stdout="No servers enabled", stderr="")
         status4 = monitor.check_mcp_status()
         assert not status4.connected
 
@@ -447,11 +490,30 @@ def test_full_monitoring_cycle(monitor, mock_event_bus):
 def test_monitor_provides_helpful_error_messages(monitor):
     """Test that monitor provides helpful error messages."""
     with patch('subprocess.run') as mock_run:
-        # No MCP process
-        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+        # No servers enabled
+        mock_run.return_value = MagicMock(returncode=0, stdout="No servers enabled", stderr="")
         status = monitor.check_mcp_status()
 
         assert status.error_message is not None
         assert len(status.error_message) > 0
         # Should be helpful, not just "Error"
         assert status.error_message != "Error"
+
+
+def test_docker_command_used(monitor):
+    """Test that docker mcp command is used for detection."""
+    with patch('subprocess.run') as mock_run:
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="Enabled servers:\n  - playwright (running)",
+            stderr=""
+        )
+
+        monitor.check_mcp_status()
+
+        # Verify docker mcp server status was called
+        call_args = mock_run.call_args[0][0]
+        assert "docker" in call_args
+        assert "mcp" in call_args
+        assert "server" in call_args
+        assert "status" in call_args

@@ -435,9 +435,9 @@ if [ "$CLAUDE_CODE" = true ]; then
             chmod +x "$INSTALL_DIR/setup/mcp-prerequisites.sh"
         fi
 
-        if [ -f "$BASE_YOYO_DEV/setup/mcp-claude-installer.sh" ]; then
-            copy_file "$BASE_YOYO_DEV/setup/mcp-claude-installer.sh" "$INSTALL_DIR/setup/mcp-claude-installer.sh" "true" "setup/mcp-claude-installer.sh"
-            chmod +x "$INSTALL_DIR/setup/mcp-claude-installer.sh"
+        if [ -f "$BASE_YOYO_DEV/setup/docker-mcp-setup.sh" ]; then
+            copy_file "$BASE_YOYO_DEV/setup/docker-mcp-setup.sh" "$INSTALL_DIR/setup/docker-mcp-setup.sh" "true" "setup/docker-mcp-setup.sh"
+            chmod +x "$INSTALL_DIR/setup/docker-mcp-setup.sh"
         fi
 
         # Copy parse-utils.sh (needed by yoyo.sh for project context parsing)
@@ -452,11 +452,11 @@ if [ "$CLAUDE_CODE" = true ]; then
             "setup/mcp-prerequisites.sh"
         chmod +x "$INSTALL_DIR/setup/mcp-prerequisites.sh"
 
-        download_file "${BASE_URL}/setup/mcp-claude-installer.sh" \
-            "$INSTALL_DIR/setup/mcp-claude-installer.sh" \
+        download_file "${BASE_URL}/setup/docker-mcp-setup.sh" \
+            "$INSTALL_DIR/setup/docker-mcp-setup.sh" \
             "true" \
-            "setup/mcp-claude-installer.sh"
-        chmod +x "$INSTALL_DIR/setup/mcp-claude-installer.sh"
+            "setup/docker-mcp-setup.sh"
+        chmod +x "$INSTALL_DIR/setup/docker-mcp-setup.sh"
 
         download_file "${BASE_URL}/setup/parse-utils.sh" \
             "$INSTALL_DIR/setup/parse-utils.sh" \
@@ -516,15 +516,15 @@ if [ "$CLAUDE_CODE" = true ]; then
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "🔌 MCP Server Installation (Optional)"
+    echo "🔌 Docker MCP Server Installation (Optional)"
     echo ""
-    echo "Model Context Protocol (MCP) servers extend Claude Code with powerful capabilities:"
-    echo "  • Context7: Intelligent context loading (30%+ token reduction)"
-    echo "  • Memory: Pattern persistence across sessions"
+    echo "Docker MCP Gateway provides containerized MCP servers via Docker Desktop:"
     echo "  • Playwright: Browser automation and testing"
-    echo "  • Chrome DevTools: Performance profiling"
-    echo "  • Shadcn: Component scaffolding"
-    echo "  • Containerization: Docker generation"
+    echo "  • GitHub Official: Repository and issue management"
+    echo "  • DuckDuckGo: Web search integration"
+    echo "  • Filesystem: File system access"
+    echo ""
+    echo "Requirements: Docker Desktop 4.32+ with MCP Toolkit enabled"
     echo ""
     read -p "Install MCP servers now? [Y/n] " -n 1 -r
     echo ""
@@ -532,7 +532,7 @@ if [ "$CLAUDE_CODE" = true ]; then
     if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
         # Use the local copied MCP scripts from project .yoyo-dev/setup/
         MCP_PREREQUISITES="$INSTALL_DIR/setup/mcp-prerequisites.sh"
-        MCP_INSTALLER="$INSTALL_DIR/setup/mcp-claude-installer.sh"
+        MCP_INSTALLER="$INSTALL_DIR/setup/docker-mcp-setup.sh"
 
         # Run prerequisite check
         if bash "$MCP_PREREQUISITES"; then

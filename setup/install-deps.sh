@@ -138,7 +138,7 @@ echo ""
 
 # Detect script directory (works for both symlinks and direct execution)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MCP_INSTALLER="$SCRIPT_DIR/mcp-claude-installer.sh"
+MCP_INSTALLER="$SCRIPT_DIR/docker-mcp-setup.sh"
 
 # Check if Claude Code CLI is installed
 if command -v claude &> /dev/null; then
@@ -147,17 +147,17 @@ if command -v claude &> /dev/null; then
     echo ""
 
     # Prompt user to install MCPs
-    echo -e "${CYAN}MCP servers enhance Claude Code with additional capabilities:${RESET}"
-    echo -e "  • ${BOLD}context7${RESET} - DevTools context management"
-    echo -e "  • ${BOLD}memory${RESET} - Memory integration"
-    echo -e "  • ${BOLD}playwright${RESET} - Browser automation"
-    echo -e "  • ${BOLD}containerization${RESET} - Docker/container deployment"
-    echo -e "  • ${BOLD}chrome-devtools${RESET} - Chrome DevTools Protocol"
-    echo -e "  • ${BOLD}shadcn${RESET} - UI component library"
+    echo -e "${CYAN}Docker MCP Gateway provides containerized MCP servers:${RESET}"
+    echo -e "  • ${BOLD}playwright${RESET} - Browser automation and testing"
+    echo -e "  • ${BOLD}github-official${RESET} - GitHub repository management"
+    echo -e "  • ${BOLD}duckduckgo${RESET} - Web search integration"
+    echo -e "  • ${BOLD}filesystem${RESET} - File system access"
+    echo ""
+    echo -e "${CYAN}Requirements:${RESET} Docker Desktop 4.32+ with MCP Toolkit enabled"
     echo ""
 
     # Prompt for installation
-    read -p "Install MCP servers now? [Y/n] " -n 1 -r
+    read -p "Install Docker MCP servers now? [Y/n] " -n 1 -r
     echo ""
 
     if [[ ! $REPLY =~ ^[Nn]$ ]]; then
@@ -166,7 +166,7 @@ if command -v claude &> /dev/null; then
         if [ -f "$MCP_INSTALLER" ]; then
             bash "$MCP_INSTALLER" --project-dir="$(pwd)"
         else
-            echo -e "${RED}✗${RESET} MCP installer not found at: $MCP_INSTALLER"
+            echo -e "${RED}✗${RESET} Docker MCP setup not found at: $MCP_INSTALLER"
             echo -e "  Please run from the yoyo-dev setup directory"
         fi
     else

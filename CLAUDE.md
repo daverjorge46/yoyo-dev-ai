@@ -75,22 +75,34 @@ Features: Real-time task/spec tracking, live updates, interactive commands (one-
 
 ## MCP Server Installation
 
-Yoyo Dev integrates with Claude Code's Model Context Protocol (MCP) servers to enhance AI capabilities with specialized tools.
+Yoyo Dev uses Docker MCP Gateway to provide containerized MCP servers via Docker Desktop's MCP Toolkit.
 
 ### Prerequisites
 
 **Required:**
-- Node.js and npm (for `npx` commands)
+- Docker Desktop 4.32+ with MCP Toolkit enabled
 - Claude Code CLI installed and configured
 
-**Optional:**
-- pnpm (required only for shadcn MCP)
-- Docker (required only when using containerization MCP to generate Docker files)
+**Installing Docker Desktop:**
+```bash
+# Download from: https://www.docker.com/products/docker-desktop/
+
+# Verify installation
+docker --version  # Should be 4.32+
+
+# Verify Docker is running
+docker info
+```
+
+**Enabling MCP Toolkit:**
+1. Open Docker Desktop
+2. Go to Settings → Beta features
+3. Enable "MCP Toolkit"
+4. Restart Docker Desktop
 
 **Installing Claude Code CLI:**
 ```bash
 # Download from: https://claude.ai/download
-# Or install via package manager (platform-specific)
 
 # Verify installation
 claude --version
@@ -98,103 +110,100 @@ claude --version
 
 ### Supported MCP Servers
 
-Yoyo Dev installs 6 MCP servers automatically when Claude Code CLI is detected:
+Yoyo Dev enables these containerized MCP servers from the Docker catalog:
 
-1. **context7** - Intelligent context management for development workflows
-   - Template: `devtools/context7`
-   - Purpose: Enhanced code context awareness
-
-2. **memory** - Persistent memory across Claude sessions
-   - Template: `integration/memory-integration`
-   - Purpose: Session state persistence and recall
-
-3. **playwright** - Browser automation and testing
-   - Template: `browser_automation/playwright-mcp-server`
+1. **playwright** - Browser automation and testing
    - Purpose: Web automation, E2E testing, screenshots
+   - Container: Isolated browser environment
 
-4. **containerization** - Docker and container management
-   - Template: `deployment/containerize-application`
-   - Purpose: Generate Dockerfiles, compose files, container configs
-   - Note: Docker only required when using this MCP, not for installation
+2. **github-official** - GitHub repository management
+   - Purpose: Repository operations, issues, PRs
+   - Note: Requires OAuth authorization (see below)
 
-5. **chrome-devtools** - Chrome DevTools Protocol integration
-   - Package: `chrome-devtools-mcp@latest`
-   - Purpose: Browser debugging, performance profiling
+3. **duckduckgo** - Web search integration
+   - Purpose: Search the web for information
+   - Container: Isolated search environment
 
-6. **shadcn** - shadcn/ui component integration
-   - Package: `shadcn@latest`
-   - Purpose: UI component library integration
-   - Note: Requires pnpm to be installed
+4. **filesystem** - File system access
+   - Purpose: Read/write files in specified directories
+   - Note: Configured with appropriate mount points
 
 ### Automatic Installation
 
-MCPs are installed automatically during Yoyo Dev setup:
+MCP servers are enabled automatically during Yoyo Dev setup:
 
 ```bash
 # During project setup
 ~/.yoyo-dev/setup/project.sh --claude-code
-
-# During base installation
-~/.yoyo-dev/setup/install-deps.sh
 ```
 
 The installer will:
-1. Detect Claude Code CLI availability
-2. Prompt to install MCPs if CLI is found
-3. Install all 6 MCPs using Claude's native installation system
-4. Skip gracefully if Claude Code CLI not installed
-5. Report installation results (installed/skipped/failed)
+1. Check Docker Desktop is installed and running
+2. Verify MCP Toolkit is enabled
+3. Connect Claude Code as an MCP client
+4. Enable recommended MCP servers
+5. Report installation results
 
 ### Manual Installation
 
-To manually install MCPs or troubleshoot installation issues:
+To manually set up Docker MCP or troubleshoot:
 
 ```bash
-# Install all MCPs
-~/.yoyo-dev/setup/mcp-claude-installer.sh
+# Run Docker MCP setup
+~/.yoyo-dev/setup/docker-mcp-setup.sh
 
-# Skip installation if Claude Code not found
-~/.yoyo-dev/setup/mcp-claude-installer.sh --skip-if-no-claude
+# Skip if Docker not available
+~/.yoyo-dev/setup/docker-mcp-setup.sh --skip-if-no-docker
 
 # Verbose output for debugging
-~/.yoyo-dev/setup/mcp-claude-installer.sh --verbose
-
-# Non-interactive mode
-~/.yoyo-dev/setup/mcp-claude-installer.sh --non-interactive
+~/.yoyo-dev/setup/docker-mcp-setup.sh --verbose
 ```
 
-**Individual MCP installation commands:**
+**Individual server commands:**
 
 ```bash
-# context7
-npx claude-code-templates@latest --mcp=devtools/context7 --yes
+# List available MCP servers
+docker mcp server list
 
-# memory
-npx claude-code-templates@latest --mcp=integration/memory-integration --yes
+# Enable specific servers
+docker mcp server enable playwright
+docker mcp server enable github-official
+docker mcp server enable duckduckgo
+docker mcp server enable filesystem
 
-# playwright
-npx claude-code-templates@latest --mcp=browser_automation/playwright-mcp-server --yes
+# Connect Claude Code as client
+docker mcp client connect claude-code
+```
 
-# containerization
-npx claude-code-templates@latest --command=deployment/containerize-application --yes
+### OAuth Authorization (GitHub Server)
 
-# chrome-devtools
-claude mcp add chrome-devtools npx chrome-devtools-mcp@latest
+The `github-official` MCP server requires OAuth authorization:
 
-# shadcn (requires pnpm)
-pnpm dlx shadcn@latest mcp init --client claude
+```bash
+# Authorize GitHub access
+docker mcp oauth authorize github-official
+
+# This opens a browser for GitHub OAuth flow
+# Grant access to repositories you want Claude to access
 ```
 
 ### Verifying MCP Installation
 
-**Method 1: Check Claude configuration file**
+**Method 1: Check Docker MCP server status**
 
 ```bash
-# Claude stores MCP configuration at ~/.claude.json
-cat ~/.claude.json | jq '.projects[].mcpServers | keys'
+# View enabled servers and their status
+docker mcp server status
 ```
 
-Expected output should include: `context7`, `memory`, `playwright`, `containerization`, `chrome-devtools`, `shadcn`
+Expected output:
+```
+Enabled servers:
+  - playwright (running)
+  - github-official (running)
+  - duckduckgo (idle)
+  - filesystem (running)
+```
 
 **Method 2: Use Yoyo TUI**
 
@@ -203,150 +212,143 @@ Expected output should include: `context7`, `memory`, `playwright`, `containeriz
 yoyo --no-split
 
 # Check MCP status in the dashboard
-# Running MCPs will be displayed with their status
+# Shows "Docker MCP Gateway: X servers"
 ```
 
-**Method 3: Verify with update script**
+**Method 3: Check project .mcp.json**
 
 ```bash
-# Run update script (checks MCP status)
-~/.yoyo-dev/setup/yoyo-update.sh
-
-# If MCPs are missing, you'll see:
-# "Missing/outdated MCPs detected. Update? [Y/n]"
+# View project MCP configuration
+cat .mcp.json
 ```
 
-### Troubleshooting MCP Installation
-
-**Issue: "Claude Code CLI not found"**
-
-```bash
-# Verify Claude is in PATH
-which claude
-
-# If not found, reinstall Claude Code CLI
-# Download from: https://claude.ai/download
-
-# Verify after installation
-claude --version
-```
-
-**Issue: "MCP installation failed"**
-
-Check specific error messages:
-
-```bash
-# Run installer in verbose mode
-~/.yoyo-dev/setup/mcp-claude-installer.sh --verbose
-
-# Common causes:
-# 1. Node.js/npm not installed or outdated
-node --version  # Should be v18+
-npm --version
-
-# 2. Network issues preventing package download
-npm config get registry  # Should be https://registry.npmjs.org/
-
-# 3. Permission issues
-# Run with appropriate permissions or fix npm global installation path
-```
-
-**Issue: "shadcn MCP failed to install"**
-
-```bash
-# shadcn requires pnpm
-npm install -g pnpm
-
-# Verify pnpm installation
-pnpm --version
-
-# Retry shadcn installation
-pnpm dlx shadcn@latest mcp init --client claude
-```
-
-**Issue: "Docker requirement errors"**
-
-Docker is **NOT required** for MCP installation. It's only needed when:
-- Using the containerization MCP to generate Docker files
-- Running containerized development environments
-
-If you see Docker-related errors during MCP installation, this indicates an outdated installation script. Update Yoyo Dev:
-
-```bash
-~/.yoyo-dev/setup/yoyo-update.sh
-```
-
-**Issue: "MCPs not showing in Claude"**
-
-```bash
-# 1. Verify MCPs are in config
-cat ~/.claude.json | jq '.projects'
-
-# 2. If empty, MCPs may have been installed to wrong location
-# Check if config exists
-ls -la ~/.claude.json
-
-# 3. Reinstall MCPs
-~/.yoyo-dev/setup/mcp-claude-installer.sh
-
-# 4. Restart Claude Code CLI
-# Close and reopen Claude Code
-```
-
-**Issue: "MCP processes not running"**
-
-```bash
-# Check if MCP server processes are running
-ps aux | grep -E '(context7|memory|playwright|chrome-devtools)'
-
-# MCPs are launched on-demand by Claude
-# They won't run unless Claude Code is actively using them
-
-# Verify in TUI dashboard
-yoyo --no-split
-# Check MCP status panel
-```
-
-**Issue: "Out of date MCPs"**
-
-```bash
-# Update all MCPs via update script
-~/.yoyo-dev/setup/yoyo-update.sh
-
-# Or manually reinstall
-~/.yoyo-dev/setup/mcp-claude-installer.sh
-
-# Note: Version detection is limited
-# Manual reinstallation ensures latest versions
-```
-
-### MCP Configuration Location
-
-Claude Code stores MCP configuration at:
-- **Config file:** `~/.claude.json`
-- **Project-specific:** Under `projects[project_path].mcpServers`
-
-**Example configuration structure:**
+Expected:
 ```json
 {
-  "projects": {
-    "/home/user/project": {
-      "mcpServers": {
-        "context7": {
-          "command": "npx",
-          "args": ["-y", "@modelcontextprotocol/server-context7"]
-        },
-        "memory": {
-          "command": "npx",
-          "args": ["-y", "@modelcontextprotocol/server-memory"]
-        }
-      }
+  "mcpServers": {
+    "MCP_DOCKER": {
+      "command": "docker",
+      "args": ["mcp", "gateway", "run"],
+      "type": "stdio"
     }
   }
 }
 ```
 
-**IMPORTANT:** Do not manually edit `~/.claude.json` unless necessary. Use Claude's installation commands to ensure proper configuration.
+### Troubleshooting MCP Installation
+
+**Issue: "Docker not found"**
+
+```bash
+# Verify Docker is installed
+docker --version
+
+# If not found, install Docker Desktop
+# Download from: https://www.docker.com/products/docker-desktop/
+```
+
+**Issue: "Docker not running"**
+
+```bash
+# Check Docker daemon status
+docker info
+
+# If error, start Docker Desktop application
+# On Linux: systemctl start docker
+```
+
+**Issue: "MCP Toolkit not enabled"**
+
+```bash
+# Check if MCP commands are available
+docker mcp --help
+
+# If "not a docker command" error:
+# 1. Open Docker Desktop
+# 2. Go to Settings → Beta features
+# 3. Enable "MCP Toolkit"
+# 4. Restart Docker Desktop
+```
+
+**Issue: "Server not starting"**
+
+```bash
+# Check server status
+docker mcp server status
+
+# View server logs
+docker mcp server logs playwright
+
+# Restart specific server
+docker mcp server disable playwright
+docker mcp server enable playwright
+```
+
+**Issue: "GitHub OAuth failed"**
+
+```bash
+# Re-authorize GitHub
+docker mcp oauth authorize github-official
+
+# Clear existing authorization
+docker mcp oauth revoke github-official
+
+# Then re-authorize
+docker mcp oauth authorize github-official
+```
+
+**Issue: "Claude not connected to MCP Gateway"**
+
+```bash
+# Verify Claude is connected as client
+docker mcp client list
+
+# If claude-code not listed, connect it
+docker mcp client connect claude-code
+
+# Verify .mcp.json exists in project
+cat .mcp.json
+```
+
+**Issue: "Servers running but Claude can't access"**
+
+```bash
+# 1. Verify MCP Gateway is running
+docker mcp gateway status
+
+# 2. Check .mcp.json has correct configuration
+cat .mcp.json | jq '.mcpServers.MCP_DOCKER'
+
+# 3. Restart Claude Code to reload MCP configuration
+```
+
+### MCP Configuration
+
+**Project-level configuration (`.mcp.json`):**
+
+```json
+{
+  "mcpServers": {
+    "MCP_DOCKER": {
+      "command": "docker",
+      "args": ["mcp", "gateway", "run"],
+      "type": "stdio"
+    }
+  }
+}
+```
+
+This single entry routes all MCP requests through Docker MCP Gateway, which manages individual containerized servers.
+
+**Server resource limits:**
+
+Each MCP server container runs with:
+- 1 CPU core
+- 2GB RAM
+- Isolated network namespace
+- Read-only filesystem (except designated volumes)
+
+**IMPORTANT:** Do not manually edit `.mcp.json` unless necessary. Use `docker-mcp-setup.sh` to ensure proper configuration.
 
 ## Core Commands
 

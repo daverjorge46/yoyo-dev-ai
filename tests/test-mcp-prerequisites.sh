@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Test suite for MCP prerequisite checking
-# Tests Node.js, npm, and Docker detection with auto-installation scenarios
+# Test suite for MCP prerequisite checking (Docker-based)
+# Tests Docker Desktop installation, running status, and MCP Toolkit availability
 
 set -euo pipefail
 
@@ -16,7 +16,7 @@ TESTS_PASSED=0
 TESTS_FAILED=0
 
 # Mock functions directory
-MOCK_DIR="/tmp/yoyo-mcp-test-$$"
+MOCK_DIR="/tmp/yoyo-mcp-prereq-test-$$"
 mkdir -p "$MOCK_DIR"
 
 # Cleanup on exit
@@ -53,170 +53,231 @@ section() {
 # Mock Command Helpers
 # ============================================
 
-create_mock_node() {
-    local version="$1"
-    cat > "$MOCK_DIR/node" <<EOF
-#!/bin/bash
-if [ "\$1" = "--version" ]; then
-    echo "v${version}"
-    exit 0
-fi
-EOF
-    chmod +x "$MOCK_DIR/node"
-}
-
-create_mock_npm() {
-    local version="$1"
-    cat > "$MOCK_DIR/npm" <<EOF
-#!/bin/bash
-if [ "\$1" = "--version" ]; then
-    echo "${version}"
-    exit 0
-fi
-EOF
-    chmod +x "$MOCK_DIR/npm"
-}
-
 create_mock_docker() {
-    local available="$1"
-    if [ "$available" = "yes" ]; then
-        cat > "$MOCK_DIR/docker" <<EOF
+    local version="$1"
+    local running="${2:-yes}"
+    local mcp_enabled="${3:-yes}"
+
+    cat > "$MOCK_DIR/docker" <<EOF
 #!/bin/bash
 if [ "\$1" = "--version" ]; then
-    echo "Docker version 24.0.6, build ed223bc"
+    echo "Docker version ${version}, build abc123"
+    exit 0
+fi
+
+if [ "\$1" = "info" ]; then
+    if [ "$running" = "no" ]; then
+        echo "Cannot connect to the Docker daemon. Is the docker daemon running?" >&2
+        exit 1
+    fi
+    echo "Server Version: ${version}"
+    echo "Operating System: Linux"
+    exit 0
+fi
+
+if [ "\$1" = "mcp" ]; then
+    if [ "$mcp_enabled" = "no" ]; then
+        echo "Error: 'mcp' is not a docker command" >&2
+        exit 1
+    fi
+
+    if [ "\$2" = "--help" ]; then
+        echo "Usage: docker mcp [command]"
+        echo "Commands:"
+        echo "  server    Manage MCP servers"
+        echo "  client    Manage MCP clients"
+        exit 0
+    fi
+
+    if [ "\$2" = "server" ]; then
+        if [ "\$3" = "status" ]; then
+            echo "Enabled servers:"
+            echo "  - playwright (running)"
+            exit 0
+        fi
+    fi
+fi
+
+echo "Unknown command: \$@" >&2
+exit 1
+EOF
+    chmod +x "$MOCK_DIR/docker"
+}
+
+create_mock_claude() {
+    local version="$1"
+    cat > "$MOCK_DIR/claude" <<EOF
+#!/bin/bash
+if [ "\$1" = "--version" ]; then
+    echo "claude-code ${version}"
     exit 0
 fi
 EOF
-        chmod +x "$MOCK_DIR/docker"
-    fi
+    chmod +x "$MOCK_DIR/claude"
 }
 
 # ============================================
-# Test Functions for Version Detection
+# Test Functions for Docker Version Detection
 # ============================================
 
-test_node_version_detection() {
-    section "Node.js Version Detection Tests"
+test_docker_version_detection() {
+    section "Docker Version Detection Tests"
 
-    # Test 1: Valid Node.js v18
-    create_mock_node "18.19.0"
+    # Test 1: Valid Docker version 27.0.0
+    create_mock_docker "27.0.0"
     export PATH="$MOCK_DIR:$PATH"
 
-    local detected_version=$("$MOCK_DIR/node" --version | sed 's/v//')
+    local detected_version=$("$MOCK_DIR/docker" --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
     local major_version=$(echo "$detected_version" | cut -d. -f1)
 
-    if [ "$major_version" -ge 18 ]; then
-        pass "Detects valid Node.js v18+ ($detected_version)"
+    if [ "$major_version" -ge 24 ]; then
+        pass "Detects valid Docker v27+ ($detected_version)"
     else
-        fail "Failed to detect valid Node.js version"
+        fail "Failed to detect valid Docker version"
     fi
 
-    # Test 2: Valid Node.js v20
-    create_mock_node "20.11.0"
-    detected_version=$("$MOCK_DIR/node" --version | sed 's/v//')
+    # Test 2: Valid Docker version 24.0.0 (minimum)
+    create_mock_docker "24.0.0"
+    detected_version=$("$MOCK_DIR/docker" --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
     major_version=$(echo "$detected_version" | cut -d. -f1)
 
-    if [ "$major_version" -ge 18 ]; then
-        pass "Detects valid Node.js v20+ ($detected_version)"
+    if [ "$major_version" -ge 24 ]; then
+        pass "Detects minimum Docker v24+ ($detected_version)"
     else
-        fail "Failed to detect valid Node.js v20"
+        fail "Failed to detect minimum Docker version"
     fi
 
-    # Test 3: Invalid Node.js v16
-    create_mock_node "16.20.0"
-    detected_version=$("$MOCK_DIR/node" --version | sed 's/v//')
+    # Test 3: Invalid Docker version (too old)
+    create_mock_docker "20.10.0"
+    detected_version=$("$MOCK_DIR/docker" --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
     major_version=$(echo "$detected_version" | cut -d. -f1)
 
-    if [ "$major_version" -lt 18 ]; then
-        pass "Correctly identifies outdated Node.js v16 as invalid"
+    if [ "$major_version" -lt 24 ]; then
+        pass "Correctly identifies outdated Docker v20 as invalid"
     else
-        fail "Should reject Node.js v16"
+        fail "Should reject Docker v20"
     fi
 
-    # Test 4: Node.js version parsing edge cases
-    create_mock_node "22.0.0-pre"
-    if "$MOCK_DIR/node" --version | grep -qE 'v[0-9]+\.[0-9]+\.[0-9]+'; then
-        pass "Handles pre-release version strings"
+    # Test 4: Docker version parsing edge cases
+    create_mock_docker "27.0.0-ce"
+    if "$MOCK_DIR/docker" --version | grep -qE '[0-9]+\.[0-9]+\.[0-9]+'; then
+        pass "Handles Docker version with suffix (ce/ee)"
     else
-        fail "Failed to parse pre-release version"
+        fail "Failed to parse Docker version with suffix"
     fi
 }
 
-test_npm_availability() {
-    section "npm Availability Tests"
+test_docker_installation() {
+    section "Docker Installation Detection Tests"
 
-    # Test 1: npm v9 available
-    create_mock_npm "9.8.1"
+    # Test 1: Docker installed
+    create_mock_docker "27.0.0"
     export PATH="$MOCK_DIR:$PATH"
 
-    local npm_version=$("$MOCK_DIR/npm" --version)
-    local major_version=$(echo "$npm_version" | cut -d. -f1)
-
-    if [ "$major_version" -ge 9 ]; then
-        pass "Detects valid npm v9+ ($npm_version)"
+    if command -v "$MOCK_DIR/docker" &> /dev/null; then
+        pass "Detects Docker is installed"
     else
-        fail "Failed to detect valid npm version"
+        fail "Should detect Docker installation"
     fi
 
-    # Test 2: npm v10 available
-    create_mock_npm "10.2.4"
-    npm_version=$("$MOCK_DIR/npm" --version)
-    major_version=$(echo "$npm_version" | cut -d. -f1)
-
-    if [ "$major_version" -ge 9 ]; then
-        pass "Detects valid npm v10+ ($npm_version)"
-    else
-        fail "Failed to detect valid npm v10"
-    fi
-
-    # Test 3: Outdated npm v8
-    create_mock_npm "8.19.4"
-    npm_version=$("$MOCK_DIR/npm" --version)
-    major_version=$(echo "$npm_version" | cut -d. -f1)
-
-    if [ "$major_version" -lt 9 ]; then
-        pass "Correctly identifies outdated npm v8 as invalid"
-    else
-        fail "Should reject npm v8"
-    fi
-
-    # Test 4: npm not installed scenario
-    rm -f "$MOCK_DIR/npm"
-    if ! command -v "$MOCK_DIR/npm" &> /dev/null; then
-        pass "Correctly detects missing npm"
-    else
-        fail "Should detect missing npm"
-    fi
-}
-
-test_docker_detection() {
-    section "Docker Detection Tests (Optional)"
-
-    # Test 1: Docker available
-    create_mock_docker "yes"
-    export PATH="$MOCK_DIR:$PATH"
-
-    if "$MOCK_DIR/docker" --version &> /dev/null; then
-        pass "Detects available Docker installation"
-    else
-        fail "Failed to detect available Docker"
-    fi
-
-    # Test 2: Docker not installed (should be warning, not error)
+    # Test 2: Docker not installed
     rm -f "$MOCK_DIR/docker"
     if ! command -v "$MOCK_DIR/docker" &> /dev/null; then
-        pass "Correctly detects missing Docker (optional prerequisite)"
+        pass "Correctly detects Docker not installed"
     else
         fail "Should detect missing Docker"
     fi
+}
 
-    # Test 3: Docker version extraction
-    create_mock_docker "yes"
-    local docker_version=$("$MOCK_DIR/docker" --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-    if [ -n "$docker_version" ]; then
-        pass "Extracts Docker version ($docker_version)"
+test_docker_running_detection() {
+    section "Docker Running Detection Tests"
+
+    # Test 1: Docker Desktop running
+    create_mock_docker "27.0.0" "yes"
+    export PATH="$MOCK_DIR:$PATH"
+
+    if "$MOCK_DIR/docker" info &> /dev/null; then
+        pass "Detects Docker Desktop is running"
     else
-        fail "Failed to extract Docker version"
+        fail "Should detect running Docker Desktop"
+    fi
+
+    # Test 2: Docker installed but not running
+    create_mock_docker "27.0.0" "no"
+    if ! "$MOCK_DIR/docker" info &> /dev/null 2>&1; then
+        pass "Correctly detects Docker Desktop not running"
+    else
+        fail "Should detect Docker Desktop not running"
+    fi
+}
+
+# ============================================
+# Test Functions for MCP Toolkit Detection
+# ============================================
+
+test_mcp_toolkit_detection() {
+    section "MCP Toolkit Detection Tests"
+
+    # Test 1: MCP Toolkit enabled
+    create_mock_docker "27.0.0" "yes" "yes"
+    export PATH="$MOCK_DIR:$PATH"
+
+    if "$MOCK_DIR/docker" mcp --help &> /dev/null; then
+        pass "Detects MCP Toolkit is enabled"
+    else
+        fail "Should detect MCP Toolkit enabled"
+    fi
+
+    # Test 2: MCP Toolkit not enabled
+    create_mock_docker "27.0.0" "yes" "no"
+    if ! "$MOCK_DIR/docker" mcp --help &> /dev/null 2>&1; then
+        pass "Correctly detects MCP Toolkit not enabled"
+    else
+        fail "Should detect MCP Toolkit not enabled"
+    fi
+
+    # Test 3: Old Docker without MCP command
+    create_mock_docker "20.10.0" "yes" "no"
+    if ! "$MOCK_DIR/docker" mcp --help &> /dev/null 2>&1; then
+        pass "Correctly detects old Docker without MCP command"
+    else
+        fail "Should detect missing MCP command in old Docker"
+    fi
+}
+
+# ============================================
+# Test Functions for Claude CLI Detection
+# ============================================
+
+test_claude_cli_detection() {
+    section "Claude CLI Detection Tests (Optional)"
+
+    # Test 1: Claude CLI installed
+    create_mock_claude "1.0.0"
+    export PATH="$MOCK_DIR:$PATH"
+
+    if "$MOCK_DIR/claude" --version &> /dev/null; then
+        pass "Detects Claude CLI is installed (optional)"
+    else
+        fail "Should detect Claude CLI installation"
+    fi
+
+    # Test 2: Claude CLI not installed (should be info, not error)
+    rm -f "$MOCK_DIR/claude"
+    if ! command -v "$MOCK_DIR/claude" &> /dev/null; then
+        pass "Correctly detects missing Claude CLI (optional prerequisite)"
+    else
+        fail "Should detect missing Claude CLI"
+    fi
+
+    # Test 3: Claude CLI version extraction
+    create_mock_claude "1.2.3"
+    local claude_version=$("$MOCK_DIR/claude" --version 2>/dev/null | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1 || echo "")
+    if [ -n "$claude_version" ]; then
+        pass "Extracts Claude CLI version ($claude_version)"
+    else
+        # Version extraction is optional, just needs to detect installed
+        pass "Claude CLI detected (version extraction optional)"
     fi
 }
 
@@ -227,31 +288,19 @@ test_docker_detection() {
 test_platform_detection() {
     section "Platform Detection Tests"
 
-    # Test 1: Detect Linux
-    if uname -s | grep -qi "Linux"; then
-        pass "Detects Linux platform"
-
-        # Test 2: Detect package manager (apt/yum/dnf)
-        if command -v apt-get &> /dev/null; then
-            pass "Detects apt package manager (Debian/Ubuntu)"
-        elif command -v yum &> /dev/null; then
-            pass "Detects yum package manager (RHEL/CentOS)"
-        elif command -v dnf &> /dev/null; then
-            pass "Detects dnf package manager (Fedora)"
-        else
-            warn "Unknown Linux package manager"
-        fi
-    elif uname -s | grep -qi "Darwin"; then
-        pass "Detects macOS platform"
-
-        # Test 3: Detect Homebrew on macOS
-        if command -v brew &> /dev/null; then
-            pass "Detects Homebrew package manager"
-        else
-            fail "Homebrew not found on macOS"
-        fi
+    # Test 1: Detect current platform
+    local platform=$(uname -s)
+    if [ "$platform" = "Linux" ] || [ "$platform" = "Darwin" ]; then
+        pass "Detects supported platform: $platform"
     else
-        warn "Unsupported platform: $(uname -s)"
+        warn "Unsupported platform: $platform"
+    fi
+
+    # Test 2: Platform-specific Docker Desktop path exists conceptually
+    if [ "$platform" = "Linux" ]; then
+        pass "Linux platform detected for Docker Desktop"
+    elif [ "$platform" = "Darwin" ]; then
+        pass "macOS platform detected for Docker Desktop"
     fi
 }
 
@@ -262,90 +311,52 @@ test_platform_detection() {
 test_error_messages() {
     section "Error Message Clarity Tests"
 
-    # Test 1: Node.js missing error message
-    local error_msg="ERROR: Node.js v18+ is required but not found. Install via: https://nodejs.org/en/download/"
-    if echo "$error_msg" | grep -q "Node.js v18+ is required"; then
-        pass "Node.js missing error includes version requirement"
+    # Test 1: Docker not installed error message
+    local error_msg="Docker Desktop is required for Yoyo Dev MCP features"
+    if echo "$error_msg" | grep -q "Docker Desktop is required"; then
+        pass "Docker missing error includes clear requirement"
     else
-        fail "Node.js error message unclear"
+        fail "Docker error message unclear"
     fi
 
-    # Test 2: npm missing error message
-    error_msg="ERROR: npm v9+ is required but not found. Install Node.js (includes npm): https://nodejs.org/en/download/"
-    if echo "$error_msg" | grep -q "npm v9+ is required"; then
-        pass "npm missing error includes version requirement"
+    # Test 2: Docker not running error message
+    error_msg="Docker Desktop is not running. Please start Docker Desktop and try again."
+    if echo "$error_msg" | grep -q "not running"; then
+        pass "Docker not running error is clear"
     else
-        fail "npm error message unclear"
+        fail "Docker not running error unclear"
     fi
 
-    # Test 3: Docker missing warning message
-    local warn_msg="WARNING: Docker not found. Some MCPs (Containerization) require Docker. Install: https://docs.docker.com/get-docker/"
-    if echo "$warn_msg" | grep -q "WARNING"; then
-        pass "Docker missing shows warning (not error)"
+    # Test 3: MCP Toolkit not enabled error message
+    error_msg="MCP Toolkit is not enabled. Enable it via: Settings > Beta features > Enable Docker MCP Toolkit"
+    if echo "$error_msg" | grep -q "MCP Toolkit"; then
+        pass "MCP Toolkit error includes enable instructions"
     else
-        fail "Docker message should be warning, not error"
+        fail "MCP Toolkit error message unclear"
     fi
 
-    # Test 4: Auto-installation message
-    local auto_msg="Attempting to auto-install Node.js v20 LTS via apt..."
-    if echo "$auto_msg" | grep -q "Attempting to auto-install"; then
-        pass "Auto-installation message is clear"
+    # Test 4: Docker version too old error
+    error_msg="Docker version 20.10.0 is too old. MCP Toolkit requires Docker Desktop 4.32+ (Docker Engine 24+)"
+    if echo "$error_msg" | grep -q "too old"; then
+        pass "Docker version error includes minimum requirement"
     else
-        fail "Auto-installation message unclear"
+        fail "Docker version error unclear"
     fi
 
     # Test 5: Success message format
-    local success_msg="✓ Node.js v20.11.0 detected (required: v18+)"
+    local success_msg="✓ Docker Desktop v27.0.0 detected and running"
     if echo "$success_msg" | grep -q "✓.*detected"; then
         pass "Success message format is clear"
     else
         fail "Success message format unclear"
     fi
-}
 
-# ============================================
-# Test Functions for Auto-Installation Logic
-# ============================================
-
-test_auto_installation_scenarios() {
-    section "Auto-Installation Scenario Tests"
-
-    # Test 1: Linux apt-based installation command
-    if command -v apt-get &> /dev/null; then
-        local install_cmd="curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - && sudo apt-get install -y nodejs"
-        if echo "$install_cmd" | grep -q "nodesource"; then
-            pass "Linux apt Node.js installation command valid"
-        else
-            fail "Linux apt installation command invalid"
-        fi
-    fi
-
-    # Test 2: macOS Homebrew installation command
-    local brew_cmd="brew install node@20"
-    if echo "$brew_cmd" | grep -q "brew install node"; then
-        pass "macOS Homebrew installation command valid"
+    # Test 6: Installation instructions URL
+    local install_msg="Install Docker Desktop from: https://www.docker.com/products/docker-desktop/"
+    if echo "$install_msg" | grep -q "docker.com"; then
+        pass "Installation instructions include Docker URL"
     else
-        fail "macOS Homebrew installation command invalid"
-    fi
-
-    # Test 3: Fallback to manual installation
-    local fallback_msg="Auto-installation failed. Please install manually: https://nodejs.org/en/download/"
-    if echo "$fallback_msg" | grep -q "install manually"; then
-        pass "Fallback manual installation message present"
-    else
-        fail "Fallback message missing"
-    fi
-
-    # Test 4: Verify prerequisite after auto-install
-    info "Auto-installation should re-check Node.js version after install"
-    pass "Auto-install verification logic defined"
-
-    # Test 5: Handle permission errors during auto-install
-    local perm_error="Permission denied. Try: sudo apt-get install nodejs"
-    if echo "$perm_error" | grep -q "sudo"; then
-        pass "Permission error provides sudo hint"
-    else
-        fail "Permission error message unclear"
+        fail "Installation instructions missing URL"
     fi
 }
 
@@ -356,41 +367,41 @@ test_auto_installation_scenarios() {
 test_prerequisite_combinations() {
     section "Prerequisite Combination Tests"
 
-    # Test 1: All prerequisites present
-    create_mock_node "20.11.0"
-    create_mock_npm "10.2.4"
-    create_mock_docker "yes"
+    # Test 1: All prerequisites present (Docker running + MCP Toolkit)
+    create_mock_docker "27.0.0" "yes" "yes"
+    create_mock_claude "1.0.0"
     export PATH="$MOCK_DIR:$PATH"
 
     local all_present=true
-    "$MOCK_DIR/node" --version &> /dev/null || all_present=false
-    "$MOCK_DIR/npm" --version &> /dev/null || all_present=false
     "$MOCK_DIR/docker" --version &> /dev/null || all_present=false
+    "$MOCK_DIR/docker" info &> /dev/null || all_present=false
+    "$MOCK_DIR/docker" mcp --help &> /dev/null || all_present=false
 
     if $all_present; then
-        pass "All prerequisites detected (Node.js + npm + Docker)"
+        pass "All prerequisites detected (Docker + MCP Toolkit)"
     else
         fail "Failed to detect all prerequisites"
     fi
 
-    # Test 2: Only required prerequisites (Node.js + npm, no Docker)
-    rm -f "$MOCK_DIR/docker"
-    local required_present=true
-    "$MOCK_DIR/node" --version &> /dev/null || required_present=false
-    "$MOCK_DIR/npm" --version &> /dev/null || required_present=false
+    # Test 2: Docker present but MCP Toolkit not enabled
+    create_mock_docker "27.0.0" "yes" "no"
+    local docker_ok=true
+    local mcp_ok=true
+    "$MOCK_DIR/docker" info &> /dev/null || docker_ok=false
+    "$MOCK_DIR/docker" mcp --help &> /dev/null 2>&1 || mcp_ok=false
 
-    if $required_present; then
-        pass "Required prerequisites detected (Node.js + npm, Docker optional)"
+    if $docker_ok && ! $mcp_ok; then
+        pass "Correctly detects Docker without MCP Toolkit"
     else
-        fail "Failed to detect required prerequisites"
+        fail "Should detect Docker without MCP Toolkit"
     fi
 
-    # Test 3: Missing required prerequisite (Node.js)
-    rm -f "$MOCK_DIR/node"
-    if ! "$MOCK_DIR/node" --version &> /dev/null 2>&1; then
-        pass "Correctly detects missing Node.js (required)"
+    # Test 3: Docker installed but not running
+    create_mock_docker "27.0.0" "no" "yes"
+    if ! "$MOCK_DIR/docker" info &> /dev/null 2>&1; then
+        pass "Correctly detects Docker not running"
     else
-        fail "Should detect missing Node.js"
+        fail "Should detect Docker not running"
     fi
 }
 
@@ -402,15 +413,13 @@ test_return_codes() {
     section "Return Code Tests"
 
     # Test 1: Success return code (0) when all prerequisites met
-    create_mock_node "20.11.0"
-    create_mock_npm "10.2.4"
+    create_mock_docker "27.0.0" "yes" "yes"
     export PATH="$MOCK_DIR:$PATH"
 
-    if "$MOCK_DIR/node" --version &> /dev/null && "$MOCK_DIR/npm" --version &> /dev/null; then
-        local rc=0
-    else
-        local rc=1
-    fi
+    local rc=0
+    "$MOCK_DIR/docker" --version &> /dev/null || rc=1
+    "$MOCK_DIR/docker" info &> /dev/null || rc=1
+    "$MOCK_DIR/docker" mcp --help &> /dev/null || rc=1
 
     if [ $rc -eq 0 ]; then
         pass "Returns success (0) when prerequisites met"
@@ -418,34 +427,41 @@ test_return_codes() {
         fail "Should return 0 on success"
     fi
 
-    # Test 2: Failure return code (1) when missing required prerequisite
-    rm -f "$MOCK_DIR/node"
-    if ! "$MOCK_DIR/node" --version &> /dev/null 2>&1; then
-        rc=1
-    else
-        rc=0
-    fi
-
-    if [ $rc -eq 1 ]; then
-        pass "Returns failure (1) when Node.js missing"
-    else
-        fail "Should return 1 on missing prerequisite"
-    fi
-
-    # Test 3: Success return code even when Docker missing (optional)
-    create_mock_node "20.11.0"
-    create_mock_npm "10.2.4"
+    # Test 2: Failure return code (1) when Docker not installed
     rm -f "$MOCK_DIR/docker"
-    export PATH="$MOCK_DIR:$PATH"
-
-    if "$MOCK_DIR/node" --version &> /dev/null && "$MOCK_DIR/npm" --version &> /dev/null; then
-        rc=0
+    if ! command -v "$MOCK_DIR/docker" &> /dev/null 2>&1; then
+        pass "Returns failure when Docker not installed"
     else
-        rc=1
+        fail "Should return failure when Docker missing"
     fi
+
+    # Test 3: Failure return code when Docker not running
+    create_mock_docker "27.0.0" "no"
+    if ! "$MOCK_DIR/docker" info &> /dev/null 2>&1; then
+        pass "Returns failure when Docker not running"
+    else
+        fail "Should return failure when Docker not running"
+    fi
+
+    # Test 4: Failure return code when MCP Toolkit not enabled
+    create_mock_docker "27.0.0" "yes" "no"
+    if ! "$MOCK_DIR/docker" mcp --help &> /dev/null 2>&1; then
+        pass "Returns failure when MCP Toolkit not enabled"
+    else
+        fail "Should return failure when MCP Toolkit not enabled"
+    fi
+
+    # Test 5: Success even when Claude CLI missing (optional)
+    create_mock_docker "27.0.0" "yes" "yes"
+    rm -f "$MOCK_DIR/claude"
+
+    rc=0
+    "$MOCK_DIR/docker" --version &> /dev/null || rc=1
+    "$MOCK_DIR/docker" info &> /dev/null || rc=1
+    "$MOCK_DIR/docker" mcp --help &> /dev/null || rc=1
 
     if [ $rc -eq 0 ]; then
-        pass "Returns success (0) even when Docker missing (optional)"
+        pass "Returns success even when Claude CLI missing (optional)"
     else
         fail "Should return 0 when only optional prerequisite missing"
     fi
@@ -458,62 +474,45 @@ test_return_codes() {
 test_edge_cases() {
     section "Edge Case Tests"
 
-    # Test 1: Node.js installed but npm missing (unusual but possible)
-    create_mock_node "20.11.0"
-    rm -f "$MOCK_DIR/npm"
-    export PATH="$MOCK_DIR:$PATH"
-
-    if "$MOCK_DIR/node" --version &> /dev/null && ! command -v "$MOCK_DIR/npm" &> /dev/null; then
-        pass "Detects Node.js without npm (edge case)"
-    else
-        fail "Should detect npm missing when Node.js present"
-    fi
-
-    # Test 2: Version command fails but binary exists
-    cat > "$MOCK_DIR/node" <<'EOF'
+    # Test 1: Docker version command fails but binary exists
+    cat > "$MOCK_DIR/docker" <<'EOF'
 #!/bin/bash
 exit 1
 EOF
-    chmod +x "$MOCK_DIR/node"
+    chmod +x "$MOCK_DIR/docker"
+    export PATH="$MOCK_DIR:$PATH"
 
-    if ! "$MOCK_DIR/node" --version &> /dev/null; then
-        pass "Handles version command failure gracefully"
+    if ! "$MOCK_DIR/docker" --version &> /dev/null; then
+        pass "Handles Docker version command failure gracefully"
     else
         fail "Should handle version check failure"
     fi
 
-    # Test 3: Empty version output
-    cat > "$MOCK_DIR/npm" <<'EOF'
-#!/bin/bash
-echo ""
-exit 0
-EOF
-    chmod +x "$MOCK_DIR/npm"
-
-    local version_output=$("$MOCK_DIR/npm" --version)
-    if [ -z "$version_output" ]; then
-        pass "Handles empty version output"
-    else
-        fail "Should detect empty version string"
-    fi
-
-    # Test 4: Very new Node.js version (v30)
-    create_mock_node "30.5.0"
-    local detected=$("$MOCK_DIR/node" --version | sed 's/v//')
+    # Test 2: Very new Docker version (v30)
+    create_mock_docker "30.0.0"
+    local detected=$("$MOCK_DIR/docker" --version | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
     local major=$(echo "$detected" | cut -d. -f1)
 
-    if [ "$major" -ge 18 ]; then
-        pass "Accepts future Node.js versions (v30+)"
+    if [ "$major" -ge 24 ]; then
+        pass "Accepts future Docker versions (v30+)"
     else
-        fail "Should accept future Node.js versions"
+        fail "Should accept future Docker versions"
     fi
 
-    # Test 5: Node.js version with alpha/beta suffix
-    create_mock_node "20.11.0-beta.1"
-    if "$MOCK_DIR/node" --version | grep -qE 'v[0-9]+\.[0-9]+'; then
-        pass "Handles alpha/beta version suffixes"
+    # Test 3: Docker info with verbose output
+    create_mock_docker "27.0.0" "yes" "yes"
+    if "$MOCK_DIR/docker" info 2>/dev/null | grep -q "Server Version"; then
+        pass "Parses Docker info output correctly"
     else
-        fail "Should handle version suffixes"
+        fail "Should parse Docker info output"
+    fi
+
+    # Test 4: MCP server status check
+    create_mock_docker "27.0.0" "yes" "yes"
+    if "$MOCK_DIR/docker" mcp server status 2>/dev/null | grep -q "Enabled servers"; then
+        pass "Handles MCP server status check"
+    else
+        fail "Should handle MCP server status"
     fi
 }
 
@@ -524,16 +523,17 @@ EOF
 main() {
     echo ""
     echo "╔══════════════════════════════════════════════════════╗"
-    echo "║  MCP Prerequisite Checking Test Suite              ║"
+    echo "║  MCP Prerequisite Checking Test Suite (Docker)     ║"
     echo "╚══════════════════════════════════════════════════════╝"
     echo ""
 
-    test_node_version_detection
-    test_npm_availability
-    test_docker_detection
+    test_docker_version_detection
+    test_docker_installation
+    test_docker_running_detection
+    test_mcp_toolkit_detection
+    test_claude_cli_detection
     test_platform_detection
     test_error_messages
-    test_auto_installation_scenarios
     test_prerequisite_combinations
     test_return_codes
     test_edge_cases

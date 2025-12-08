@@ -1,27 +1,25 @@
 """
 MCP Server Monitor service.
 
-Monitors MCP server connection status and process health.
+Monitors Docker MCP Gateway status and enabled servers.
 """
 
-import json
 import platform
+import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, List
 
 from ..models import MCPServerStatus, EventType
 
 
 class MCPServerMonitor:
     """
-    Monitors MCP server connection status.
+    Monitors Docker MCP Gateway connection status.
 
-    Detection Methods:
-    1. Read Claude's config from ~/.claude.json
-    2. Cross-reference configured MCPs with running processes
-    3. Process detection via ps/tasklist
+    Detection Method:
+    Uses `docker mcp server status` to check enabled servers via Docker MCP Toolkit.
     """
 
     def __init__(self, event_bus, pid_file_path: Optional[Path] = None):
@@ -30,16 +28,15 @@ class MCPServerMonitor:
 
         Args:
             event_bus: EventBus instance for publishing events
-            pid_file_path: Optional path to MCP server PID file (deprecated)
+            pid_file_path: Deprecated - kept for backward compatibility
         """
         self.event_bus = event_bus
-        self.pid_file_path = pid_file_path
+        self.pid_file_path = pid_file_path  # Deprecated
         self._last_status: Optional[MCPServerStatus] = None
-        self._claude_config_path = Path.home() / ".claude.json"
 
     def check_mcp_status(self) -> MCPServerStatus:
         """
-        Check MCP server status.
+        Check Docker MCP Gateway status.
 
         Returns:
             MCPServerStatus with current connection state
@@ -48,12 +45,7 @@ class MCPServerMonitor:
         system = platform.system()
 
         if system in ["Linux", "Darwin"]:  # Linux or macOS
-            # Try Claude-aware detection first
-            status = self._check_via_claude_config()
-
-            # Fallback to generic process detection if no Claude config
-            if not status.connected and status.error_message == "No Claude config found":
-                status = self._check_via_process_list()
+            status = self._check_docker_mcp_status()
         elif system == "Windows":
             status = MCPServerStatus(
                 connected=False,
@@ -77,119 +69,94 @@ class MCPServerMonitor:
 
         return status
 
-    def _check_via_claude_config(self) -> MCPServerStatus:
+    def _check_docker_mcp_status(self) -> MCPServerStatus:
         """
-        Check MCP status by reading Claude's config and cross-referencing with running processes.
+        Check MCP status via Docker MCP Toolkit.
 
         Returns:
-            MCPServerStatus based on Claude config and process detection
+            MCPServerStatus based on Docker MCP Gateway status
         """
         try:
-            # Read Claude config
-            if not self._claude_config_path.exists():
-                return MCPServerStatus(
-                    connected=False,
-                    server_name=None,
-                    last_check=datetime.now(),
-                    error_message="No Claude config found"
-                )
-
-            with open(self._claude_config_path, 'r') as f:
-                config = json.load(f)
-
-            # Get current project path
-            current_project_path = str(Path.cwd())
-
-            # Find MCPs configured for current project
-            projects = config.get("projects", {})
-            project_config = projects.get(current_project_path, {})
-            mcp_servers = project_config.get("mcpServers", {})
-
-            if not mcp_servers:
-                return MCPServerStatus(
-                    connected=False,
-                    server_name=None,
-                    last_check=datetime.now(),
-                    error_message="No MCPs configured for project"
-                )
-
-            # Get running processes
+            # Run docker mcp server status
             result = subprocess.run(
-                ["ps", "aux"],
+                ["docker", "mcp", "server", "status"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=10
             )
 
             if result.returncode != 0:
+                # Check if MCP Toolkit is not enabled
+                if "not a docker command" in result.stderr.lower() or "'mcp'" in result.stderr:
+                    return MCPServerStatus(
+                        connected=False,
+                        server_name=None,
+                        last_check=datetime.now(),
+                        error_message="MCP Toolkit not enabled in Docker Desktop"
+                    )
+
+                # Other error
                 return MCPServerStatus(
                     connected=False,
                     server_name=None,
                     last_check=datetime.now(),
-                    error_message="Failed to check processes"
+                    error_message="Docker MCP Gateway not available"
                 )
 
-            ps_output = result.stdout
+            # Parse output to find enabled servers
+            output = result.stdout
+            servers = self._parse_enabled_servers(output)
 
-            # Check if any configured MCP is running
-            running_mcps = []
-            for mcp_name, mcp_config in mcp_servers.items():
-                if self._is_mcp_process_running(mcp_name, mcp_config, ps_output):
-                    running_mcps.append(mcp_name)
+            if servers:
+                # Servers are enabled
+                server_count = len(servers)
+                if server_count == 1:
+                    server_name = f"Docker MCP Gateway: {servers[0]}"
+                else:
+                    server_name = f"Docker MCP Gateway: {server_count} servers"
 
-            if running_mcps:
-                # At least one MCP is running
-                server_names = ", ".join(running_mcps)
                 return MCPServerStatus(
                     connected=True,
-                    server_name=f"Claude MCPs: {server_names}",
+                    server_name=server_name,
                     last_check=datetime.now(),
                     error_message=None
                 )
             else:
-                # MCPs configured but none running
-                total_mcps = len(mcp_servers)
+                # No servers enabled
                 return MCPServerStatus(
                     connected=False,
                     server_name=None,
                     last_check=datetime.now(),
-                    error_message=f"{total_mcps} MCP(s) configured but not running"
+                    error_message="No MCP servers enabled"
                 )
 
-        except json.JSONDecodeError:
+        except FileNotFoundError:
             return MCPServerStatus(
                 connected=False,
                 server_name=None,
                 last_check=datetime.now(),
-                error_message="Invalid Claude config JSON"
+                error_message="Docker not found"
             )
         except subprocess.TimeoutExpired:
             return MCPServerStatus(
                 connected=False,
                 server_name=None,
                 last_check=datetime.now(),
-                error_message="Timeout checking processes"
+                error_message="Timeout checking Docker MCP status"
             )
         except subprocess.CalledProcessError as e:
             return MCPServerStatus(
                 connected=False,
                 server_name=None,
                 last_check=datetime.now(),
-                error_message=f"Error checking processes: {e}"
+                error_message=f"Docker MCP error: {e}"
             )
         except PermissionError:
             return MCPServerStatus(
                 connected=False,
                 server_name=None,
                 last_check=datetime.now(),
-                error_message="Permission denied"
-            )
-        except FileNotFoundError:
-            return MCPServerStatus(
-                connected=False,
-                server_name=None,
-                last_check=datetime.now(),
-                error_message="ps command not found"
+                error_message="Permission denied accessing Docker"
             )
         except Exception as e:
             return MCPServerStatus(
@@ -199,319 +166,54 @@ class MCPServerMonitor:
                 error_message=f"Unexpected error: {e}"
             )
 
-    def _is_mcp_process_running(self, mcp_name: str, mcp_config: Dict, ps_output: str) -> bool:
+    def _parse_enabled_servers(self, output: str) -> List[str]:
         """
-        Check if a specific MCP server process is running.
+        Parse docker mcp server status output to extract enabled servers.
 
         Args:
-            mcp_name: Name of the MCP server
-            mcp_config: MCP configuration dict with command and args
-            ps_output: Output from ps aux command
+            output: Output from docker mcp server status
 
         Returns:
-            True if the MCP process is running, False otherwise
+            List of enabled server names
         """
-        # Extract command and args
-        command = mcp_config.get("command", "")
-        args = mcp_config.get("args", [])
+        servers = []
 
-        # Build search patterns based on command and args
-        # Common patterns for Claude MCPs:
-        # - npx <package>@latest
-        # - bunx -y <package>
-        # - node <script>
-        # - python <script>
-        patterns = []
+        # Look for "Enabled servers:" section
+        if "no servers enabled" in output.lower():
+            return servers
 
-        if command:
-            patterns.append(command.lower())
+        # Parse server lines like "  - playwright (running)" or "  - duckduckgo (idle)"
+        pattern = r'^\s*-\s+(\S+)\s*\('
+        for line in output.split('\n'):
+            match = re.match(pattern, line)
+            if match:
+                server_name = match.group(1)
+                servers.append(server_name)
 
-        # Add first arg as additional pattern (usually the package name)
-        if args and len(args) > 0:
-            first_arg = str(args[0]).lower()
-            # Skip common flags
-            if not first_arg.startswith("-"):
-                patterns.append(first_arg)
+        return servers
 
-        # Also search for MCP name itself
-        patterns.append(mcp_name.lower())
+    def get_enabled_servers(self) -> List[str]:
+        """
+        Get list of enabled MCP servers from Docker.
 
-        # Search for patterns in process list
-        ps_output_lower = ps_output.lower()
-        for pattern in patterns:
-            if pattern and pattern in ps_output_lower:
-                return True
-
-        return False
-
-    def _check_via_process_list(self) -> MCPServerStatus:
-        """Check MCP status via process list (ps aux) - fallback method."""
+        Returns:
+            List of enabled server names
+        """
         try:
             result = subprocess.run(
-                ["ps", "aux"],
+                ["docker", "mcp", "server", "status"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=10
             )
 
-            if result.returncode == 0:
-                return self._parse_process_list(result.stdout)
-            else:
-                return MCPServerStatus(
-                    connected=False,
-                    server_name=None,
-                    last_check=datetime.now(),
-                    error_message="Failed to check processes"
-                )
-
-        except subprocess.TimeoutExpired:
-            return MCPServerStatus(
-                connected=False,
-                server_name=None,
-                last_check=datetime.now(),
-                error_message="Timeout checking processes"
-            )
-        except subprocess.CalledProcessError as e:
-            return MCPServerStatus(
-                connected=False,
-                server_name=None,
-                last_check=datetime.now(),
-                error_message=f"Error checking processes: {e}"
-            )
-        except PermissionError:
-            return MCPServerStatus(
-                connected=False,
-                server_name=None,
-                last_check=datetime.now(),
-                error_message="Permission denied"
-            )
-        except FileNotFoundError:
-            return MCPServerStatus(
-                connected=False,
-                server_name=None,
-                last_check=datetime.now(),
-                error_message="ps command not found"
-            )
-
-    def _parse_process_list(self, ps_output: str) -> MCPServerStatus:
-        """
-        Parse ps aux output to detect MCP server (generic fallback method).
-
-        Args:
-            ps_output: Output from ps aux command
-
-        Returns:
-            MCPServerStatus based on process detection
-        """
-        # Look for MCP-related process names
-        # Updated patterns for Claude-installed MCPs
-        mcp_patterns = [
-            "mcp-server",
-            "mcp.server",
-            "mcp-claude",
-            "python -m mcp",
-            "node mcp",
-            "mcp/index",
-            "npx chrome-devtools-mcp",
-            "npx @modelcontextprotocol",
-            "bunx -y @jpisnice/shadcn-ui-mcp-server",
-            "claude-code-templates",
-            "npx -y @context7",
-            "npx -y memory-integration",
-            "npx -y playwright-mcp-server",
-        ]
-
-        for line in ps_output.split('\n'):
-            line_lower = line.lower()
-
-            for pattern in mcp_patterns:
-                if pattern in line_lower:
-                    # Found MCP process
-                    server_name = self._extract_server_name(line)
-
-                    return MCPServerStatus(
-                        connected=True,
-                        server_name=server_name,
-                        last_check=datetime.now(),
-                        error_message=None
-                    )
-
-        # No MCP process found
-        return MCPServerStatus(
-            connected=False,
-            server_name=None,
-            last_check=datetime.now(),
-            error_message="Not running"
-        )
-
-    def _extract_server_name(self, process_line: str) -> str:
-        """
-        Extract server name from process line.
-
-        Args:
-            process_line: Single line from ps aux output
-
-        Returns:
-            Extracted server name
-        """
-        # Try to extract meaningful name from command
-        parts = process_line.split()
-
-        # Look for recognizable MCP package names
-        known_mcps = {
-            "chrome-devtools-mcp": "Chrome DevTools",
-            "shadcn-ui-mcp-server": "shadcn UI",
-            "context7": "Context7",
-            "memory-integration": "Memory",
-            "playwright-mcp-server": "Playwright",
-            "containerize": "Containerization",
-        }
-
-        for keyword, name in known_mcps.items():
-            if keyword in process_line.lower():
-                return name
-
-        # Fallback: try to extract from command args
-        for part in parts:
-            if "mcp" in part.lower():
-                # Clean up the name
-                name = part.split('/')[-1]  # Get last component of path
-                name = name.split('.')[0]   # Remove extension
-                return name
-
-        return "MCP Server"
-
-    def get_configured_mcps(self) -> List[str]:
-        """
-        Get list of MCPs configured in Claude config for current project.
-
-        Returns:
-            List of configured MCP server names
-        """
-        try:
-            if not self._claude_config_path.exists():
+            if result.returncode != 0:
                 return []
 
-            with open(self._claude_config_path, 'r') as f:
-                config = json.load(f)
+            return self._parse_enabled_servers(result.stdout)
 
-            current_project_path = str(Path.cwd())
-            projects = config.get("projects", {})
-            project_config = projects.get(current_project_path, {})
-            mcp_servers = project_config.get("mcpServers", {})
-
-            return list(mcp_servers.keys())
-
-        except (json.JSONDecodeError, FileNotFoundError, KeyError):
+        except (FileNotFoundError, subprocess.TimeoutExpired, subprocess.CalledProcessError, PermissionError):
             return []
-
-    def check_mcp_via_pidfile(self) -> MCPServerStatus:
-        """
-        Check MCP status via PID file (deprecated - kept for backward compatibility).
-
-        Returns:
-            MCPServerStatus based on PID file check
-        """
-        if not self.pid_file_path or not self.pid_file_path.exists():
-            return MCPServerStatus(
-                connected=False,
-                server_name=None,
-                last_check=datetime.now(),
-                error_message="PID file not found"
-            )
-
-        try:
-            pid = int(self.pid_file_path.read_text().strip())
-
-            # Check if process with this PID exists
-            result = subprocess.run(
-                ["ps", "-p", str(pid)],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-
-            if result.returncode == 0 and "mcp" in result.stdout.lower():
-                return MCPServerStatus(
-                    connected=True,
-                    server_name="MCP Server",
-                    last_check=datetime.now(),
-                    error_message=None
-                )
-            else:
-                return MCPServerStatus(
-                    connected=False,
-                    server_name=None,
-                    last_check=datetime.now(),
-                    error_message="Process not running"
-                )
-
-        except (ValueError, IOError, subprocess.SubprocessError):
-            return MCPServerStatus(
-                connected=False,
-                server_name=None,
-                last_check=datetime.now(),
-                error_message="Failed to check PID"
-            )
-
-    def check_mcp_via_port(self, port: int = 3000) -> MCPServerStatus:
-        """
-        Check MCP status via port listening check (deprecated - kept for backward compatibility).
-
-        Args:
-            port: Port to check (default: 3000)
-
-        Returns:
-            MCPServerStatus based on port check
-        """
-        try:
-            # Use lsof or netstat to check port
-            system = platform.system()
-
-            if system == "Darwin":  # macOS
-                cmd = ["lsof", "-i", f":{port}"]
-            elif system == "Linux":
-                cmd = ["netstat", "-tuln"]
-            else:
-                return MCPServerStatus(
-                    connected=False,
-                    server_name=None,
-                    last_check=datetime.now(),
-                    error_message="Platform not supported for port check"
-                )
-
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-
-            if result.returncode == 0:
-                output_lower = result.stdout.lower()
-
-                if "mcp" in output_lower and str(port) in result.stdout:
-                    return MCPServerStatus(
-                        connected=True,
-                        server_name=f"MCP Server (port {port})",
-                        last_check=datetime.now(),
-                        error_message=None
-                    )
-
-            return MCPServerStatus(
-                connected=False,
-                server_name=None,
-                last_check=datetime.now(),
-                error_message=f"Not listening on port {port}"
-            )
-
-        except (subprocess.SubprocessError, FileNotFoundError):
-            return MCPServerStatus(
-                connected=False,
-                server_name=None,
-                last_check=datetime.now(),
-                error_message="Failed to check port"
-            )
 
     def get_status(self) -> MCPServerStatus:
         """

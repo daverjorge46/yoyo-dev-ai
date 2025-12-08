@@ -338,7 +338,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
     fi
 
     # Update MCP installation scripts (always, to get latest MCP features)
-    # NOTE: Legacy mcp-installer.sh removed - replaced by mcp-claude-installer.sh (Task 2)
+    # NOTE: Using Docker MCP Gateway setup for containerized MCP servers
     echo ""
     echo "  📂 MCP Installation Scripts:"
     mkdir -p "./.yoyo-dev/setup"
@@ -348,10 +348,10 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
         chmod +x "./.yoyo-dev/setup/mcp-prerequisites.sh"
     fi
 
-    # New Claude Code MCP installer (will be created in Task 2)
-    if [ -f "$BASE_YOYO_DEV/setup/mcp-claude-installer.sh" ]; then
-        copy_file "$BASE_YOYO_DEV/setup/mcp-claude-installer.sh" "./.yoyo-dev/setup/mcp-claude-installer.sh" "true" "setup/mcp-claude-installer.sh"
-        chmod +x "./.yoyo-dev/setup/mcp-claude-installer.sh"
+    # Docker MCP setup script for enabling containerized MCP servers
+    if [ -f "$BASE_YOYO_DEV/setup/docker-mcp-setup.sh" ]; then
+        copy_file "$BASE_YOYO_DEV/setup/docker-mcp-setup.sh" "./.yoyo-dev/setup/docker-mcp-setup.sh" "true" "setup/docker-mcp-setup.sh"
+        chmod +x "./.yoyo-dev/setup/docker-mcp-setup.sh"
     fi
 
     # Update parse-utils.sh if it exists (needed by yoyo.sh)
@@ -469,7 +469,7 @@ prompt_mcp_update() {
 
 # Function to install missing MCPs
 install_missing_mcps() {
-    local mcp_installer="$BASE_YOYO_DEV/setup/mcp-claude-installer.sh"
+    local mcp_installer="$BASE_YOYO_DEV/setup/docker-mcp-setup.sh"
 
     if [ ! -f "$mcp_installer" ]; then
         echo ""
@@ -508,7 +508,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ] && [ "$SKIP_MCP_CHECK" = false ]; then
                 echo ""
                 echo "ℹ️  Skipping MCP installation"
                 echo "   You can install MCPs later by running:"
-                echo "   $BASE_YOYO_DEV/setup/mcp-claude-installer.sh"
+                echo "   $BASE_YOYO_DEV/setup/docker-mcp-setup.sh"
             fi
         else
             if [ "$VERBOSE" = true ]; then

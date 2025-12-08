@@ -66,31 +66,28 @@ This creates a global `yoyo` command that works from any Yoyo Dev project.
 
 ### MCP Server Installation
 
-Yoyo Dev automatically installs 6 MCP servers during setup when Claude Code CLI is detected:
+Yoyo Dev uses Docker MCP Gateway to provide containerized MCP servers:
 
 | Server | Purpose |
 |--------|---------|
-| context7 | Intelligent context management |
-| memory | Persistent memory across sessions |
 | playwright | Browser automation and testing |
-| containerization | Docker and container management |
-| chrome-devtools | Chrome DevTools Protocol integration |
-| shadcn | shadcn/ui component integration |
+| github-official | GitHub repository management |
+| duckduckgo | Web search integration |
+| filesystem | File system access |
 
 **Manual Installation:**
 
 ```bash
-# Install all MCPs
-~/.yoyo-dev/setup/mcp-claude-installer.sh
+# Install Docker MCP servers
+~/.yoyo-dev/setup/docker-mcp-setup.sh
 
 # Verify installation
-cat ~/.claude.json | jq '.projects[].mcpServers | keys'
+docker mcp server status
 ```
 
 **Requirements:**
-- Node.js and npm (for `npx` commands)
+- Docker Desktop 4.32+ with MCP Toolkit enabled
 - Claude Code CLI installed
-- pnpm (required only for shadcn MCP)
 
 ---
 
