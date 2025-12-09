@@ -129,7 +129,8 @@ class MCPServerMonitor:
                     connected=True,
                     server_name=server_name,
                     last_check=datetime.now(),
-                    error_message=None
+                    error_message=None,
+                    enabled_servers=servers
                 )
             else:
                 # No servers enabled
@@ -180,6 +181,10 @@ class MCPServerMonitor:
         """
         Parse docker mcp server ls output to extract enabled servers.
 
+        Supports multiple output formats:
+        1. Current Docker MCP format (tabular with headers)
+        2. Older list format with "  - server_name (status)"
+
         Args:
             output: Output from docker mcp server ls
 
@@ -195,38 +200,39 @@ class MCPServerMonitor:
 
         lines = output.strip().split('\n')
 
-        # Skip header line if present (usually first line with column names)
-        # Typical formats:
-        # 1. Tabular: "NAME    IMAGE    TAG" header with data rows
-        # 2. List: "  - server_name (status)" format
-        # 3. Simple: just server names, one per line
-
         for line in lines:
-            line = line.strip()
-            if not line:
+            line_stripped = line.strip()
+            if not line_stripped:
                 continue
 
-            # Skip header lines (contain NAME, IMAGE, or are all caps)
-            if 'NAME' in line.upper() and ('IMAGE' in line.upper() or 'STATUS' in line.upper()):
+            # Skip title/header lines
+            if 'mcp servers' in line_stripped.lower():
+                continue
+            if 'enabled servers' in line_stripped.lower():
+                continue
+            if line_stripped.upper().startswith('NAME'):
                 continue
 
-            # Format 1: Tabular output - "playwright  alpine/..." (first column is name)
-            # Format 2: List format - "  - playwright (running)"
-            # Format 3: Simple format - just "playwright"
+            # Skip separator line (all dashes)
+            if re.match(r'^-+$', line_stripped):
+                continue
 
-            # Try list format first: "  - server_name (status)" or "  - server_name"
-            list_match = re.match(r'^\s*-\s+(\S+)', line)
+            # Skip tip/instruction lines
+            if line_stripped.lower().startswith('tip:'):
+                continue
+
+            # Format 1: List format "  - server_name (status)" or "  - server_name"
+            list_match = re.match(r'^\s*-\s+([a-zA-Z][a-zA-Z0-9_-]*)', line)
             if list_match:
                 servers.append(list_match.group(1))
                 continue
 
-            # Try tabular format: first column is the server name
-            # Split by multiple spaces or tabs
-            parts = re.split(r'\s{2,}|\t', line)
+            # Format 2: Tabular format - first column is server name
+            # "server-name    -    -    -    Description..."
+            parts = re.split(r'\s{2,}|\t', line_stripped)
             if parts and parts[0]:
-                # First part should be the server name (alphanumeric, hyphens, underscores)
                 name_candidate = parts[0].strip()
-                # Validate it looks like a server name (not a separator line)
+                # Validate it looks like a server name (alphanumeric, hyphens, underscores)
                 if re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', name_candidate):
                     servers.append(name_candidate)
 

@@ -200,11 +200,18 @@ class ProjectOverview(Widget):
             content.append(f"  {icon} ", style=f"bold {status_style}")
             content.append(f"{status_text}", style=status_style)
 
-            if self._mcp_status.server_name:
-                content.append(f" ({self._mcp_status.server_name})")
+            # Show server count and names
+            if self._mcp_status.enabled_servers:
+                server_count = len(self._mcp_status.enabled_servers)
+                content.append(f" (Docker MCP Gateway: {server_count} servers)\n")
+                # List individual server names
+                for server in self._mcp_status.enabled_servers:
+                    content.append(f"    • {server}\n", style="dim")
+            elif self._mcp_status.server_name:
+                content.append(f" ({self._mcp_status.server_name})\n")
 
             if self._mcp_status.error_message and not self._mcp_status.connected:
-                content.append(f"\n  {self._mcp_status.error_message}", style="dim")
+                content.append(f"  {self._mcp_status.error_message}\n", style="dim")
         else:
             content.append("  Status unknown\n", style="dim")
 

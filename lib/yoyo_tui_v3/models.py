@@ -201,6 +201,7 @@ class MCPServerStatus:
     server_name: Optional[str]
     last_check: datetime
     error_message: Optional[str] = None
+    enabled_servers: Optional[List[str]] = None  # List of enabled server names
 
 
 @dataclass
