@@ -8,6 +8,7 @@ from textual.screen import Screen
 from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Header, Footer
 from textual.binding import Binding
+from textual.events import Click
 
 from ..widgets.status_bar import StatusBar
 from ..widgets.project_overview import ProjectOverview
@@ -77,26 +78,41 @@ class MainDashboard(Screen):
         height: 1fr;
     }
 
-    #active-work-panel {
-        width: 30%;
+    /* Unified panel styling - all panels share same background and border */
+    #active-work-panel,
+    #command-palette-panel,
+    #history-panel {
+        background: $panel;
         border: solid $primary;
         padding: 1;
     }
 
+    #active-work-panel {
+        width: 30%;
+        margin-right: 1;
+    }
+
     #command-palette-panel {
         width: 40%;
-        border: solid $secondary;
-        padding: 1;
+        margin-right: 1;
     }
 
     #history-panel {
         width: 30%;
-        border: solid $accent;
-        padding: 1;
     }
 
     .panel-focused {
         border: double $success;
+    }
+
+    /* Clickable elements */
+    .clickable:hover {
+        background: $surface-lighten-1;
+    }
+
+    .copyable-command:hover {
+        background: $primary-darken-2;
+        text-style: bold;
     }
     """
 
@@ -242,6 +258,48 @@ class MainDashboard(Screen):
         for event_type, handler in self._subscriptions:
             self.event_bus.unsubscribe(event_type, handler)
         self._subscriptions.clear()
+
+    # ========================================================================
+    # Click Handlers for Panel Focus
+    # ========================================================================
+
+    def on_active_work_panel_task_clicked(self, message: ActiveWorkPanel.TaskClicked) -> None:
+        """Handle task click from ActiveWorkPanel."""
+        self.focused_panel = "active_work"
+        self._update_panel_focus_styles()
+
+    def on_active_work_panel_link_clicked(self, message: ActiveWorkPanel.LinkClicked) -> None:
+        """Handle link click from ActiveWorkPanel."""
+        if message.link_type == "specs":
+            self.action_focus_specs()
+        elif message.link_type == "fixes":
+            # Navigate to fixes (future implementation)
+            pass
+
+    def on_command_palette_panel_command_copied(self, message: CommandPalettePanel.CommandCopied) -> None:
+        """Handle command copy from CommandPalettePanel."""
+        self.focused_panel = "command_palette"
+        self._update_panel_focus_styles()
+        # Notification is handled in the panel itself
+
+    def on_command_palette_panel_command_clicked(self, message: CommandPalettePanel.CommandClicked) -> None:
+        """Handle command click from CommandPalettePanel."""
+        self.focused_panel = "command_palette"
+        self._update_panel_focus_styles()
+
+    def on_history_panel_entry_clicked(self, message: HistoryPanel.EntryClicked) -> None:
+        """Handle entry click from HistoryPanel."""
+        self.focused_panel = "history"
+        self._update_panel_focus_styles()
+
+    def on_history_panel_view_all_clicked(self, message: HistoryPanel.ViewAllClicked) -> None:
+        """Handle View All click from HistoryPanel."""
+        self.action_focus_history()
+
+    def on_project_overview_expand_toggled(self, message: ProjectOverview.ExpandToggled) -> None:
+        """Handle expand/collapse toggle from ProjectOverview."""
+        # Just acknowledge the toggle, no navigation needed
+        pass
 
     # ========================================================================
     # Event Handlers

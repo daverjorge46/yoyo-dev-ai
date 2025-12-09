@@ -2,15 +2,21 @@
 ProjectOverview widget for Yoyo Dev TUI.
 
 Displays mission, tech stack, project stats, and MCP status.
+Enhanced with scroll support and click handlers.
 """
 
 from textual.widget import Widget
 from textual.reactive import reactive
-from textual.containers import Container
+from textual.containers import Container, VerticalScroll
+from textual.message import Message
+from textual.events import Click
 from rich.text import Text
 from rich.panel import Panel
+from typing import Optional
 
 from ..models import EventType, Event
+from ..utils.panel_icons import PanelIcons
+from ..utils.headers import render_header
 
 
 class ProjectOverview(Widget):
@@ -18,10 +24,28 @@ class ProjectOverview(Widget):
     Project overview panel showing mission, tech stack, stats, and MCP status.
 
     Can be expanded or collapsed to save screen space.
+
+    Features:
+    - Scrollable content area for expanded view
+    - Click handlers for expand/collapse
+    - Enhanced visual styling
     """
 
     # Reactive properties
     is_expanded: reactive[bool] = reactive(True)
+
+    # Custom message for section clicks
+    class SectionClicked(Message):
+        """Message sent when a section is clicked."""
+        def __init__(self, section: str):
+            self.section = section  # "mission", "tech", "stats", "mcp"
+            super().__init__()
+
+    class ExpandToggled(Message):
+        """Message sent when expand/collapse is toggled."""
+        def __init__(self, expanded: bool):
+            self.expanded = expanded
+            super().__init__()
 
     def __init__(self, data_manager, event_bus, mcp_monitor=None, **kwargs):
         """
@@ -120,9 +144,18 @@ class ProjectOverview(Widget):
         self.is_expanded = False
         self.refresh()
 
+    def on_click(self, event: Click) -> None:
+        """
+        Handle click events for expand/collapse toggle.
+
+        Clicking on the panel toggles between expanded and collapsed states.
+        """
+        self.toggle_expansion()
+        self.post_message(self.ExpandToggled(self.is_expanded))
+
     def get_mcp_status_icon(self, connected: bool) -> str:
         """
-        Get icon for MCP connection status.
+        Get icon for MCP connection status using PanelIcons.
 
         Args:
             connected: Whether MCP is connected
@@ -130,7 +163,7 @@ class ProjectOverview(Widget):
         Returns:
             Icon string
         """
-        return "✓" if connected else "✗"
+        return PanelIcons.CONNECTED if connected else PanelIcons.DISCONNECTED
 
     def render(self) -> Panel:
         """
@@ -140,10 +173,11 @@ class ProjectOverview(Widget):
             Rich Panel with project overview content
         """
         if not self.is_expanded:
-            # Collapsed view - just show mission
+            # Collapsed view - just show mission with expand hint
             content = Text()
-            content.append("📋 ", style="bold")
+            content.append(f"{PanelIcons.MISSION} ", style="bold")
             content.append(self._mission, style="italic")
+            content.append(f"  {PanelIcons.EXPAND} click to expand", style="dim")
             return Panel(
                 content,
                 title="Project Overview",
@@ -151,15 +185,18 @@ class ProjectOverview(Widget):
                 expand=False
             )
 
-        # Expanded view - show all information
+        # Expanded view - show all information with enhanced styling
         content = Text()
 
+        # Collapse hint
+        content.append(f"  {PanelIcons.COLLAPSE} click to collapse\n\n", style="dim")
+
         # Mission
-        content.append("📋 Mission\n", style="bold cyan")
+        content.append(f"{PanelIcons.MISSION} Mission\n", style="bold cyan")
         content.append(f"  {self._mission}\n\n", style="italic")
 
         # Tech Stack (show only first 5 main technologies)
-        content.append("🔧 Tech Stack\n", style="bold cyan")
+        content.append(f"{PanelIcons.TECH} Tech Stack\n", style="bold cyan")
         if self._tech_stack:
             # Show only first 5 technologies for dashboard overview
             main_tech = self._tech_stack[:5]
@@ -171,7 +208,7 @@ class ProjectOverview(Widget):
             content.append("  Not specified\n\n", style="dim")
 
         # Project Stats
-        content.append("📊 Quick Stats\n", style="bold cyan")
+        content.append(f"{PanelIcons.STATS} Quick Stats\n", style="bold cyan")
         if self._stats:
             content.append(f"  Active Specs: ", style="dim")
             content.append(f"{self._stats.active_specs}\n")
@@ -191,7 +228,7 @@ class ProjectOverview(Widget):
         content.append("\n")
 
         # MCP Status
-        content.append("🔌 MCP Server\n", style="bold cyan")
+        content.append(f"{PanelIcons.MCP} MCP Server\n", style="bold cyan")
         if self._mcp_status:
             icon = self.get_mcp_status_icon(self._mcp_status.connected)
             status_text = "Connected" if self._mcp_status.connected else "Disconnected"

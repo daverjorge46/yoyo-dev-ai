@@ -48,33 +48,84 @@ ProjectOverview {
 }
 
 /* ============================================================================
-   Individual Panel Styling
+   Individual Panel Styling - Unified Visual Design
    ============================================================================ */
+
+/* Unified panel base styling - all panels share same background and border */
+#active-work-panel,
+#command-palette-panel,
+#history-panel {
+    background: $panel;
+    border: solid $primary;
+    padding: 1;
+}
 
 #active-work-panel {
     width: 30%;
-    border: solid $primary;
-    padding: 1;
     margin-right: 1;
 }
 
 #command-palette-panel {
     width: 40%;
-    border: solid $secondary;
-    padding: 1;
     margin-right: 1;
 }
 
 #history-panel {
     width: 30%;
-    border: solid $accent;
-    padding: 1;
 }
 
 /* Focused panel styling */
 .panel-focused {
     border: double $success;
     border-title-color: $success;
+}
+
+/* ============================================================================
+   Scrollable Panel Styling
+   ============================================================================ */
+
+.scrollable-panel {
+    overflow-y: auto;
+    scrollbar-size: thin;
+}
+
+.scrollable-panel:focus-within {
+    border: solid $primary-lighten-1;
+}
+
+/* ============================================================================
+   Clickable Elements
+   ============================================================================ */
+
+.clickable {
+    /* Indicate interactivity */
+}
+
+.clickable:hover {
+    background: $surface-lighten-1;
+}
+
+.clickable:focus {
+    background: $surface-lighten-2;
+}
+
+/* Copyable commands - special styling for click-to-copy items */
+.copyable-command {
+    padding: 0 1;
+}
+
+.copyable-command:hover {
+    background: $primary-darken-2;
+    text-style: bold;
+}
+
+/* Clickable list items */
+.clickable-item {
+    padding: 0 1;
+}
+
+.clickable-item:hover {
+    background: $boost;
 }
 
 /* ============================================================================
