@@ -86,7 +86,7 @@ ProjectOverview {
 
 .scrollable-panel {
     overflow-y: auto;
-    scrollbar-size: thin;
+    scrollbar-size: 1 1;
 }
 
 .scrollable-panel:focus-within {

@@ -10,6 +10,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from ..models import (
+    ActiveWork,
     CommandSuggestion,
     Task,
     TaskStatus,
@@ -173,36 +174,36 @@ class IntelligentCommandSuggester:
 
         return suggestions
 
-    def _rule2_spec_created_no_tasks(self, active_work: dict) -> List[CommandSuggestion]:
+    def _rule2_spec_created_no_tasks(self, active_work: ActiveWork) -> List[CommandSuggestion]:
         """Rule 2: Spec Created, No Tasks - suggest /create-tasks."""
         return [
             CommandSuggestion(
                 command="/create-tasks",
-                reason=f"Break down '{active_work['name']}' into tasks",
+                reason=f"Break down '{active_work.name}' into tasks",
                 priority=1,
                 icon="📋"
             )
         ]
 
-    def _rule3_tasks_not_started(self, active_work: dict) -> List[CommandSuggestion]:
+    def _rule3_tasks_not_started(self, active_work: ActiveWork) -> List[CommandSuggestion]:
         """Rule 3: Tasks Created, Not Started - suggest /execute-tasks."""
-        task_count = len(active_work.get("tasks", []))
+        task_count = len(active_work.tasks)
         return [
             CommandSuggestion(
                 command="/execute-tasks",
-                reason=f"Start executing {task_count} tasks for '{active_work['name']}'",
+                reason=f"Start executing {task_count} tasks for '{active_work.name}'",
                 priority=1,
                 icon="⚡"
             )
         ]
 
-    def _rule4_tasks_in_progress(self, active_work: dict, progress: float) -> List[CommandSuggestion]:
+    def _rule4_tasks_in_progress(self, active_work: ActiveWork, progress: float) -> List[CommandSuggestion]:
         """Rule 4: Tasks In Progress - suggest continue or review."""
         suggestions = []
 
         # Rule 4a: Continue working
         current_task = next(
-            (t for t in active_work.get("tasks", []) if t.status == TaskStatus.IN_PROGRESS),
+            (t for t in active_work.tasks if t.status == TaskStatus.IN_PROGRESS),
             None
         )
 
@@ -225,23 +226,23 @@ class IntelligentCommandSuggester:
 
         return suggestions
 
-    def _rule5_tasks_completed_no_pr(self, active_work: dict) -> List[CommandSuggestion]:
+    def _rule5_tasks_completed_no_pr(self, active_work: ActiveWork) -> List[CommandSuggestion]:
         """Rule 5: Tasks Completed, No PR - suggest post-execution steps."""
         return [
             CommandSuggestion(
                 command="/execute-tasks",
-                reason=f"Complete post-execution steps (tests, PR) for '{active_work['name']}'",
+                reason=f"Complete post-execution steps (tests, PR) for '{active_work.name}'",
                 priority=1,
                 icon="🎯"
             )
         ]
 
-    def _rule6_pr_created(self, active_work: dict) -> List[CommandSuggestion]:
+    def _rule6_pr_created(self, active_work: ActiveWork) -> List[CommandSuggestion]:
         """Rule 6: PR Created - suggest next feature."""
         return [
             CommandSuggestion(
                 command="/create-new",
-                reason=f"PR merged for '{active_work['name']}' - start next feature",
+                reason=f"PR merged for '{active_work.name}' - start next feature",
                 priority=2,
                 icon="🎉"
             )
