@@ -153,8 +153,8 @@ check_mcp_toolkit_enabled() {
 is_server_enabled() {
     local server_name="$1"
 
-    # Check if server is already enabled
-    local status_output=$(docker mcp server status 2>/dev/null || echo "")
+    # Check if server is already enabled using 'docker mcp server ls'
+    local status_output=$(docker mcp server ls 2>/dev/null || echo "")
 
     if echo "$status_output" | grep -q "$server_name"; then
         return 0
@@ -370,9 +370,9 @@ run_setup() {
 
     echo ""
     print_info "You can manage servers with:"
-    echo "  • List servers:   ${CYAN}docker mcp server list${RESET}"
+    echo "  • List servers:   ${CYAN}docker mcp server ls${RESET}"
     echo "  • Enable server:  ${CYAN}docker mcp server enable <name>${RESET}"
-    echo "  • Check status:   ${CYAN}docker mcp server status${RESET}"
+    echo "  • Disable server: ${CYAN}docker mcp server disable <name>${RESET}"
     echo ""
 
     return 0

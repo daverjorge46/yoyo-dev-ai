@@ -82,7 +82,7 @@ Yoyo Dev uses Docker MCP Gateway to provide containerized MCP servers:
 ~/.yoyo-dev/setup/docker-mcp-setup.sh
 
 # Verify installation
-docker mcp server status
+docker mcp server ls
 ```
 
 **Requirements:**

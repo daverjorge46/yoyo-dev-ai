@@ -34,13 +34,13 @@ def monitor(mock_event_bus):
 @patch('subprocess.run')
 def test_detect_docker_mcp_gateway_connected(mock_run, monitor):
     """Test detection of Docker MCP Gateway with enabled servers."""
-    # Mock docker mcp server status output
+    # Mock docker mcp server ls output (tabular format)
     mock_run.return_value = MagicMock(
         returncode=0,
-        stdout="""Enabled servers:
-  - playwright (running)
-  - github-official (running)
-  - duckduckgo (idle)
+        stdout="""NAME              IMAGE                    TAG
+playwright        docker/mcp-playwright    latest
+github-official   docker/mcp-github        latest
+duckduckgo        docker/mcp-duckduckgo    latest
 """,
         stderr=""
     )
@@ -70,7 +70,7 @@ def test_detect_docker_mcp_no_servers_enabled(mock_run, monitor):
 @patch('subprocess.run')
 def test_detect_docker_mcp_not_running(mock_run, monitor):
     """Test detection when Docker is not running."""
-    mock_run.side_effect = subprocess.CalledProcessError(1, "docker mcp server status")
+    mock_run.side_effect = subprocess.CalledProcessError(1, "docker mcp server ls")
 
     status = monitor.check_mcp_status()
 
@@ -110,7 +110,7 @@ def test_detect_mcp_toolkit_not_enabled(mock_run, monitor):
 
 @patch('subprocess.run')
 def test_parse_enabled_servers_list(mock_run, monitor):
-    """Test parsing of enabled servers from docker mcp server status."""
+    """Test parsing of enabled servers from docker mcp server ls (list format)."""
     mock_run.return_value = MagicMock(
         returncode=0,
         stdout="""Enabled servers:
@@ -323,7 +323,7 @@ def test_linux_docker_detection(mock_run, mock_platform, monitor):
 
     status = monitor.check_mcp_status()
 
-    # Should use docker mcp server status
+    # Should use docker mcp server ls
     call_args = mock_run.call_args[0][0]
     assert "docker" in call_args
 
@@ -344,7 +344,7 @@ def test_macos_docker_detection(mock_run, mock_platform, monitor):
 
     status = monitor.check_mcp_status()
 
-    # Should use docker mcp server status
+    # Should use docker mcp server ls
     call_args = mock_run.call_args[0][0]
     assert "docker" in call_args
 
@@ -370,7 +370,7 @@ def test_unsupported_platform(mock_platform, monitor):
 @patch('subprocess.run')
 def test_handle_timeout(mock_run, monitor):
     """Test handling of subprocess timeout."""
-    mock_run.side_effect = subprocess.TimeoutExpired("docker mcp server status", timeout=5)
+    mock_run.side_effect = subprocess.TimeoutExpired("docker mcp server ls", timeout=5)
 
     status = monitor.check_mcp_status()
 
@@ -511,9 +511,9 @@ def test_docker_command_used(monitor):
 
         monitor.check_mcp_status()
 
-        # Verify docker mcp server status was called
+        # Verify docker mcp server ls was called
         call_args = mock_run.call_args[0][0]
         assert "docker" in call_args
         assert "mcp" in call_args
         assert "server" in call_args
-        assert "status" in call_args
+        assert "ls" in call_args

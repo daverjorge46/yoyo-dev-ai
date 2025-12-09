@@ -19,7 +19,7 @@ class MCPServerMonitor:
     Monitors Docker MCP Gateway connection status.
 
     Detection Method:
-    Uses `docker mcp server status` to check enabled servers via Docker MCP Toolkit.
+    Uses `docker mcp server ls` to check enabled servers via Docker MCP Toolkit.
     """
 
     def __init__(self, event_bus, pid_file_path: Optional[Path] = None):
@@ -77,9 +77,9 @@ class MCPServerMonitor:
             MCPServerStatus based on Docker MCP Gateway status
         """
         try:
-            # Run docker mcp server status
+            # Run docker mcp server ls (correct command - 'status' doesn't exist)
             result = subprocess.run(
-                ["docker", "mcp", "server", "status"],
+                ["docker", "mcp", "server", "ls"],
                 capture_output=True,
                 text=True,
                 timeout=10
@@ -87,12 +87,22 @@ class MCPServerMonitor:
 
             if result.returncode != 0:
                 # Check if MCP Toolkit is not enabled
-                if "not a docker command" in result.stderr.lower() or "'mcp'" in result.stderr:
+                stderr_lower = result.stderr.lower()
+                if "not a docker command" in stderr_lower or "'mcp'" in stderr_lower:
                     return MCPServerStatus(
                         connected=False,
                         server_name=None,
                         last_check=datetime.now(),
                         error_message="MCP Toolkit not enabled in Docker Desktop"
+                    )
+
+                # Check for permission denied (Docker not accessible)
+                if "permission denied" in stderr_lower:
+                    return MCPServerStatus(
+                        connected=False,
+                        server_name=None,
+                        last_check=datetime.now(),
+                        error_message="Docker permission denied"
                     )
 
                 # Other error
@@ -168,27 +178,57 @@ class MCPServerMonitor:
 
     def _parse_enabled_servers(self, output: str) -> List[str]:
         """
-        Parse docker mcp server status output to extract enabled servers.
+        Parse docker mcp server ls output to extract enabled servers.
 
         Args:
-            output: Output from docker mcp server status
+            output: Output from docker mcp server ls
 
         Returns:
             List of enabled server names
         """
         servers = []
 
-        # Look for "Enabled servers:" section
-        if "no servers enabled" in output.lower():
+        # Check for "no servers enabled" or empty output
+        output_lower = output.lower()
+        if "no servers enabled" in output_lower or not output.strip():
             return servers
 
-        # Parse server lines like "  - playwright (running)" or "  - duckduckgo (idle)"
-        pattern = r'^\s*-\s+(\S+)\s*\('
-        for line in output.split('\n'):
-            match = re.match(pattern, line)
-            if match:
-                server_name = match.group(1)
-                servers.append(server_name)
+        lines = output.strip().split('\n')
+
+        # Skip header line if present (usually first line with column names)
+        # Typical formats:
+        # 1. Tabular: "NAME    IMAGE    TAG" header with data rows
+        # 2. List: "  - server_name (status)" format
+        # 3. Simple: just server names, one per line
+
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+
+            # Skip header lines (contain NAME, IMAGE, or are all caps)
+            if 'NAME' in line.upper() and ('IMAGE' in line.upper() or 'STATUS' in line.upper()):
+                continue
+
+            # Format 1: Tabular output - "playwright  alpine/..." (first column is name)
+            # Format 2: List format - "  - playwright (running)"
+            # Format 3: Simple format - just "playwright"
+
+            # Try list format first: "  - server_name (status)" or "  - server_name"
+            list_match = re.match(r'^\s*-\s+(\S+)', line)
+            if list_match:
+                servers.append(list_match.group(1))
+                continue
+
+            # Try tabular format: first column is the server name
+            # Split by multiple spaces or tabs
+            parts = re.split(r'\s{2,}|\t', line)
+            if parts and parts[0]:
+                # First part should be the server name (alphanumeric, hyphens, underscores)
+                name_candidate = parts[0].strip()
+                # Validate it looks like a server name (not a separator line)
+                if re.match(r'^[a-zA-Z][a-zA-Z0-9_-]*$', name_candidate):
+                    servers.append(name_candidate)
 
         return servers
 
@@ -201,7 +241,7 @@ class MCPServerMonitor:
         """
         try:
             result = subprocess.run(
-                ["docker", "mcp", "server", "status"],
+                ["docker", "mcp", "server", "ls"],
                 capture_output=True,
                 text=True,
                 timeout=10

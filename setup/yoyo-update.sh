@@ -421,7 +421,7 @@ check_docker_mcp_toolkit() {
 
 # Function to get installed MCP servers via Docker MCP Gateway
 get_installed_mcps() {
-    # Use docker mcp server status to get enabled servers
+    # Use docker mcp server ls to get enabled servers
     if ! check_docker_available; then
         echo ""
         return 1
@@ -432,15 +432,18 @@ get_installed_mcps() {
         return 1
     fi
 
-    # Parse docker mcp server status output
+    # Parse docker mcp server ls output
     local status_output
-    status_output=$(docker mcp server status 2>/dev/null) || {
+    status_output=$(docker mcp server ls 2>/dev/null) || {
         echo ""
         return 1
     }
 
-    # Extract server names from output like "  - playwright (running)"
-    echo "$status_output" | grep -E '^\s*-\s+\S+' | sed -E 's/^\s*-\s+(\S+).*/\1/' 2>/dev/null || echo ""
+    # Extract server names from output
+    # Handles both tabular format (first column is name, skip header) and list format
+    # Tabular: NAME  IMAGE  TAG (skip header, get first column)
+    # List: "  - playwright (running)" format
+    echo "$status_output" | tail -n +2 | awk '{print $1}' | grep -E '^[a-zA-Z][a-zA-Z0-9_-]*$' 2>/dev/null || echo ""
 }
 
 # Function to detect missing MCPs (Docker MCP servers)

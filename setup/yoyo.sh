@@ -457,22 +457,24 @@ check_docker_mcp_gateway() {
         return 1
     fi
 
-    # Get enabled servers
+    # Get enabled servers using 'docker mcp server ls'
     local status_output
-    status_output=$(docker mcp server status 2>/dev/null) || {
+    status_output=$(docker mcp server ls 2>/dev/null) || {
         MCP_STATUS_TEXT="${YELLOW}MCP Gateway unavailable${RESET}"
         return 1
     }
 
-    # Check for "no servers enabled"
-    if echo "$status_output" | grep -qi "no servers enabled"; then
+    # Check for "no servers enabled" or empty output
+    if echo "$status_output" | grep -qi "no servers enabled" || [ -z "$status_output" ]; then
         MCP_STATUS_TEXT="${YELLOW}No MCP servers enabled${RESET}"
         return 1
     fi
 
     # Count enabled servers
+    # Handles both tabular format (skip header) and list format
     local server_count
-    server_count=$(echo "$status_output" | grep -cE '^\s*-\s+\S+' || echo "0")
+    # Count non-empty lines that aren't headers (NAME/IMAGE/STATUS)
+    server_count=$(echo "$status_output" | grep -cvE '^\s*$|NAME.*IMAGE|NAME.*STATUS' || echo "0")
 
     if [ "$server_count" -gt 0 ]; then
         MCP_STATUS_TEXT="${GREEN}${server_count} servers enabled${RESET}"

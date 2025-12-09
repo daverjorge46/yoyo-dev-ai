@@ -85,7 +85,7 @@ test_no_legacy_mcp_names() {
 # Test 3: get_installed_mcps uses docker mcp command
 # ============================================
 test_get_installed_mcps_uses_docker() {
-    print_test "get_installed_mcps() uses 'docker mcp server status'"
+    print_test "get_installed_mcps() uses 'docker mcp server ls'"
     ((TESTS_RUN++))
 
     # Check if get_installed_mcps function uses docker mcp command

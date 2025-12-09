@@ -162,8 +162,8 @@ To manually set up Docker MCP or troubleshoot:
 **Individual server commands:**
 
 ```bash
-# List available MCP servers
-docker mcp server list
+# List enabled MCP servers
+docker mcp server ls
 
 # Enable specific servers
 docker mcp server enable playwright
@@ -189,20 +189,20 @@ docker mcp oauth authorize github-official
 
 ### Verifying MCP Installation
 
-**Method 1: Check Docker MCP server status**
+**Method 1: Check Docker MCP server list**
 
 ```bash
-# View enabled servers and their status
-docker mcp server status
+# View enabled servers
+docker mcp server ls
 ```
 
-Expected output:
+Expected output (tabular format):
 ```
-Enabled servers:
-  - playwright (running)
-  - github-official (running)
-  - duckduckgo (idle)
-  - filesystem (running)
+NAME              IMAGE                    TAG
+playwright        docker/mcp-playwright    latest
+github-official   docker/mcp-github        latest
+duckduckgo        docker/mcp-duckduckgo    latest
+filesystem        docker/mcp-filesystem    latest
 ```
 
 **Method 2: Use Yoyo TUI**
@@ -273,11 +273,11 @@ docker mcp --help
 **Issue: "Server not starting"**
 
 ```bash
-# Check server status
-docker mcp server status
+# Check server list
+docker mcp server ls
 
-# View server logs
-docker mcp server logs playwright
+# Inspect server details
+docker mcp server inspect playwright
 
 # Restart specific server
 docker mcp server disable playwright
