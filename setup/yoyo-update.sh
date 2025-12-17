@@ -85,6 +85,47 @@ echo "🔄 Yoyo Dev Update"
 echo "=================="
 echo ""
 
+# ============================================
+# TypeScript CLI Update Function
+# ============================================
+
+update_typescript_cli() {
+    # Check if npm is available
+    if ! command -v npm &> /dev/null; then
+        if [ "$VERBOSE" = true ]; then
+            echo "ℹ️  npm not available - skipping TypeScript CLI update"
+        fi
+        return 0
+    fi
+
+    # Check if @yoyo-ai/cli is installed globally
+    if npm list -g @yoyo-ai/cli &> /dev/null 2>&1; then
+        echo ""
+        echo "📦 Updating TypeScript CLI (@yoyo-ai/cli)..."
+        if npm update -g @yoyo-ai/cli --quiet; then
+            echo "  ✓ TypeScript CLI updated"
+        else
+            echo "  ⚠️  Failed to update TypeScript CLI"
+            echo "     You can update manually: npm update -g @yoyo-ai/cli"
+        fi
+    elif [ -f "./node_modules/@yoyo-ai/cli/package.json" ]; then
+        # Check if installed locally
+        echo ""
+        echo "📦 Updating local TypeScript CLI (@yoyo-ai/cli)..."
+        if npm update @yoyo-ai/cli --quiet; then
+            echo "  ✓ Local TypeScript CLI updated"
+        else
+            echo "  ⚠️  Failed to update local TypeScript CLI"
+            echo "     You can update manually: npm update @yoyo-ai/cli"
+        fi
+    else
+        if [ "$VERBOSE" = true ]; then
+            echo "ℹ️  TypeScript CLI not installed - skipping update"
+            echo "   To install: npm install -g @yoyo-ai/cli"
+        fi
+    fi
+}
+
 # Get project directory info
 CURRENT_DIR=$(pwd)
 PROJECT_NAME=$(basename "$CURRENT_DIR")
@@ -560,6 +601,9 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ] && [ "$SKIP_MCP_CHECK" = false ]; then
         fi
     fi
 fi
+
+# Update TypeScript CLI if installed
+update_typescript_cli
 
 # Update installed version for update detection
 if [ -f "$BASE_YOYO_DEV/VERSION" ]; then

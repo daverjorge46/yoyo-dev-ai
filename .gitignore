@@ -54,3 +54,9 @@ temp/
 
 # Cache
 .cache/
+
+# Yoyo AI runtime data (memory databases, settings)
+.yoyo-ai/
+
+# Build outputs
+dist/
