@@ -1,5 +1,41 @@
 {
+  "name": "yoyo-ai",
+  "version": "4.0.0-alpha.1",
+  "description": "Memory-first AI development framework",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "lint": "biome check src/",
+    "format": "biome format --write src/"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.6.0",
+    "uuid": "^11.0.3",
+    "glob": "^11.0.0"
+  },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^22.10.2",
+    "@types/uuid": "^10.0.0",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8",
+    "@biomejs/biome": "^1.9.4",
     "shadcn": "^3.5.1"
-  }
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "keywords": [
+    "ai",
+    "memory",
+    "coding-assistant",
+    "llm",
+    "developer-tools"
+  ],
+  "license": "MIT"
 }
