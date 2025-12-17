@@ -1,7 +1,7 @@
 """
 ProjectOverview widget for Yoyo Dev TUI.
 
-Displays mission, tech stack, project stats, and MCP status.
+Displays mission, tech stack, project stats, MCP status, and memory status.
 Enhanced with scroll support and click handlers.
 """
 
@@ -17,6 +17,8 @@ from typing import Optional
 from ..models import EventType, Event
 from ..utils.panel_icons import PanelIcons
 from ..utils.headers import render_header
+from ..services.memory_bridge import MemoryBridge, MemoryStatus
+from .memory_panel import format_memory_timestamp
 
 
 class ProjectOverview(Widget):
@@ -47,7 +49,7 @@ class ProjectOverview(Widget):
             self.expanded = expanded
             super().__init__()
 
-    def __init__(self, data_manager, event_bus, mcp_monitor=None, **kwargs):
+    def __init__(self, data_manager, event_bus, mcp_monitor=None, memory_bridge=None, **kwargs):
         """
         Initialize ProjectOverview.
 
@@ -55,16 +57,19 @@ class ProjectOverview(Widget):
             data_manager: DataManager instance
             event_bus: EventBus instance
             mcp_monitor: MCPServerMonitor instance (optional)
+            memory_bridge: MemoryBridge instance (optional)
         """
         super().__init__(**kwargs)
         self.data_manager = data_manager
         self.event_bus = event_bus
         self.mcp_monitor = mcp_monitor
+        self.memory_bridge = memory_bridge
 
         self._mission = ""
         self._tech_stack = []
         self._stats = None
         self._mcp_status = None
+        self._memory_status: Optional[MemoryStatus] = None
         self._subscriptions = []  # Track handler references
 
     def on_mount(self) -> None:
@@ -115,12 +120,19 @@ class ProjectOverview(Widget):
             # Fetch MCP status
             self._mcp_status = self.data_manager.get_mcp_status()
 
+            # Fetch memory status
+            if self.memory_bridge:
+                self._memory_status = self.memory_bridge.get_status()
+            else:
+                self._memory_status = None
+
         except Exception as e:
             # Handle errors gracefully
             self._mission = self._mission or "Error loading mission"
             self._tech_stack = self._tech_stack or []
             self._stats = self._stats  # Keep previous stats
             self._mcp_status = self._mcp_status  # Keep previous status
+            self._memory_status = self._memory_status  # Keep previous memory status
 
         # Trigger re-render
         self.refresh()
@@ -164,6 +176,24 @@ class ProjectOverview(Widget):
             Icon string
         """
         return PanelIcons.CONNECTED if connected else PanelIcons.DISCONNECTED
+
+    def _get_memory_block_icon(self, block_type: str) -> str:
+        """
+        Get icon for memory block type.
+
+        Args:
+            block_type: Type of memory block
+
+        Returns:
+            Icon character
+        """
+        icons = {
+            "persona": "",  # Robot
+            "project": "",  # Folder
+            "user": "",    # User
+            "corrections": ""  # Pencil
+        }
+        return icons.get(block_type, "")
 
     def render(self) -> Panel:
         """
@@ -251,6 +281,35 @@ class ProjectOverview(Widget):
                 content.append(f"  {self._mcp_status.error_message}\n", style="dim")
         else:
             content.append("  Status unknown\n", style="dim")
+
+        content.append("\n")
+
+        # Memory Status
+        content.append(" Memory\n", style="bold cyan")
+        if self._memory_status and self._memory_status.connected:
+            # Show block count
+            content.append("  ", style="bold green")
+            content.append(f" {self._memory_status.block_count} blocks", style="green")
+
+            # Show scope
+            scope_icon = "" if self._memory_status.scope == "project" else ""
+            content.append(f" ({scope_icon} {self._memory_status.scope})\n", style="dim")
+
+            # Show block type breakdown
+            if self._memory_status.block_types:
+                for block_type, count in self._memory_status.block_types.items():
+                    type_icon = self._get_memory_block_icon(block_type)
+                    content.append(f"    {type_icon} {block_type}: {count}\n", style="dim")
+
+            # Show last updated
+            if self._memory_status.last_updated:
+                formatted = format_memory_timestamp(self._memory_status.last_updated)
+                content.append(f"  Updated: {formatted}\n", style="dim")
+        else:
+            content.append("  ", style="dim")
+            content.append(" Not initialized\n", style="dim red")
+            if self._memory_status and self._memory_status.error_message:
+                content.append(f"  {self._memory_status.error_message[:50]}\n", style="dim")
 
         return Panel(
             content,

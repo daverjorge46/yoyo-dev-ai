@@ -18,6 +18,7 @@ from ..widgets.history_panel import HistoryPanel
 from ..widgets.execution_monitor import ExecutionMonitor
 from ..widgets.keyboard_shortcuts import KeyboardShortcuts
 from ..models import EventType, Event
+from ..services.memory_bridge import MemoryBridge
 from .help_screen import HelpScreen
 from .commands_screen import CommandsScreen
 from .git_screen import GitScreen
@@ -123,6 +124,7 @@ class MainDashboard(Screen):
         command_suggester,
         error_detector,
         mcp_monitor,
+        memory_bridge=None,
         **kwargs
     ):
         """
@@ -134,6 +136,7 @@ class MainDashboard(Screen):
             command_suggester: IntelligentCommandSuggester instance
             error_detector: ErrorDetector instance
             mcp_monitor: MCPServerMonitor instance
+            memory_bridge: MemoryBridge instance (optional)
         """
         super().__init__(**kwargs)
 
@@ -143,6 +146,7 @@ class MainDashboard(Screen):
         self.command_suggester = command_suggester
         self.error_detector = error_detector
         self.mcp_monitor = mcp_monitor
+        self.memory_bridge = memory_bridge
 
         # Track focused panel
         self.focused_panel = "active_work"
@@ -173,7 +177,8 @@ class MainDashboard(Screen):
         self._project_overview = ProjectOverview(
             data_manager=self.data_manager,
             event_bus=self.event_bus,
-            mcp_monitor=self.mcp_monitor
+            mcp_monitor=self.mcp_monitor,
+            memory_bridge=self.memory_bridge
         )
         yield self._project_overview
 

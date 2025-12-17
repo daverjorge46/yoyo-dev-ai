@@ -96,6 +96,44 @@ export {
 } from './store.js';
 
 // =============================================================================
+// Scope Exports
+// =============================================================================
+
+export {
+  // Path resolution
+  getGlobalMemoryPath,
+  getProjectMemoryPath,
+  detectProjectRoot,
+
+  // Directory management
+  ensureMemoryDirectory,
+  getDatabasePath,
+
+  // ScopeManager
+  type ScopeManagerOptions,
+  ScopeManager,
+  getScopeManager,
+  resetScopeManager,
+} from './scopes.js';
+
+// =============================================================================
+// Service Exports
+// =============================================================================
+
+export {
+  // Service types
+  type MemoryServiceOptions,
+  type MemoryExport,
+  type LoadedMemory,
+  type MemoryServiceEvents,
+
+  // MemoryService class
+  MemoryService,
+  getMemoryService,
+  resetMemoryService,
+} from './service.js';
+
+// =============================================================================
 // Event Exports
 // =============================================================================
 
@@ -128,6 +166,43 @@ export {
   memoryEventBus,
   getMemoryEventBus,
 } from './events.js';
+
+// =============================================================================
+// Command Exports
+// =============================================================================
+
+export {
+  // Init command
+  scanProjectStructure,
+  detectTechStack,
+  detectPatterns,
+  createInitialMemory,
+  initCommand,
+  type ProjectStructure,
+  type TechStack,
+  type InitResult,
+} from './commands/init.js';
+
+export {
+  // Remember command
+  parseInstruction,
+  detectTargetBlock,
+  updateMemoryFromInstruction,
+  rememberCommand,
+  type ParsedInstruction,
+  type UpdateResult,
+  type RememberResult,
+} from './commands/remember.js';
+
+export {
+  // Clear command
+  clearSession,
+  verifyMemoryIntact,
+  clearCommand,
+  type ClearSessionResult,
+  type MemoryVerifyResult,
+  type ClearResult,
+} from './commands/clear.js';
 
 // =============================================================================
 // Version

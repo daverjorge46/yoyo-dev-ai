@@ -39,6 +39,7 @@ class RefreshService:
         command_suggester,
         error_detector,
         mcp_monitor,
+        memory_bridge=None,
         refresh_interval: int = 10
     ):
         """
@@ -50,6 +51,7 @@ class RefreshService:
             command_suggester: IntelligentCommandSuggester instance
             error_detector: ErrorDetector instance
             mcp_monitor: MCPServerMonitor instance
+            memory_bridge: MemoryBridge instance (optional)
             refresh_interval: Seconds between refreshes (default: 10)
         """
         self.event_bus = event_bus
@@ -57,6 +59,7 @@ class RefreshService:
         self.command_suggester = command_suggester
         self.error_detector = error_detector
         self.mcp_monitor = mcp_monitor
+        self.memory_bridge = memory_bridge
         self.refresh_interval = refresh_interval
 
         # State tracking
@@ -133,7 +136,8 @@ class RefreshService:
         results = {
             "suggestions": [],
             "errors": [],
-            "mcp_status": None
+            "mcp_status": None,
+            "memory_status": None
         }
 
         try:
@@ -164,6 +168,14 @@ class RefreshService:
                 logger.debug("MCP status checked")
             except Exception as e:
                 logger.error(f"MCPServerMonitor failed: {e}")
+
+            # 5. MemoryBridge: Check memory status
+            if self.memory_bridge:
+                try:
+                    results["memory_status"] = self.memory_bridge.get_status()
+                    logger.debug(f"Memory status: {results['memory_status'].block_count} blocks")
+                except Exception as e:
+                    logger.error(f"MemoryBridge failed: {e}")
 
             # Publish STATE_UPDATED event
             self.event_bus.publish(
@@ -254,6 +266,14 @@ class RefreshService:
                 self.mcp_monitor.check_mcp_status()
             except Exception as e:
                 logger.error(f"MCPServerMonitor failed: {e}")
+
+            # 5. MemoryBridge (if available)
+            if self.memory_bridge:
+                try:
+                    memory_status = self.memory_bridge.get_status()
+                    logger.debug(f"Memory status: {memory_status.block_count} blocks")
+                except Exception as e:
+                    logger.error(f"MemoryBridge failed: {e}")
 
             # Publish STATE_UPDATED event
             self.event_bus.publish(

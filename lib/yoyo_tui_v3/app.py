@@ -58,6 +58,7 @@ class YoyoDevTUIApp(App):
         self.command_suggester = None
         self.error_detector = None
         self.mcp_monitor = None
+        self.memory_bridge = None
         self.refresh_service = None
 
     def on_mount(self) -> None:
@@ -72,6 +73,7 @@ class YoyoDevTUIApp(App):
         from .services.command_suggester import IntelligentCommandSuggester
         from .services.error_detector import ErrorDetector
         from .services.mcp_monitor import MCPServerMonitor
+        from .services.memory_bridge import MemoryBridge
         from .services.refresh_service import RefreshService
         from .screens.main_dashboard import MainDashboard
 
@@ -115,12 +117,18 @@ class YoyoDevTUIApp(App):
         # Do initial MCP status check before dashboard loads
         self.mcp_monitor.check_mcp_status()
 
-        # 7. RefreshService (depends on all above)
+        # 7. MemoryBridge (for memory system status display)
+        # Detect project root from yoyo_dev_path (go up one level from .yoyo-dev)
+        project_root = self.config.yoyo_dev_path.parent
+        self.memory_bridge = MemoryBridge(project_root=project_root)
+
+        # 9. RefreshService (depends on all above)
         self.refresh_service = RefreshService(
             data_manager=self.data_manager,
             command_suggester=self.command_suggester,
             error_detector=self.error_detector,
             mcp_monitor=self.mcp_monitor,
+            memory_bridge=self.memory_bridge,
             event_bus=self.event_bus
         )
 
@@ -133,7 +141,8 @@ class YoyoDevTUIApp(App):
             event_bus=self.event_bus,
             command_suggester=self.command_suggester,
             error_detector=self.error_detector,
-            mcp_monitor=self.mcp_monitor
+            mcp_monitor=self.mcp_monitor,
+            memory_bridge=self.memory_bridge
         )
         self.push_screen(main_dashboard)
 

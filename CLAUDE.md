@@ -373,6 +373,43 @@ Each MCP server container runs with:
 - `/design-fix` - Fix design violations
 - `/design-component` - Create UI components with design enforcement
 
+**Memory System:**
+- `/init` - Scan codebase and initialize memory with project context
+- `/remember` - Store user preferences or project knowledge
+- `/clear` - Clear conversation history while preserving memory
+
+## Memory System
+
+The memory system provides persistent context management using a dual-scope architecture:
+
+**Scopes:**
+- **Project** (`.yoyo-ai/memory/`): Project-specific context, stored locally
+- **Global** (`~/.yoyo-ai/memory/`): User preferences across all projects
+
+**Block Types:**
+- `persona` - AI assistant personality and capabilities
+- `project` - Project knowledge (tech stack, patterns, structure)
+- `user` - User preferences and interaction patterns
+- `corrections` - Learned corrections from past interactions
+
+**Quick Usage:**
+```bash
+# Initialize memory for a project
+/init
+
+# Store preferences
+/remember I prefer functional programming with TypeScript
+/remember This project uses Convex for the backend
+
+# Clear conversation but keep memory
+/clear
+```
+
+**TUI Integration:**
+The TUI dashboard displays memory status in the Project Overview panel, showing block count, scope, and last updated time.
+
+**Detailed Documentation:** See `docs/memory-system.md` for full API documentation.
+
 ## Architecture
 
 ### Directory Structure
@@ -387,6 +424,10 @@ Each MCP server container runs with:
 ├── setup/                # Installation scripts
 └── config.yml            # Configuration
 
+.yoyo-ai/                 # Memory system (v4.0+)
+└── memory/
+    └── memory.db         # SQLite database for memory blocks
+
 workflows/                # Reusable workflow components (v1.6.0+)
 ├── planning/
 ├── specification/
@@ -397,6 +438,14 @@ workflows/                # Reusable workflow components (v1.6.0+)
 └── agents/               # Agent configurations
 
 lib/yoyo_tui_v3/          # Modern TUI implementation
+
+src/memory/               # TypeScript memory system
+├── types.ts              # Type definitions
+├── store.ts              # SQLite operations
+├── scopes.ts             # Scope management
+├── service.ts            # Main API
+├── commands/             # Slash command implementations
+└── __tests__/            # Test suites
 ```
 
 ### Key Files
