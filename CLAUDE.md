@@ -720,3 +720,4 @@ project_types:
 ```
 
 The `default_project_type` setting determines installation configuration.
+- Please remmember that any codebase change you should do it at the yoyo-dev root directory, not at the .yoyo-dev directory, witch it's the project framework installed in the yoyo-dev-ai project.

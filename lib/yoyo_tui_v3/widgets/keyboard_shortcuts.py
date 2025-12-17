@@ -7,6 +7,7 @@ Shows primary navigation and action shortcuts for quick reference.
 
 from textual.widget import Widget
 from textual.widgets import Static
+from textual.events import Click
 from rich.text import Text
 
 
@@ -46,6 +47,20 @@ class KeyboardShortcuts(Widget):
     }
     """
 
+    # Map shortcut keys to action names
+    KEY_TO_ACTION = {
+        '?': 'help',
+        '/': 'command_search',
+        'r': 'refresh',
+        'g': 'git_menu',
+        't': 'focus_active_work',
+        's': 'focus_specs',
+        'h': 'focus_history',
+        'q': 'quit',
+        'esc': 'back',
+        'e': 'edit',
+    }
+
     def __init__(self, **kwargs):
         """Initialize KeyboardShortcuts footer."""
         super().__init__(**kwargs)
@@ -61,6 +76,9 @@ class KeyboardShortcuts(Widget):
             {'key': 'h', 'description': 'History'},
             {'key': 'q', 'description': 'Quit'},
         ]
+
+        # Position tracking for mouse clicks: list of (start, end, key)
+        self._shortcut_positions: list[tuple[int, int, str]] = []
 
     def compose(self):
         """Compose the keyboard shortcuts layout."""
@@ -82,6 +100,39 @@ class KeyboardShortcuts(Widget):
         content_widget = self.query_one("#shortcuts-content", Static)
         content_widget.update(content)
 
+    def on_click(self, event: Click) -> None:
+        """
+        Handle mouse click events on shortcut buttons.
+
+        Maps click position to the corresponding shortcut and triggers
+        the associated app action.
+        """
+        # Calculate click position relative to content
+        # The content is centered, so we need to account for centering offset
+        content_widget = self.query_one("#shortcuts-content", Static)
+
+        # Get total content width
+        total_content_width = sum(
+            len(s['key']) + 1 + len(s['description'])
+            for s in self.shortcuts
+        ) + (len(self.shortcuts) - 1) * 3  # separators " │ "
+
+        # Calculate centering offset
+        widget_width = self.size.width
+        center_offset = max(0, (widget_width - total_content_width) // 2)
+
+        # Adjust click x for centering
+        click_x = event.x - center_offset
+
+        # Find which shortcut was clicked
+        for start, end, key in self._shortcut_positions:
+            if start <= click_x < end:
+                # Found the clicked shortcut, trigger action
+                action_name = self.KEY_TO_ACTION.get(key)
+                if action_name:
+                    self.app.run_action(action_name)
+                return
+
     def _build_content(self) -> Text:
         """
         Build the keyboard shortcuts content.
@@ -90,22 +141,41 @@ class KeyboardShortcuts(Widget):
             Rich Text object with formatted shortcuts
         """
         if not self.shortcuts:
+            self._shortcut_positions = []
             return Text("")
 
         text = Text()
+        self._shortcut_positions = []
+        current_pos = 0
 
-        # Build shortcuts list
+        # Build shortcuts list and track positions
         for i, shortcut in enumerate(self.shortcuts):
             # Add separator between shortcuts
             if i > 0:
-                text.append(" │ ", style="dim")
+                separator = " │ "
+                text.append(separator, style="dim")
+                current_pos += len(separator)
+
+            # Record start position for this shortcut
+            start_pos = current_pos
 
             # Add key (highlighted)
-            text.append(shortcut['key'], style="bold cyan")
+            key_text = shortcut['key']
+            text.append(key_text, style="bold cyan")
+            current_pos += len(key_text)
+
+            # Add space
             text.append(" ", style="")
+            current_pos += 1
 
             # Add description (muted)
-            text.append(shortcut['description'], style="dim")
+            desc_text = shortcut['description']
+            text.append(desc_text, style="dim")
+            current_pos += len(desc_text)
+
+            # Record end position and store with key
+            end_pos = current_pos
+            self._shortcut_positions.append((start_pos, end_pos, shortcut['key']))
 
         return text
 
