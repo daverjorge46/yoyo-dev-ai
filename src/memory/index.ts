@@ -59,6 +59,43 @@ export {
 } from './types.js';
 
 // =============================================================================
+// Store Exports
+// =============================================================================
+
+export {
+  // Store types
+  type MemoryStore,
+  type SaveBlockInput,
+  type CreateAgentInput,
+  type Migration,
+
+  // Constants
+  SCHEMA_VERSION,
+
+  // Database lifecycle
+  initializeDatabase,
+  closeDatabase,
+  getSchemaVersion,
+  migrateDatabase,
+
+  // Memory block operations
+  saveBlock,
+  getBlock,
+  getAllBlocks,
+  deleteBlock,
+
+  // Conversation operations
+  addMessage,
+  getHistory,
+  clearHistory,
+
+  // Agent operations
+  createAgent,
+  getAgent,
+  updateAgentLastUsed,
+} from './store.js';
+
+// =============================================================================
 // Event Exports
 // =============================================================================
 

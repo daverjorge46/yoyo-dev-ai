@@ -211,7 +211,11 @@ export function createInitProgressPayload(
   progress: number,
   message?: string
 ): MemoryInitProgressPayload {
-  return { step, progress, message };
+  const payload: MemoryInitProgressPayload = { step, progress };
+  if (message !== undefined) {
+    payload.message = message;
+  }
+  return payload;
 }
 
 /**
