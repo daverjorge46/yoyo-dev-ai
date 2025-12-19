@@ -45,18 +45,30 @@ The system guides AI agents through product planning, specification creation, ta
 ## Quick Start
 
 ```bash
-# Launch split view (Claude Code + TUI dashboard)
+# Launch TUI + Claude + GUI (default)
 yoyo
 
-# Launch TUI only (no split view)
+# Launch TUI + Claude without GUI
+yoyo --no-gui
+
+# Launch TUI only (no Claude, no GUI)
 yoyo --no-split
 
 # Custom split ratio
 yoyo --split-ratio 0.5
 
-# Start with TUI focused
-yoyo --focus tui
+# Stop background GUI server
+yoyo --stop-gui
+
+# Launch browser GUI standalone
+yoyo-gui
 ```
+
+**Default Mode (v4.0+):**
+- Launches TUI dashboard, Claude Code, and browser GUI together
+- GUI server runs in background on port 3456
+- Access GUI at http://localhost:3456
+- Use `--no-gui` to disable browser GUI
 
 **Split View Mode (v3.1+):**
 - Integrated Claude Code CLI + TUI dashboard in split screen
@@ -67,8 +79,11 @@ yoyo --focus tui
 - Linux only (macOS/Windows planned)
 
 **Command Flags:**
-- `--no-split` - Launch TUI only
+- `--no-gui` - Launch without browser GUI
+- `--no-split` - Launch TUI only (no Claude, no GUI)
 - `--split-ratio RATIO` - Custom split ratio (0.0-1.0)
+- `--stop-gui` - Stop background GUI server
+- `--gui-status` - Check if GUI server is running
 - `--focus PANE` - Start with focus on "claude" or "tui"
 
 Features: Real-time task/spec tracking, live updates, interactive commands (one-click copy), keyboard shortcuts (`?` for help, `q` to quit).

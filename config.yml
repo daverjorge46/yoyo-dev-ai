@@ -83,6 +83,13 @@ split_view:
     auto_cwd: true                 # Auto-attach to current directory
     fallback_delay: 3              # Seconds to wait before TUI-only fallback
 
+# GUI Configuration
+gui:
+  enabled: true                    # Launch browser GUI with yoyo command
+  port: 3456                       # GUI server port
+  auto_open_browser: false         # Don't auto-open browser (user preference)
+  dev_mode: false                  # Use production mode by default
+
 # Parallel Execution Configuration
 parallel_execution:
   enabled: true              # Auto-analyze task dependencies

@@ -43,6 +43,12 @@ readonly GUI_DIR="$YOYO_INSTALL_DIR/gui"
 PORT=3456
 DEV_MODE=false
 OPEN_BROWSER=true
+BACKGROUND_MODE=false
+
+# PID file for background mode
+get_pid_file() {
+    echo "/tmp/yoyo-gui-$(echo "$USER_PROJECT_DIR" | md5sum | cut -d' ' -f1).pid"
+}
 
 # ============================================================================
 # Argument Parsing
@@ -57,11 +63,15 @@ show_help() {
     echo -e "  ${GREEN}yoyo-gui --port 8080${RESET}    Use custom port (default: 3456)"
     echo -e "  ${GREEN}yoyo-gui --dev${RESET}          Development mode (hot reload)"
     echo -e "  ${GREEN}yoyo-gui --no-open${RESET}      Don't auto-open browser"
+    echo -e "  ${GREEN}yoyo-gui --background${RESET}   Run in background"
     echo ""
     echo -e "${BOLD}Options:${RESET}"
     echo -e "  ${CYAN}-p, --port PORT${RESET}     Server port (default: 3456)"
     echo -e "  ${CYAN}-d, --dev${RESET}           Development mode with hot reload"
     echo -e "  ${CYAN}--no-open${RESET}           Don't automatically open browser"
+    echo -e "  ${CYAN}--background${RESET}        Run server in background (for yoyo integration)"
+    echo -e "  ${CYAN}--stop${RESET}              Stop background GUI server"
+    echo -e "  ${CYAN}--status${RESET}            Check if GUI server is running"
     echo -e "  ${CYAN}-h, --help${RESET}          Show this help message"
     echo -e "  ${CYAN}-v, --version${RESET}       Show version"
     echo ""
@@ -73,9 +83,10 @@ show_help() {
     echo -e "  ${MAGENTA}*${RESET} REST API for integrations"
     echo ""
     echo -e "${BOLD}Related Commands:${RESET}"
-    echo -e "  ${GREEN}yoyo${RESET}           Launch TUI (terminal) + Claude split view"
-    echo -e "  ${GREEN}yoyo --no-split${RESET} Launch TUI only"
-    echo -e "  ${GREEN}yoyo-update${RESET}    Update Yoyo Dev installation"
+    echo -e "  ${GREEN}yoyo${RESET}             Launch TUI + Claude + GUI (default)"
+    echo -e "  ${GREEN}yoyo --no-gui${RESET}    Launch TUI + Claude without GUI"
+    echo -e "  ${GREEN}yoyo --no-split${RESET}  Launch TUI only"
+    echo -e "  ${GREEN}yoyo-update${RESET}      Update Yoyo Dev installation"
     echo ""
 }
 
@@ -108,6 +119,18 @@ parse_args() {
             --no-open)
                 OPEN_BROWSER=false
                 shift
+                ;;
+            --background|-b)
+                BACKGROUND_MODE=true
+                shift
+                ;;
+            --stop)
+                stop_background_gui
+                exit 0
+                ;;
+            --status)
+                show_gui_status
+                exit 0
                 ;;
             *)
                 echo -e "${RED}Unknown option: $1${RESET}"
@@ -225,6 +248,116 @@ build_gui() {
     echo ""
     echo -e "${GREEN}Build completed successfully${RESET}"
     echo ""
+}
+
+# ============================================================================
+# Background Mode Functions
+# ============================================================================
+
+is_gui_running() {
+    local pid_file
+    pid_file=$(get_pid_file)
+
+    if [ -f "$pid_file" ]; then
+        local pid
+        pid=$(cat "$pid_file" 2>/dev/null)
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            return 0
+        else
+            rm -f "$pid_file"
+        fi
+    fi
+    return 1
+}
+
+stop_background_gui() {
+    local pid_file
+    pid_file=$(get_pid_file)
+
+    if [ -f "$pid_file" ]; then
+        local pid
+        pid=$(cat "$pid_file" 2>/dev/null)
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            echo -e "${YELLOW}Stopping GUI server (PID: $pid)...${RESET}"
+            kill "$pid" 2>/dev/null || true
+            sleep 1
+            # Force kill if still running
+            kill -9 "$pid" 2>/dev/null || true
+            rm -f "$pid_file"
+            echo -e "${GREEN}✅ GUI server stopped${RESET}"
+        else
+            rm -f "$pid_file"
+            echo -e "${DIM}GUI server not running${RESET}"
+        fi
+    else
+        echo -e "${DIM}GUI server not running${RESET}"
+    fi
+}
+
+show_gui_status() {
+    local pid_file
+    pid_file=$(get_pid_file)
+
+    if is_gui_running; then
+        local pid
+        pid=$(cat "$pid_file" 2>/dev/null)
+        echo ""
+        echo -e "${GREEN}✅ GUI server is running${RESET}"
+        echo "   PID: $pid"
+        echo "   URL: http://localhost:$PORT"
+        echo ""
+    else
+        echo ""
+        echo -e "${DIM}GUI server is not running${RESET}"
+        echo ""
+    fi
+}
+
+launch_background() {
+    local project_root="$1"
+    local pid_file
+    pid_file=$(get_pid_file)
+
+    # Check if already running
+    if is_gui_running; then
+        local pid
+        pid=$(cat "$pid_file" 2>/dev/null)
+        echo -e "${DIM}GUI already running (PID: $pid)${RESET}"
+        return 0
+    fi
+
+    cd "$GUI_DIR"
+
+    # Set environment variables
+    export YOYO_PROJECT_ROOT="$project_root"
+    export PORT="$PORT"
+
+    # Create log file
+    local log_file="/tmp/yoyo-gui.log"
+
+    # Start server in background
+    nohup npx tsx server/index.ts > "$log_file" 2>&1 &
+    local server_pid=$!
+    echo "$server_pid" > "$pid_file"
+
+    # Wait a moment to check if it started
+    sleep 2
+
+    if is_gui_running; then
+        echo -e "${GREEN}✅ GUI started${RESET} (http://localhost:$PORT)"
+
+        # Open browser if requested
+        if [ "$OPEN_BROWSER" = true ]; then
+            sleep 1
+            open_browser "http://localhost:$PORT"
+        fi
+        return 0
+    else
+        echo -e "${RED}Failed to start GUI server${RESET}"
+        echo "   Check log: $log_file"
+        rm -f "$pid_file"
+        return 1
+    fi
 }
 
 # ============================================================================
@@ -370,11 +503,13 @@ open_browser() {
 main() {
     parse_args "$@"
 
-    # Show branded header
-    echo ""
-    echo -e " ${CYAN}┌─────────────────────────────────────────────────────────────────┐${RESET}"
-    echo -e " ${CYAN}│${RESET}  ${BOLD}YOYO DEV GUI${RESET} - Browser-based Development Dashboard       ${CYAN}│${RESET}"
-    echo -e " ${CYAN}└─────────────────────────────────────────────────────────────────┘${RESET}"
+    # Show branded header (skip in background mode for cleaner output)
+    if [ "$BACKGROUND_MODE" != true ]; then
+        echo ""
+        echo -e " ${CYAN}┌─────────────────────────────────────────────────────────────────┐${RESET}"
+        echo -e " ${CYAN}│${RESET}  ${BOLD}YOYO DEV GUI${RESET} - Browser-based Development Dashboard       ${CYAN}│${RESET}"
+        echo -e " ${CYAN}└─────────────────────────────────────────────────────────────────┘${RESET}"
+    fi
 
     # Check Node.js
     if ! check_node; then
@@ -400,21 +535,33 @@ main() {
 
     # Install dependencies if needed
     if ! check_dependencies_installed; then
-        echo ""
-        echo -e "${YELLOW}GUI dependencies not installed${RESET}"
-        read -p "Install now? [Y/n] " -n 1 -r
-        echo ""
-
-        if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-            install_dependencies
+        if [ "$BACKGROUND_MODE" = true ]; then
+            # Auto-install in background mode
+            echo -e "${DIM}Installing GUI dependencies...${RESET}"
+            install_dependencies || {
+                echo -e "${RED}Failed to install dependencies${RESET}"
+                exit 1
+            }
         else
-            echo "Cannot launch GUI without dependencies."
-            exit 1
+            echo ""
+            echo -e "${YELLOW}GUI dependencies not installed${RESET}"
+            read -p "Install now? [Y/n] " -n 1 -r
+            echo ""
+
+            if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
+                install_dependencies
+            else
+                echo "Cannot launch GUI without dependencies."
+                exit 1
+            fi
         fi
     fi
 
     # Launch appropriate mode
-    if [ "$DEV_MODE" = true ]; then
+    if [ "$BACKGROUND_MODE" = true ]; then
+        # Background mode - start and return immediately
+        launch_background "$project_root"
+    elif [ "$DEV_MODE" = true ]; then
         launch_dev "$project_root"
     else
         # For production, use tsx directly (faster startup, no build required)

@@ -25,6 +25,10 @@ readonly VERSION="4.0.0"
 # This is the project directory where the user invoked the yoyo command
 readonly USER_PROJECT_DIR="$(pwd)"
 
+# GUI options
+GUI_ENABLED=true
+GUI_PORT=3456
+
 # Determine script directory (resolve symlinks to get actual script location)
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 # Resolve symlink if this script is executed via symlink
@@ -108,6 +112,57 @@ launch_typescript_cli() {
 
     cd "$USER_PROJECT_DIR"
     exec $cli_cmd "$@"
+}
+
+# ============================================================================
+# GUI Management
+# ============================================================================
+
+# Get PID file path for GUI server (project-specific)
+get_gui_pid_file() {
+    echo "/tmp/yoyo-gui-$(echo "$USER_PROJECT_DIR" | md5sum | cut -d' ' -f1).pid"
+}
+
+# Check if GUI server is running for this project
+is_gui_running() {
+    local pid_file
+    pid_file=$(get_gui_pid_file)
+
+    if [ -f "$pid_file" ]; then
+        local pid
+        pid=$(cat "$pid_file" 2>/dev/null)
+        if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+            return 0
+        else
+            rm -f "$pid_file"
+        fi
+    fi
+    return 1
+}
+
+# Start GUI server in background
+start_gui_background() {
+    # Check if yoyo-gui command exists
+    if ! command -v yoyo-gui &> /dev/null; then
+        # Try direct path
+        if [ -f "$YOYO_INSTALL_DIR/setup/yoyo-gui.sh" ]; then
+            bash "$YOYO_INSTALL_DIR/setup/yoyo-gui.sh" --background --no-open --port "$GUI_PORT"
+        else
+            echo -e "${DIM}GUI not available (yoyo-gui not found)${RESET}"
+            return 1
+        fi
+    else
+        yoyo-gui --background --no-open --port "$GUI_PORT"
+    fi
+}
+
+# Stop GUI server if running
+stop_gui_background() {
+    if command -v yoyo-gui &> /dev/null; then
+        yoyo-gui --stop 2>/dev/null || true
+    elif [ -f "$YOYO_INSTALL_DIR/setup/yoyo-gui.sh" ]; then
+        bash "$YOYO_INSTALL_DIR/setup/yoyo-gui.sh" --stop 2>/dev/null || true
+    fi
 }
 
 # ============================================================================
@@ -360,16 +415,19 @@ show_help() {
     echo ""
     echo -e "${BOLD}Yoyo Launcher:${RESET}"
     echo ""
-    echo -e "  ${GREEN}yoyo${RESET}                         Launch split view (TUI left + Claude right)"
-    echo -e "  ${GREEN}yoyo --no-split${RESET}              Launch TUI only (no Claude)"
+    echo -e "  ${GREEN}yoyo${RESET}                         Launch TUI + Claude + GUI (default)"
+    echo -e "  ${GREEN}yoyo --no-gui${RESET}                Launch TUI + Claude without GUI"
+    echo -e "  ${GREEN}yoyo --no-split${RESET}              Launch TUI only (no Claude, no GUI)"
     echo -e "  ${GREEN}yoyo --split-ratio 50${RESET}        Custom split ratio (10-90, percentage for TUI)"
+    echo -e "  ${GREEN}yoyo --stop-gui${RESET}              Stop background GUI server"
+    echo -e "  ${GREEN}yoyo --gui-status${RESET}            Check if GUI server is running"
     echo -e "  ${GREEN}yoyo --help${RESET}                  Show this reference"
     echo -e "  ${GREEN}yoyo --version${RESET}               Show version"
     echo -e "  ${GREEN}yoyo --commands${RESET}              List all commands"
     echo ""
-    echo -e "${BOLD}Browser GUI:${RESET}"
+    echo -e "${BOLD}Browser GUI (standalone):${RESET}"
     echo ""
-    echo -e "  ${GREEN}yoyo-gui${RESET}                     Launch browser-based GUI (http://localhost:3456)"
+    echo -e "  ${GREEN}yoyo-gui${RESET}                     Launch browser-based GUI standalone"
     echo -e "  ${GREEN}yoyo-gui --dev${RESET}               Development mode with hot reload"
     echo -e "  ${GREEN}yoyo-gui --port 8080${RESET}         Use custom port"
     echo ""
@@ -711,6 +769,11 @@ launch_split_tmux() {
         exit 1
     fi
 
+    # Start GUI server in background if enabled
+    if [ "$GUI_ENABLED" = true ]; then
+        start_gui_background
+    fi
+
     # Session name based on project
     local session_name="yoyo-$(basename "$(pwd)")"
 
@@ -751,8 +814,31 @@ main() {
         --commands|-c)
             show_commands
             ;;
+        --no-gui)
+            # Disable GUI, launch TUI + Claude only
+            GUI_ENABLED=false
+            shift
+            if check_typescript_cli; then
+                launch_typescript_cli "$@"
+            else
+                launch_split_tmux 40
+            fi
+            ;;
+        --gui)
+            # Explicitly enable GUI (default behavior)
+            GUI_ENABLED=true
+            shift
+            if check_typescript_cli; then
+                # TypeScript CLI mode - also start GUI in background
+                start_gui_background
+                launch_typescript_cli "$@"
+            else
+                launch_split_tmux 40
+            fi
+            ;;
         --no-split)
-            # TUI only mode
+            # TUI only mode (no Claude, no GUI)
+            GUI_ENABLED=false
             shift
             launch_tui "$@"
             ;;
@@ -767,10 +853,27 @@ main() {
         --monitor)
             start_monitor "${2:-}"
             ;;
+        --stop-gui)
+            # Stop background GUI server
+            stop_gui_background
+            ;;
+        --gui-status)
+            # Check if GUI server is running
+            if is_gui_running; then
+                echo -e "${GREEN}✅ GUI server is running${RESET}"
+                echo "   URL: http://localhost:$GUI_PORT"
+            else
+                echo -e "${DIM}GUI server is not running${RESET}"
+            fi
+            ;;
         --ts|--typescript)
             # Force TypeScript CLI
             shift
             if check_typescript_cli; then
+                # Also start GUI in background for TypeScript CLI
+                if [ "$GUI_ENABLED" = true ]; then
+                    start_gui_background
+                fi
                 launch_typescript_cli "$@"
             else
                 echo -e "${RED}Error: TypeScript CLI not installed${RESET}"
@@ -780,22 +883,31 @@ main() {
             fi
             ;;
         --py|--python|--tui)
-            # Force Python TUI
+            # Force Python TUI (no GUI)
+            GUI_ENABLED=false
             shift
             launch_tui "$@"
             ;;
         launch|"")
             # Default: Try TypeScript CLI first, fall back to split view with TUI
+            # GUI is started in both cases if enabled
             if check_typescript_cli; then
+                if [ "$GUI_ENABLED" = true ]; then
+                    start_gui_background
+                fi
                 launch_typescript_cli "$@"
             else
                 # Fall back to split view (TUI left + Claude right) using tmux
+                # GUI is started inside launch_split_tmux if enabled
                 launch_split_tmux 40
             fi
             ;;
         *)
             # Unknown flag - try TypeScript CLI first, then TUI
             if check_typescript_cli; then
+                if [ "$GUI_ENABLED" = true ]; then
+                    start_gui_background
+                fi
                 launch_typescript_cli "$@"
             else
                 launch_tui "$@"
