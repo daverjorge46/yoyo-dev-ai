@@ -252,13 +252,15 @@ find_project_root() {
 
 launch_dev() {
     local project_root="$1"
+    local DEV_CLIENT_PORT=5173  # Vite dev server port
 
     echo ""
     echo -e "${BOLD}${CYAN}Yoyo Dev GUI - Development Mode${RESET}"
     echo ""
     echo -e "  ${GREEN}Project:${RESET} $project_root"
-    echo -e "  ${GREEN}Server:${RESET}  http://localhost:$PORT"
-    echo -e "  ${GREEN}Mode:${RESET}    Development (hot reload)"
+    echo -e "  ${GREEN}Frontend:${RESET} http://localhost:${DEV_CLIENT_PORT}"
+    echo -e "  ${GREEN}API:${RESET}      http://localhost:${PORT}"
+    echo -e "  ${GREEN}Mode:${RESET}     Development (hot reload)"
     echo ""
     echo -e "  ${DIM}Press Ctrl+C to stop${RESET}"
     echo ""
@@ -269,12 +271,12 @@ launch_dev() {
     export YOYO_PROJECT_ROOT="$project_root"
     export PORT="$PORT"
 
-    # Open browser if requested
+    # Open browser to Vite dev server (not API server)
     if [ "$OPEN_BROWSER" = true ]; then
-        (sleep 2 && open_browser "http://localhost:$PORT") &
+        (sleep 3 && open_browser "http://localhost:${DEV_CLIENT_PORT}") &
     fi
 
-    # Run development server
+    # Run development server (concurrently runs both backend and frontend)
     npm run dev
 }
 
