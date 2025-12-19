@@ -7,10 +7,11 @@
 import { Hono } from 'hono';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import type { Variables } from '../types.js';
 
 const execAsync = promisify(exec);
 
-const gitRoutes = new Hono();
+const gitRoutes = new Hono<{ Variables: Variables }>();
 
 interface GitStatus {
   isRepo: boolean;

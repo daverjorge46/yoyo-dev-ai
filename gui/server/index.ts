@@ -13,6 +13,7 @@ import { logger } from 'hono/logger';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
+import type { Variables } from './types.js';
 
 import { statusRoutes } from './routes/status.js';
 import { specsRoutes } from './routes/specs.js';
@@ -25,6 +26,8 @@ import { mcpRoutes } from './routes/mcp.js';
 import { executionRoutes } from './routes/execution.js';
 import { fixesRoutes } from './routes/fixes.js';
 import { roadmapRoutes } from './routes/roadmap.js';
+import { recapsRoutes } from './routes/recaps.js';
+import { patternsRoutes } from './routes/patterns.js';
 import { wsManager } from './services/websocket.js';
 import { fileWatcher } from './services/file-watcher.js';
 
@@ -34,7 +37,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // App Setup
 // =============================================================================
 
-const app = new Hono();
+const app = new Hono<{ Variables: Variables }>();
 
 // Create WebSocket helper
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
@@ -98,6 +101,8 @@ app.route('/api/mcp', mcpRoutes);
 app.route('/api/execution', executionRoutes);
 app.route('/api/fixes', fixesRoutes);
 app.route('/api/roadmap', roadmapRoutes);
+app.route('/api/recaps', recapsRoutes);
+app.route('/api/patterns', patternsRoutes);
 
 // Health check with WebSocket status
 app.get('/api/health', (c) => {

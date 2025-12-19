@@ -5,7 +5,7 @@
  * Uses chokidar for reliable cross-platform file watching.
  */
 
-import chokidar from 'chokidar';
+import chokidar, { type FSWatcher } from 'chokidar';
 import { join, relative } from 'path';
 import { wsManager } from './websocket.js';
 
@@ -31,7 +31,7 @@ interface PendingEvent {
 // =============================================================================
 
 class FileWatcherService {
-  private watcher: chokidar.FSWatcher | null = null;
+  private watcher: FSWatcher | null = null;
   private projectRoot: string = '';
   private debounceMs: number = 100;
   private pendingEvents: Map<string, PendingEvent> = new Map();
@@ -64,10 +64,10 @@ class FileWatcherService {
     });
 
     this.watcher
-      .on('add', (path) => this.queueEvent('add', path))
-      .on('change', (path) => this.queueEvent('change', path))
-      .on('unlink', (path) => this.queueEvent('unlink', path))
-      .on('error', (error) => console.error('[FileWatcher] Error:', error))
+      .on('add', (path: string) => this.queueEvent('add', path))
+      .on('change', (path: string) => this.queueEvent('change', path))
+      .on('unlink', (path: string) => this.queueEvent('unlink', path))
+      .on('error', (error: unknown) => console.error('[FileWatcher] Error:', error))
       .on('ready', () => console.log('[FileWatcher] Ready and watching'));
   }
 

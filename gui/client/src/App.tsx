@@ -7,7 +7,10 @@ import Tasks from './pages/Tasks';
 import Roadmap from './pages/Roadmap';
 import Memory from './pages/Memory';
 import Skills from './pages/Skills';
+import Recaps from './pages/Recaps';
+import Patterns from './pages/Patterns';
 import { ConnectionStatus } from './components/ConnectionStatus';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { useWebSocketContext } from './contexts/WebSocketContext';
 
 // API client
@@ -29,8 +32,13 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Skip link for keyboard navigation */}
+      <a href="#main-content" className="skip-link">
+        Skip to main content
+      </a>
+
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700" role="banner">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -42,7 +50,7 @@ function App() {
             </div>
 
             {/* Navigation */}
-            <nav className="flex items-center gap-1">
+            <nav className="flex items-center gap-1" role="navigation" aria-label="Main navigation">
               <NavLink
                 to="/"
                 end
@@ -128,6 +136,30 @@ function App() {
               >
                 Skills
               </NavLink>
+              <NavLink
+                to="/recaps"
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
+                  }`
+                }
+              >
+                Recaps
+              </NavLink>
+              <NavLink
+                to="/patterns"
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
+                  }`
+                }
+              >
+                Patterns
+              </NavLink>
             </nav>
 
             {/* Status indicator */}
@@ -146,16 +178,24 @@ function App() {
       </header>
 
       {/* Main content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/specs" element={<Specs />} />
-          <Route path="/fixes" element={<Fixes />} />
-          <Route path="/tasks" element={<Tasks />} />
-          <Route path="/roadmap" element={<Roadmap />} />
-          <Route path="/memory" element={<Memory />} />
-          <Route path="/skills" element={<Skills />} />
-        </Routes>
+      <main
+        id="main-content"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in"
+        role="main"
+      >
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/specs" element={<Specs />} />
+            <Route path="/fixes" element={<Fixes />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/roadmap" element={<Roadmap />} />
+            <Route path="/memory" element={<Memory />} />
+            <Route path="/skills" element={<Skills />} />
+            <Route path="/recaps" element={<Recaps />} />
+            <Route path="/patterns" element={<Patterns />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
     </div>
   );

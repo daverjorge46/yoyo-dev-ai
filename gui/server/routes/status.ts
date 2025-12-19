@@ -7,8 +7,9 @@
 import { Hono } from 'hono';
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
+import type { Variables } from '../types.js';
 
-export const statusRoutes = new Hono();
+export const statusRoutes = new Hono<{ Variables: Variables }>();
 
 // =============================================================================
 // Types

@@ -10,10 +10,11 @@ import { promisify } from 'util';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import type { Variables } from '../types.js';
 
 const execAsync = promisify(exec);
 
-const mcpRoutes = new Hono();
+const mcpRoutes = new Hono<{ Variables: Variables }>();
 
 interface MCPServer {
   name: string;

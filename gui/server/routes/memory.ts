@@ -8,8 +8,9 @@ import { Hono } from 'hono';
 import { existsSync } from 'fs';
 import { join } from 'path';
 import Database from 'better-sqlite3';
+import type { Variables } from '../types.js';
 
-export const memoryRoutes = new Hono();
+export const memoryRoutes = new Hono<{ Variables: Variables }>();
 
 // =============================================================================
 // Types
@@ -199,6 +200,73 @@ memoryRoutes.put('/:type', async (c) => {
   } catch (error) {
     db.close();
     return c.json({ error: 'Failed to update memory block' }, 500);
+  }
+});
+
+// POST /api/memory - Create a new memory block
+memoryRoutes.post('/', async (c) => {
+  const projectRoot = c.get('projectRoot') || process.cwd();
+
+  const body = await c.req.json<{
+    type: 'persona' | 'project' | 'user' | 'corrections';
+    content: Record<string, unknown>;
+    scope?: 'global' | 'project';
+  }>();
+
+  if (!body.type || !['persona', 'project', 'user', 'corrections'].includes(body.type)) {
+    return c.json({ error: 'Invalid block type' }, 400);
+  }
+  if (!body.content || typeof body.content !== 'object') {
+    return c.json({ error: 'Invalid content' }, 400);
+  }
+
+  const db = getDatabase(projectRoot);
+  if (!db) {
+    return c.json({ error: 'Memory system not initialized' }, 404);
+  }
+
+  const scope = body.scope || 'project';
+
+  try {
+    // Check if block already exists
+    const existing = db.prepare(`
+      SELECT id FROM memory_blocks WHERE type = ? AND scope = ?
+    `).get(body.type, scope);
+
+    if (existing) {
+      db.close();
+      return c.json({ error: 'Block already exists. Use PUT to update.' }, 409);
+    }
+
+    const now = new Date().toISOString();
+    const id = `${scope}-${body.type}-${Date.now()}`;
+
+    db.prepare(`
+      INSERT INTO memory_blocks (id, type, scope, content, version, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 1, ?, ?)
+    `).run(id, body.type, scope, JSON.stringify(body.content), now, now);
+
+    // Get created block
+    const row = db.prepare(`
+      SELECT id, type, scope, content, version, created_at, updated_at
+      FROM memory_blocks
+      WHERE id = ?
+    `).get(id) as {
+      id: string;
+      type: string;
+      scope: string;
+      content: string;
+      version: number;
+      created_at: string;
+      updated_at: string;
+    };
+
+    db.close();
+
+    return c.json(rowToBlock(row), 201);
+  } catch (error) {
+    db.close();
+    return c.json({ error: 'Failed to create memory block' }, 500);
   }
 });
 

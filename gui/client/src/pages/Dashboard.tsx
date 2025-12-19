@@ -5,6 +5,7 @@ import { MCPStatusCard } from '../components/MCPStatusCard';
 import { ExecutionProgressCard } from '../components/ExecutionProgressCard';
 import { MemoryOverviewCard } from '../components/MemoryOverviewCard';
 import { SkillsSummaryCard } from '../components/SkillsSummaryCard';
+import { SkeletonDashboard } from '../components/SkeletonLoader';
 
 interface StatusResponse {
   projectRoot: string;
@@ -79,11 +80,18 @@ function StatCard({
   );
 }
 
-function ProgressBar({ progress }: { progress: number }) {
+function ProgressBar({ progress, label }: { progress: number; label?: string }) {
   return (
-    <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
+    <div
+      className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5"
+      role="progressbar"
+      aria-valuenow={progress}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-label={label || 'Progress'}
+    >
       <div
-        className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500"
+        className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out"
         style={{ width: `${progress}%` }}
       />
     </div>
@@ -102,11 +110,7 @@ export default function Dashboard() {
   });
 
   if (statusLoading || tasksLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
-      </div>
-    );
+    return <SkeletonDashboard />;
   }
 
   const summary = tasks?.summary;
@@ -168,7 +172,7 @@ export default function Dashboard() {
               {summary.completedTasks} / {summary.totalTasks} tasks
             </span>
           </div>
-          <ProgressBar progress={summary.progress} />
+          <ProgressBar progress={summary.progress} label="Overall task completion" />
         </div>
       )}
 

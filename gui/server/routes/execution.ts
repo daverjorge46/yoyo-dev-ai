@@ -8,8 +8,9 @@ import { Hono } from 'hono';
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
+import type { Variables } from '../types.js';
 
-const executionRoutes = new Hono();
+const executionRoutes = new Hono<{ Variables: Variables }>();
 
 interface ExecutionProgress {
   isRunning: boolean;

@@ -8,8 +8,9 @@ import { Hono } from 'hono';
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import Database from 'better-sqlite3';
+import type { Variables } from '../types.js';
 
-export const skillsRoutes = new Hono();
+export const skillsRoutes = new Hono<{ Variables: Variables }>();
 
 // =============================================================================
 // Types

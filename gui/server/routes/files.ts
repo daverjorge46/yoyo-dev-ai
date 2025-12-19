@@ -9,8 +9,9 @@ import { createHash } from 'crypto';
 import { readFile, writeFile, mkdir, stat, readdir, unlink, rename } from 'fs/promises';
 import { join, dirname, relative, basename } from 'path';
 import { existsSync } from 'fs';
+import type { Variables } from '../types.js';
 
-const filesRoutes = new Hono();
+const filesRoutes = new Hono<{ Variables: Variables }>();
 
 // =============================================================================
 // Helpers
