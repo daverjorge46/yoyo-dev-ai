@@ -109,7 +109,10 @@ export async function startServer(options: ServerOptions = {}) {
 
 // Run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  startServer({ open: true });
+  // Don't auto-open browser - let the shell script handle it
+  // This prevents opening wrong port in dev mode (5173 vs 3456)
+  const shouldOpen = process.env.YOYO_GUI_OPEN === 'true';
+  startServer({ open: shouldOpen });
 }
 
 export { app };
