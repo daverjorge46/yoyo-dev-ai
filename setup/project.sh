@@ -220,7 +220,7 @@ if [ "$CLAUDE_CODE" = true ]; then
     if [ "$IS_FROM_BASE" = true ]; then
         # Copy from base installation
         echo "  📂 Commands:"
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init; do
             if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
                 copy_file "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" "./.claude/commands/${cmd}.md" "false" "commands/${cmd}.md"
             else
@@ -242,7 +242,7 @@ if [ "$CLAUDE_CODE" = true ]; then
         echo "  Downloading Claude Code files from GitHub..."
         echo ""
         echo "  📂 Commands:"
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init; do
             download_file "${BASE_URL}/.claude/commands/${cmd}.md" \
                 "./.claude/commands/${cmd}.md" \
                 "false" \
@@ -490,7 +490,7 @@ if [ "$CURSOR" = true ]; then
 
     if [ "$IS_FROM_BASE" = true ]; then
         # Convert commands from base installation to Cursor rules
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init; do
             if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
                 convert_to_cursor_rule "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" "./.cursor/rules/${cmd}.mdc"
             else
@@ -500,7 +500,7 @@ if [ "$CURSOR" = true ]; then
     else
         # Download from GitHub and convert when using --no-base
         echo "  Downloading and converting from GitHub..."
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init; do
             TEMP_FILE="/tmp/${cmd}.md"
             curl -s -o "$TEMP_FILE" "${BASE_URL}/.claude/commands/${cmd}.md"
             if [ -f "$TEMP_FILE" ]; then

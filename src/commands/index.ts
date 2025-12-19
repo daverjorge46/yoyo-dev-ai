@@ -9,6 +9,7 @@ import { helpCommand } from './help.js';
 import { statusCommand } from './status.js';
 import { configCommand } from './config.js';
 import { clearCommand } from './clear.js';
+import { skillCommand } from './skill.js';
 
 // =============================================================================
 // Command Registration
@@ -22,6 +23,7 @@ export function initializeCommands(): void {
   registerCommand(statusCommand);
   registerCommand(configCommand);
   registerCommand(clearCommand);
+  registerCommand(skillCommand);
 }
 
 // =============================================================================

@@ -86,6 +86,22 @@ echo "=================="
 echo ""
 
 # ============================================
+# Check for Deprecated .yoyo/ Directory
+# ============================================
+
+if [ -d "./.yoyo" ]; then
+    echo "⚠️  WARNING: Found deprecated .yoyo/ directory!"
+    echo ""
+    echo "   The .yoyo/ directory is from an old Yoyo version."
+    echo "   Current Yoyo Dev uses:"
+    echo "     • .yoyo-dev/ for framework files (instructions, specs, etc.)"
+    echo "     • .yoyo-ai/  for memory system (database, settings)"
+    echo ""
+    echo "   Please run /yoyo-init in Claude Code to migrate or remove it."
+    echo ""
+fi
+
+# ============================================
 # TypeScript CLI Update Function
 # ============================================
 
@@ -266,7 +282,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
 
     # Update commands
     echo "  📂 Commands:"
-    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init; do
         if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
             copy_file "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" \
                 "./.claude/commands/${cmd}.md" \
@@ -408,7 +424,7 @@ if [ "$CURSOR_INSTALLED" = true ]; then
     echo "  📂 Rules:"
 
     # Convert commands to Cursor rules
-    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help; do
+    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init; do
         if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
             # Only update if forced or file doesn't exist
             if [ "$OVERWRITE_COMMANDS" = true ] || [ ! -f "./.cursor/rules/${cmd}.mdc" ]; then

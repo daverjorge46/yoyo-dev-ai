@@ -14,6 +14,12 @@ Show the complete Yoyo Dev v3.0 command reference with all available commands, f
 🎯 PRODUCT SETUP
 ─────────────────────────────────────────────────────────────────────
 
+  /yoyo-init
+    Initialize Yoyo Dev in current project
+    → Checks for .yoyo-dev/ (framework) and .yoyo-ai/ (memory)
+    → Handles migration from deprecated .yoyo/ directory
+    → Guides through proper setup if not initialized
+
   /plan-product
     Set mission & roadmap for a new product
     → Creates .yoyo-dev/product/ with mission, roadmap, tech stack

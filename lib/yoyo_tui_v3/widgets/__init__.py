@@ -9,6 +9,8 @@ from .command_palette import CommandPalettePanel
 from .history_panel import HistoryPanel
 from .execution_monitor import ExecutionMonitor
 from .keyboard_shortcuts import KeyboardShortcuts
+from .memory_panel import MemoryPanel, MemoryStatusLine
+from .skills_panel import SkillsPanel, SkillsStatusLine
 
 __all__ = [
     "StatusBar",
@@ -18,4 +20,8 @@ __all__ = [
     "HistoryPanel",
     "ExecutionMonitor",
     "KeyboardShortcuts",
+    "MemoryPanel",
+    "MemoryStatusLine",
+    "SkillsPanel",
+    "SkillsStatusLine",
 ]

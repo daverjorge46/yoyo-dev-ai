@@ -14,6 +14,8 @@ from .layout_persistence import (
     LayoutPersistenceError,
     ConfigValidationError,
 )
+from .memory_bridge import MemoryBridge, MemoryStatus, get_memory_bridge, reset_memory_bridge
+from .skills_bridge import SkillsBridge, SkillsStatus, SkillStats, get_skills_bridge, reset_skills_bridge
 
 __all__ = [
     "EventBus",
@@ -26,4 +28,13 @@ __all__ = [
     "LayoutPersistence",
     "LayoutPersistenceError",
     "ConfigValidationError",
+    "MemoryBridge",
+    "MemoryStatus",
+    "get_memory_bridge",
+    "reset_memory_bridge",
+    "SkillsBridge",
+    "SkillsStatus",
+    "SkillStats",
+    "get_skills_bridge",
+    "reset_skills_bridge",
 ]
