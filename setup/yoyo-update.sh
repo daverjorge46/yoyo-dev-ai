@@ -646,7 +646,10 @@ fi
 
 echo ""
 echo "💡 Quick launch:"
-echo "   yoyo                       - Launch Claude Code with Yoyo Dev interface"
+echo "   yoyo                       - Launch TUI + Claude split view"
+echo "   yoyo --no-split            - Launch TUI dashboard only"
+echo "   yoyo-gui                   - Launch browser-based GUI (http://localhost:3456)"
+echo "   yoyo-update                - Update Yoyo Dev installation"
 echo ""
 echo "🔒 Preserved files:"
 echo "   .yoyo-dev/product/         - Product mission and roadmap"

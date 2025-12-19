@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Yoyo Dev v3.0 - Global Command Installation
-# Installs the 'yoyo' command globally so it can be run from any project
+# Yoyo Dev v4.0 - Global Command Installation
+# Installs all Yoyo Dev commands globally:
+#   - yoyo        : TUI dashboard + Claude split view
+#   - yoyo-update : Update Yoyo Dev installation
+#   - yoyo-gui    : Browser-based GUI dashboard
 
 set -euo pipefail
 
@@ -11,120 +14,171 @@ readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly RED='\033[0;31m'
 readonly BOLD='\033[1m'
+readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
+# Version
+readonly VERSION="4.0.0"
+
 echo ""
-echo -e "${BOLD}${CYAN}Yoyo Dev v3.0 - Global Command Installation${RESET}"
+echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════╗${RESET}"
+echo -e "${BOLD}${CYAN}║${RESET}          ${BOLD}YOYO DEV v${VERSION} - Global Command Installation${RESET}         ${BOLD}${CYAN}║${RESET}"
+echo -e "${BOLD}${CYAN}╚════════════════════════════════════════════════════════════════╝${RESET}"
 echo ""
 
 # Determine script directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-GLOBAL_LAUNCHER="$SCRIPT_DIR/yoyo-global-launcher.sh"
 
-# Check if launcher exists
-if [ ! -f "$GLOBAL_LAUNCHER" ]; then
-    echo -e "${RED}ERROR: Global launcher not found${RESET}"
+# Define commands to install
+declare -A COMMANDS=(
+    ["yoyo"]="yoyo-global-launcher.sh"
+    ["yoyo-update"]="yoyo-update.sh"
+    ["yoyo-gui"]="yoyo-gui-global-launcher.sh"
+)
+
+# Determine installation directory
+INSTALL_DIR=""
+NEED_SUDO=false
+
+if [ -w "/usr/local/bin" ]; then
+    INSTALL_DIR="/usr/local/bin"
+elif [ -d "$HOME/.local/bin" ]; then
+    INSTALL_DIR="$HOME/.local/bin"
+elif [ -d "$HOME/bin" ]; then
+    INSTALL_DIR="$HOME/bin"
+else
+    # Create ~/.local/bin (XDG standard)
+    mkdir -p "$HOME/.local/bin"
+    INSTALL_DIR="$HOME/.local/bin"
+fi
+
+# Check if we need sudo for /usr/local/bin
+if [ "$INSTALL_DIR" = "/usr/local/bin" ] && [ ! -w "/usr/local/bin" ]; then
+    NEED_SUDO=true
+fi
+
+echo -e "${BOLD}Installation Directory:${RESET} $INSTALL_DIR"
+echo ""
+
+# Track installation status
+INSTALLED_COUNT=0
+FAILED_COUNT=0
+
+# Install each command
+for cmd in "${!COMMANDS[@]}"; do
+    launcher="${COMMANDS[$cmd]}"
+    launcher_path="$SCRIPT_DIR/$launcher"
+    install_path="$INSTALL_DIR/$cmd"
+
+    echo -ne "  Installing ${CYAN}$cmd${RESET}... "
+
+    # Check if launcher exists
+    if [ ! -f "$launcher_path" ]; then
+        echo -e "${RED}FAILED${RESET} (launcher not found)"
+        echo -e "    ${DIM}Expected: $launcher_path${RESET}"
+        ((FAILED_COUNT++))
+        continue
+    fi
+
+    # Make launcher executable
+    chmod +x "$launcher_path"
+
+    # Remove old symlink if it exists
+    if [ -L "$install_path" ] || [ -f "$install_path" ]; then
+        if [ "$NEED_SUDO" = true ]; then
+            sudo rm -f "$install_path" 2>/dev/null || true
+        else
+            rm -f "$install_path" 2>/dev/null || true
+        fi
+    fi
+
+    # Create symlink
+    if [ "$NEED_SUDO" = true ]; then
+        if sudo ln -sf "$launcher_path" "$install_path" 2>/dev/null; then
+            echo -e "${GREEN}OK${RESET}"
+            ((INSTALLED_COUNT++))
+        else
+            echo -e "${RED}FAILED${RESET} (sudo required)"
+            ((FAILED_COUNT++))
+        fi
+    else
+        if ln -sf "$launcher_path" "$install_path" 2>/dev/null; then
+            echo -e "${GREEN}OK${RESET}"
+            ((INSTALLED_COUNT++))
+        else
+            echo -e "${RED}FAILED${RESET}"
+            ((FAILED_COUNT++))
+        fi
+    fi
+done
+
+echo ""
+
+# Check PATH
+IN_PATH=false
+if [[ ":$PATH:" == *":$INSTALL_DIR:"* ]]; then
+    IN_PATH=true
+fi
+
+# Summary
+echo "────────────────────────────────────────────────────────────────"
+echo ""
+
+if [ $INSTALLED_COUNT -eq ${#COMMANDS[@]} ]; then
+    echo -e "${GREEN}✅ All commands installed successfully${RESET}"
     echo ""
-    echo "Expected: $GLOBAL_LAUNCHER"
+elif [ $INSTALLED_COUNT -gt 0 ]; then
+    echo -e "${YELLOW}⚠️  $INSTALLED_COUNT of ${#COMMANDS[@]} commands installed${RESET}"
+    echo ""
+else
+    echo -e "${RED}❌ Installation failed${RESET}"
+    echo ""
+    echo "Please try manually with sudo:"
+    for cmd in "${!COMMANDS[@]}"; do
+        launcher="${COMMANDS[$cmd]}"
+        echo -e "  ${CYAN}sudo ln -sf $SCRIPT_DIR/$launcher /usr/local/bin/$cmd${RESET}"
+    done
     echo ""
     exit 1
 fi
 
-# Make launcher executable
-chmod +x "$GLOBAL_LAUNCHER"
-
-# Determine installation location
-INSTALL_PATH=""
-
-if [ -w "/usr/local/bin" ]; then
-    # User has write access to /usr/local/bin
-    INSTALL_PATH="/usr/local/bin/yoyo"
-elif [ -d "$HOME/bin" ]; then
-    # Use ~/bin if it exists
-    INSTALL_PATH="$HOME/bin/yoyo"
-elif [ -d "$HOME/.local/bin" ]; then
-    # Use ~/.local/bin if it exists
-    INSTALL_PATH="$HOME/.local/bin/yoyo"
-else
-    # Create ~/bin
-    mkdir -p "$HOME/bin"
-    INSTALL_PATH="$HOME/bin/yoyo"
+# PATH warning
+if [ "$IN_PATH" = false ]; then
+    echo -e "${YELLOW}⚠️  $INSTALL_DIR may not be in your PATH${RESET}"
+    echo ""
+    echo "Add this to your ~/.bashrc or ~/.zshrc:"
+    echo -e "  ${CYAN}export PATH=\"$INSTALL_DIR:\$PATH\"${RESET}"
+    echo ""
+    echo "Then reload your shell:"
+    echo -e "  ${CYAN}source ~/.bashrc${RESET}  # or source ~/.zshrc"
+    echo ""
 fi
 
-echo -e "Installing ${CYAN}yoyo${RESET} command to: ${BOLD}$INSTALL_PATH${RESET}"
+# Test commands
+echo -e "${BOLD}Testing commands:${RESET}"
 echo ""
 
-# Remove old symlink if it exists
-if [ -L "$INSTALL_PATH" ]; then
-    rm "$INSTALL_PATH"
-fi
-
-# Create symlink
-if ln -s "$GLOBAL_LAUNCHER" "$INSTALL_PATH" 2>/dev/null; then
-    echo -e "${GREEN}✅ Installation successful${RESET}"
-    echo ""
-    echo -e "The ${CYAN}yoyo${RESET} command is now available globally."
-    echo ""
-
-    # Check if in PATH
-    if [[ ":$PATH:" == *":$HOME/bin:"* ]] || [[ ":$PATH:" == *":$HOME/.local/bin:"* ]] || [[ ":$PATH:" == *":/usr/local/bin:"* ]]; then
-        echo -e "${GREEN}✅ Installation directory is in your PATH${RESET}"
-        echo ""
-        echo "You can now run: ${CYAN}yoyo${RESET}"
+for cmd in yoyo yoyo-update yoyo-gui; do
+    if command -v $cmd &> /dev/null; then
+        echo -e "  ${GREEN}✓${RESET} ${CYAN}$cmd${RESET} is available"
     else
-        echo -e "${YELLOW}⚠️  Installation directory may not be in your PATH${RESET}"
-        echo ""
-        echo "Add this to your ~/.bashrc or ~/.zshrc:"
-        echo -e "  ${CYAN}export PATH=\"\$HOME/bin:\$PATH\"${RESET}"
-        echo ""
-        echo "Then reload your shell:"
-        echo -e "  ${CYAN}source ~/.bashrc${RESET}  # or source ~/.zshrc"
-        echo ""
+        echo -e "  ${YELLOW}?${RESET} ${CYAN}$cmd${RESET} not in PATH (restart terminal)"
     fi
-else
-    # Need sudo
-    echo -e "${YELLOW}⚠️  Need elevated permissions for /usr/local/bin${RESET}"
-    echo ""
-    echo "Running with sudo..."
-    echo ""
+done
 
-    if sudo ln -s "$GLOBAL_LAUNCHER" "$INSTALL_PATH"; then
-        echo ""
-        echo -e "${GREEN}✅ Installation successful${RESET}"
-        echo ""
-        echo -e "The ${CYAN}yoyo${RESET} command is now available globally."
-        echo ""
-    else
-        echo ""
-        echo -e "${RED}ERROR: Installation failed${RESET}"
-        echo ""
-        echo "Please try manually:"
-        echo -e "  ${CYAN}sudo ln -s $GLOBAL_LAUNCHER /usr/local/bin/yoyo${RESET}"
-        echo ""
-        exit 1
-    fi
-fi
-
-# Test installation
-echo "Testing installation..."
 echo ""
-
-if command -v yoyo &> /dev/null; then
-    yoyo --version
-    echo ""
-    echo -e "${GREEN}✅ Command test successful${RESET}"
-    echo ""
-else
-    echo -e "${YELLOW}⚠️  'yoyo' command not found in PATH${RESET}"
-    echo ""
-    echo "You may need to restart your terminal or reload your shell."
-    echo ""
-fi
-
 echo "────────────────────────────────────────────────────────────────"
 echo ""
-echo -e "${BOLD}Usage:${RESET}"
-echo -e "  ${GREEN}yoyo${RESET}              Launch TUI dashboard (from any project)"
+echo -e "${BOLD}Available Commands:${RESET}"
+echo ""
+echo -e "  ${GREEN}yoyo${RESET}              Launch TUI + Claude split view"
+echo -e "  ${GREEN}yoyo --no-split${RESET}   Launch TUI only"
 echo -e "  ${GREEN}yoyo --help${RESET}       Show command reference"
-echo -e "  ${GREEN}yoyo --version${RESET}    Show version"
+echo ""
+echo -e "  ${GREEN}yoyo-gui${RESET}          Launch browser-based GUI (port 3456)"
+echo -e "  ${GREEN}yoyo-gui --dev${RESET}    Development mode with hot reload"
+echo ""
+echo -e "  ${GREEN}yoyo-update${RESET}       Update Yoyo Dev installation"
+echo ""
+echo -e "${DIM}Yoyo Dev v${VERSION} - \"Powerful when you need it. Invisible when you don't.\"${RESET}"
 echo ""
