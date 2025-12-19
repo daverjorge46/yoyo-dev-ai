@@ -1,11 +1,12 @@
 /**
  * Yoyo Dev GUI Server
  *
- * Hono-based API server for the browser GUI.
+ * Hono-based API server for the browser GUI with WebSocket support.
  */
 
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
+import { createNodeWebSocket } from '@hono/node-ws';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { logger } from 'hono/logger';
@@ -18,6 +19,8 @@ import { specsRoutes } from './routes/specs.js';
 import { tasksRoutes } from './routes/tasks.js';
 import { memoryRoutes } from './routes/memory.js';
 import { skillsRoutes } from './routes/skills.js';
+import { wsManager } from './services/websocket.js';
+import { fileWatcher } from './services/file-watcher.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -27,9 +30,52 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const app = new Hono();
 
+// Create WebSocket helper
+const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
+
 // Middleware
 app.use('*', logger());
 app.use('/api/*', cors());
+
+// =============================================================================
+// WebSocket Route
+// =============================================================================
+
+app.get(
+  '/ws',
+  upgradeWebSocket(() => {
+    let clientId: string;
+
+    return {
+      onOpen(_event, ws) {
+        clientId = wsManager.addClient(ws);
+        // Send initial connection confirmation
+        ws.send(
+          JSON.stringify({
+            type: 'connected',
+            payload: { clientId, timestamp: Date.now() },
+          })
+        );
+      },
+      onMessage(event, _ws) {
+        if (typeof event.data === 'string') {
+          wsManager.handleMessage(clientId, event.data);
+        }
+      },
+      onClose() {
+        if (clientId) {
+          wsManager.removeClient(clientId);
+        }
+      },
+      onError(error) {
+        console.error('[WS] Error:', error);
+        if (clientId) {
+          wsManager.removeClient(clientId);
+        }
+      },
+    };
+  })
+);
 
 // =============================================================================
 // API Routes
@@ -41,9 +87,18 @@ app.route('/api/tasks', tasksRoutes);
 app.route('/api/memory', memoryRoutes);
 app.route('/api/skills', skillsRoutes);
 
-// Health check
+// Health check with WebSocket status
 app.get('/api/health', (c) => {
-  return c.json({ status: 'ok', timestamp: new Date().toISOString() });
+  return c.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    websocket: {
+      clients: wsManager.getClientCount(),
+    },
+    fileWatcher: {
+      running: fileWatcher.isRunning(),
+    },
+  });
 });
 
 // =============================================================================
@@ -51,7 +106,6 @@ app.get('/api/health', (c) => {
 // =============================================================================
 
 const clientDistPath = join(__dirname, '..', 'dist', 'client');
-const clientDevPath = join(__dirname, '..', 'client');
 
 if (existsSync(clientDistPath)) {
   // Production: serve built files
@@ -78,9 +132,8 @@ export interface ServerOptions {
 export async function startServer(options: ServerOptions = {}) {
   const port = options.port ?? 3456;
   // Priority: options > env var > cwd
-  const projectRoot = options.projectRoot
-    ?? process.env.YOYO_PROJECT_ROOT
-    ?? process.cwd();
+  const projectRoot =
+    options.projectRoot ?? process.env.YOYO_PROJECT_ROOT ?? process.cwd();
 
   // Store project root in context for routes
   app.use('*', async (c, next) => {
@@ -93,12 +146,36 @@ export async function startServer(options: ServerOptions = {}) {
   console.log(`  Project: ${projectRoot}`);
   console.log(`  Server:  http://localhost:${port}`);
   console.log(`  API:     http://localhost:${port}/api`);
+  console.log(`  WS:      ws://localhost:${port}/ws`);
   console.log(`\n  Press Ctrl+C to stop\n`);
 
-  serve({
-    fetch: app.fetch,
-    port,
-  });
+  // Start file watcher
+  fileWatcher.start({ projectRoot, debounceMs: 100 });
+
+  // Create server with WebSocket support
+  const server = serve(
+    {
+      fetch: app.fetch,
+      port,
+    },
+    (info) => {
+      console.log(`  Listening on port ${info.port}`);
+    }
+  );
+
+  // Inject WebSocket handling into the server
+  injectWebSocket(server);
+
+  // Graceful shutdown
+  const shutdown = async () => {
+    console.log('\n  Shutting down...');
+    await fileWatcher.stop();
+    wsManager.stop();
+    process.exit(0);
+  };
+
+  process.on('SIGINT', shutdown);
+  process.on('SIGTERM', shutdown);
 
   // Open browser if requested
   if (options.open) {

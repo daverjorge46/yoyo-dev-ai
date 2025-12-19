@@ -5,6 +5,8 @@ import Specs from './pages/Specs';
 import Tasks from './pages/Tasks';
 import Memory from './pages/Memory';
 import Skills from './pages/Skills';
+import { ConnectionStatus } from './components/ConnectionStatus';
+import { useWebSocketContext } from './contexts/WebSocketContext';
 
 // API client
 async function fetchStatus() {
@@ -14,10 +16,13 @@ async function fetchStatus() {
 }
 
 function App() {
+  const { status: wsStatus, reconnect } = useWebSocketContext();
+
   const { data: status, isLoading } = useQuery({
     queryKey: ['status'],
     queryFn: fetchStatus,
-    refetchInterval: 5000,
+    // Reduce polling since WebSocket handles real-time updates
+    refetchInterval: wsStatus === 'connected' ? 30000 : 5000,
   });
 
   return (
@@ -100,24 +105,15 @@ function App() {
             </nav>
 
             {/* Status indicator */}
-            <div className="flex items-center gap-2">
-              {isLoading ? (
-                <div className="h-2 w-2 rounded-full bg-gray-300 animate-pulse" />
-              ) : status?.yoyoDevInstalled ? (
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-green-500" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Connected
-                  </span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <div className="h-2 w-2 rounded-full bg-red-500" />
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
-                    Not initialized
-                  </span>
-                </div>
+            <div className="flex items-center gap-4">
+              {/* Project status */}
+              {!isLoading && !status?.yoyoDevInstalled && (
+                <span className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded">
+                  Not initialized
+                </span>
               )}
+              {/* WebSocket connection status */}
+              <ConnectionStatus status={wsStatus} onReconnect={reconnect} />
             </div>
           </div>
         </div>
