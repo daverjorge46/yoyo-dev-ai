@@ -2,6 +2,7 @@ import { Routes, Route, NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Dashboard from './pages/Dashboard';
 import Specs from './pages/Specs';
+import Fixes from './pages/Fixes';
 import Tasks from './pages/Tasks';
 import Memory from './pages/Memory';
 import Skills from './pages/Skills';
@@ -67,6 +68,18 @@ function App() {
                 Specs
               </NavLink>
               <NavLink
+                to="/fixes"
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
+                  }`
+                }
+              >
+                Fixes
+              </NavLink>
+              <NavLink
                 to="/tasks"
                 className={({ isActive }) =>
                   `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -124,6 +137,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/specs" element={<Specs />} />
+          <Route path="/fixes" element={<Fixes />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/memory" element={<Memory />} />
           <Route path="/skills" element={<Skills />} />
