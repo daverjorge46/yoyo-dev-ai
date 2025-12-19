@@ -41,6 +41,7 @@ readonly GUI_DIR="$YOYO_INSTALL_DIR/gui"
 
 # Default options
 PORT=3456
+DEV_PORT=5173  # Vite dev server port
 DEV_MODE=false
 OPEN_BROWSER=true
 BACKGROUND_MODE=false
@@ -59,15 +60,15 @@ show_help() {
     echo -e "${BOLD}${CYAN}Yoyo Dev GUI v${VERSION}${RESET}"
     echo ""
     echo -e "${BOLD}Usage:${RESET}"
-    echo -e "  ${GREEN}yoyo-gui${RESET}                Launch browser-based dashboard"
-    echo -e "  ${GREEN}yoyo-gui --port 8080${RESET}    Use custom port (default: 3456)"
-    echo -e "  ${GREEN}yoyo-gui --dev${RESET}          Development mode (hot reload)"
+    echo -e "  ${GREEN}yoyo-gui${RESET}                Launch browser-based dashboard (production)"
+    echo -e "  ${GREEN}yoyo-gui --dev${RESET}          Development mode with hot reload (port 5173)"
+    echo -e "  ${GREEN}yoyo-gui --port 8080${RESET}    Use custom port (production mode)"
     echo -e "  ${GREEN}yoyo-gui --no-open${RESET}      Don't auto-open browser"
     echo -e "  ${GREEN}yoyo-gui --background${RESET}   Run in background"
     echo ""
     echo -e "${BOLD}Options:${RESET}"
-    echo -e "  ${CYAN}-p, --port PORT${RESET}     Server port (default: 3456)"
-    echo -e "  ${CYAN}-d, --dev${RESET}           Development mode with hot reload"
+    echo -e "  ${CYAN}-d, --dev${RESET}           Development mode with hot reload (port 5173)"
+    echo -e "  ${CYAN}-p, --port PORT${RESET}     Server port for production mode (default: 3456)"
     echo -e "  ${CYAN}--no-open${RESET}           Don't automatically open browser"
     echo -e "  ${CYAN}--background${RESET}        Run server in background (for yoyo integration)"
     echo -e "  ${CYAN}--stop${RESET}              Stop background GUI server"
@@ -83,7 +84,7 @@ show_help() {
     echo -e "  ${MAGENTA}*${RESET} REST API for integrations"
     echo ""
     echo -e "${BOLD}Related Commands:${RESET}"
-    echo -e "  ${GREEN}yoyo${RESET}             Launch TUI + Claude + GUI (default)"
+    echo -e "  ${GREEN}yoyo${RESET}             Launch TUI + Claude + GUI (dev mode on port 5173)"
     echo -e "  ${GREEN}yoyo --no-gui${RESET}    Launch TUI + Claude without GUI"
     echo -e "  ${GREEN}yoyo --no-split${RESET}  Launch TUI only"
     echo -e "  ${GREEN}yoyo-update${RESET}      Update Yoyo Dev installation"
@@ -304,7 +305,12 @@ show_gui_status() {
         echo ""
         echo -e "${GREEN}✅ GUI server is running${RESET}"
         echo "   PID: $pid"
-        echo "   URL: http://localhost:$PORT"
+        # Check if dev mode is likely running by checking for Vite process
+        if pgrep -f "vite" > /dev/null 2>&1; then
+            echo "   URL: http://localhost:$DEV_PORT (dev mode)"
+        else
+            echo "   URL: http://localhost:$PORT"
+        fi
         echo ""
     else
         echo ""
@@ -335,28 +341,55 @@ launch_background() {
     # Create log file
     local log_file="/tmp/yoyo-gui.log"
 
-    # Start server in background
-    nohup npx tsx server/index.ts > "$log_file" 2>&1 &
-    local server_pid=$!
-    echo "$server_pid" > "$pid_file"
+    if [ "$DEV_MODE" = true ]; then
+        # Dev mode: run npm run dev in background
+        # This starts both Vite (5173) and API server concurrently
+        nohup npm run dev > "$log_file" 2>&1 &
+        local server_pid=$!
+        echo "$server_pid" > "$pid_file"
 
-    # Wait a moment to check if it started
-    sleep 2
+        # Wait a bit longer for dev mode to start (npm needs time)
+        sleep 3
 
-    if is_gui_running; then
-        echo -e "${GREEN}✅ GUI started${RESET} (http://localhost:$PORT)"
+        if is_gui_running; then
+            echo -e "${GREEN}GUI (dev mode) started${RESET} at ${CYAN}http://localhost:$DEV_PORT${RESET}"
 
-        # Open browser if requested
-        if [ "$OPEN_BROWSER" = true ]; then
-            sleep 1
-            open_browser "http://localhost:$PORT"
+            # Open browser if requested
+            if [ "$OPEN_BROWSER" = true ]; then
+                sleep 1
+                open_browser "http://localhost:$DEV_PORT"
+            fi
+            return 0
+        else
+            echo -e "${RED}Failed to start GUI dev server${RESET}"
+            echo "   Check log: $log_file"
+            rm -f "$pid_file"
+            return 1
         fi
-        return 0
     else
-        echo -e "${RED}Failed to start GUI server${RESET}"
-        echo "   Check log: $log_file"
-        rm -f "$pid_file"
-        return 1
+        # Production mode: run tsx server directly
+        nohup npx tsx server/index.ts > "$log_file" 2>&1 &
+        local server_pid=$!
+        echo "$server_pid" > "$pid_file"
+
+        # Wait a moment to check if it started
+        sleep 2
+
+        if is_gui_running; then
+            echo -e "${GREEN}GUI started${RESET} at ${CYAN}http://localhost:$PORT${RESET}"
+
+            # Open browser if requested
+            if [ "$OPEN_BROWSER" = true ]; then
+                sleep 1
+                open_browser "http://localhost:$PORT"
+            fi
+            return 0
+        else
+            echo -e "${RED}Failed to start GUI server${RESET}"
+            echo "   Check log: $log_file"
+            rm -f "$pid_file"
+            return 1
+        fi
     fi
 }
 
