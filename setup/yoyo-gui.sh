@@ -281,6 +281,40 @@ launch_dev() {
 launch_production() {
     local project_root="$1"
 
+    cd "$GUI_DIR"
+
+    # Check if client build exists
+    if [ ! -d "$GUI_DIR/dist/client" ] || [ ! -f "$GUI_DIR/dist/client/index.html" ]; then
+        echo ""
+        echo -e "${YELLOW}GUI client not built yet${RESET}"
+        echo ""
+        echo "Options:"
+        echo "  1. Build now (takes ~30 seconds)"
+        echo "  2. Run in development mode (hot reload)"
+        echo "  3. Cancel"
+        echo ""
+        read -p "Choice [1/2/3]: " -n 1 -r
+        echo ""
+
+        case $REPLY in
+            1)
+                echo ""
+                echo -e "${CYAN}Building GUI client...${RESET}"
+                npm run build:client
+                echo ""
+                ;;
+            2)
+                echo ""
+                launch_dev "$project_root"
+                return
+                ;;
+            *)
+                echo "Cancelled."
+                exit 0
+                ;;
+        esac
+    fi
+
     echo ""
     echo -e "${BOLD}${CYAN}Yoyo Dev GUI${RESET}"
     echo ""
@@ -290,8 +324,6 @@ launch_production() {
     echo ""
     echo -e "  ${DIM}Press Ctrl+C to stop${RESET}"
     echo ""
-
-    cd "$GUI_DIR"
 
     # Set environment variables
     export YOYO_PROJECT_ROOT="$project_root"
