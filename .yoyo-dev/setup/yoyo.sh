@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Yoyo Dev v3.0 TUI Launcher
+# Yoyo Dev v4.0 Launcher
 # "Powerful when you need it. Invisible when you don't."
 #
-# Launches the production-grade Textual TUI dashboard with intelligent features.
+# Launches the Yoyo AI CLI (TypeScript/Ink) or falls back to Python TUI.
 
 set -euo pipefail
 
@@ -19,7 +19,7 @@ readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 # Yoyo Dev version
-readonly VERSION="3.1.1"
+readonly VERSION="4.0.0"
 
 # IMPORTANT: Save user's current working directory FIRST (before any cd commands)
 # This is the project directory where the user invoked the yoyo command
@@ -37,6 +37,78 @@ YOYO_INSTALL_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 # TUI module location (project-local)
 readonly TUI_MODULE="lib.yoyo_tui_v3.cli"
+
+# ============================================================================
+# TypeScript CLI Detection
+# ============================================================================
+
+# Check if yoyo-ai (TypeScript CLI) is available
+check_typescript_cli() {
+    # Check global npm install
+    if command -v yoyo-ai &> /dev/null; then
+        return 0
+    fi
+
+    # Check local node_modules
+    if [ -f "$USER_PROJECT_DIR/node_modules/.bin/yoyo-ai" ]; then
+        return 0
+    fi
+
+    # Check npx availability with @yoyo-ai/cli
+    if command -v npx &> /dev/null; then
+        # Check if package is installed locally
+        if [ -f "$USER_PROJECT_DIR/node_modules/@yoyo-ai/cli/package.json" ]; then
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+# Get the yoyo-ai CLI command
+get_typescript_cli_command() {
+    # Check global npm install
+    if command -v yoyo-ai &> /dev/null; then
+        echo "yoyo-ai"
+        return 0
+    fi
+
+    # Check local node_modules
+    if [ -f "$USER_PROJECT_DIR/node_modules/.bin/yoyo-ai" ]; then
+        echo "$USER_PROJECT_DIR/node_modules/.bin/yoyo-ai"
+        return 0
+    fi
+
+    # Use npx as fallback (slower but works)
+    if command -v npx &> /dev/null; then
+        if [ -f "$USER_PROJECT_DIR/node_modules/@yoyo-ai/cli/package.json" ]; then
+            echo "npx yoyo-ai"
+            return 0
+        fi
+    fi
+
+    return 1
+}
+
+# Launch TypeScript CLI (yoyo-ai)
+launch_typescript_cli() {
+    local cli_cmd
+    cli_cmd=$(get_typescript_cli_command)
+
+    if [ -z "$cli_cmd" ]; then
+        echo -e "${YELLOW}⚠️  TypeScript CLI not found${RESET}"
+        echo ""
+        echo "To install the new Yoyo AI CLI:"
+        echo "  npm install -g @yoyo-ai/cli"
+        echo ""
+        echo "Falling back to Python TUI..."
+        sleep 2
+        return 1
+    fi
+
+    cd "$USER_PROJECT_DIR"
+    exec $cli_cmd "$@"
+}
 
 # ============================================================================
 # Project Detection & Installation
@@ -685,13 +757,39 @@ main() {
         --monitor)
             start_monitor "${2:-}"
             ;;
+        --ts|--typescript)
+            # Force TypeScript CLI
+            shift
+            if check_typescript_cli; then
+                launch_typescript_cli "$@"
+            else
+                echo -e "${RED}Error: TypeScript CLI not installed${RESET}"
+                echo ""
+                echo "Install with: npm install -g @yoyo-ai/cli"
+                exit 1
+            fi
+            ;;
+        --py|--python|--tui)
+            # Force Python TUI
+            shift
+            launch_tui "$@"
+            ;;
         launch|"")
-            # Default: Launch split view (TUI left + Claude right) using tmux
-            launch_split_tmux 40
+            # Default: Try TypeScript CLI first, fall back to split view with TUI
+            if check_typescript_cli; then
+                launch_typescript_cli "$@"
+            else
+                # Fall back to split view (TUI left + Claude right) using tmux
+                launch_split_tmux 40
+            fi
             ;;
         *)
-            # Unknown flag - pass through to TUI module
-            launch_tui "$@"
+            # Unknown flag - try TypeScript CLI first, then TUI
+            if check_typescript_cli; then
+                launch_typescript_cli "$@"
+            else
+                launch_tui "$@"
+            fi
             ;;
     esac
 }
