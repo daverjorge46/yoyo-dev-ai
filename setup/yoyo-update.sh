@@ -282,7 +282,7 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ]; then
 
     # Update commands
     echo "  📂 Commands:"
-    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init; do
+    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init yoyo-ai-memory; do
         if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
             copy_file "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" \
                 "./.claude/commands/${cmd}.md" \
@@ -424,7 +424,7 @@ if [ "$CURSOR_INSTALLED" = true ]; then
     echo "  📂 Rules:"
 
     # Convert commands to Cursor rules
-    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init; do
+    for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init yoyo-ai-memory; do
         if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
             # Only update if forced or file doesn't exist
             if [ "$OVERWRITE_COMMANDS" = true ] || [ ! -f "./.cursor/rules/${cmd}.mdc" ]; then
@@ -620,6 +620,64 @@ fi
 
 # Update TypeScript CLI if installed
 update_typescript_cli
+
+# ============================================
+# Check and Install Missing Global Commands
+# ============================================
+
+check_and_install_global_commands() {
+    local missing_commands=""
+    local install_needed=false
+
+    # Check for missing global commands
+    if ! command -v yoyo &> /dev/null; then
+        missing_commands="$missing_commands yoyo"
+        install_needed=true
+    fi
+
+    if ! command -v yoyo-update &> /dev/null; then
+        missing_commands="$missing_commands yoyo-update"
+        install_needed=true
+    fi
+
+    if ! command -v yoyo-gui &> /dev/null; then
+        missing_commands="$missing_commands yoyo-gui"
+        install_needed=true
+    fi
+
+    if [ "$install_needed" = true ]; then
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📦 Missing Global Commands Detected"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo ""
+        echo "The following commands are not installed globally:"
+        for cmd in $missing_commands; do
+            echo "  • $cmd"
+        done
+        echo ""
+        read -p "Would you like to install missing global commands? [Y/n] " -n 1 -r
+        echo ""
+
+        if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+            if [ -f "$BASE_YOYO_DEV/setup/install-global-command.sh" ]; then
+                bash "$BASE_YOYO_DEV/setup/install-global-command.sh"
+            else
+                echo "⚠️  Global command installer not found"
+                echo "   Run manually: $BASE_YOYO_DEV/setup/install-global-command.sh"
+            fi
+        else
+            echo ""
+            echo "ℹ️  Skipping global command installation"
+            echo "   You can install later by running:"
+            echo "   $BASE_YOYO_DEV/setup/install-global-command.sh"
+        fi
+        echo ""
+    fi
+}
+
+# Run global command check
+check_and_install_global_commands
 
 # Update installed version for update detection
 if [ -f "$BASE_YOYO_DEV/VERSION" ]; then
