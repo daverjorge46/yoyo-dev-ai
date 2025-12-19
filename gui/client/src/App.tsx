@@ -4,6 +4,7 @@ import Dashboard from './pages/Dashboard';
 import Specs from './pages/Specs';
 import Fixes from './pages/Fixes';
 import Tasks from './pages/Tasks';
+import Roadmap from './pages/Roadmap';
 import Memory from './pages/Memory';
 import Skills from './pages/Skills';
 import { ConnectionStatus } from './components/ConnectionStatus';
@@ -92,6 +93,18 @@ function App() {
                 Tasks
               </NavLink>
               <NavLink
+                to="/roadmap"
+                className={({ isActive }) =>
+                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive
+                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
+                  }`
+                }
+              >
+                Roadmap
+              </NavLink>
+              <NavLink
                 to="/memory"
                 className={({ isActive }) =>
                   `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
@@ -139,6 +152,7 @@ function App() {
           <Route path="/specs" element={<Specs />} />
           <Route path="/fixes" element={<Fixes />} />
           <Route path="/tasks" element={<Tasks />} />
+          <Route path="/roadmap" element={<Roadmap />} />
           <Route path="/memory" element={<Memory />} />
           <Route path="/skills" element={<Skills />} />
         </Routes>

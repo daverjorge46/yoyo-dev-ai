@@ -24,6 +24,7 @@ import { gitRoutes } from './routes/git.js';
 import { mcpRoutes } from './routes/mcp.js';
 import { executionRoutes } from './routes/execution.js';
 import { fixesRoutes } from './routes/fixes.js';
+import { roadmapRoutes } from './routes/roadmap.js';
 import { wsManager } from './services/websocket.js';
 import { fileWatcher } from './services/file-watcher.js';
 
@@ -96,6 +97,7 @@ app.route('/api/git', gitRoutes);
 app.route('/api/mcp', mcpRoutes);
 app.route('/api/execution', executionRoutes);
 app.route('/api/fixes', fixesRoutes);
+app.route('/api/roadmap', roadmapRoutes);
 
 // Health check with WebSocket status
 app.get('/api/health', (c) => {
