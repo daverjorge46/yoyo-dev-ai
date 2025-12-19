@@ -1,5 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
+import { Edit2 } from 'lucide-react';
+import { FileEditorModal } from '../components/FileEditorModal';
 
 interface Spec {
   id: string;
@@ -99,6 +101,8 @@ function SpecCard({
 }
 
 function SpecDetailView({ specId }: { specId: string }) {
+  const [editingFile, setEditingFile] = useState<string | null>(null);
+
   const { data: spec, isLoading } = useQuery({
     queryKey: ['spec', specId],
     queryFn: () => fetchSpecDetail(specId),
@@ -121,6 +125,9 @@ function SpecDetailView({ specId }: { specId: string }) {
     );
   }
 
+  // Build full file paths
+  const specFolder = `.yoyo-dev/specs/${spec.id}`;
+
   return (
     <div className="space-y-6">
       <div>
@@ -132,35 +139,67 @@ function SpecDetailView({ specId }: { specId: string }) {
         </p>
       </div>
 
-      {/* Files list */}
+      {/* Files list with Edit buttons */}
       <div>
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           Files
         </h3>
         <div className="space-y-1">
-          {spec.files.map((file) => (
-            <div
-              key={file}
-              className="text-sm font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 rounded"
-            >
-              {file}
-            </div>
-          ))}
+          {spec.files.map((file) => {
+            const fullPath = `${specFolder}/${file}`;
+            const isEditable = file.endsWith('.md') || file.endsWith('.json');
+
+            return (
+              <div
+                key={file}
+                className="flex items-center justify-between text-sm font-mono text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700/50 px-3 py-1.5 rounded group"
+              >
+                <span>{file}</span>
+                {isEditable && (
+                  <button
+                    onClick={() => setEditingFile(fullPath)}
+                    className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-indigo-500 transition-all"
+                    title="Edit file"
+                  >
+                    <Edit2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
       {/* Spec content preview */}
       {spec.specLite && (
         <div>
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Specification Summary
-          </h3>
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Specification Summary
+            </h3>
+            <button
+              onClick={() => setEditingFile(`${specFolder}/spec-lite.md`)}
+              className="text-xs text-indigo-500 hover:text-indigo-400 flex items-center gap-1"
+            >
+              <Edit2 className="h-3 w-3" />
+              Edit
+            </button>
+          </div>
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 max-h-96 overflow-auto">
             <pre className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap font-mono">
               {spec.specLite}
             </pre>
           </div>
         </div>
+      )}
+
+      {/* Editor Modal */}
+      {editingFile && (
+        <FileEditorModal
+          filePath={editingFile}
+          onClose={() => setEditingFile(null)}
+          title={editingFile.split('/').pop()}
+        />
       )}
     </div>
   );

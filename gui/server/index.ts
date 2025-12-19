@@ -19,6 +19,7 @@ import { specsRoutes } from './routes/specs.js';
 import { tasksRoutes } from './routes/tasks.js';
 import { memoryRoutes } from './routes/memory.js';
 import { skillsRoutes } from './routes/skills.js';
+import { filesRoutes } from './routes/files.js';
 import { wsManager } from './services/websocket.js';
 import { fileWatcher } from './services/file-watcher.js';
 
@@ -86,6 +87,7 @@ app.route('/api/specs', specsRoutes);
 app.route('/api/tasks', tasksRoutes);
 app.route('/api/memory', memoryRoutes);
 app.route('/api/skills', skillsRoutes);
+app.route('/api/files', filesRoutes);
 
 // Health check with WebSocket status
 app.get('/api/health', (c) => {
