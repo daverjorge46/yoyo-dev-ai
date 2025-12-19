@@ -20,6 +20,9 @@ import { tasksRoutes } from './routes/tasks.js';
 import { memoryRoutes } from './routes/memory.js';
 import { skillsRoutes } from './routes/skills.js';
 import { filesRoutes } from './routes/files.js';
+import { gitRoutes } from './routes/git.js';
+import { mcpRoutes } from './routes/mcp.js';
+import { executionRoutes } from './routes/execution.js';
 import { wsManager } from './services/websocket.js';
 import { fileWatcher } from './services/file-watcher.js';
 
@@ -88,6 +91,9 @@ app.route('/api/tasks', tasksRoutes);
 app.route('/api/memory', memoryRoutes);
 app.route('/api/skills', skillsRoutes);
 app.route('/api/files', filesRoutes);
+app.route('/api/git', gitRoutes);
+app.route('/api/mcp', mcpRoutes);
+app.route('/api/execution', executionRoutes);
 
 // Health check with WebSocket status
 app.get('/api/health', (c) => {
