@@ -34,6 +34,16 @@ import { fileWatcher } from './services/file-watcher.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // =============================================================================
+// Project Root Configuration
+// =============================================================================
+
+// Initialize project root at module load time from environment variable
+// This MUST happen before routes are registered so middleware applies correctly
+const projectRoot = process.env.YOYO_PROJECT_ROOT ?? process.cwd();
+
+console.log(`[Server] Project root: ${projectRoot}`);
+
+// =============================================================================
 // App Setup
 // =============================================================================
 
@@ -42,9 +52,15 @@ const app = new Hono<{ Variables: Variables }>();
 // Create WebSocket helper
 const { injectWebSocket, upgradeWebSocket } = createNodeWebSocket({ app });
 
-// Middleware
+// Middleware - MUST be registered before routes
 app.use('*', logger());
 app.use('/api/*', cors());
+
+// Project root context middleware - registered before routes so all routes receive it
+app.use('*', async (c, next) => {
+  c.set('projectRoot', projectRoot);
+  await next();
+});
 
 // =============================================================================
 // WebSocket Route
@@ -148,26 +164,20 @@ export interface ServerOptions {
 
 export async function startServer(options: ServerOptions = {}) {
   const port = options.port ?? 3456;
-  // Priority: options > env var > cwd
-  const projectRoot =
-    options.projectRoot ?? process.env.YOYO_PROJECT_ROOT ?? process.cwd();
-
-  // Store project root in context for routes
-  app.use('*', async (c, next) => {
-    c.set('projectRoot', projectRoot);
-    await next();
-  });
+  // Use the module-level projectRoot (already initialized from env var)
+  // options.projectRoot can override if provided programmatically
+  const effectiveProjectRoot = options.projectRoot ?? projectRoot;
 
   console.log(`\n  Yoyo Dev GUI`);
   console.log(`  ============`);
-  console.log(`  Project: ${projectRoot}`);
+  console.log(`  Project: ${effectiveProjectRoot}`);
   console.log(`  Server:  http://localhost:${port}`);
   console.log(`  API:     http://localhost:${port}/api`);
   console.log(`  WS:      ws://localhost:${port}/ws`);
   console.log(`\n  Press Ctrl+C to stop\n`);
 
-  // Start file watcher
-  fileWatcher.start({ projectRoot, debounceMs: 100 });
+  // Start file watcher with the effective project root
+  fileWatcher.start({ projectRoot: effectiveProjectRoot, debounceMs: 100 });
 
   // Create server with WebSocket support
   const server = serve(
