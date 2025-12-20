@@ -319,18 +319,41 @@ show_gui_status() {
     fi
 }
 
+# Kill any existing GUI server on the API port (regardless of project)
+# This ensures we don't have stale servers from other projects blocking the port
+kill_existing_on_port() {
+    local port="$1"
+    local existing_pid
+
+    # Find process listening on the port
+    existing_pid=$(lsof -ti ":$port" 2>/dev/null | head -1)
+
+    if [ -n "$existing_pid" ]; then
+        echo -e "${DIM}Stopping existing server on port $port (PID: $existing_pid)...${RESET}"
+        kill "$existing_pid" 2>/dev/null || true
+        sleep 1
+        # Force kill if still running
+        kill -9 "$existing_pid" 2>/dev/null || true
+        # Clean up any stale PID files
+        rm -f /tmp/yoyo-gui-*.pid 2>/dev/null || true
+    fi
+}
+
 launch_background() {
     local project_root="$1"
     local pid_file
     pid_file=$(get_pid_file)
 
-    # Check if already running
+    # Check if already running FOR THIS PROJECT
     if is_gui_running; then
         local pid
         pid=$(cat "$pid_file" 2>/dev/null)
         echo -e "${DIM}GUI already running (PID: $pid)${RESET}"
         return 0
     fi
+
+    # Kill any existing server on our ports (may be from different project)
+    kill_existing_on_port "$PORT"
 
     cd "$GUI_DIR"
 
