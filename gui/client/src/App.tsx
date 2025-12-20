@@ -165,7 +165,7 @@ function App() {
             {/* Status indicator */}
             <div className="flex items-center gap-4">
               {/* Project status */}
-              {!isLoading && !status?.yoyoDevInstalled && (
+              {!isLoading && !status?.framework?.installed && (
                 <span className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded">
                   Not initialized
                 </span>

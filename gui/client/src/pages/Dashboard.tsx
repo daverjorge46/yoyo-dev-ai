@@ -8,12 +8,24 @@ import { SkillsSummaryCard } from '../components/SkillsSummaryCard';
 import { SkeletonDashboard } from '../components/SkeletonLoader';
 
 interface StatusResponse {
-  projectRoot: string;
-  yoyoDevInstalled: boolean;
-  hasMemorySystem: boolean;
-  hasSkillsSystem: boolean;
-  specsCount: number;
-  activeSpec: string | null;
+  name: string;
+  path: string;
+  framework: {
+    installed: boolean;
+    hasProduct: boolean;
+    specsCount: number;
+    fixesCount: number;
+  };
+  memory: {
+    initialized: boolean;
+    blocksCount: number;
+    databasePath: string | null;
+  };
+  skills: {
+    initialized: boolean;
+    skillsCount: number;
+    databasePath: string | null;
+  };
 }
 
 interface TasksSummary {
@@ -153,11 +165,11 @@ export default function Dashboard() {
         <StatCard
           title="Systems"
           value={
-            (status?.hasMemorySystem ? 1 : 0) + (status?.hasSkillsSystem ? 1 : 0)
+            (status?.memory?.initialized ? 1 : 0) + (status?.skills?.initialized ? 1 : 0)
           }
           subtitle="Memory & Skills"
           icon={Settings}
-          color={status?.hasMemorySystem && status?.hasSkillsSystem ? 'green' : 'yellow'}
+          color={status?.memory?.initialized && status?.skills?.initialized ? 'green' : 'yellow'}
         />
       </div>
 
@@ -204,30 +216,30 @@ export default function Dashboard() {
                 <span className="text-gray-600 dark:text-gray-400">Framework</span>
                 <span
                   className={`badge ${
-                    status?.yoyoDevInstalled ? 'badge-success' : 'badge-error'
+                    status?.framework?.installed ? 'badge-success' : 'badge-error'
                   }`}
                 >
-                  {status?.yoyoDevInstalled ? 'Installed' : 'Not installed'}
+                  {status?.framework?.installed ? 'Installed' : 'Not installed'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Memory</span>
                 <span
                   className={`badge ${
-                    status?.hasMemorySystem ? 'badge-success' : 'badge-neutral'
+                    status?.memory?.initialized ? 'badge-success' : 'badge-neutral'
                   }`}
                 >
-                  {status?.hasMemorySystem ? 'Active' : 'Inactive'}
+                  {status?.memory?.initialized ? 'Active' : 'Inactive'}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-400">Skills</span>
                 <span
                   className={`badge ${
-                    status?.hasSkillsSystem ? 'badge-success' : 'badge-neutral'
+                    status?.skills?.initialized ? 'badge-success' : 'badge-neutral'
                   }`}
                 >
-                  {status?.hasSkillsSystem ? 'Active' : 'Inactive'}
+                  {status?.skills?.initialized ? 'Active' : 'Inactive'}
                 </span>
               </div>
             </div>
@@ -236,16 +248,16 @@ export default function Dashboard() {
             <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
               <span className="text-xs text-gray-500 dark:text-gray-400">Project</span>
               <p className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate mt-0.5">
-                {status?.projectRoot ?? 'Unknown'}
+                {status?.path ?? 'Unknown'}
               </p>
             </div>
 
-            {/* Active Spec */}
-            {status?.activeSpec && (
+            {/* Project Name */}
+            {status?.name && (
               <div className="mt-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Active Spec</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">Name</span>
                 <p className="text-xs text-indigo-600 dark:text-indigo-400 truncate mt-0.5">
-                  {status.activeSpec}
+                  {status.name}
                 </p>
               </div>
             )}
