@@ -135,7 +135,7 @@ export default function Dashboard() {
           Dashboard
         </h1>
         <p className="mt-1 text-gray-600 dark:text-gray-400">
-          Overview of your Yoyo Dev project
+          Overview of {status?.name || 'your project'}
         </p>
       </div>
 
