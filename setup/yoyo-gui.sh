@@ -326,7 +326,7 @@ kill_existing_on_port() {
     local existing_pid
 
     # Find process listening on the port
-    existing_pid=$(lsof -ti ":$port" 2>/dev/null | head -1)
+    existing_pid=$(lsof -ti ":$port" 2>/dev/null | head -1 || true)
 
     if [ -n "$existing_pid" ]; then
         echo -e "${DIM}Stopping existing server on port $port (PID: $existing_pid)...${RESET}"
