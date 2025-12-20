@@ -171,7 +171,7 @@ export async function startServer(options: ServerOptions = {}) {
   console.log(`\n  Yoyo Dev GUI`);
   console.log(`  ============`);
   console.log(`  Project: ${effectiveProjectRoot}`);
-  console.log(`  Server:  http://localhost:${port}`);
+  console.log(`  Server:  http://0.0.0.0:${port} (network accessible)`);
   console.log(`  API:     http://localhost:${port}/api`);
   console.log(`  WS:      ws://localhost:${port}/ws`);
   console.log(`\n  Press Ctrl+C to stop\n`);
@@ -180,13 +180,15 @@ export async function startServer(options: ServerOptions = {}) {
   fileWatcher.start({ projectRoot: effectiveProjectRoot, debounceMs: 100 });
 
   // Create server with WebSocket support
+  // Bind to 0.0.0.0 to allow network access (not just localhost)
   const server = serve(
     {
       fetch: app.fetch,
       port,
+      hostname: '0.0.0.0',
     },
     (info) => {
-      console.log(`  Listening on port ${info.port}`);
+      console.log(`  Listening on ${info.address}:${info.port}`);
     }
   );
 
