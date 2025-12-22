@@ -65,9 +65,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   // Get WebSocket URL
   const getWsUrl = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // In dev mode, Vite proxies /ws to the API server
-    const host = window.location.host;
-    return `${protocol}//${host}/ws`;
+    // In dev mode (port 5173), connect directly to API server (port 3456)
+    // Vite's WebSocket proxy is unreliable, so bypass it
+    const isDev = window.location.port === '5173';
+    if (isDev) {
+      return `${protocol}//${window.location.hostname}:3456/ws`;
+    }
+    // In production, use same host (API server serves both)
+    return `${protocol}//${window.location.host}/ws`;
   }, []);
 
   // Handle incoming messages

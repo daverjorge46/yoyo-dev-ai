@@ -103,9 +103,9 @@ export function MCPStatusCard() {
       {/* Server List */}
       {mcp.servers.length > 0 ? (
         <div className="space-y-1.5">
-          {mcp.servers.map((server) => (
+          {mcp.servers.map((server, index) => (
             <div
-              key={server.name}
+              key={server.name || `server-${index}`}
               className="flex items-center justify-between text-sm py-1.5 px-2 bg-gray-50 dark:bg-gray-700/50 rounded"
             >
               <div className="flex items-center gap-2">
