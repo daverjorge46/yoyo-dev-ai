@@ -3,6 +3,10 @@
  *
  * React hook for WebSocket connection with auto-reconnect.
  * Uses exponential backoff for reconnection attempts.
+ *
+ * IMPORTANT: This hook uses refs for callbacks to prevent unnecessary
+ * reconnections when callbacks change. The connection lifecycle is
+ * independent of callback updates.
  */
 
 import { useEffect, useRef, useState, useCallback } from 'react';
@@ -55,14 +59,47 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [clientId, setClientId] = useState<string | null>(null);
 
+  // WebSocket and timer refs
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectAttempts = useRef(0);
   const reconnectTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isConnecting = useRef(false);
+  const isMounted = useRef(true);
+
+  // Callback refs - allows callbacks to update without triggering reconnection
+  const onMessageRef = useRef(onMessage);
+  const onConnectRef = useRef(onConnect);
+  const onDisconnectRef = useRef(onDisconnect);
+
+  // Config refs - allows config to update without triggering reconnection
+  const autoReconnectRef = useRef(autoReconnect);
+  const maxReconnectAttemptsRef = useRef(maxReconnectAttempts);
 
   const queryClient = useQueryClient();
 
-  // Get WebSocket URL
+  // Update callback refs when callbacks change (no effect re-run)
+  useEffect(() => {
+    onMessageRef.current = onMessage;
+  }, [onMessage]);
+
+  useEffect(() => {
+    onConnectRef.current = onConnect;
+  }, [onConnect]);
+
+  useEffect(() => {
+    onDisconnectRef.current = onDisconnect;
+  }, [onDisconnect]);
+
+  useEffect(() => {
+    autoReconnectRef.current = autoReconnect;
+  }, [autoReconnect]);
+
+  useEffect(() => {
+    maxReconnectAttemptsRef.current = maxReconnectAttempts;
+  }, [maxReconnectAttempts]);
+
+  // Get WebSocket URL - stable, no dependencies
   const getWsUrl = useCallback(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     // In dev mode (port 5173), connect directly to API server (port 3456)
@@ -75,71 +112,6 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     return `${protocol}//${window.location.host}/ws`;
   }, []);
 
-  // Handle incoming messages
-  const handleMessage = useCallback(
-    (event: MessageEvent) => {
-      try {
-        const message: WSMessage = JSON.parse(event.data);
-
-        // Handle connection confirmation
-        if (message.type === 'connected' && message.payload?.clientId) {
-          setClientId(message.payload.clientId as string);
-        }
-
-        // Handle pong (connection is alive)
-        if (message.type === 'pong') {
-          return;
-        }
-
-        // Invalidate React Query caches based on message type
-        switch (message.type) {
-          case 'file:changed':
-          case 'file:created':
-          case 'file:deleted': {
-            const path = message.payload?.path;
-            if (path) {
-              // Invalidate relevant queries based on path
-              if (path.includes('/specs/')) {
-                queryClient.invalidateQueries({ queryKey: ['specs'] });
-                queryClient.invalidateQueries({ queryKey: ['tasks'] });
-              }
-              if (path.includes('/fixes/')) {
-                queryClient.invalidateQueries({ queryKey: ['fixes'] });
-              }
-              if (path.includes('/memory/')) {
-                queryClient.invalidateQueries({ queryKey: ['memory'] });
-              }
-            }
-            break;
-          }
-          case 'spec:updated':
-            queryClient.invalidateQueries({ queryKey: ['specs'] });
-            queryClient.invalidateQueries({ queryKey: ['tasks'] });
-            break;
-          case 'fix:updated':
-            queryClient.invalidateQueries({ queryKey: ['fixes'] });
-            break;
-          case 'task:updated':
-            queryClient.invalidateQueries({ queryKey: ['tasks'] });
-            break;
-          case 'execution:progress':
-            queryClient.invalidateQueries({ queryKey: ['execution'] });
-            queryClient.invalidateQueries({ queryKey: ['status'] });
-            break;
-          case 'system:status':
-            queryClient.invalidateQueries({ queryKey: ['status'] });
-            break;
-        }
-
-        // Call custom message handler
-        onMessage?.(message);
-      } catch (err) {
-        console.error('[WS] Failed to parse message:', err);
-      }
-    },
-    [queryClient, onMessage]
-  );
-
   // Calculate reconnect delay with exponential backoff
   const getReconnectDelay = useCallback(() => {
     const baseDelay = 1000; // 1 second
@@ -148,11 +120,24 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     return delay;
   }, []);
 
-  // Connect to WebSocket
+  // Connect to WebSocket - stable function that reads from refs
   const connect = useCallback(() => {
+    // Prevent concurrent connection attempts
+    if (isConnecting.current) {
+      return;
+    }
+
+    // Don't connect if already connected
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       return;
     }
+
+    // Don't connect if component is unmounted
+    if (!isMounted.current) {
+      return;
+    }
+
+    isConnecting.current = true;
 
     const url = getWsUrl();
     console.log('[WS] Connecting to:', url);
@@ -161,10 +146,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       wsRef.current = new WebSocket(url);
 
       wsRef.current.onopen = () => {
+        if (!isMounted.current) return;
+
         console.log('[WS] Connected');
+        isConnecting.current = false;
         setStatus('connected');
         reconnectAttempts.current = 0;
-        onConnect?.();
+
+        // Call callback from ref
+        onConnectRef.current?.();
 
         // Start ping interval to keep connection alive
         pingInterval.current = setInterval(() => {
@@ -174,13 +164,79 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         }, 25000); // Ping every 25 seconds
       };
 
-      wsRef.current.onmessage = handleMessage;
+      wsRef.current.onmessage = (event: MessageEvent) => {
+        if (!isMounted.current) return;
+
+        try {
+          const message: WSMessage = JSON.parse(event.data);
+
+          // Handle connection confirmation
+          if (message.type === 'connected' && message.payload?.clientId) {
+            setClientId(message.payload.clientId as string);
+          }
+
+          // Handle pong (connection is alive)
+          if (message.type === 'pong') {
+            return;
+          }
+
+          // Invalidate React Query caches based on message type
+          switch (message.type) {
+            case 'file:changed':
+            case 'file:created':
+            case 'file:deleted': {
+              const path = message.payload?.path;
+              if (path) {
+                // Invalidate relevant queries based on path
+                if (path.includes('/specs/')) {
+                  queryClient.invalidateQueries({ queryKey: ['specs'] });
+                  queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                }
+                if (path.includes('/fixes/')) {
+                  queryClient.invalidateQueries({ queryKey: ['fixes'] });
+                }
+                if (path.includes('/memory/')) {
+                  queryClient.invalidateQueries({ queryKey: ['memory'] });
+                }
+              }
+              break;
+            }
+            case 'spec:updated':
+              queryClient.invalidateQueries({ queryKey: ['specs'] });
+              queryClient.invalidateQueries({ queryKey: ['tasks'] });
+              break;
+            case 'fix:updated':
+              queryClient.invalidateQueries({ queryKey: ['fixes'] });
+              break;
+            case 'task:updated':
+              queryClient.invalidateQueries({ queryKey: ['tasks'] });
+              break;
+            case 'execution:progress':
+              queryClient.invalidateQueries({ queryKey: ['execution'] });
+              queryClient.invalidateQueries({ queryKey: ['status'] });
+              break;
+            case 'system:status':
+              queryClient.invalidateQueries({ queryKey: ['status'] });
+              break;
+          }
+
+          // Call custom message handler from ref
+          onMessageRef.current?.(message);
+        } catch (err) {
+          console.error('[WS] Failed to parse message:', err);
+        }
+      };
 
       wsRef.current.onclose = (event) => {
+        if (!isMounted.current) return;
+
         console.log('[WS] Disconnected:', event.code, event.reason);
+        isConnecting.current = false;
         setStatus('disconnected');
         setClientId(null);
-        onDisconnect?.();
+
+        // Call callback from ref
+        onDisconnectRef.current?.();
 
         // Clear ping interval
         if (pingInterval.current) {
@@ -188,8 +244,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
           pingInterval.current = null;
         }
 
-        // Attempt reconnection if enabled
-        if (autoReconnect && reconnectAttempts.current < maxReconnectAttempts) {
+        // Attempt reconnection if enabled (read from refs)
+        if (autoReconnectRef.current && reconnectAttempts.current < maxReconnectAttemptsRef.current) {
           const delay = getReconnectDelay();
           console.log(`[WS] Reconnecting in ${delay}ms (attempt ${reconnectAttempts.current + 1})`);
           setStatus('reconnecting');
@@ -203,12 +259,14 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
       wsRef.current.onerror = (error) => {
         console.error('[WS] Error:', error);
+        isConnecting.current = false;
       };
     } catch (err) {
       console.error('[WS] Failed to create WebSocket:', err);
+      isConnecting.current = false;
       setStatus('disconnected');
     }
-  }, [getWsUrl, handleMessage, onConnect, onDisconnect, autoReconnect, maxReconnectAttempts, getReconnectDelay]);
+  }, [getWsUrl, getReconnectDelay, queryClient]);
 
   // Send message
   const send = useCallback((message: WSMessage) => {
@@ -227,32 +285,40 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       reconnectTimeout.current = null;
     }
 
-    // Close existing connection
+    // Close existing connection with proper code
     if (wsRef.current) {
-      wsRef.current.close();
+      wsRef.current.close(1000, 'Manual reconnect');
       wsRef.current = null;
     }
 
-    // Reset attempts and connect
+    // Reset state
+    isConnecting.current = false;
     reconnectAttempts.current = 0;
     setStatus('connecting');
     connect();
   }, [connect]);
 
-  // Connect on mount
+  // Connect on mount - empty dependency array for single connection
   useEffect(() => {
+    isMounted.current = true;
     connect();
 
     return () => {
+      // Mark as unmounted to prevent state updates
+      isMounted.current = false;
+
       // Cleanup on unmount
       if (reconnectTimeout.current) {
         clearTimeout(reconnectTimeout.current);
+        reconnectTimeout.current = null;
       }
       if (pingInterval.current) {
         clearInterval(pingInterval.current);
+        pingInterval.current = null;
       }
       if (wsRef.current) {
-        wsRef.current.close();
+        // Use proper close code for clean shutdown
+        wsRef.current.close(1000, 'Component unmount');
         wsRef.current = null;
       }
     };

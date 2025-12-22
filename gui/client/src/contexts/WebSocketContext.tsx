@@ -2,9 +2,10 @@
  * WebSocket Context
  *
  * Provides WebSocket connection state to the entire app.
+ * Callbacks are memoized to prevent unnecessary reconnections.
  */
 
-import { createContext, useContext, type ReactNode } from 'react';
+import { createContext, useContext, useCallback, type ReactNode } from 'react';
 import { useWebSocket, type ConnectionStatus, type WSMessage } from '../hooks/useWebSocket';
 
 interface WebSocketContextValue {
@@ -21,19 +22,27 @@ interface WebSocketProviderProps {
 }
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
+  // Memoize callbacks to prevent unnecessary hook re-runs
+  // Note: With the new ref-based hook, this is optional but good practice
+  const handleConnect = useCallback(() => {
+    console.log('[App] WebSocket connected');
+  }, []);
+
+  const handleDisconnect = useCallback(() => {
+    console.log('[App] WebSocket disconnected');
+  }, []);
+
+  const handleMessage = useCallback((message: WSMessage) => {
+    // Log non-pong messages for debugging
+    if (message.type !== 'pong' && message.type !== 'connected') {
+      console.log('[App] WebSocket message:', message.type, message.payload?.path || '');
+    }
+  }, []);
+
   const ws = useWebSocket({
-    onConnect: () => {
-      console.log('[App] WebSocket connected');
-    },
-    onDisconnect: () => {
-      console.log('[App] WebSocket disconnected');
-    },
-    onMessage: (message) => {
-      // Log non-pong messages for debugging
-      if (message.type !== 'pong' && message.type !== 'connected') {
-        console.log('[App] WebSocket message:', message.type, message.payload?.path || '');
-      }
-    },
+    onConnect: handleConnect,
+    onDisconnect: handleDisconnect,
+    onMessage: handleMessage,
   });
 
   return (
