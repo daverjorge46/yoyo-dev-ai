@@ -27,7 +27,8 @@ readonly USER_PROJECT_DIR="$(pwd)"
 
 # GUI options
 GUI_ENABLED=true
-GUI_PORT=3456
+GUI_PORT=5173  # Vite dev server port (dev mode default)
+GUI_DEV_MODE=true  # Use dev mode by default
 
 # Determine script directory (resolve symlinks to get actual script location)
 SCRIPT_PATH="${BASH_SOURCE[0]}"
@@ -142,17 +143,33 @@ is_gui_running() {
 
 # Start GUI server in background
 start_gui_background() {
+    local gui_args="--background --no-open"
+
+    # Add dev mode flag if enabled
+    if [ "$GUI_DEV_MODE" = true ]; then
+        gui_args="$gui_args --dev"
+    else
+        gui_args="$gui_args --port $GUI_PORT"
+    fi
+
     # Check if yoyo-gui command exists
     if ! command -v yoyo-gui &> /dev/null; then
         # Try direct path
         if [ -f "$YOYO_INSTALL_DIR/setup/yoyo-gui.sh" ]; then
-            bash "$YOYO_INSTALL_DIR/setup/yoyo-gui.sh" --background --no-open --port "$GUI_PORT"
+            bash "$YOYO_INSTALL_DIR/setup/yoyo-gui.sh" $gui_args
         else
             echo -e "${DIM}GUI not available (yoyo-gui not found)${RESET}"
             return 1
         fi
     else
-        yoyo-gui --background --no-open --port "$GUI_PORT"
+        yoyo-gui $gui_args
+    fi
+
+    # Show GUI URL to user
+    if [ "$GUI_DEV_MODE" = true ]; then
+        echo -e "${GREEN}GUI started${RESET} at ${CYAN}http://localhost:5173${RESET}"
+    else
+        echo -e "${GREEN}GUI started${RESET} at ${CYAN}http://localhost:$GUI_PORT${RESET}"
     fi
 }
 
@@ -415,7 +432,7 @@ show_help() {
     echo ""
     echo -e "${BOLD}Yoyo Launcher:${RESET}"
     echo ""
-    echo -e "  ${GREEN}yoyo${RESET}                         Launch TUI + Claude + GUI (default)"
+    echo -e "  ${GREEN}yoyo${RESET}                         Launch TUI + Claude + GUI (dev mode, port 5173)"
     echo -e "  ${GREEN}yoyo --no-gui${RESET}                Launch TUI + Claude without GUI"
     echo -e "  ${GREEN}yoyo --no-split${RESET}              Launch TUI only (no Claude, no GUI)"
     echo -e "  ${GREEN}yoyo --split-ratio 50${RESET}        Custom split ratio (10-90, percentage for TUI)"
@@ -427,9 +444,9 @@ show_help() {
     echo ""
     echo -e "${BOLD}Browser GUI (standalone):${RESET}"
     echo ""
-    echo -e "  ${GREEN}yoyo-gui${RESET}                     Launch browser-based GUI standalone"
-    echo -e "  ${GREEN}yoyo-gui --dev${RESET}               Development mode with hot reload"
-    echo -e "  ${GREEN}yoyo-gui --port 8080${RESET}         Use custom port"
+    echo -e "  ${GREEN}yoyo-gui${RESET}                     Launch browser-based GUI (production)"
+    echo -e "  ${GREEN}yoyo-gui --dev${RESET}               Development mode with hot reload (port 5173)"
+    echo -e "  ${GREEN}yoyo-gui --port 8080${RESET}         Use custom port (production mode)"
     echo ""
     echo -e "${BOLD}Other Commands:${RESET}"
     echo ""
@@ -861,7 +878,11 @@ main() {
             # Check if GUI server is running
             if is_gui_running; then
                 echo -e "${GREEN}✅ GUI server is running${RESET}"
-                echo "   URL: http://localhost:$GUI_PORT"
+                if [ "$GUI_DEV_MODE" = true ]; then
+                    echo "   URL: http://localhost:5173"
+                else
+                    echo "   URL: http://localhost:$GUI_PORT"
+                fi
             else
                 echo -e "${DIM}GUI server is not running${RESET}"
             fi
