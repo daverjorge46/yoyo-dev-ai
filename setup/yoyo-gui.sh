@@ -355,6 +355,11 @@ launch_background() {
     # Kill any existing server on our ports (may be from different project)
     kill_existing_on_port "$PORT"
 
+    # In dev mode, also kill any existing Vite dev server on port 5173
+    if [ "$DEV_MODE" = true ]; then
+        kill_existing_on_port "$DEV_PORT"
+    fi
+
     cd "$GUI_DIR"
 
     # Set environment variables
