@@ -76,7 +76,9 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   const autoReconnectRef = useRef(autoReconnect);
   const maxReconnectAttemptsRef = useRef(maxReconnectAttempts);
 
+  // QueryClient ref - allows queryClient to be used in connect without causing reconnections
   const queryClient = useQueryClient();
+  const queryClientRef = useRef(queryClient);
 
   // Update callback refs when callbacks change (no effect re-run)
   useEffect(() => {
@@ -98,6 +100,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
   useEffect(() => {
     maxReconnectAttemptsRef.current = maxReconnectAttempts;
   }, [maxReconnectAttempts]);
+
+  // Update queryClient ref when it changes (should be stable, but defensive)
+  useEffect(() => {
+    queryClientRef.current = queryClient;
+  }, [queryClient]);
 
   // Get WebSocket URL - stable, no dependencies
   const getWsUrl = useCallback(() => {
@@ -181,6 +188,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
           }
 
           // Invalidate React Query caches based on message type
+          // Use queryClientRef to avoid dependency on queryClient
+          const qc = queryClientRef.current;
           switch (message.type) {
             case 'file:changed':
             case 'file:created':
@@ -189,34 +198,34 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
               if (path) {
                 // Invalidate relevant queries based on path
                 if (path.includes('/specs/')) {
-                  queryClient.invalidateQueries({ queryKey: ['specs'] });
-                  queryClient.invalidateQueries({ queryKey: ['tasks'] });
+                  qc.invalidateQueries({ queryKey: ['specs'] });
+                  qc.invalidateQueries({ queryKey: ['tasks'] });
                 }
                 if (path.includes('/fixes/')) {
-                  queryClient.invalidateQueries({ queryKey: ['fixes'] });
+                  qc.invalidateQueries({ queryKey: ['fixes'] });
                 }
                 if (path.includes('/memory/')) {
-                  queryClient.invalidateQueries({ queryKey: ['memory'] });
+                  qc.invalidateQueries({ queryKey: ['memory'] });
                 }
               }
               break;
             }
             case 'spec:updated':
-              queryClient.invalidateQueries({ queryKey: ['specs'] });
-              queryClient.invalidateQueries({ queryKey: ['tasks'] });
+              qc.invalidateQueries({ queryKey: ['specs'] });
+              qc.invalidateQueries({ queryKey: ['tasks'] });
               break;
             case 'fix:updated':
-              queryClient.invalidateQueries({ queryKey: ['fixes'] });
+              qc.invalidateQueries({ queryKey: ['fixes'] });
               break;
             case 'task:updated':
-              queryClient.invalidateQueries({ queryKey: ['tasks'] });
+              qc.invalidateQueries({ queryKey: ['tasks'] });
               break;
             case 'execution:progress':
-              queryClient.invalidateQueries({ queryKey: ['execution'] });
-              queryClient.invalidateQueries({ queryKey: ['status'] });
+              qc.invalidateQueries({ queryKey: ['execution'] });
+              qc.invalidateQueries({ queryKey: ['status'] });
               break;
             case 'system:status':
-              queryClient.invalidateQueries({ queryKey: ['status'] });
+              qc.invalidateQueries({ queryKey: ['status'] });
               break;
           }
 
@@ -266,7 +275,8 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
       isConnecting.current = false;
       setStatus('disconnected');
     }
-  }, [getWsUrl, getReconnectDelay, queryClient]);
+    // Dependencies: only stable functions. queryClient accessed via ref.
+  }, [getWsUrl, getReconnectDelay]);
 
   // Send message
   const send = useCallback((message: WSMessage) => {
@@ -298,10 +308,17 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     connect();
   }, [connect]);
 
-  // Connect on mount - empty dependency array for single connection
+  // Store connect function in ref to call from mount effect without dependency
+  const connectRef = useRef(connect);
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
+
+  // Connect on mount - empty dependency array ensures single connection
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     isMounted.current = true;
-    connect();
+    connectRef.current();
 
     return () => {
       // Mark as unmounted to prevent state updates
@@ -322,7 +339,7 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         wsRef.current = null;
       }
     };
-  }, [connect]);
+  }, []);
 
   return {
     status,

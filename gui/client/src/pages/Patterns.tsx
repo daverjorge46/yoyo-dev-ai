@@ -83,7 +83,7 @@ const categoryColors: Record<string, { bg: string; text: string; border: string 
 };
 
 function getCategoryColor(category: string) {
-  return categoryColors[category.toLowerCase()] || categoryColors.general;
+  return categoryColors[(category || 'general').toLowerCase()] || categoryColors.general;
 }
 
 // =============================================================================

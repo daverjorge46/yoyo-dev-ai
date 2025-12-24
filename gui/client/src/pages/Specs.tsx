@@ -134,7 +134,7 @@ function StatusBadge({ status }: { status: string }) {
     },
   };
 
-  const { className, label } = config[status.toLowerCase()] || config.draft;
+  const { className, label } = config[(status || 'draft').toLowerCase()] || config.draft;
 
   return (
     <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${className}`}>
