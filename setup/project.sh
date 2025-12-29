@@ -9,7 +9,9 @@ set -e  # Exit on error
 # Load UI Library
 # ============================================================================
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# Resolve symlink to get actual script location
+SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
     # Fallback if UI library not available
     UI_PRIMARY='\033[0;36m'
