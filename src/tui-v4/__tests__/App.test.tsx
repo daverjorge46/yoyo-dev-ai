@@ -46,12 +46,14 @@ describe('App Component', () => {
     expect(afterResize).toBeTruthy();
   });
 
-  it('displays placeholder content initially', () => {
+  it('displays logo and placeholder content initially', () => {
     const { lastFrame } = render(<App />);
 
     const output = lastFrame();
-    // Should show initial placeholder
-    expect(output).toContain('TUI v4');
+    // Should show Yoyo Dev logo and branding
+    expect(output).toContain('Yoyo Dev');
+    // Should show task panels with placeholders
+    expect(output).toContain('Task');
   });
 
   it('maintains state across renders', () => {
