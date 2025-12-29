@@ -60,8 +60,10 @@ function loadJsonConfig(path: string): Partial<CLIConfig> | null {
   try {
     const content = readFileSync(path, 'utf-8');
     return JSON.parse(content) as Partial<CLIConfig>;
-  } catch {
-    // Silently ignore invalid JSON
+  } catch (error) {
+    // Log error to help users debug config issues
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.warn(`Warning: Failed to load config from ${path}: ${errorMessage}`);
     return null;
   }
 }
