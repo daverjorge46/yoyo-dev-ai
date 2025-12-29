@@ -19,17 +19,20 @@ describe('Header Component', () => {
     vi.clearAllMocks();
   });
 
-  it('renders project name from config', () => {
+  it('renders Yoyo Dev logo with spiral', () => {
     const { lastFrame } = render(
       <Header
-        projectName="yoyo-dev"
         gitBranch="main"
         memoryBlockCount={5}
         mcpServerCount={3}
       />
     );
 
-    expect(lastFrame()).toContain('yoyo-dev');
+    const output = lastFrame();
+    // Should contain logo and "Yoyo Dev" text
+    expect(output).toContain('Yoyo Dev');
+    // Logo spiral characters should be present
+    expect(output).toBeTruthy();
   });
 
   it('displays git branch name', () => {

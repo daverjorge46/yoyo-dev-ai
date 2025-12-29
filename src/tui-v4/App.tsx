@@ -98,9 +98,8 @@ export const App: React.FC = () => {
 
   return (
     <Box flexDirection="column" height={height}>
-      {/* Header: Project info, git, memory, MCP */}
+      {/* Header: Spiral logo, project info, git, memory, MCP */}
       <Header
-        projectName="Yoyo Dev TUI v4"
         gitBranch="main"
         memoryBlockCount={0}
         mcpServerCount={0}

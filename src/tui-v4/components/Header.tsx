@@ -12,9 +12,10 @@ import React from 'react';
 import { Box, Text } from 'ink';
 import { textStyles, gitStyles } from '../theme/styles.js';
 import { semanticColors } from '../theme/colors.js';
+import { Logo } from './Logo.js';
 
 export interface HeaderProps {
-  projectName: string;
+  projectName?: string;  // Optional, Logo component includes "Yoyo Dev" text
   gitBranch: string | null;
   memoryBlockCount: number;
   mcpServerCount: number;
@@ -35,11 +36,14 @@ export const Header: React.FC<HeaderProps> = ({
       borderStyle="round"
       borderColor={semanticColors.border}
     >
-      {/* Left: Project name */}
+      {/* Left: Spiral Logo + Project name */}
       <Box>
-        <Text bold color={textStyles.title.color}>
-          {projectName}
-        </Text>
+        <Logo variant="compact" showText={true} />
+        {projectName && projectName !== 'Yoyo Dev' && (
+          <Text dimColor color={textStyles.secondary.color}>
+            {' '}• {projectName}
+          </Text>
+        )}
       </Box>
 
       {/* Center: Git branch */}
