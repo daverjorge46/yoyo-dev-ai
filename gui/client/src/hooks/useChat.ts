@@ -49,7 +49,7 @@ export interface UseChatReturn {
   /** Current error, if any */
   error: Error | null;
   /** Send a new message */
-  sendMessage: (content: string) => Promise<void>;
+  sendMessage: (content: string) => void;
   /** Clear all messages */
   clearHistory: () => void;
   /** Retry last failed message */
@@ -190,7 +190,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
 
   // Send message
   const sendMessage = useCallback(
-    async (content: string) => {
+    (content: string) => {
       const trimmedContent = content.trim();
       if (!trimmedContent) return;
 
@@ -205,8 +205,8 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       setMessages((prev) => [...prev, userMessage]);
       setError(null);
 
-      // Send to API
-      await mutation.mutateAsync(trimmedContent);
+      // Send to API (use mutate instead of mutateAsync to avoid unhandled rejections)
+      mutation.mutate(trimmedContent);
     },
     [mutation]
   );

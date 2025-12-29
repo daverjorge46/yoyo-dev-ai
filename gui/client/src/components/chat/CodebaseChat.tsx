@@ -57,13 +57,13 @@ export function CodebaseChat({ className = '' }: CodebaseChatProps) {
 
   // Handle form submission
   const handleSubmit = useCallback(
-    async (e: React.FormEvent) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
       if (!input.trim() || isLoading) return;
 
       const message = input;
       setInput('');
-      await sendMessage(message);
+      sendMessage(message);
     },
     [input, isLoading, sendMessage]
   );

@@ -284,7 +284,10 @@ describe('ChatMessage', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByText(/10:30/)).toBeInTheDocument();
+      // Check that a time element exists with the correct datetime attribute
+      const timeElement = screen.getByRole('time');
+      expect(timeElement).toBeInTheDocument();
+      expect(timeElement).toHaveAttribute('datetime', timestamp.toISOString());
     });
   });
 
@@ -546,9 +549,13 @@ describe('CodebaseChat', () => {
       const sendButton = screen.getByRole('button', { name: /send/i });
       await userEvent.click(sendButton);
 
-      await waitFor(() => {
-        expect(screen.getByText(/error|failed/i)).toBeInTheDocument();
-      });
+      // Wait for the mutation to fail and error state to be set
+      await waitFor(
+        () => {
+          expect(screen.getByText(/Failed to get response/i)).toBeInTheDocument();
+        },
+        { timeout: 3000 }
+      );
     });
   });
 
