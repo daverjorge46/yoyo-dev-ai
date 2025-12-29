@@ -15,8 +15,9 @@ import { stateEvents, StateEvent } from './state-manager.js';
 // Configuration
 // =============================================================================
 
-const PORT = 3457;
-const HEARTBEAT_INTERVAL = 30000; // 30 seconds
+const DEFAULT_PORT = 3457;
+const DEFAULT_HOST = 'localhost';
+const DEFAULT_HEARTBEAT_INTERVAL = 30000; // 30 seconds
 
 // =============================================================================
 // WebSocket Server
@@ -27,6 +28,15 @@ export class BackendServer {
   private httpServer: ReturnType<typeof createServer> | null = null;
   private clients: Set<WebSocket> = new Set();
   private heartbeatInterval: NodeJS.Timeout | null = null;
+  private host: string;
+  private port: number;
+  private heartbeatMs: number;
+
+  constructor(host: string = DEFAULT_HOST, port: number = DEFAULT_PORT, heartbeatMs: number = DEFAULT_HEARTBEAT_INTERVAL) {
+    this.host = host;
+    this.port = port;
+    this.heartbeatMs = heartbeatMs;
+  }
 
   /**
    * Start the WebSocket server
@@ -60,8 +70,8 @@ export class BackendServer {
         });
 
         // Start HTTP server
-        this.httpServer.listen(PORT, () => {
-          console.log(`[Backend] WebSocket server running on port ${PORT}`);
+        this.httpServer.listen(this.port, this.host, () => {
+          console.log(`[Backend] WebSocket server running on port ${this.port}`);
           this.setupStateEventListeners();
           this.startHeartbeat();
           resolve();
@@ -232,6 +242,10 @@ export class BackendServer {
     stateEvents.on('memory_status', (data) => {
       this.broadcast({ type: 'memory_status', payload: data });
     });
+
+    stateEvents.on('execution_log', (data) => {
+      this.broadcast({ type: 'execution_log', payload: data });
+    });
   }
 
   /**
@@ -248,7 +262,7 @@ export class BackendServer {
         (ws as any).isAlive = false;
         ws.ping();
       });
-    }, HEARTBEAT_INTERVAL);
+    }, this.heartbeatMs);
   }
 
   /**

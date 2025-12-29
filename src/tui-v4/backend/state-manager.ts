@@ -99,7 +99,8 @@ export type StateEvent =
   | 'spec_changed'
   | 'git_status'
   | 'mcp_status'
-  | 'memory_status';
+  | 'memory_status'
+  | 'execution_log';
 
 // =============================================================================
 // Zustand Store
@@ -139,6 +140,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setSpecs: (specs) => {
     set({ specs });
+    stateEvents.emit('spec_changed', { specs });
   },
 
   // Git state
