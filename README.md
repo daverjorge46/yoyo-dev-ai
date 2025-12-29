@@ -1,32 +1,54 @@
-# Yoyo Dev v3.1 - AI-Assisted Development Framework
+# Yoyo Dev v5.0 - AI-Assisted Development Framework
 
 **"Powerful when you need it. Invisible when you don't."**
 
-Production-grade intelligent TUI dashboard for AI-assisted software development with Claude Code.
+Multi-agent orchestration system for AI-assisted software development with Claude Code.
 
-## What's New in v3.1
+---
+
+## 🎯 What's New in v5.0
+
+### Multi-Agent Orchestration System
+
+**Yoyo-AI Primary Orchestrator**
+- Intelligent task delegation to specialized agents
+- Automatic intent classification (Planning, Implementation, Research, Debug)
+- Parallel background task execution
+- Failure recovery with automatic Oracle escalation
+- Todo-driven workflow with progress tracking
+
+**Specialized Agents**
+- **Oracle** - Strategic advisor for architecture and debugging (0.1 temperature)
+- **Librarian** - External research specialist (documentation, GitHub, web)
+- **Explore** - Internal codebase search and pattern matching
+- **Frontend Engineer** - UI/UX specialist with automatic delegation
+- **Document Writer** - Technical documentation specialist
+- **Implementer** - TDD-based code implementation
+
+**New Commands**
+- `/research <topic>` - Background research with librarian agent
+- `/consult-oracle <question>` - Strategic guidance from Oracle
+- `/execute-tasks --orchestrator yoyo-ai` - Multi-agent task execution (default)
+
+**Intelligent Features**
+- 🤖 Auto-detect frontend work → delegate to frontend-engineer
+- 🔄 Parallel research while you continue working
+- 📊 Todo-driven workflow with immediate completion tracking
+- 🚨 3-failure escalation to Oracle for debugging
+- ⚡ 60% faster feature creation with parallel execution
+
+### Previous Features (v3.1-v4.0)
 
 **Split View Mode**
-- Integrated Claude Code CLI + TUI dashboard in split screen
-- 40/60 default split ratio (configurable)
-- Independent pane operation with keyboard shortcuts
-- Auto-fallback to TUI-only if Claude not installed
+- Integrated Claude Code CLI + TUI dashboard
+- 40/60 split ratio (configurable)
+- Independent pane operation
 
-**MCP Server Integration**
-- 6 MCP servers auto-installed (context7, memory, playwright, containerization, chrome-devtools, shadcn)
-- Automatic installation during project setup
-- MCP health monitoring in TUI dashboard
-
-**Performance Optimizations**
+**Performance & Design**
 - 97% faster startup (9ms vs 300ms)
-- 94% faster status refresh (3ms vs 50ms)
-- Smart caching for frequently-accessed data
-
-**Design System**
-- Professional UI consistency
 - WCAG AA accessibility compliance
-- Design token system
-- Automated validation
+- Professional design system
+- Smart caching
 
 ---
 
@@ -35,10 +57,10 @@ Production-grade intelligent TUI dashboard for AI-assisted software development 
 ### Quick Install
 
 ```bash
-# Install in current project
+# Install in current project (recommended)
 curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/project.sh | bash -s -- --no-base --claude-code
 
-# OR if you have a base installation
+# OR if you have base installation
 ~/.yoyo-dev/setup/project.sh --claude-code
 ```
 
@@ -46,137 +68,94 @@ curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/pr
 
 | Flag | Description |
 |------|-------------|
-| `--claude-code` | Install Claude Code commands and agents (required) |
-| `--cursor` | Also install Cursor IDE rules |
-| `--no-base` | Install directly from GitHub (no base installation needed) |
+| `--claude-code` | Install Claude Code integration (required) |
+| `--cursor` | Also install Cursor IDE support |
+| `--no-base` | Install from GitHub without base installation |
 | `--project-type=TYPE` | Use specific project configuration |
-| `--overwrite-instructions` | Overwrite existing instruction files |
-| `--overwrite-standards` | Overwrite existing standards files |
+| `--overwrite-instructions` | Overwrite existing instructions |
+| `--overwrite-standards` | Overwrite existing standards |
 
 ### Install Global Command
 
-After project installation, install the global `yoyo` command:
-
 ```bash
-# Install global command (works from any project directory)
+# After project installation, make 'yoyo' work globally
 bash .yoyo-dev/setup/install-global-command.sh
 ```
 
-This creates a global `yoyo` command that works from any Yoyo Dev project.
+### MCP Server Setup
 
-### MCP Server Installation
-
-Yoyo Dev uses Docker MCP Gateway to provide containerized MCP servers:
-
-| Server | Purpose |
-|--------|---------|
-| playwright | Browser automation and testing |
-| github-official | GitHub repository management |
-| duckduckgo | Web search integration |
-| filesystem | File system access |
-
-**Manual Installation:**
+**Docker MCP Gateway** (recommended):
 
 ```bash
 # Install Docker MCP servers
 ~/.yoyo-dev/setup/docker-mcp-setup.sh
 
-# Verify installation
+# Verify
 docker mcp server ls
 ```
+
+**MCP Servers:**
+- **playwright** - Browser automation and testing
+- **github-official** - GitHub repository management
+- **duckduckgo** - Web search integration
+- **filesystem** - File system access
 
 **Requirements:**
 - Docker Desktop 4.32+ with MCP Toolkit enabled
 - Claude Code CLI installed
 
+📖 **Detailed Guide:** See [MCP Setup Guide](docs/installation/mcp-setup.md)
+
 ---
 
-## Getting Started
+## 🚀 Getting Started
 
-### Launch TUI Dashboard
+### Launch Dashboard
 
 ```bash
-# Launch production TUI v3.0 with split view (default)
+# Launch TUI + Claude + GUI (default in v4.0+)
 yoyo
 
-# Launch TUI only (no split view)
+# Launch TUI + Claude without GUI
+yoyo --no-gui
+
+# Launch TUI only (no Claude, no GUI)
 yoyo --no-split
 
-# Launch with custom split ratio
-yoyo --split-ratio 0.5  # 50/50 split
+# Custom split ratio
+yoyo --split-ratio 0.5
 
-# Start with TUI focused (default is Claude focused)
-yoyo --focus tui
-
-# OR from project directory
-bash .yoyo-dev/setup/yoyo.sh
+# Stop background GUI server
+yoyo --stop-gui
 ```
 
-### Split View Mode (New in v3.1)
+### Quick Start Guide
 
-**Integrated Claude Code + TUI Dashboard:**
+**5 minutes to your first feature:**
 
-When you run `yoyo`, you get a fully integrated split-screen experience:
+1. **Initialize project:**
+   ```bash
+   /plan-product
+   ```
 
-```
-┌──────────────────────┬─────────────────────────────────┐
-│                      │                                 │
-│  Claude Code CLI     │    Yoyo TUI Dashboard           │
-│  (40% width)         │    (60% width)                  │
-│                      │                                 │
-│  Interactive AI      │    Real-time task tracking      │
-│  Code assistant      │    Progress monitoring          │
-│  Context-aware       │    Command suggestions          │
-│                      │                                 │
-└──────────────────────┴─────────────────────────────────┘
-```
+2. **Create feature:**
+   ```bash
+   /create-new "Add user authentication"
+   ```
 
-**Split View Features:**
-- **Integrated experience**: One command, two powerful tools side-by-side
-- **Independent operation**: Close either pane without affecting the other
-- **Visual indicators**: Active pane highlighted with bright cyan border
-- **Persistent layout**: Split ratio saved between sessions
-- **Auto-detection**: Gracefully falls back to TUI-only if Claude not installed
-- **Real-time sync**: TUI updates automatically when Claude creates/modifies files
+3. **Execute with Yoyo-AI:**
+   ```bash
+   /execute-tasks
+   ```
 
-**Keyboard Shortcuts (Split View):**
-- `Ctrl+B →` - Switch focus between panes
-- `Ctrl+B <` - Make left pane larger
-- `Ctrl+B >` - Make right pane larger
+Yoyo-AI will automatically:
+- Research best practices (background librarian)
+- Delegate UI work to frontend-engineer
+- Implement with TDD approach
+- Escalate to Oracle if 3+ failures
+- Create PR when done
 
-**Platform Support:**
-- **Linux**: Full support (tested on GNOME Terminal, Konsole, Alacritty, Kitty, Terminator)
-- **macOS/Windows**: Coming in future release
-
-**Installation Requirements:**
-1. Yoyo Dev installed (see Installation section)
-2. [Claude Code CLI](https://claude.com/claude-code) installed (optional, will fallback gracefully)
-
-See [Split View Guide](docs/split-view-guide.md) for detailed usage and troubleshooting.
-
-### TUI Features
-
-**3-Panel Intelligent Dashboard:**
-- **Left Panel (30%)**: Active Work - Current specs/fixes with progress tracking
-- **Center Panel (40%)**: Command Palette - Context-aware command suggestions
-- **Right Panel (30%)**: History - Recent actions with success indicators
-
-**Keyboard Shortcuts:**
-- `?` - Help and shortcuts
-- `/` - Command search
-- `r` - Refresh all panels
-- `g` - Git menu
-- `t` - Focus active work
-- `s` - Focus specs/commands
-- `h` - Focus history
-- `q` - Quit
-
-**Intelligent Features:**
-- 🧠 Context-aware command suggestions based on project state
-- ⚠️ Proactive error detection with suggested fixes
-- 📊 Real-time progress tracking with visual indicators
-- 🔌 MCP server health monitoring
-- 🎯 One-click command execution (copy to clipboard)
+📖 **Full Guide:** See [Quick Start Guide](docs/installation/quick-start.md)
 
 ---
 
@@ -188,81 +167,163 @@ See [Split View Guide](docs/split-view-guide.md) for detailed usage and troubles
 # New product - set mission & roadmap
 /plan-product
 
-# Existing product - analyze and setup
+# Existing product - analyze codebase
 /analyze-product
 ```
 
-### Feature Development
+### Feature Development (v5.0)
 
 ```bash
-# Fast feature creation (spec + tasks)
-/create-new "Add user profile" --lite
+# Create feature with Yoyo-AI orchestration (default)
+/create-new "Add user profile"
 
-# Detailed feature with full spec
-/create-new "User authentication"
-
-# Execute tasks interactively
-/execute-tasks
+# Execute with multi-agent orchestration
+/execute-tasks                           # Yoyo-AI (default)
+/execute-tasks --orchestrator legacy     # v4.0 workflow
 
 # Execute specific task
 /execute-tasks --task=2
 
-# Execute all tasks (legacy batch mode)
-/execute-tasks --all
+# Execute with review mode
+/execute-tasks --security --devil
+
+# Disable auto-delegation
+/execute-tasks --no-delegation
+```
+
+### Research & Strategic Guidance (v5.0)
+
+```bash
+# Background research (runs in parallel)
+/research "Convex authentication best practices"
+# → Librarian agent searches docs, GitHub, web
+# → Results delivered as notification
+# → Continue working immediately
+
+# Strategic architecture guidance
+/consult-oracle "Should we use microservices or monolith for MVP?"
+# → Oracle provides: Essential | Expanded | Edge Cases
+# → Synchronous response with structured advice
 ```
 
 ### Bug Fixes
 
 ```bash
-# Systematic bug fix workflow
-/create-fix "Layout broken on mobile"
+# Systematic fix with Yoyo-AI
+/create-fix "Login button returns 401 error"
+# → Explore agent finds related code (background)
+# → Oracle analyzes root cause if complex
+# → Creates TDD-based fix tasks
 
-# Quick fix (skip investigation)
-/create-fix "Button not clickable" --quick
+# Execute fix
+/execute-tasks
+# → Auto-escalates to Oracle after 3 failures
 ```
 
-### Design System (v1.5.0)
+### Design System
 
 ```bash
 # Initialize design system
 /design-init
 
-# Audit design compliance
+# Audit compliance
 /design-audit
 
-# Fix design violations
+# Fix violations
 /design-fix --colors --spacing
 
-# Create UI component with strict validation
+# Create component with validation
 /design-component "User profile card"
 ```
 
-### Advanced Orchestration
+### Advanced
 
 ```bash
-# Manual multi-agent task orchestration (power users)
+# Manual multi-agent orchestration (power users)
 /orchestrate-tasks
 
-# Containerize application
-/containerize-application --node
-/containerize-application --python --multi-stage
+# Code review modes
+/review --devil "Authentication flow"
+/review --security "Payment processing"
+/review --performance "Dashboard rendering"
+
+# Containerization
+/containerize-application --node --multi-stage
 ```
 
-### Code Review (Optional)
+---
 
-```bash
-# Devil's advocate review
-/review --devil "Review authentication flow"
+## 🤖 Multi-Agent System (v5.0)
 
-# Security audit
-/review --security "Audit payment processing"
+### Yoyo-AI Orchestrator
 
-# Performance analysis
-/review --performance "Analyze dashboard"
+**Primary agent that coordinates all work:**
 
-# Pre-mortem analysis
-/review --premortem "Database migration plan"
+**Phase 0: Intent Classification**
+- Automatically classifies: Planning | Implementation | Research | Debug
+- Routes to appropriate workflow
+
+**Phase 1: Codebase Assessment**
+- Analyzes complexity (simple/medium/complex)
+- Detects frontend keywords → auto-delegate
+- Checks for research needs → background librarian
+
+**Phase 2A: Research & Exploration (Parallel)**
+- Fires background tasks for research
+- Searches codebase with explore agent
+- Continues working while tasks run
+
+**Phase 2B: Implementation (Todo-Driven)**
+- Creates todos BEFORE implementation
+- Marks in_progress immediately
+- Marks completed IMMEDIATELY (not batched)
+- Only ONE todo in_progress at a time
+
+**Phase 3: Verification & Completion**
+- Runs all tests
+- Quality gates (functionality, types, tests, a11y, security)
+- Git workflow (commit, PR)
+- Creates recap
+
+### Specialized Agents
+
+| Agent | Role | Temperature | When Used |
+|-------|------|-------------|-----------|
+| **Oracle** | Strategic advisor | 0.1 | Architecture decisions, 3+ failures |
+| **Librarian** | External research | 0.3 | Documentation, GitHub examples, web search |
+| **Explore** | Codebase search | 0.5 | Internal pattern matching, file discovery |
+| **Frontend Engineer** | UI/UX specialist | 0.7 | Auto-detected UI work (style, layout, components) |
+| **Document Writer** | Technical writing | 0.5 | README, docs, guides |
+| **Implementer** | Code implementation | 0.3 | TDD-based feature development |
+
+### Delegation Examples
+
+**Automatic Frontend Delegation:**
 ```
+Task: "Update button styling to match design system"
+→ Yoyo-AI detects: "style", "button" keywords
+→ Auto-delegates to frontend-engineer
+→ Frontend-engineer: implements + tests + a11y check
+```
+
+**Background Research:**
+```
+Task: "Add Convex authentication"
+→ Yoyo-AI fires: background_task(agent="librarian", prompt="Research Convex auth...")
+→ Continue working on other subtasks
+→ Retrieve results when needed
+```
+
+**Oracle Escalation:**
+```
+Attempt 1: Test fails → Retry with improved approach
+Attempt 2: Test fails → Try completely different approach
+Attempt 3: Test fails → call_agent(agent="oracle", prompt="Debug failure...")
+→ Oracle analyzes root cause
+→ Apply Oracle's recommendation
+```
+
+📖 **Full Documentation:** See [Multi-Agent System Guide](docs/features/multi-agent-system.md)
 
 ---
 
@@ -270,295 +331,128 @@ See [Split View Guide](docs/split-view-guide.md) for detailed usage and troubles
 
 ```
 your-project/
-├── .yoyo-dev/
-│   ├── product/              # Product documentation
-│   │   ├── mission.md
-│   │   ├── mission-lite.md   # Condensed for AI
-│   │   ├── tech-stack.md
-│   │   └── roadmap.md
-│   │
-│   ├── specs/                # Feature specifications
-│   │   └── YYYY-MM-DD-feature-name/
+├── .yoyo-dev/                  # Framework files
+│   ├── product/                # Product docs (mission, roadmap, tech-stack)
+│   ├── specs/                  # Feature specifications
+│   │   └── YYYY-MM-DD-name/
 │   │       ├── spec.md
-│   │       ├── spec-lite.md  # Condensed for AI
-│   │       ├── tasks.md      # Task breakdown
-│   │       ├── state.json    # Workflow state
-│   │       └── sub-specs/    # Technical details
-│   │
-│   ├── fixes/                # Bug fix documentation
-│   │   └── YYYY-MM-DD-fix-name/
-│   │       ├── analysis.md
-│   │       ├── solution-lite.md
+│   │       ├── spec-lite.md    # Condensed for AI
 │   │       ├── tasks.md
-│   │       └── state.json
-│   │
-│   ├── recaps/               # Development recaps
-│   ├── patterns/             # Saved patterns
-│   │
-│   ├── instructions/         # AI workflow instructions
-│   │   ├── core/             # Core workflows
-│   │   └── meta/             # Meta instructions
-│   │
-│   ├── standards/            # Development standards
-│   │   ├── best-practices.md
-│   │   ├── tech-stack.md
-│   │   ├── personas.md
-│   │   ├── design-system.md  # NEW v1.5.0
-│   │   └── code-style/
-│   │
-│   ├── design/               # Design system (v1.5.0)
-│   │   ├── tokens.json
-│   │   ├── tailwind.config.js
-│   │   ├── design-system.md
-│   │   └── component-patterns/
-│   │
-│   └── setup/                # Installation scripts
+│   │       ├── state.json
+│   │       └── sub-specs/
+│   ├── fixes/                  # Bug fix documentation
+│   ├── recaps/                 # Development recaps
+│   ├── patterns/               # Saved patterns library
+│   ├── instructions/core/      # AI workflow instructions
+│   │   ├── yoyo-ai-orchestration.md  # NEW v5.0
+│   │   ├── execute-tasks.md
+│   │   ├── create-new.md
+│   │   └── ...
+│   ├── standards/              # Development standards
+│   └── setup/                  # Installation scripts
 │
-└── .claude/                  # Claude Code configuration
-    ├── commands/             # Custom slash commands
-    └── agents/               # Specialized agents
-```
-
----
-
-## 🧪 Testing
-
-### TUI v3.0 Test Suite
-
-```bash
-# Run all tests
-pytest tests/ -v
-
-# Run specific category
-pytest tests/widgets/ -v      # Widget tests (209 tests)
-pytest tests/screens/ -v      # Screen tests (82 tests)
-pytest tests/services/ -v     # Service tests (80 tests)
-
-# Run with coverage
-pytest tests/ --cov=lib/yoyo_tui_v3 --cov-report=html
-
-# Quick test (quiet mode)
-pytest tests/ -v --tb=no -q
-```
-
-**Test Results:**
-- ✅ 414 tests passing (94.5% pass rate)
-- ⚠️ 24 tests with known mount dependencies (low priority)
-
-### Test Organization
-
-```
-tests/
-├── widgets/          # UI component tests
-├── screens/          # Screen navigation tests
-├── services/         # Business logic tests
-├── integration/      # Integration tests
-└── fixtures/         # Test data
+├── .claude/                    # Claude Code integration
+│   ├── commands/               # Slash commands
+│   │   ├── research.md         # NEW v5.0
+│   │   ├── consult-oracle.md   # NEW v5.0
+│   │   └── ...
+│   └── agents/                 # Agent configurations
+│       ├── yoyo-ai.md          # NEW v5.0
+│       ├── oracle.md           # NEW v5.0
+│       ├── librarian.md        # NEW v5.0
+│       ├── explore.md          # NEW v5.0
+│       ├── frontend-engineer.md # NEW v5.0
+│       └── document-writer.md  # NEW v5.0
+│
+├── .yoyo-ai/                   # Memory system (v4.0+)
+│   └── memory/
+│       └── memory.db           # SQLite memory store
+│
+└── .mcp.json                   # MCP server configuration
 ```
 
 ---
 
 ## 🔧 Configuration
 
-### Split View Configuration
-
-Edit `.yoyo-dev/config.yml` to customize split view behavior:
-
-```yaml
-split_view:
-  enabled: true                    # Master toggle for split view mode
-  ratio: 0.4                       # Split ratio (0.0-1.0): 0.4 = 40% left, 60% right
-  active_pane: claude              # Which pane starts with focus: "claude" or "tui"
-
-  # Visual styling
-  border_style:
-    active: bright_cyan            # Active pane border color
-    inactive: dim_white            # Inactive pane border color
-
-  # Keyboard shortcuts
-  shortcuts:
-    switch_focus: ctrl+b+arrow     # Switch pane focus (Ctrl+B →)
-    resize_left: ctrl+b+<          # Make left pane larger (Ctrl+B <)
-    resize_right: ctrl+b+>         # Make right pane larger (Ctrl+B >)
-
-  # Claude Code settings
-  claude:
-    command: claude                # Command to launch Claude Code
-    auto_cwd: true                 # Auto-attach to current directory
-    fallback_delay: 3              # Seconds to wait before launching TUI only
-```
-
-**Configuration Options:**
-
-| Option | Type | Default | Description |
-|--------|------|---------|-------------|
-| `enabled` | boolean | `true` | Enable/disable split view mode |
-| `ratio` | float | `0.4` | Left pane width ratio (0.0-1.0) |
-| `active_pane` | string | `"claude"` | Starting focus: "claude" or "tui" |
-| `border_style.active` | string | `"bright_cyan"` | Active pane border color |
-| `border_style.inactive` | string | `"dim_white"` | Inactive pane border color |
-| `claude.command` | string | `"claude"` | Command to launch Claude Code |
-| `claude.auto_cwd` | boolean | `true` | Auto-attach to project directory |
-| `claude.fallback_delay` | integer | `3` | Wait time before TUI-only fallback |
-
-### Project Type Configuration
+### Yoyo-AI Orchestrator
 
 Edit `.yoyo-dev/config.yml`:
 
 ```yaml
-default_project_type: default
+# v5.0 Multi-Agent Configuration
+agents:
+  default_model: anthropic/claude-opus-4-5
 
-project_types:
-  default:
-    instructions: ~/.yoyo-dev/instructions
-    standards: ~/.yoyo-dev/standards
+  yoyo_ai:
+    enabled: true
+    temperature: 1.0
+    tools: ["*"]  # All tools
 
-  custom_type:
-    instructions: ~/.yoyo-dev/project_types/custom_type/instructions
-    standards: ~/.yoyo-dev/project_types/custom_type/standards
+  oracle:
+    enabled: true
+    temperature: 0.1
+    tools: ["Read", "Grep", "Glob", "call_agent", "!Bash", "!Write"]
+
+  librarian:
+    enabled: true
+    temperature: 0.3
+    tools: ["context7", "websearch", "gh", "git", "Read", "!Bash"]
+
+  frontend_engineer:
+    enabled: true
+    temperature: 0.7
+    tools: ["Write", "Read", "mcp__playwright__*", "!call_agent"]
+
+# Background Tasks
+background_tasks:
+  enabled: true
+  max_concurrent: 5
+  polling_interval: 2000       # milliseconds
+  idle_timeout: 300000         # 5 minutes
+  notification:
+    toast: true
+    message_injection: true
+
+# Workflows
+workflows:
+  task_execution:
+    orchestrator: yoyo-ai      # or "legacy" for v4.0
+    failure_recovery:
+      enabled: true
+      max_attempts: 3
+      escalate_to: oracle
+    frontend_delegation:
+      enabled: true
+      agent: frontend-engineer
+    todo_continuation:
+      enabled: true
+      cooldown: 3000           # milliseconds
+```
+
+### Split View
+
+```yaml
+split_view:
+  enabled: true
+  ratio: 0.4
+  active_pane: claude
+  border_style:
+    active: bright_cyan
+    inactive: dim_white
 ```
 
 ### Parallel Execution
 
 ```yaml
 parallel_execution:
-  enabled: true              # Auto-analyze task dependencies
-  max_concurrency: 5         # Max parallel tasks
-  auto_analyze: true         # Automatic dependency detection
-  ask_confirmation: true     # Ask before parallel execution
+  enabled: true
+  max_concurrency: 5
+  auto_analyze: true
+  ask_confirmation: true
 ```
 
-### Design System
-
-```yaml
-design_system:
-  enabled: true                   # Enable design system
-  auto_validate: true             # Auto-validate during workflows
-  accessibility_level: WCAG-AA    # WCAG-AA or WCAG-AAA
-  dark_mode: true                 # Dark mode support required
-  strict_mode: false              # Block merge on violations
-```
-
----
-
-## 🚀 Advanced Features
-
-### Parallel Task Execution
-
-Yoyo Dev automatically analyzes task dependencies and executes independent tasks concurrently:
-
-```bash
-# Automatic parallel execution (when safe)
-/execute-tasks
-
-# Force sequential execution
-/execute-tasks --sequential
-
-# Force parallel execution
-/execute-tasks --parallel
-```
-
-**Performance Gains:**
-- 3 independent tasks: 3x faster
-- Mixed dependencies: 2x faster on average
-- Sequential tasks: No slowdown
-
-### Design System Workflows
-
-**Initialize Design System:**
-```bash
-/design-init
-```
-
-Creates comprehensive design tokens, Tailwind config, and component patterns.
-
-**Audit Compliance:**
-```bash
-/design-audit                  # Full audit
-/design-audit --colors         # Color compliance only
-/design-audit --contrast       # Contrast ratios only
-```
-
-**Fix Violations:**
-```bash
-/design-fix                    # Fix all violations
-/design-fix --colors           # Fix color violations
-/design-fix --spacing          # Fix spacing violations
-```
-
-**Create Components:**
-```bash
-/design-component "Button with variants"
-```
-
-Enforces 100% design token compliance, WCAG AA accessibility, and pattern library integration.
-
-### Review Modes (Optional)
-
-Strategic code review when you need extra scrutiny:
-
-```bash
-# Devil's advocate - find what will break
-/review --devil "Authentication flow"
-
-# Security audit - OWASP Top 10 checks
-/review --security "Payment processing"
-
-# Performance analysis - bottlenecks & N+1 queries
-/review --performance "Dashboard rendering"
-
-# Production readiness - monitoring, rollbacks, health checks
-/review --production "Deployment plan"
-
-# Pre-mortem - why feature will fail before building
-/review --premortem "Real-time collaboration feature"
-```
-
----
-
-## 🔄 Updating
-
-### Update Yoyo Dev
-
-```bash
-# Update to latest version
-bash .yoyo-dev/setup/yoyo-update.sh
-
-# Preserve customizations
-bash .yoyo-dev/setup/yoyo-update.sh --no-overwrite-instructions --no-overwrite-standards
-```
-
-**Update Flags:**
-- `--no-overwrite-instructions` - Keep custom instructions
-- `--no-overwrite-standards` - Keep custom standards
-- `--no-overwrite-commands` - Keep custom commands
-- `--no-overwrite-agents` - Keep custom agents
-- `--no-overwrite` - Keep all customizations
-
-**Protected Files** (never overwritten):
-- Product docs (`.yoyo-dev/product/`)
-- Specs (`.yoyo-dev/specs/`)
-- Fixes (`.yoyo-dev/fixes/`)
-- Recaps (`.yoyo-dev/recaps/`)
-- Patterns (`.yoyo-dev/patterns/`)
-
----
-
-## 📖 Documentation
-
-### Core Documentation
-
-- **Command Reference**: `.yoyo-dev/COMMAND-REFERENCE.md` - All commands with examples
-- **Best Practices**: `.yoyo-dev/standards/best-practices.md` - Development guidelines
-- **Tech Stack**: `.yoyo-dev/standards/tech-stack.md` - Technology decisions
-- **Design System**: `.yoyo-dev/standards/design-system.md` - Design philosophy
-- **Personas**: `.yoyo-dev/standards/personas.md` - Development approaches
-
-### Online Documentation
-
-- **Main Docs**: https://docs.claude.com/en/docs/claude-code
-- **GitHub**: https://github.com/daverjorge46/yoyo-dev-ai
-- **Issues**: https://github.com/daverjorge46/yoyo-dev-ai/issues
+📖 **Full Config Reference:** See [Configuration Guide](docs/configuration.md)
 
 ---
 
@@ -568,36 +462,37 @@ bash .yoyo-dev/setup/yoyo-update.sh --no-overwrite-instructions --no-overwrite-s
 
 ```bash
 # Setup
-/plan-product               # Set mission & roadmap (new)
-/analyze-product            # Setup for existing product
+/plan-product                      # New product mission & roadmap
+/analyze-product                   # Existing product setup
 
-# Development
-/create-new "feature"       # Fast feature creation
-/create-spec "feature"      # Create spec only
-/create-tasks               # Create tasks from spec
-/create-fix "problem"       # Fix bugs systematically
-/execute-tasks              # Build and ship
-/orchestrate-tasks          # Manual multi-agent control
+# Development (v5.0 with Yoyo-AI)
+/create-new "feature"              # Feature creation
+/create-fix "problem"              # Bug fix workflow
+/execute-tasks                     # Multi-agent execution (default)
+/execute-tasks --orchestrator legacy  # v4.0 workflow
+
+# Research & Guidance (v5.0)
+/research "topic"                  # Background research
+/consult-oracle "question"         # Strategic guidance
+
+# Spec Management
+/create-spec "feature"             # Create spec only
+/create-tasks                      # Create tasks from spec
 
 # Design
-/design-init                # Initialize design system
-/design-audit               # Check compliance
-/design-fix                 # Fix violations
-/design-component "name"    # Create UI component
+/design-init                       # Initialize design system
+/design-audit                      # Check compliance
+/design-fix                        # Fix violations
 
-# Review
-/review --devil "scope"     # Devil's advocate
-/review --security "scope"  # Security audit
-
-# Utility
-/yoyo-help                  # Show help in Claude
-/improve-skills             # Optimize agent skills
-/containerize-application   # Docker containerization
+# Advanced
+/orchestrate-tasks                 # Manual orchestration
+/review --devil "scope"            # Devil's advocate review
+/improve-skills                    # Optimize agent skills
 
 # TUI
-yoyo                        # Launch split view
-yoyo --no-split             # TUI only
-yoyo --help                 # Show help
+yoyo                              # Launch split view
+yoyo --no-gui                     # Without browser GUI
+yoyo --no-split                   # TUI only
 ```
 
 ### Keyboard Shortcuts (TUI)
@@ -609,169 +504,162 @@ t     Focus tasks       s     Focus specs
 h     Focus history     q     Quit
 ```
 
+### Split View Shortcuts
+
+```
+Ctrl+B →    Switch focus
+Ctrl+B <    Resize left larger
+Ctrl+B >    Resize right larger
+```
+
+---
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+pytest tests/ -v
+
+# Test categories
+pytest tests/widgets/ -v       # UI components (209 tests)
+pytest tests/screens/ -v       # Screens (82 tests)
+pytest tests/services/ -v      # Services (80 tests)
+pytest tests/integration/ -v   # Integration tests
+
+# With coverage
+pytest tests/ --cov=lib/yoyo_tui_v3 --cov-report=html
+
+# Test TypeScript (memory, skills, agents)
+cd src && npm test
+```
+
+**Test Results:** 414+ tests passing (94.5% pass rate)
+
+---
+
+## 🔄 Updating
+
+```bash
+# Update to latest version
+bash .yoyo-dev/setup/yoyo-update.sh
+
+# Preserve customizations
+bash .yoyo-dev/setup/yoyo-update.sh --no-overwrite
+
+# Skip MCP check during update
+bash .yoyo-dev/setup/yoyo-update.sh --skip-mcp-check
+```
+
+**Protected Files** (never overwritten):
+- Product docs, specs, fixes, recaps, patterns
+
+---
+
+## 📖 Documentation
+
+### Core Docs
+
+- **[Quick Start](docs/installation/quick-start.md)** - 5-minute setup
+- **[MCP Setup](docs/installation/mcp-setup.md)** - Docker MCP Gateway
+- **[Troubleshooting](docs/installation/troubleshooting.md)** - Common issues
+- **[Command Reference](docs/COMMAND-REFERENCE.md)** - All commands
+- **[Multi-Agent System](docs/features/multi-agent-system.md)** - Agent guide
+- **[Migration to v5.0](docs/MIGRATION-v5.md)** - Upgrade guide
+
+### In-Project Docs
+
+- `.yoyo-dev/standards/best-practices.md` - Development guidelines
+- `.yoyo-dev/standards/tech-stack.md` - Technology decisions
+- `.yoyo-dev/standards/design-system.md` - Design philosophy
+
+### Online
+
+- **Claude Code**: https://docs.claude.com/en/docs/claude-code
+- **GitHub**: https://github.com/daverjorge46/yoyo-dev-ai
+- **Issues**: https://github.com/daverjorge46/yoyo-dev-ai/issues
+
 ---
 
 ## 🏆 Best Practices
 
-### Development Workflow
+### v5.0 Workflow
 
-1. **Plan First**: `/plan-product` or `/analyze-product`
-2. **Spec Features**: `/create-new "feature name"`
-3. **Execute Tasks**: `/execute-tasks` (interactive by default)
-4. **Review Code**: `/review --mode` (when needed)
-5. **Track Progress**: Use TUI dashboard (`yoyo`)
-
-### Design System Workflow
-
-1. **Initialize**: `/design-init` at project start
-2. **Audit Weekly**: `/design-audit` to catch drift
-3. **Fix Violations**: `/design-fix` before releases
-4. **Create Components**: `/design-component` for reusable UI
+1. **Let Yoyo-AI orchestrate** - Use `/execute-tasks` (default orchestrator)
+2. **Research early** - Fire `/research` at start, results ready when needed
+3. **Consult Oracle** - Use `/consult-oracle` for architecture decisions
+4. **Trust delegation** - Frontend work auto-delegated to specialist
+5. **Watch todos** - Track progress in real-time via TUI
 
 ### Code Quality
 
-- Use TDD approach (tests first, then implementation)
-- Follow persona-driven development (Frontend, Backend, QA, etc.)
-- Keep it simple - fewest lines possible
-- DRY - extract repeated logic
-- Type safety - no TypeScript errors
+- **TDD approach** - Tests first, implementation second
+- **Persona-driven** - Let specialized agents handle their domains
+- **Keep it simple** - Fewest lines possible
+- **DRY principle** - Extract repeated logic
+- **Type safety** - Zero TypeScript errors
 
 ---
 
 ## 🐛 Troubleshooting
 
-### Split View Issues
+### Quick Fixes
 
-**Split view not launching:**
+**TUI won't launch:**
 ```bash
-# Check if Claude Code is installed
+pip3 install --user textual watchdog pyyaml
+python3 -c "from yoyo_tui_v3.app import create_app; create_app()"
+```
+
+**Global command not found:**
+```bash
+bash .yoyo-dev/setup/install-global-command.sh
+echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+```
+
+**Split view issues:**
+```bash
+# Check Claude installed
 which claude
 
-# If not installed, get it here:
-# https://claude.com/claude-code
-
-# Or use TUI-only mode
+# Use TUI-only mode
 yoyo --no-split
 ```
 
-**Terminal too small error:**
+**MCP servers not working:**
 ```bash
-# Split view requires minimum 120x30 terminal size
-# Resize your terminal window or use TUI-only mode
-yoyo --no-split
+# Verify Docker Desktop running
+docker info
+
+# Check MCP servers
+docker mcp server ls
+
+# Reconnect Claude
+docker mcp client connect claude-code
 ```
 
-**Pane borders not rendering correctly:**
-```bash
-# Ensure your terminal supports Unicode box-drawing characters
-# Tested terminals: GNOME Terminal, Konsole, Alacritty, Kitty, Terminator
-
-# Check locale settings
-locale | grep UTF-8
-
-# If not UTF-8, add to ~/.bashrc:
-export LC_ALL=en_US.UTF-8
-export LANG=en_US.UTF-8
-```
-
-**Keyboard shortcuts not working:**
-```bash
-# Ensure Ctrl+B is not bound by another application
-# Try alternative: disable split view and use separate terminals
-yoyo --no-split
-```
-
-**Split ratio not persisting:**
-```bash
-# Check config file exists and is writable
-ls -la .yoyo-dev/config.yml
-
-# Check config structure
-grep -A 20 "split_view:" .yoyo-dev/config.yml
-
-# Reset to defaults if corrupted
-rm .yoyo-dev/config.yml
-yoyo  # Will regenerate with defaults
-```
-
-### TUI Won't Launch
-
-```bash
-# Check Python dependencies
-python3 -c "import textual; import watchdog; import yaml"
-
-# Reinstall dependencies
-pip3 install --user textual watchdog pyyaml
-
-# Test TUI instantiation
-python3 -c "
-import sys
-sys.path.insert(0, 'lib')
-from yoyo_tui_v3.app import create_app
-app = create_app()
-print('✅ TUI OK')
-"
-```
-
-### Global Command Not Found
-
-```bash
-# Reinstall global command
-bash .yoyo-dev/setup/install-global-command.sh
-
-# Add to PATH (if needed)
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
-source ~/.bashrc
-```
-
-### Tests Failing
-
-```bash
-# Run specific test
-pytest tests/widgets/test_status_bar.py -v
-
-# Check test environment
-pytest --version
-python3 --version
-
-# Recreate virtual environment
-rm -rf venv
-python3 -m venv venv
-source venv/bin/activate
-pip install pytest pytest-cov textual watchdog pyyaml
-```
+📖 **Full Troubleshooting:** See [Troubleshooting Guide](docs/installation/troubleshooting.md)
 
 ---
 
 ## 🤝 Contributing
 
-Yoyo Dev is an open-source framework for AI-assisted development. Contributions welcome!
-
-### Development Setup
-
 ```bash
-# Clone repository
+# Clone & setup
 git clone https://github.com/daverjorge46/yoyo-dev-ai.git
 cd yoyo-dev-ai
-
-# Create virtual environment
 python3 -m venv venv
 source venv/bin/activate
-
-# Install dependencies
 pip install -r requirements.txt
 
 # Run tests
 pytest tests/ -v
+
+# Submit PR
+# 1. Create feature branch
+# 2. Make changes + tests
+# 3. Update docs
+# 4. Submit pull request
 ```
-
-### Making Changes
-
-1. Create feature branch
-2. Make changes
-3. Run tests: `pytest tests/ -v`
-4. Update documentation
-5. Submit pull request
 
 ---
 
@@ -794,10 +682,10 @@ Built with:
 
 - **Issues**: https://github.com/daverjorge46/yoyo-dev-ai/issues
 - **Discussions**: https://github.com/daverjorge46/yoyo-dev-ai/discussions
-- **Documentation**: https://docs.claude.com/en/docs/claude-code
+- **Docs**: https://docs.claude.com/en/docs/claude-code
 
 ---
 
-**Version**: 3.1.1
-**Last Updated**: 2025-12-06
+**Version**: 5.0.0
+**Last Updated**: 2025-12-29
 **Status**: Production Ready
