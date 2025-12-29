@@ -88,6 +88,113 @@ yoyo-gui
 
 Features: Real-time task/spec tracking, live updates, interactive commands (one-click copy), keyboard shortcuts (`?` for help, `q` to quit).
 
+## Multi-Agent Orchestration (v5.0)
+
+### Yoyo-AI System
+
+**Version 5.0 introduces intelligent multi-agent orchestration** - Yoyo-AI acts as primary orchestrator that delegates work to specialized agents.
+
+**Key Agents:**
+- **Yoyo-AI** - Primary orchestrator (Claude Opus 4.5, temperature: 1.0)
+- **Oracle** - Strategic advisor for architecture & debugging (temperature: 0.1)
+- **Librarian** - External research specialist (temperature: 0.3)
+- **Explore** - Internal codebase search (temperature: 0.5)
+- **Frontend Engineer** - UI/UX specialist (temperature: 0.7)
+- **Document Writer** - Technical documentation (temperature: 0.5)
+- **Implementer** - TDD-based implementation (temperature: 0.3)
+
+**Orchestration Workflow:**
+
+1. **Phase 0: Intent Classification**
+   - Automatically classifies: Planning | Implementation | Research | Debug
+   - Routes to appropriate workflow
+
+2. **Phase 1: Codebase Assessment**
+   - Analyzes complexity (simple/medium/complex)
+   - Detects frontend keywords → auto-delegate to frontend-engineer
+   - Identifies research needs → background librarian
+
+3. **Phase 2A: Research & Exploration (Parallel)**
+   - Fires background tasks for external research
+   - Searches codebase with explore agent
+   - Continues working while tasks complete
+
+4. **Phase 2B: Implementation (Todo-Driven)**
+   - Creates todos BEFORE implementation
+   - Marks `in_progress` immediately
+   - Marks `completed` IMMEDIATELY (not batched)
+   - Only ONE todo `in_progress` at a time
+
+5. **Phase 3: Verification & Completion**
+   - Runs all tests
+   - Quality gates (functionality, types, tests, a11y, security)
+   - Git workflow (commit, PR)
+   - Creates recap
+
+**New Commands (v5.0):**
+
+```bash
+# Background research (parallel execution)
+/research "topic"
+# → Librarian agent searches docs, GitHub, web
+# → Results delivered as notification
+# → Continue working immediately
+
+# Strategic architecture guidance
+/consult-oracle "question"
+# → Oracle provides: Essential | Expanded | Edge Cases
+# → Synchronous response with structured advice
+
+# Multi-agent task execution (default)
+/execute-tasks                           # Yoyo-AI orchestrator
+/execute-tasks --orchestrator legacy     # v4.0 workflow
+/execute-tasks --no-delegation           # Disable auto-delegation
+```
+
+**Automatic Delegation:**
+
+- **Frontend work detected** → auto-delegate to frontend-engineer
+  - Keywords: style, css, tailwind, layout, button, component, responsive, etc.
+  - Example: "Update button styling" → frontend-engineer handles it
+
+- **3+ consecutive failures** → auto-escalate to Oracle
+  - Attempt 1: Retry with improved approach
+  - Attempt 2: Try different strategy
+  - Attempt 3: Consult Oracle for root cause analysis
+
+**Configuration** (`.yoyo-dev/config.yml`):
+
+```yaml
+workflows:
+  task_execution:
+    orchestrator: yoyo-ai  # or "legacy" for v4.0
+
+  failure_recovery:
+    enabled: true
+    max_attempts: 3
+    escalate_to: oracle
+
+  frontend_delegation:
+    enabled: true
+    agent: frontend-engineer
+
+  todo_continuation:
+    enabled: true
+    cooldown: 3000  # milliseconds
+```
+
+**Agent Tool Access:**
+
+Each agent has restricted tool access for safety:
+
+- **Yoyo-AI**: All tools (`*`)
+- **Oracle**: Read-only + analysis tools (no Bash, no Write)
+- **Librarian**: External research tools only (no code modification)
+- **Frontend Engineer**: Write, Read, Playwright (no call_agent to prevent loops)
+- **Explore**: Search tools only (Glob, Grep, Read)
+
+**Detailed Documentation:** See `.yoyo-dev/instructions/core/yoyo-ai-orchestration.md`
+
 ## MCP Server Installation
 
 Yoyo Dev uses Docker MCP Gateway to provide containerized MCP servers via Docker Desktop's MCP Toolkit.
@@ -143,21 +250,28 @@ Yoyo Dev enables these containerized MCP servers from the Docker catalog:
    - Purpose: Read/write files in specified directories
    - Note: Configured with appropriate mount points
 
-### Automatic Installation
+### Automatic Installation (Default Behavior)
 
-MCP servers are enabled automatically during Yoyo Dev setup:
+**MCP servers are installed automatically** during Yoyo Dev setup without user prompts:
 
 ```bash
-# During project setup
+# During project setup (auto-installs MCPs)
 ~/.yoyo-dev/setup/project.sh --claude-code
 ```
 
-The installer will:
-1. Check Docker Desktop is installed and running
-2. Verify MCP Toolkit is enabled
-3. Connect Claude Code as an MCP client
-4. Enable recommended MCP servers
-5. Report installation results
+**To skip automatic MCP installation:**
+```bash
+~/.yoyo-dev/setup/project.sh --claude-code --no-auto-mcp
+```
+
+The installer automatically:
+1. Checks Docker Desktop is installed and running
+2. Verifies MCP Toolkit is enabled
+3. Connects Claude Code as an MCP client
+4. Enables recommended MCP servers (no prompts)
+5. Reports installation results
+
+**Similarly, `yoyo-update` auto-enables missing MCP servers** without prompting. Use `--skip-mcp-check` to skip MCP verification during updates.
 
 ### Manual Installation
 
@@ -371,14 +485,20 @@ Each MCP server container runs with:
 - `/plan-product` - Set mission & roadmap for new product
 - `/analyze-product` - Set up mission/roadmap for existing product
 
-**Feature Development:**
+**Feature Development (v5.0 with Yoyo-AI):**
 - `/create-new` - Create feature with full spec workflow and task generation
 - `/create-spec` - Create detailed specification only
 - `/create-tasks` - Create tasks from specification
-- `/execute-tasks` - Build and ship code
+- `/execute-tasks` - Build and ship code with multi-agent orchestration (default)
+- `/execute-tasks --orchestrator legacy` - Use v4.0 single-agent workflow
+- `/execute-tasks --no-delegation` - Disable automatic agent delegation
+
+**Research & Guidance (NEW v5.0):**
+- `/research "topic"` - Background research with librarian agent (parallel execution)
+- `/consult-oracle "question"` - Strategic architecture guidance from Oracle agent
 
 **Bug Fixes:**
-- `/create-fix` - Analyze and fix bugs with systematic problem analysis
+- `/create-fix` - Analyze and fix bugs with systematic problem analysis (auto-escalates to Oracle)
 
 **Advanced:**
 - `/orchestrate-tasks` - Manual multi-agent orchestration for complex features

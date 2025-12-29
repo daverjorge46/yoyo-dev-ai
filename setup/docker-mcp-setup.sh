@@ -16,7 +16,7 @@ RESET='\033[0m'
 
 # Script configuration
 SKIP_IF_NO_DOCKER=false
-INTERACTIVE=true
+INTERACTIVE=false  # Non-interactive by default (changed from true)
 VERBOSE=false
 PROJECT_DIR=""
 
@@ -390,7 +390,8 @@ Configure Docker MCP Toolkit for Yoyo Dev.
 
 OPTIONS:
     --skip-if-no-docker    Exit gracefully if Docker not found (exit 0)
-    --non-interactive      Run without user prompts
+    --interactive          Prompt for user confirmations (default: auto-install)
+    --non-interactive      Run without user prompts (same as default)
     --verbose              Show detailed logs
     --project-dir=PATH     Set project directory (default: current directory)
     -h, --help             Show this help message
@@ -431,6 +432,10 @@ parse_args() {
         case $1 in
             --skip-if-no-docker)
                 SKIP_IF_NO_DOCKER=true
+                shift
+                ;;
+            --interactive)
+                INTERACTIVE=true
                 shift
                 ;;
             --non-interactive)

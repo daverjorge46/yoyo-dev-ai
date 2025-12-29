@@ -519,16 +519,16 @@ detect_missing_mcps() {
     echo "$missing_mcps" | xargs
 }
 
-# Function to prompt user for MCP update (Docker MCP Gateway)
-prompt_mcp_update() {
+# Function to show MCP update notification (auto-install by default)
+notify_mcp_update() {
     local missing_mcps="$1"
 
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "📦 Docker MCP Server Status"
+    echo "📦 Docker MCP Server Update"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "⚠️  Missing Docker MCP servers detected:"
+    echo "Enabling missing Docker MCP servers:"
     echo ""
     for mcp in $missing_mcps; do
         echo "  • $mcp"
@@ -537,13 +537,6 @@ prompt_mcp_update() {
     echo "Docker MCP servers run in containers via Docker MCP Toolkit."
     echo "They enhance Claude Code with browser automation, GitHub, search, and file access."
     echo ""
-    read -p "Would you like to enable missing MCP servers? [Y/n] " -n 1 -r
-    echo ""
-
-    if [[ $REPLY =~ ^[Nn]$ ]]; then
-        return 1
-    fi
-    return 0
 }
 
 # Function to enable missing Docker MCP servers
@@ -557,11 +550,11 @@ install_missing_mcps() {
         return 1
     fi
 
-    echo ""
-    echo "📦 Enabling Docker MCP servers..."
+    echo "Enabling servers..."
     echo ""
 
-    if bash "$mcp_installer" --non-interactive --project-dir="$CURRENT_DIR"; then
+    # Run installer in non-interactive mode (default behavior)
+    if bash "$mcp_installer" --project-dir="$CURRENT_DIR"; then
         echo ""
         echo "✅ Docker MCP servers enabled successfully"
         return 0
@@ -594,15 +587,9 @@ if [ "$CLAUDE_CODE_INSTALLED" = true ] && [ "$SKIP_MCP_CHECK" = false ]; then
         MISSING_MCPS=$(detect_missing_mcps)
 
         if [ -n "$MISSING_MCPS" ]; then
-            # Prompt user for update
-            if prompt_mcp_update "$MISSING_MCPS"; then
-                install_missing_mcps
-            else
-                echo ""
-                echo "ℹ️  Skipping MCP installation"
-                echo "   You can install MCPs later by running:"
-                echo "   $BASE_YOYO_DEV/setup/docker-mcp-setup.sh"
-            fi
+            # Auto-install missing MCPs (non-interactive by default)
+            notify_mcp_update "$MISSING_MCPS"
+            install_missing_mcps
         else
             if [ "$VERBOSE" = true ]; then
                 echo ""
@@ -648,29 +635,21 @@ check_and_install_global_commands() {
     if [ "$install_needed" = true ]; then
         echo ""
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-        echo "📦 Missing Global Commands Detected"
+        echo "📦 Global Commands Update"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
         echo ""
-        echo "The following commands are not installed globally:"
+        echo "Installing missing global commands:"
         for cmd in $missing_commands; do
             echo "  • $cmd"
         done
         echo ""
-        read -p "Would you like to install missing global commands? [Y/n] " -n 1 -r
-        echo ""
 
-        if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-            if [ -f "$BASE_YOYO_DEV/setup/install-global-command.sh" ]; then
-                bash "$BASE_YOYO_DEV/setup/install-global-command.sh"
-            else
-                echo "⚠️  Global command installer not found"
-                echo "   Run manually: $BASE_YOYO_DEV/setup/install-global-command.sh"
-            fi
+        # Auto-install without prompting
+        if [ -f "$BASE_YOYO_DEV/setup/install-global-command.sh" ]; then
+            bash "$BASE_YOYO_DEV/setup/install-global-command.sh"
         else
-            echo ""
-            echo "ℹ️  Skipping global command installation"
-            echo "   You can install later by running:"
-            echo "   $BASE_YOYO_DEV/setup/install-global-command.sh"
+            echo "⚠️  Global command installer not found"
+            echo "   Run manually: $BASE_YOYO_DEV/setup/install-global-command.sh"
         fi
         echo ""
     fi

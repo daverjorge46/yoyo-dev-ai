@@ -12,6 +12,7 @@ OVERWRITE_STANDARDS=false
 CLAUDE_CODE=false
 CURSOR=false
 PROJECT_TYPE=""
+AUTO_INSTALL_MCP=true  # Auto-install MCP servers by default
 
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
@@ -40,6 +41,10 @@ while [[ $# -gt 0 ]]; do
             PROJECT_TYPE="${1#*=}"
             shift
             ;;
+        --no-auto-mcp)
+            AUTO_INSTALL_MCP=false
+            shift
+            ;;
         -h|--help)
             echo "Usage: $0 [OPTIONS]"
             echo ""
@@ -50,6 +55,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --claude-code               Add Claude Code support"
             echo "  --cursor                    Add Cursor support"
             echo "  --project-type=TYPE         Use specific project type for installation"
+            echo "  --no-auto-mcp               Skip automatic MCP server installation"
             echo "  -h, --help                  Show this help message"
             echo ""
             exit 0
@@ -526,14 +532,14 @@ if [ "$CURSOR" = true ]; then
     fi
 fi
 
-# Handle MCP installation (optional)
-if [ "$CLAUDE_CODE" = true ]; then
+# Handle MCP installation (automatic by default)
+if [ "$CLAUDE_CODE" = true ] && [ "$AUTO_INSTALL_MCP" = true ]; then
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     echo ""
-    echo "🔌 Docker MCP Server Installation (Optional)"
+    echo "🔌 Docker MCP Server Installation"
     echo ""
-    echo "Docker MCP Gateway provides containerized MCP servers via Docker Desktop:"
+    echo "Installing containerized MCP servers via Docker Desktop:"
     echo "  • Playwright: Browser automation and testing"
     echo "  • GitHub Official: Repository and issue management"
     echo "  • DuckDuckGo: Web search integration"
@@ -541,25 +547,16 @@ if [ "$CLAUDE_CODE" = true ]; then
     echo ""
     echo "Requirements: Docker Desktop 4.32+ with MCP Toolkit enabled"
     echo ""
-    read -p "Install MCP servers now? [Y/n] " -n 1 -r
-    echo ""
 
-    if [[ $REPLY =~ ^[Yy]$ ]] || [[ -z $REPLY ]]; then
-        # Use the local copied MCP scripts from project .yoyo-dev/setup/
-        MCP_PREREQUISITES="$INSTALL_DIR/setup/mcp-prerequisites.sh"
-        MCP_INSTALLER="$INSTALL_DIR/setup/docker-mcp-setup.sh"
+    # Use the local copied MCP scripts from project .yoyo-dev/setup/
+    MCP_PREREQUISITES="$INSTALL_DIR/setup/mcp-prerequisites.sh"
+    MCP_INSTALLER="$INSTALL_DIR/setup/docker-mcp-setup.sh"
 
-        # Run prerequisite check
-        if bash "$MCP_PREREQUISITES"; then
-            # Prerequisites met, run installer
-            bash "$MCP_INSTALLER" --project-dir="$CURRENT_DIR"
-            MCP_STATUS=$?
-        else
-            echo ""
-            echo "⚠️  MCP prerequisite check failed"
-            echo "You can install MCPs later by running: yoyo --install-mcps"
-            MCP_STATUS=1
-        fi
+    # Run prerequisite check
+    if bash "$MCP_PREREQUISITES" 2>/dev/null; then
+        # Prerequisites met, run installer (non-interactive by default)
+        bash "$MCP_INSTALLER" --project-dir="$CURRENT_DIR"
+        MCP_STATUS=$?
 
         if [ $MCP_STATUS -eq 0 ]; then
             echo ""
@@ -567,12 +564,21 @@ if [ "$CLAUDE_CODE" = true ]; then
         fi
     else
         echo ""
-        echo "⏭️  Skipping MCP installation"
-        echo "You can install MCPs later by running: yoyo --install-mcps"
+        echo "⚠️  Docker MCP Toolkit not available"
+        echo ""
+        echo "To enable MCP features:"
+        echo "  1. Install Docker Desktop 4.32+ from https://www.docker.com/products/docker-desktop/"
+        echo "  2. Enable MCP Toolkit: Settings → Beta features → MCP Toolkit"
+        echo "  3. Run: bash .yoyo-dev/setup/docker-mcp-setup.sh"
+        echo ""
     fi
 
     echo ""
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+elif [ "$CLAUDE_CODE" = true ]; then
+    echo ""
+    echo "ℹ️  MCP server installation skipped (use --no-auto-mcp to skip)"
+    echo "   Install later with: bash .yoyo-dev/setup/docker-mcp-setup.sh"
 fi
 
 # Record installed version for update detection
