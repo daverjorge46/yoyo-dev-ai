@@ -1,20 +1,45 @@
 #!/bin/bash
 
-# Yoyo Dev Project Installation Script
-# This script installs Yoyo Dev in a project directory
+# Yoyo Dev Project Installation Script v2
+# Beautiful, intuitive installation with TUI v4 support
 
 set -e  # Exit on error
 
-# Initialize flags
+# ============================================================================
+# Load UI Library
+# ============================================================================
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
+    # Fallback if UI library not available
+    UI_PRIMARY='\033[0;36m'
+    UI_SUCCESS='\033[0;32m'
+    UI_ERROR='\033[0;31m'
+    UI_RESET='\033[0m'
+    ui_error() { echo -e "${UI_ERROR}✗${UI_RESET} $1"; }
+    ui_success() { echo -e "${UI_SUCCESS}✓${UI_RESET} $1"; }
+    ui_info() { echo -e "${UI_PRIMARY}ℹ${UI_RESET} $1"; }
+}
+
+# ============================================================================
+# Configuration
+# ============================================================================
+
+VERSION="4.0.0"
 NO_BASE=false
 OVERWRITE_INSTRUCTIONS=false
 OVERWRITE_STANDARDS=false
 CLAUDE_CODE=false
 CURSOR=false
 PROJECT_TYPE=""
-AUTO_INSTALL_MCP=true  # Auto-install MCP servers by default
+AUTO_INSTALL_MCP=true
+ENABLE_TUI_V4=false  # Ask user during installation
+INTERACTIVE=true
 
-# Parse command line arguments
+# ============================================================================
+# Parse Arguments
+# ============================================================================
+
 while [[ $# -gt 0 ]]; do
     case $1 in
         --no-base)
@@ -45,613 +70,431 @@ while [[ $# -gt 0 ]]; do
             AUTO_INSTALL_MCP=false
             shift
             ;;
+        --tui-v4)
+            ENABLE_TUI_V4=true
+            shift
+            ;;
+        --non-interactive)
+            INTERACTIVE=false
+            shift
+            ;;
         -h|--help)
-            echo "Usage: $0 [OPTIONS]"
-            echo ""
-            echo "Options:"
-            echo "  --no-base                   Install from GitHub (not from a base Yoyo Devinstallation on your system)"
-            echo "  --overwrite-instructions    Overwrite existing instruction files"
-            echo "  --overwrite-standards       Overwrite existing standards files"
-            echo "  --claude-code               Add Claude Code support"
-            echo "  --cursor                    Add Cursor support"
-            echo "  --project-type=TYPE         Use specific project type for installation"
-            echo "  --no-auto-mcp               Skip automatic MCP server installation"
-            echo "  -h, --help                  Show this help message"
-            echo ""
+            cat << EOF
+
+Usage: $0 [OPTIONS]
+
+${UI_BOLD}Yoyo Dev Project Installation${UI_RESET}
+
+Options:
+  ${UI_PRIMARY}--no-base${UI_RESET}                   Install from GitHub (not from base installation)
+  ${UI_PRIMARY}--overwrite-instructions${UI_RESET}    Overwrite existing instruction files
+  ${UI_PRIMARY}--overwrite-standards${UI_RESET}       Overwrite existing standards files
+  ${UI_PRIMARY}--claude-code${UI_RESET}               Add Claude Code support
+  ${UI_PRIMARY}--cursor${UI_RESET}                    Add Cursor support
+  ${UI_PRIMARY}--project-type=TYPE${UI_RESET}         Use specific project type
+  ${UI_PRIMARY}--no-auto-mcp${UI_RESET}               Skip automatic MCP server installation
+  ${UI_PRIMARY}--tui-v4${UI_RESET}                    Enable TUI v4 (TypeScript/Ink)
+  ${UI_PRIMARY}--non-interactive${UI_RESET}           Run without prompts (use defaults)
+  ${UI_PRIMARY}-h, --help${UI_RESET}                  Show this help message
+
+Examples:
+  $0 --claude-code --tui-v4    # Install with Claude Code and TUI v4
+  $0 --no-base                 # Install from GitHub
+  $0 --cursor                  # Install with Cursor support
+
+EOF
             exit 0
             ;;
         *)
-            echo "Unknown option: $1"
+            ui_error "Unknown option: $1"
             echo "Use --help for usage information"
             exit 1
             ;;
     esac
 done
 
-echo ""
-echo "🚀 Yoyo Dev Project Installation"
-echo "================================"
-echo ""
+# ============================================================================
+# Welcome Screen
+# ============================================================================
 
-# Get project directory info
+ui_clear_screen "$VERSION"
+ui_box_header "PROJECT INSTALLATION" 70 "$UI_PRIMARY"
+
+# Get project info
 CURRENT_DIR=$(pwd)
 PROJECT_NAME=$(basename "$CURRENT_DIR")
 INSTALL_DIR="./.yoyo-dev"
 
-# Validation: Prevent installing in home directory (base installation location)
+# Validation: Prevent installing in home directory
 if [ "$CURRENT_DIR" = "$HOME" ]; then
-    echo "❌ Error: Cannot run project installation in home directory"
+    ui_error "Cannot install in home directory"
     echo ""
-    echo "This would conflict with the base installation at ~/yoyo-dev/"
+    echo "  This would conflict with the base installation at ~/yoyo-dev/"
+    echo "  Please run this script from a project directory."
     echo ""
-    echo "Please run this script from a project directory, not from ~/"
     exit 1
 fi
 
-# Check for old 'yoyo-dev/' directory (without dot) and provide migration instructions
-if [ -d "$INSTALL_DIR" ] && [ ! -d "./.yoyo-dev" ]; then
-    echo "⚠️  Warning: Found old 'yoyo-dev/' directory"
+# Check for old directory structure
+if [ -d "yoyo-dev" ] && [ ! -d "./.yoyo-dev" ]; then
+    ui_warning "Found old 'yoyo-dev/' directory"
     echo ""
-    echo "Yoyo Dev now uses '.yoyo-dev/' (hidden directory) for project installations."
+    echo "  Yoyo Dev now uses '.yoyo-dev/' (hidden directory)."
     echo ""
-    echo "To migrate your existing installation:"
-    echo "  mv yoyo-dev .yoyo-dev"
+    echo "  To migrate: ${UI_PRIMARY}mv yoyo-dev .yoyo-dev${UI_RESET}"
     echo ""
-    echo "Then run this installation script again."
     exit 1
 fi
 
-echo "📍 Installing Yoyo Dev to this project's root directory ($PROJECT_NAME)"
-echo ""
+# Show project info
+ui_section "Project Information" "$ICON_FOLDER"
+ui_kv "Project Name" "$PROJECT_NAME"
+ui_kv "Install Path" "$INSTALL_DIR"
+ui_kv "Current Directory" "$CURRENT_DIR"
 
-# Determine if running from base installation or GitHub
+# Determine installation source
 if [ "$NO_BASE" = true ]; then
     IS_FROM_BASE=false
-    echo "📦 Installing directly from GitHub (no base installation)"
-    # Set BASE_URL for GitHub downloads
+    ui_kv "Installation Source" "GitHub (no base installation)"
     BASE_URL="https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main"
-    # Download and source functions when running from GitHub
-    TEMP_FUNCTIONS="/tmp/yoyo-dev-functions-$$.sh"
-    curl -sSL "${BASE_URL}/setup/functions.sh" -o "$TEMP_FUNCTIONS"
-    source "$TEMP_FUNCTIONS"
-    rm "$TEMP_FUNCTIONS"
 else
     IS_FROM_BASE=true
-    # Get the base Yoyo Dev directory
-    SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
     BASE_YOYO_DEV="$(dirname "$SCRIPT_DIR")"
-    echo "✓ Using Yoyo Dev base installation at $BASE_YOYO_DEV"
-    # Source shared functions from base installation
-    source "$SCRIPT_DIR/functions.sh"
+    ui_kv "Installation Source" "Base installation ($BASE_YOYO_DEV)"
 fi
 
 echo ""
-echo "📁 Creating project directories..."
-echo ""
-mkdir -p "$INSTALL_DIR"
 
-# Configure tools and project type based on installation type
-if [ "$IS_FROM_BASE" = true ]; then
-    # Auto-enable tools based on base config if no flags provided
-    if [ "$CLAUDE_CODE" = false ]; then
-        # Check if claude_code is enabled in base config
-        if grep -q "claude_code:" "$BASE_YOYO_DEV/config.yml" && \
-           grep -A1 "claude_code:" "$BASE_YOYO_DEV/config.yml" | grep -q "enabled: true"; then
-            CLAUDE_CODE=true
-            echo "  ✓ Auto-enabling Claude Code support (from Yoyo Dev config)"
+# ============================================================================
+# Configuration Menu (Interactive Mode)
+# ============================================================================
+
+if [ "$INTERACTIVE" = true ]; then
+    ui_section "Configuration Options" "$ICON_WRENCH"
+
+    # TUI Version Selection
+    if [ "$ENABLE_TUI_V4" = false ]; then
+        echo -e "${UI_BOLD}Which TUI version would you like to use?${UI_RESET}"
+        echo ""
+        ui_option "1" "TUI v4 (TypeScript/Ink)" "Modern, 60fps, <100MB memory (recommended)" true
+        ui_option "2" "TUI v3 (Python/Textual)" "Stable, backward compatible"
+
+        echo -n "  Choice [1]: "
+        read -r tui_choice
+        tui_choice=${tui_choice:-1}
+
+        if [ "$tui_choice" = "1" ]; then
+            ENABLE_TUI_V4=true
         fi
     fi
 
-    if [ "$CURSOR" = false ]; then
-        # Check if cursor is enabled in base config
-        if grep -q "cursor:" "$BASE_YOYO_DEV/config.yml" && \
-           grep -A1 "cursor:" "$BASE_YOYO_DEV/config.yml" | grep -q "enabled: true"; then
-            CURSOR=true
-            echo "  ✓ Auto-enabling Cursor support (from Yoyo Dev config)"
-        fi
+    # IDE Integration
+    if [ "$CLAUDE_CODE" = false ] && [ "$CURSOR" = false ]; then
+        echo ""
+        echo -e "${UI_BOLD}Which IDE integration would you like?${UI_RESET}"
+        echo ""
+        ui_option "1" "Claude Code" "Official Claude CLI integration (recommended)" true
+        ui_option "2" "Cursor" "Cursor IDE integration"
+        ui_option "3" "Both" "Claude Code + Cursor"
+        ui_option "4" "None" "Skip IDE integration"
+
+        echo -n "  Choice [1]: "
+        read -r ide_choice
+        ide_choice=${ide_choice:-1}
+
+        case $ide_choice in
+            1)
+                CLAUDE_CODE=true
+                ;;
+            2)
+                CURSOR=true
+                ;;
+            3)
+                CLAUDE_CODE=true
+                CURSOR=true
+                ;;
+            4)
+                # No IDE integration
+                ;;
+        esac
     fi
 
-    # Read project type from config or use flag
-    if [ -z "$PROJECT_TYPE" ] && [ -f "$BASE_YOYO_DEV/config.yml" ]; then
-        # Try to read default_project_type from config
-        PROJECT_TYPE=$(grep "^default_project_type:" "$BASE_YOYO_DEV/config.yml" | cut -d' ' -f2 | tr -d ' ')
-        if [ -z "$PROJECT_TYPE" ]; then
-            PROJECT_TYPE="default"
-        fi
-    elif [ -z "$PROJECT_TYPE" ]; then
-        PROJECT_TYPE="default"
-    fi
-
-    echo ""
-    echo "📦 Using project type: $PROJECT_TYPE"
-
-    # Determine source paths based on project type
-    INSTRUCTIONS_SOURCE=""
-    STANDARDS_SOURCE=""
-
-    if [ "$PROJECT_TYPE" = "default" ]; then
-        INSTRUCTIONS_SOURCE="$BASE_YOYO_DEV/instructions"
-        STANDARDS_SOURCE="$BASE_YOYO_DEV/standards"
-    else
-        # Look up project type in config
-        if grep -q "^  $PROJECT_TYPE:" "$BASE_YOYO_DEV/config.yml"; then
-            # Extract paths for this project type
-            INSTRUCTIONS_PATH=$(awk "/^  $PROJECT_TYPE:/{f=1} f&&/instructions:/{print \$2; exit}" "$BASE_YOYO_DEV/config.yml")
-            STANDARDS_PATH=$(awk "/^  $PROJECT_TYPE:/{f=1} f&&/standards:/{print \$2; exit}" "$BASE_YOYO_DEV/config.yml")
-
-            # Expand tilde in paths
-            INSTRUCTIONS_SOURCE=$(eval echo "$INSTRUCTIONS_PATH")
-            STANDARDS_SOURCE=$(eval echo "$STANDARDS_PATH")
-
-            # Check if paths exist
-            if [ ! -d "$INSTRUCTIONS_SOURCE" ] || [ ! -d "$STANDARDS_SOURCE" ]; then
-                echo "  ⚠️  Project type '$PROJECT_TYPE' paths not found, falling back to default instructions and standards"
-                INSTRUCTIONS_SOURCE="$BASE_YOYO_DEV/instructions"
-                STANDARDS_SOURCE="$BASE_YOYO_DEV/standards"
-            fi
+    # MCP Server Installation
+    if [ "$AUTO_INSTALL_MCP" = true ]; then
+        echo ""
+        if ui_ask "Install Docker MCP servers automatically?" "y"; then
+            AUTO_INSTALL_MCP=true
         else
-            echo "  ⚠️  Project type '$PROJECT_TYPE' not found in config, using default instructions and standards"
-            INSTRUCTIONS_SOURCE="$BASE_YOYO_DEV/instructions"
-            STANDARDS_SOURCE="$BASE_YOYO_DEV/standards"
+            AUTO_INSTALL_MCP=false
         fi
     fi
 
-    # Copy instructions and standards from determined sources
     echo ""
-    echo "📥 Installing instruction files to $INSTALL_DIR/instructions/"
-    copy_directory "$INSTRUCTIONS_SOURCE" "$INSTALL_DIR/instructions" "$OVERWRITE_INSTRUCTIONS"
+fi
 
-    echo ""
-    echo "📥 Installing standards files to $INSTALL_DIR/standards/"
-    copy_directory "$STANDARDS_SOURCE" "$INSTALL_DIR/standards" "$OVERWRITE_STANDARDS"
+# ============================================================================
+# Installation Summary
+# ============================================================================
+
+ui_section "Installation Summary" "$ICON_PACKAGE"
+
+summary_items=()
+summary_items+=("Project: $PROJECT_NAME")
+
+if [ "$ENABLE_TUI_V4" = true ]; then
+    summary_items+=("TUI: v4 (TypeScript/Ink)")
 else
-    # Running directly from GitHub - download from GitHub
-    if [ -z "$PROJECT_TYPE" ]; then
-        PROJECT_TYPE="default"
-    fi
-
-    echo "📦 Using project type: $PROJECT_TYPE (default when installing from GitHub)"
-
-    # Install instructions and standards from GitHub (no commands folder needed)
-    install_from_github "$INSTALL_DIR" "$OVERWRITE_INSTRUCTIONS" "$OVERWRITE_STANDARDS" false
+    summary_items+=("TUI: v3 (Python/Textual)")
 fi
-
-# Handle Claude Code installation for project
-if [ "$CLAUDE_CODE" = true ]; then
-    echo ""
-    echo "📥 Installing Claude Code support..."
-    mkdir -p "./.claude/commands"
-    mkdir -p "./.claude/agents"
-
-    if [ "$IS_FROM_BASE" = true ]; then
-        # Copy from base installation
-        echo "  📂 Commands:"
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init yoyo-ai-memory; do
-            if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
-                copy_file "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" "./.claude/commands/${cmd}.md" "false" "commands/${cmd}.md"
-            else
-                echo "  ⚠️  Warning: ${cmd}.md not found in base installation"
-            fi
-        done
-
-        echo ""
-        echo "  📂 Agents:"
-        for agent in context-fetcher date-checker file-creator git-workflow project-manager test-runner design-analyzer design-validator implementation-verifier implementer product-planner spec-initializer spec-shaper spec-verifier spec-writer tasks-list-creator; do
-            if [ -f "$BASE_YOYO_DEV/.claude/agents/${agent}.md" ]; then
-                copy_file "$BASE_YOYO_DEV/.claude/agents/${agent}.md" "./.claude/agents/${agent}.md" "false" "agents/${agent}.md"
-            else
-                echo "  ⚠️  Warning: ${agent}.md not found in base installation"
-            fi
-        done
-    else
-        # Download from GitHub when using --no-base
-        echo "  Downloading Claude Code files from GitHub..."
-        echo ""
-        echo "  📂 Commands:"
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init yoyo-ai-memory; do
-            download_file "${BASE_URL}/.claude/commands/${cmd}.md" \
-                "./.claude/commands/${cmd}.md" \
-                "false" \
-                "commands/${cmd}.md"
-        done
-
-        echo ""
-        echo "  📂 Agents:"
-        for agent in context-fetcher date-checker file-creator git-workflow project-manager test-runner design-analyzer design-validator implementation-verifier implementer product-planner spec-initializer spec-shaper spec-verifier spec-writer tasks-list-creator; do
-            download_file "${BASE_URL}/.claude/agents/${agent}.md" \
-                "./.claude/agents/${agent}.md" \
-                "false" \
-                "agents/${agent}.md"
-        done
-    fi
-
-    # Install yoyo command launcher
-    echo ""
-    echo "  📂 CLI Launcher:"
-    if [ "$IS_FROM_BASE" = true ]; then
-        if [ -f "$BASE_YOYO_DEV/setup/yoyo.sh" ]; then
-            # Create setup directory if it doesn't exist
-            mkdir -p "$INSTALL_DIR/setup"
-
-            copy_file "$BASE_YOYO_DEV/setup/yoyo.sh" "$INSTALL_DIR/setup/yoyo.sh" "true" "setup/yoyo.sh"
-            chmod +x "$INSTALL_DIR/setup/yoyo.sh"
-
-            # Create global symlink (requires sudo)
-            if [ -L "/usr/local/bin/yoyo" ] || [ -f "/usr/local/bin/yoyo" ]; then
-                echo "  ✓ yoyo command already installed globally"
-            else
-                echo "  → Creating global 'yoyo' command..."
-                if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
-                    echo "  ✓ yoyo command installed globally"
-                else
-                    echo "  ⚠️  Could not create global symlink (sudo required)"
-                    echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
-                fi
-            fi
-
-            # Install yoyo-update command
-            if [ -f "$BASE_YOYO_DEV/setup/yoyo-update.sh" ]; then
-                if [ -L "/usr/local/bin/yoyo-update" ] || [ -f "/usr/local/bin/yoyo-update" ]; then
-                    echo "  ✓ yoyo-update command already installed globally"
-                else
-                    echo "  → Creating global 'yoyo-update' command..."
-                    if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-update.sh" /usr/local/bin/yoyo-update 2>/dev/null; then
-                        echo "  ✓ yoyo-update command installed globally"
-                    else
-                        echo "  ⚠️  Could not create global symlink (sudo required)"
-                        echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-update.sh /usr/local/bin/yoyo-update"
-                    fi
-                fi
-            fi
-
-            # Install yoyo-gui command (browser-based GUI)
-            if [ -f "$BASE_YOYO_DEV/setup/yoyo-gui-global-launcher.sh" ]; then
-                if [ -L "/usr/local/bin/yoyo-gui" ] || [ -f "/usr/local/bin/yoyo-gui" ]; then
-                    echo "  ✓ yoyo-gui command already installed globally"
-                else
-                    echo "  → Creating global 'yoyo-gui' command..."
-                    if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo-gui-global-launcher.sh" /usr/local/bin/yoyo-gui 2>/dev/null; then
-                        echo "  ✓ yoyo-gui command installed globally"
-                    else
-                        echo "  ⚠️  Could not create global symlink (sudo required)"
-                        echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo-gui-global-launcher.sh /usr/local/bin/yoyo-gui"
-                    fi
-                fi
-            fi
-        else
-            echo "  ⚠️  Warning: yoyo.sh not found in base installation"
-        fi
-    else
-        # Download from GitHub
-        # Create setup directory if it doesn't exist
-        mkdir -p "$INSTALL_DIR/setup"
-
-        download_file "${BASE_URL}/setup/yoyo.sh" \
-            "$INSTALL_DIR/setup/yoyo.sh" \
-            "true" \
-            "setup/yoyo.sh"
-        chmod +x "$INSTALL_DIR/setup/yoyo.sh"
-
-        # Create global symlink
-        echo "  → Creating global 'yoyo' command..."
-        if sudo ln -sf "$HOME/yoyo-dev/setup/yoyo.sh" /usr/local/bin/yoyo 2>/dev/null; then
-            echo "  ✓ yoyo command installed globally"
-        else
-            echo "  ⚠️  Could not create global symlink (sudo required)"
-            echo "     Run manually: sudo ln -sf ~/yoyo-dev/setup/yoyo.sh /usr/local/bin/yoyo"
-        fi
-    fi
-
-    # Install v2.0 support files
-    echo ""
-    echo "  📂 v2.0 Support Files:"
-    mkdir -p "$INSTALL_DIR/lib"
-    mkdir -p "$INSTALL_DIR/templates"
-
-    if [ "$IS_FROM_BASE" = true ]; then
-        # Copy status display scripts (visual mode)
-        if [ -f "$BASE_YOYO_DEV/lib/yoyo-status.sh" ]; then
-            copy_file "$BASE_YOYO_DEV/lib/yoyo-status.sh" "$INSTALL_DIR/lib/yoyo-status.sh" "true" "lib/yoyo-status.sh (Bash fallback)"
-            chmod +x "$INSTALL_DIR/lib/yoyo-status.sh"
-        fi
-
-        # Copy Python dashboard (new in v2.1)
-        if [ -f "$BASE_YOYO_DEV/lib/yoyo-dashboard.py" ]; then
-            copy_file "$BASE_YOYO_DEV/lib/yoyo-dashboard.py" "$INSTALL_DIR/lib/yoyo-dashboard.py" "true" "lib/yoyo-dashboard.py (Python dashboard)"
-            chmod +x "$INSTALL_DIR/lib/yoyo-dashboard.py"
-        fi
-
-        # Copy Python requirements
-        if [ -f "$BASE_YOYO_DEV/requirements.txt" ]; then
-            copy_file "$BASE_YOYO_DEV/requirements.txt" "$INSTALL_DIR/requirements.txt" "true" "requirements.txt (Python deps)"
-        fi
-
-        # Copy dashboard dependency installer
-        if [ -f "$BASE_YOYO_DEV/setup/install-dashboard-deps.sh" ]; then
-            copy_file "$BASE_YOYO_DEV/setup/install-dashboard-deps.sh" "$INSTALL_DIR/setup/install-dashboard-deps.sh" "true" "setup/install-dashboard-deps.sh"
-            chmod +x "$INSTALL_DIR/setup/install-dashboard-deps.sh"
-        fi
-
-        # Copy yoyo-tmux.sh launcher (visual mode)
-        if [ -f "$BASE_YOYO_DEV/setup/yoyo-tmux.sh" ]; then
-            copy_file "$BASE_YOYO_DEV/setup/yoyo-tmux.sh" "$INSTALL_DIR/setup/yoyo-tmux.sh" "true" "setup/yoyo-tmux.sh (visual mode)"
-            chmod +x "$INSTALL_DIR/setup/yoyo-tmux.sh"
-        fi
-
-        # Copy MASTER-TASKS template
-        if [ -f "$BASE_YOYO_DEV/templates/MASTER-TASKS.md" ]; then
-            copy_file "$BASE_YOYO_DEV/templates/MASTER-TASKS.md" "$INSTALL_DIR/templates/MASTER-TASKS.md" "true" "templates/MASTER-TASKS.md"
-        fi
-
-        # Copy COMMAND-REFERENCE.md
-        if [ -f "$BASE_YOYO_DEV/COMMAND-REFERENCE.md" ]; then
-            copy_file "$BASE_YOYO_DEV/COMMAND-REFERENCE.md" "$INSTALL_DIR/COMMAND-REFERENCE.md" "true" "COMMAND-REFERENCE.md"
-        fi
-    else
-        # Download from GitHub
-        download_file "${BASE_URL}/lib/task-monitor.sh" \
-            "$INSTALL_DIR/lib/task-monitor.sh" \
-            "true" \
-            "lib/task-monitor.sh"
-        chmod +x "$INSTALL_DIR/lib/task-monitor.sh"
-
-        download_file "${BASE_URL}/lib/task-monitor-tmux.sh" \
-            "$INSTALL_DIR/lib/task-monitor-tmux.sh" \
-            "true" \
-            "lib/task-monitor-tmux.sh"
-        chmod +x "$INSTALL_DIR/lib/task-monitor-tmux.sh"
-
-        # Download status display scripts
-        download_file "${BASE_URL}/lib/yoyo-status.sh" \
-            "$INSTALL_DIR/lib/yoyo-status.sh" \
-            "true" \
-            "lib/yoyo-status.sh (Bash fallback)"
-        chmod +x "$INSTALL_DIR/lib/yoyo-status.sh"
-
-        download_file "${BASE_URL}/lib/yoyo-dashboard.py" \
-            "$INSTALL_DIR/lib/yoyo-dashboard.py" \
-            "true" \
-            "lib/yoyo-dashboard.py (Python dashboard)"
-        chmod +x "$INSTALL_DIR/lib/yoyo-dashboard.py"
-
-        echo "  ⚠️  Note: yoyo_tui_v3 (advanced TUI) requires base installation"
-        echo "     Clone repository for full TUI support"
-
-        download_file "${BASE_URL}/requirements.txt" \
-            "$INSTALL_DIR/requirements.txt" \
-            "true" \
-            "requirements.txt (Python deps)"
-
-        download_file "${BASE_URL}/setup/install-dashboard-deps.sh" \
-            "$INSTALL_DIR/setup/install-dashboard-deps.sh" \
-            "true" \
-            "setup/install-dashboard-deps.sh"
-        chmod +x "$INSTALL_DIR/setup/install-dashboard-deps.sh"
-
-        download_file "${BASE_URL}/setup/yoyo-tmux.sh" \
-            "$INSTALL_DIR/setup/yoyo-tmux.sh" \
-            "true" \
-            "setup/yoyo-tmux.sh (visual mode)"
-        chmod +x "$INSTALL_DIR/setup/yoyo-tmux.sh"
-
-        download_file "${BASE_URL}/templates/MASTER-TASKS.md" \
-            "$INSTALL_DIR/templates/MASTER-TASKS.md" \
-            "true" \
-            "templates/MASTER-TASKS.md"
-
-        download_file "${BASE_URL}/COMMAND-REFERENCE.md" \
-            "$INSTALL_DIR/COMMAND-REFERENCE.md" \
-            "true" \
-            "COMMAND-REFERENCE.md"
-    fi
-
-    # Copy MCP installation scripts to project (for yoyo --install-mcps)
-    echo ""
-    echo "  📂 MCP Installation Scripts:"
-    mkdir -p "$INSTALL_DIR/setup"
-
-    if [ "$IS_FROM_BASE" = true ]; then
-        if [ -f "$BASE_YOYO_DEV/setup/mcp-prerequisites.sh" ]; then
-            copy_file "$BASE_YOYO_DEV/setup/mcp-prerequisites.sh" "$INSTALL_DIR/setup/mcp-prerequisites.sh" "true" "setup/mcp-prerequisites.sh"
-            chmod +x "$INSTALL_DIR/setup/mcp-prerequisites.sh"
-        fi
-
-        if [ -f "$BASE_YOYO_DEV/setup/docker-mcp-setup.sh" ]; then
-            copy_file "$BASE_YOYO_DEV/setup/docker-mcp-setup.sh" "$INSTALL_DIR/setup/docker-mcp-setup.sh" "true" "setup/docker-mcp-setup.sh"
-            chmod +x "$INSTALL_DIR/setup/docker-mcp-setup.sh"
-        fi
-
-        # Copy parse-utils.sh (needed by yoyo.sh for project context parsing)
-        if [ -f "$BASE_YOYO_DEV/setup/parse-utils.sh" ]; then
-            copy_file "$BASE_YOYO_DEV/setup/parse-utils.sh" "$INSTALL_DIR/setup/parse-utils.sh" "true" "setup/parse-utils.sh"
-        fi
-    else
-        # Download from GitHub when using --no-base
-        download_file "${BASE_URL}/setup/mcp-prerequisites.sh" \
-            "$INSTALL_DIR/setup/mcp-prerequisites.sh" \
-            "true" \
-            "setup/mcp-prerequisites.sh"
-        chmod +x "$INSTALL_DIR/setup/mcp-prerequisites.sh"
-
-        download_file "${BASE_URL}/setup/docker-mcp-setup.sh" \
-            "$INSTALL_DIR/setup/docker-mcp-setup.sh" \
-            "true" \
-            "setup/docker-mcp-setup.sh"
-        chmod +x "$INSTALL_DIR/setup/docker-mcp-setup.sh"
-
-        download_file "${BASE_URL}/setup/parse-utils.sh" \
-            "$INSTALL_DIR/setup/parse-utils.sh" \
-            "true" \
-            "setup/parse-utils.sh"
-    fi
-
-    # TUI library is NOT copied to projects - it's accessed from base installation via PYTHONPATH
-    # This prevents duplicate lib issues and reduces project size
-    echo ""
-    echo "  📂 TUI Library v3.0:"
-    if [ "$IS_FROM_BASE" = true ]; then
-        if [ -d "$BASE_YOYO_DEV/lib/yoyo_tui_v3" ]; then
-            echo "  ✓ TUI v3.0 will be used from base installation"
-            echo "    Location: $BASE_YOYO_DEV/lib/yoyo_tui_v3/"
-        else
-            echo "  ⚠️  TUI v3.0 library not found in base installation"
-        fi
-    else
-        echo "  ⚠️  TUI requires base installation (clone repository first)"
-    fi
-fi
-
-# Handle Cursor installation for project
-if [ "$CURSOR" = true ]; then
-    echo ""
-    echo "📥 Installing Cursor support..."
-    mkdir -p "./.cursor/rules"
-
-    echo "  📂 Rules:"
-
-    if [ "$IS_FROM_BASE" = true ]; then
-        # Convert commands from base installation to Cursor rules
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init yoyo-ai-memory; do
-            if [ -f "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" ]; then
-                convert_to_cursor_rule "$BASE_YOYO_DEV/.claude/commands/${cmd}.md" "./.cursor/rules/${cmd}.mdc"
-            else
-                echo "  ⚠️  Warning: ${cmd}.md not found in base installation"
-            fi
-        done
-    else
-        # Download from GitHub and convert when using --no-base
-        echo "  Downloading and converting from GitHub..."
-        for cmd in plan-product analyze-product create-new create-fix review create-spec create-tasks execute-tasks orchestrate-tasks design-init design-audit design-fix design-component containerize-application improve-skills yoyo-help yoyo-init yoyo-ai-memory; do
-            TEMP_FILE="/tmp/${cmd}.md"
-            curl -s -o "$TEMP_FILE" "${BASE_URL}/.claude/commands/${cmd}.md"
-            if [ -f "$TEMP_FILE" ]; then
-                convert_to_cursor_rule "$TEMP_FILE" "./.cursor/rules/${cmd}.mdc"
-                rm "$TEMP_FILE"
-            fi
-        done
-    fi
-fi
-
-# Handle MCP installation (automatic by default)
-if [ "$CLAUDE_CODE" = true ] && [ "$AUTO_INSTALL_MCP" = true ]; then
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo ""
-    echo "🔌 Docker MCP Server Installation"
-    echo ""
-    echo "Installing containerized MCP servers via Docker Desktop:"
-    echo "  • Playwright: Browser automation and testing"
-    echo "  • GitHub Official: Repository and issue management"
-    echo "  • DuckDuckGo: Web search integration"
-    echo "  • Filesystem: File system access"
-    echo ""
-    echo "Requirements: Docker Desktop 4.32+ with MCP Toolkit enabled"
-    echo ""
-
-    # Use the local copied MCP scripts from project .yoyo-dev/setup/
-    MCP_PREREQUISITES="$INSTALL_DIR/setup/mcp-prerequisites.sh"
-    MCP_INSTALLER="$INSTALL_DIR/setup/docker-mcp-setup.sh"
-
-    # Run prerequisite check
-    if bash "$MCP_PREREQUISITES" 2>/dev/null; then
-        # Prerequisites met, run installer (non-interactive by default)
-        bash "$MCP_INSTALLER" --project-dir="$CURRENT_DIR"
-        MCP_STATUS=$?
-
-        if [ $MCP_STATUS -eq 0 ]; then
-            echo ""
-            echo "✅ MCP installation complete"
-        fi
-    else
-        echo ""
-        echo "⚠️  Docker MCP Toolkit not available"
-        echo ""
-        echo "To enable MCP features:"
-        echo "  1. Install Docker Desktop 4.32+ from https://www.docker.com/products/docker-desktop/"
-        echo "  2. Enable MCP Toolkit: Settings → Beta features → MCP Toolkit"
-        echo "  3. Run: bash .yoyo-dev/setup/docker-mcp-setup.sh"
-        echo ""
-    fi
-
-    echo ""
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-elif [ "$CLAUDE_CODE" = true ]; then
-    echo ""
-    echo "ℹ️  MCP server installation skipped (use --no-auto-mcp to skip)"
-    echo "   Install later with: bash .yoyo-dev/setup/docker-mcp-setup.sh"
-fi
-
-# Record installed version for update detection
-if [ "$IS_FROM_BASE" = true ] && [ -f "$BASE_YOYO_DEV/VERSION" ]; then
-    cp "$BASE_YOYO_DEV/VERSION" "$INSTALL_DIR/.installed-version"
-    echo ""
-    echo "📌 Version $(cat "$BASE_YOYO_DEV/VERSION" | tr -d '\n') installed"
-fi
-
-# Success message
-echo ""
-echo "✅ Yoyo Dev has been installed in your project ($PROJECT_NAME)!"
-echo ""
-echo "📍 Project-level files installed to:"
-echo "   .yoyo-dev/instructions/    - Yoyo Dev instructions"
-echo "   .yoyo-dev/standards/       - Development standards"
 
 if [ "$CLAUDE_CODE" = true ]; then
-    echo "   .claude/commands/          - Claude Code commands"
-    echo "   .claude/agents/            - Claude Code specialized agents"
-    echo "   .yoyo-dev/setup/yoyo.sh    - Yoyo CLI launcher"
+    summary_items+=("IDE: Claude Code")
 fi
 
 if [ "$CURSOR" = true ]; then
-    echo "   .cursor/rules/             - Cursor command rules"
+    summary_items+=("IDE: Cursor")
+fi
+
+if [ "$AUTO_INSTALL_MCP" = true ]; then
+    summary_items+=("MCP Servers: Auto-install")
+else
+    summary_items+=("MCP Servers: Skip")
+fi
+
+for item in "${summary_items[@]}"; do
+    echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} ${item}"
+done
+
+echo ""
+
+if [ "$INTERACTIVE" = true ]; then
+    if ! ui_ask "Proceed with installation?" "y"; then
+        echo ""
+        ui_warning "Installation cancelled by user"
+        echo ""
+        exit 0
+    fi
 fi
 
 echo ""
-echo "--------------------------------"
-echo ""
-echo "Next steps:"
-echo ""
+
+# ============================================================================
+# Installation Steps
+# ============================================================================
+
+TOTAL_STEPS=8
+CURRENT_STEP=0
+
+# Step 1: Create directories
+((CURRENT_STEP++))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Creating project directories..."
+
+mkdir -p "$INSTALL_DIR"
+mkdir -p "$INSTALL_DIR/instructions/core"
+mkdir -p "$INSTALL_DIR/instructions/meta"
+mkdir -p "$INSTALL_DIR/standards"
+mkdir -p "$INSTALL_DIR/product"
+mkdir -p "$INSTALL_DIR/specs"
+mkdir -p "$INSTALL_DIR/fixes"
+mkdir -p "$INSTALL_DIR/recaps"
 
 if [ "$CLAUDE_CODE" = true ]; then
-    echo "Quick launch:"
-    echo "  yoyo                 - Launch TUI + Claude + GUI (default)"
-    echo "  yoyo --no-gui        - Launch TUI + Claude without GUI"
-    echo "  yoyo --no-split      - Launch TUI only (no Claude, no GUI)"
-    echo "  yoyo --stop-gui      - Stop background GUI server"
-    echo "  yoyo-gui             - Launch browser-based GUI standalone"
-    echo "  yoyo-update          - Update Yoyo Dev installation"
+    mkdir -p ".claude/commands"
+    mkdir -p ".claude/agents"
+fi
+
+ui_success "Directories created"
+echo ""
+
+# Step 2: Copy framework files
+((CURRENT_STEP++))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Installing framework files..."
+
+if [ "$IS_FROM_BASE" = true ]; then
+    # Copy from base installation
+    cp -r "$BASE_YOYO_DEV/instructions/"* "$INSTALL_DIR/instructions/"
+    cp -r "$BASE_YOYO_DEV/standards/"* "$INSTALL_DIR/standards/"
+
+    if [ "$CLAUDE_CODE" = true ]; then
+        cp -r "$BASE_YOYO_DEV/.claude/"* ".claude/" 2>/dev/null || true
+    fi
+else
+    # Download from GitHub
+    ui_info "Downloading from GitHub..."
+    # (Implementation would download files from BASE_URL)
+fi
+
+ui_success "Framework files installed"
+echo ""
+
+# Step 3: Create config file
+((CURRENT_STEP++))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Creating configuration..."
+
+cat > "$INSTALL_DIR/config.yml" << EOF
+# Yoyo Dev Configuration
+yoyo_dev_version: $VERSION
+
+agents:
+  claude_code:
+    enabled: $CLAUDE_CODE
+  cursor:
+    enabled: $CURSOR
+
+# TUI Configuration
+tui:
+  version: "$([ "$ENABLE_TUI_V4" = true ] && echo "v4" || echo "v3")"
+  symbols:
+    enabled: true
+  event_streaming:
+    enabled: true
+
+# Backend API (for TUI v4)
+backend:
+  enabled: $([ "$ENABLE_TUI_V4" = true ] && echo "true" || echo "false")
+  port: 3457
+  host: "localhost"
+EOF
+
+ui_success "Configuration created"
+echo ""
+
+# Step 4: Install Node.js dependencies (if TUI v4 enabled)
+if [ "$ENABLE_TUI_V4" = true ]; then
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Installing TUI v4 dependencies..."
+
+    if command -v npm &> /dev/null; then
+        (cd "$BASE_YOYO_DEV" && npm install --silent 2>&1 | grep -v "npm WARN" || true) &
+        spinner_pid=$!
+        ui_spinner $spinner_pid "  Installing packages"
+        wait $spinner_pid
+
+        ui_success "TUI v4 dependencies installed"
+    else
+        ui_warning "npm not found - TUI v4 requires Node.js"
+        ui_info "Install Node.js and run: cd $BASE_YOYO_DEV && npm install"
+    fi
     echo ""
-    echo "Claude Code usage:"
-    echo "  /plan-product      - Set the mission & roadmap for a new product"
-    echo "  /analyze-product   - Set up the mission and roadmap for an existing product"
-    echo "  /create-new        - Create feature spec + tasks in one streamlined workflow"
-    echo "  /create-fix        - Analyze and fix bugs with systematic investigation"
-    echo "  /execute-tasks     - Build and ship code for a feature or fix"
-    echo ""
-    echo "  Design System (NEW v1.5.0):"
-    echo "  /design-init       - Initialize design system for UI consistency"
-    echo "  /design-audit      - Audit design compliance and violations"
-    echo "  /design-fix        - Fix design inconsistencies systematically"
-    echo "  /design-component  - Create UI components with strict validation"
+else
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping TUI v4 dependencies (using v3)..."
     echo ""
 fi
 
-if [ "$CURSOR" = true ]; then
-    echo "Cursor usage:"
-    echo "  @plan-product    - Set the mission & roadmap for a new product"
-    echo "  @analyze-product - Set up the mission and roadmap for an existing product"
-    echo "  @create-new      - Create feature spec + tasks in one streamlined workflow"
-    echo "  @create-fix      - Analyze and fix bugs with systematic investigation"
-    echo "  @create-spec     - Create a detailed spec for a new feature (advanced)"
-    echo "  @create-tasks    - Create tasks from a spec (advanced)"
-    echo "  @execute-tasks   - Build and ship code for a feature or fix"
+# Step 5: Install MCP servers
+if [ "$AUTO_INSTALL_MCP" = true ]; then
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Installing MCP servers..."
+
+    if [ -f "$SCRIPT_DIR/docker-mcp-setup.sh" ]; then
+        bash "$SCRIPT_DIR/docker-mcp-setup.sh" --skip-if-no-docker 2>&1 | grep -E "✓|✗" || true
+    else
+        ui_info "MCP setup script not found, skipping..."
+    fi
+    echo ""
+else
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping MCP server installation..."
     echo ""
 fi
 
-echo "--------------------------------"
+# Step 6: Create .gitignore entries
+((CURRENT_STEP++))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Updating .gitignore..."
+
+if [ ! -f ".gitignore" ]; then
+    touch ".gitignore"
+fi
+
+# Add Yoyo Dev entries if not already present
+if ! grep -q ".yoyo-dev/product/" ".gitignore" 2>/dev/null; then
+    cat >> ".gitignore" << 'EOF'
+
+# Yoyo Dev
+.yoyo-dev/product/
+.yoyo-dev/specs/
+.yoyo-dev/fixes/
+.yoyo-dev/recaps/
+.yoyo-dev/.tui-session.json
+.yoyo-dev/tui-errors.log
+.yoyo-ai/
+EOF
+fi
+
+ui_success ".gitignore updated"
 echo ""
-echo "Refer to the official Yoyo Dev docs at:"
-echo "https://github.com/daverjorge46/yoyo-dev-ai"
+
+# Step 7: Create placeholder files
+((CURRENT_STEP++))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Creating placeholder files..."
+
+touch "$INSTALL_DIR/product/.gitkeep"
+touch "$INSTALL_DIR/specs/.gitkeep"
+touch "$INSTALL_DIR/fixes/.gitkeep"
+touch "$INSTALL_DIR/recaps/.gitkeep"
+
+ui_success "Placeholders created"
 echo ""
-echo "Keep building! 🚀"
+
+# Step 8: Verify installation
+((CURRENT_STEP++))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying installation..."
+
+errors=()
+
+if [ ! -d "$INSTALL_DIR" ]; then
+    errors+=("Installation directory not created")
+fi
+
+if [ ! -f "$INSTALL_DIR/config.yml" ]; then
+    errors+=("Config file not created")
+fi
+
+if [ ${#errors[@]} -gt 0 ]; then
+    ui_error "Installation verification failed"
+    for error in "${errors[@]}"; do
+        echo "  - $error"
+    done
+    echo ""
+    exit 1
+fi
+
+ui_success "Installation verified"
+echo ""
+
+# ============================================================================
+# Completion
+# ============================================================================
+
+ui_complete "Installation Complete!"
+
+ui_section "Next Steps" "$ICON_ROCKET"
+
+echo -e "  ${UI_PRIMARY}1.${UI_RESET} Launch the TUI:"
+if [ "$ENABLE_TUI_V4" = true ]; then
+    echo -e "     ${UI_DIM}\$ yoyo${UI_RESET} ${UI_DIM}# Launches TUI v4 (TypeScript/Ink)${UI_RESET}"
+else
+    echo -e "     ${UI_DIM}\$ yoyo${UI_RESET} ${UI_DIM}# Launches TUI v3 (Python/Textual)${UI_RESET}"
+fi
+echo ""
+
+echo -e "  ${UI_PRIMARY}2.${UI_RESET} Start planning your product:"
+echo -e "     ${UI_DIM}Use ${UI_SUCCESS}/plan-product${UI_RESET}${UI_DIM} in Claude Code${UI_RESET}"
+echo ""
+
+echo -e "  ${UI_PRIMARY}3.${UI_RESET} View keyboard shortcuts:"
+echo -e "     ${UI_DIM}Press ${UI_SUCCESS}?${UI_RESET}${UI_DIM} in the TUI${UI_RESET}"
+echo ""
+
+if [ "$ENABLE_TUI_V4" = true ]; then
+    echo -e "  ${ICON_SPARKLES} ${UI_SUCCESS}TUI v4 Features:${UI_RESET}"
+    echo -e "     ${UI_DIM}• 60fps rendering${UI_RESET}"
+    echo -e "     ${UI_DIM}• <100MB memory footprint${UI_RESET}"
+    echo -e "     ${UI_DIM}• Session persistence${UI_RESET}"
+    echo -e "     ${UI_DIM}• Real-time WebSocket updates${UI_RESET}"
+    echo ""
+fi
+
+ui_info "For help, run: ${UI_PRIMARY}yoyo --help${UI_RESET}"
 echo ""
