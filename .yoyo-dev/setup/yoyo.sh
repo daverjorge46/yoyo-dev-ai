@@ -435,6 +435,7 @@ show_help() {
     echo -e "  ${GREEN}yoyo${RESET}                         Launch TUI + Claude + GUI (dev mode, port 5173)"
     echo -e "  ${GREEN}yoyo --no-gui${RESET}                Launch TUI + Claude without GUI"
     echo -e "  ${GREEN}yoyo --no-split${RESET}              Launch TUI only (no Claude, no GUI)"
+    echo -e "  ${GREEN}yoyo --tui-v4${RESET}                Launch new TypeScript/Ink TUI (experimental)"
     echo -e "  ${GREEN}yoyo --split-ratio 50${RESET}        Custom split ratio (10-90, percentage for TUI)"
     echo -e "  ${GREEN}yoyo --stop-gui${RESET}              Stop background GUI server"
     echo -e "  ${GREEN}yoyo --gui-status${RESET}            Check if GUI server is running"
@@ -817,6 +818,46 @@ launch_split_tmux() {
     exec tmux attach-session -t "$session_name"
 }
 
+# Launch TUI v4 (TypeScript/Ink implementation)
+launch_tui_v4() {
+    echo ""
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo -e "${BOLD}${CYAN}  Yoyo Dev TUI v4 (TypeScript/Ink)${RESET}"
+    echo -e "${CYAN}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${RESET}"
+    echo ""
+    echo -e "${YELLOW}  Launching new TypeScript-based TUI...${RESET}"
+    echo ""
+
+    # Check if Bun is installed
+    if ! command -v bun &> /dev/null; then
+        echo -e "${RED}ERROR: Bun is not installed${RESET}"
+        echo ""
+        echo "TUI v4 requires Bun runtime. Install it with:"
+        echo "  curl -fsSL https://bun.sh/install | bash"
+        echo ""
+        echo "Falling back to Python TUI..."
+        sleep 2
+        launch_tui "$@"
+        return
+    fi
+
+    # Check if TUI v4 entry point exists
+    if [ ! -f "$USER_PROJECT_DIR/src/tui-v4/index.tsx" ]; then
+        echo -e "${RED}ERROR: TUI v4 not found${RESET}"
+        echo ""
+        echo "Missing: $USER_PROJECT_DIR/src/tui-v4/index.tsx"
+        echo ""
+        echo "Falling back to Python TUI..."
+        sleep 2
+        launch_tui "$@"
+        return
+    fi
+
+    # Launch TUI v4 using Bun
+    cd "$USER_PROJECT_DIR"
+    exec bun run src/tui-v4/index.tsx "$@"
+}
+
 # Main
 main() {
     local mode="${1:-launch}"
@@ -908,6 +949,12 @@ main() {
             GUI_ENABLED=false
             shift
             launch_tui "$@"
+            ;;
+        --tui-v4)
+            # Launch TUI v4 (TypeScript/Ink implementation)
+            GUI_ENABLED=false
+            shift
+            launch_tui_v4 "$@"
             ;;
         launch|"")
             # Default: Try TypeScript CLI first, fall back to split view with TUI

@@ -31,18 +31,23 @@
     "url": "https://github.com/yoyo-ai/yoyo-dev.git"
   },
   "dependencies": {
+    "ansi-escapes": "^7.2.0",
     "better-sqlite3": "^11.6.0",
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
     "glob": "^11.0.0",
     "gray-matter": "^4.0.3",
-    "ink": "^5.1.0",
+    "ink": "^5.0.0",
+    "ink-box": "^2.0.0",
     "ink-spinner": "^5.0.0",
     "ink-text-input": "^6.0.0",
     "marked": "^15.0.4",
     "marked-terminal": "^7.2.1",
     "react": "^18.3.1",
-    "uuid": "^11.0.3"
+    "terminal-size": "^4.0.0",
+    "uuid": "^11.0.3",
+    "ws": "^8.0.0",
+    "zustand": "^5.0.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
