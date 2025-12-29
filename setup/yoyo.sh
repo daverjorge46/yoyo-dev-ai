@@ -183,6 +183,107 @@ stop_gui_background() {
 }
 
 # ============================================================================
+# TUI Version Detection
+# ============================================================================
+
+# Get TUI version from config.yml
+get_tui_version() {
+    local config_file=".yoyo-dev/config.yml"
+
+    if [ ! -f "$config_file" ]; then
+        echo "v3"  # Default to v3 if no config found
+        return
+    fi
+
+    # Extract tui.version from YAML
+    # Look for "tui:" section, then "version:" under it
+    local version
+    version=$(awk '
+        /^tui:/ { in_tui=1; next }
+        in_tui && /^  version:/ {
+            gsub(/^  version: */, "");
+            gsub(/"/, "");
+            gsub(/'"'"'/, "");
+            gsub(/ *#.*$/, "");
+            gsub(/^ *| *$/, "");
+            print;
+            exit
+        }
+        /^[a-z]/ && !/^tui:/ { in_tui=0 }
+    ' "$config_file")
+
+    if [ -z "$version" ]; then
+        echo "v3"  # Default to v3 if not specified
+    else
+        echo "$version"
+    fi
+}
+
+# Check if TypeScript TUI (v4) can be launched
+check_typescript_tui() {
+    # Check if node/npm is available
+    if ! command -v node &> /dev/null; then
+        return 1
+    fi
+
+    # Check if src/tui-v4/index.tsx exists
+    if [ ! -f "$YOYO_INSTALL_DIR/src/tui-v4/index.tsx" ]; then
+        return 1
+    fi
+
+    # Check if node_modules exists (dependencies installed)
+    if [ ! -d "$YOYO_INSTALL_DIR/node_modules" ]; then
+        return 1
+    fi
+
+    return 0
+}
+
+# Launch TypeScript TUI v4
+# Returns 0 on success, 1 on failure (to trigger fallback)
+launch_typescript_tui() {
+    echo -e "${CYAN}Launching TUI v4 (TypeScript/Ink)...${RESET}"
+    echo ""
+
+    cd "$USER_PROJECT_DIR"
+
+    local tui_cmd=""
+    local exit_code=0
+
+    # Find tsx command
+    if command -v tsx &> /dev/null; then
+        tui_cmd="tsx"
+    elif [ -f "$YOYO_INSTALL_DIR/node_modules/.bin/tsx" ]; then
+        tui_cmd="$YOYO_INSTALL_DIR/node_modules/.bin/tsx"
+    else
+        echo -e "${RED}Error: tsx not found${RESET}"
+        echo ""
+        echo "Install with: npm install -g tsx"
+        echo "Or run: cd $YOYO_INSTALL_DIR && npm install"
+        echo ""
+        echo "Falling back to Python TUI..."
+        sleep 2
+        return 1
+    fi
+
+    # Run TUI and capture exit code
+    $tui_cmd "$YOYO_INSTALL_DIR/src/tui-v4/index.tsx"
+    exit_code=$?
+
+    # If TUI crashed (exit code != 0), trigger fallback
+    if [ $exit_code -ne 0 ]; then
+        echo ""
+        echo -e "${YELLOW}TUI v4 exited with error code $exit_code${RESET}"
+        echo "See .yoyo-dev/tui-errors.log for details"
+        echo ""
+        sleep 1
+        return 1
+    fi
+
+    return 0
+}
+
+# ============================================================================
 # Project Detection & Installation
 # ============================================================================
 
@@ -650,6 +751,37 @@ launch_tui() {
     # Check if we're in a Yoyo Dev project (offer to install if not)
     check_yoyo_installed_or_install
 
+    # Check TUI version from config
+    local tui_version
+    tui_version=$(get_tui_version)
+
+    # If v4 is configured and available, launch TypeScript TUI
+    if [ "$tui_version" = "v4" ]; then
+        if check_typescript_tui; then
+            # Try to launch TypeScript TUI
+            if launch_typescript_tui; then
+                # TUI exited successfully (user quit normally)
+                exit 0
+            else
+                # TUI crashed or failed to start, fall back to Python TUI
+                echo -e "${YELLOW}Falling back to Python TUI (v3)...${RESET}"
+                echo ""
+                sleep 1
+            fi
+        else
+            echo -e "${YELLOW}⚠️  TUI v4 configured but not available${RESET}"
+            echo ""
+            echo "TUI v4 requires:"
+            echo "  1. Node.js installed"
+            echo "  2. Dependencies installed (cd $YOYO_INSTALL_DIR && npm install)"
+            echo "  3. tsx installed (npm install -g tsx)"
+            echo ""
+            echo "Falling back to Python TUI (v3)..."
+            sleep 2
+        fi
+    fi
+
+    # Fall back to Python TUI (v3)
     # Check Python availability
     if ! check_python; then
         exit 1
@@ -908,6 +1040,22 @@ main() {
             GUI_ENABLED=false
             shift
             launch_tui "$@"
+            ;;
+        --tui-v4)
+            # Force TypeScript TUI v4 (experimental)
+            GUI_ENABLED=false
+            shift
+            if check_typescript_tui; then
+                launch_typescript_tui
+            else
+                echo -e "${RED}Error: TUI v4 not available${RESET}"
+                echo ""
+                echo "TUI v4 requires:"
+                echo "  1. Node.js installed"
+                echo "  2. Dependencies installed (cd $YOYO_INSTALL_DIR && npm install)"
+                echo "  3. tsx installed (npm install -g tsx)"
+                exit 1
+            fi
             ;;
         launch|"")
             # Default: Try TypeScript CLI first, fall back to split view with TUI

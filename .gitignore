@@ -58,5 +58,9 @@ temp/
 # Yoyo AI runtime data (memory databases, settings)
 .yoyo-ai/
 
+# TUI v4 session and error logs
+.yoyo-dev/.tui-session.json
+.yoyo-dev/tui-errors.log
+
 # Build outputs
 dist/

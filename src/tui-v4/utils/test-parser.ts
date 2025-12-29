@@ -29,12 +29,23 @@ export interface TestResult {
  * Detect test framework from output
  */
 function detectFramework(output: string): TestFramework {
-  if (output.includes('PASS ') || output.includes('FAIL ') && output.includes('Test Suites:')) {
+  // Jest has "Test Suites:" in summary
+  if (output.includes('Test Suites:')) {
     return 'jest';
   }
+  // Vitest has "Test Files" or uses FAIL/PASS without "Test Suites:"
   if (output.includes('Test Files') || output.includes('✓') && output.includes('Duration')) {
     return 'vitest';
   }
+  // Vitest also uses FAIL/PASS markers with ❯ for stack traces
+  if ((output.includes(' FAIL ') || output.includes(' PASS ')) && output.includes('❯')) {
+    return 'vitest';
+  }
+  // Jest also uses FAIL/PASS but with different stack traces
+  if (output.includes('PASS ') || output.includes('FAIL ')) {
+    return 'jest';
+  }
+  // Pytest has distinctive session markers
   if (output.includes('test session starts') || output.includes('passed in')) {
     return 'pytest';
   }
@@ -73,17 +84,28 @@ function parseVitest(output: string): TestResult {
   const failureBlocks = output.split(' FAIL ');
   for (let i = 1; i < failureBlocks.length; i++) {
     const block = failureBlocks[i];
-    const lines = block?.split('\n') || [];
+    if (!block) continue;
+
+    const lines = block.split('\n');
 
     let message = '';
     let stackTrace = '';
 
-    // Find error message (usually starts with AssertionError, Error, etc.)
+    // Find error message (usually starts with AssertionError, Error, etc., or "expected ...")
     for (const line of lines) {
-      if (line.match(/^(AssertionError|Error|TypeError|ReferenceError):/)) {
-        message = line.trim();
+      const trimmed = line.trim();
+
+      // Check for standard error types at start of trimmed line
+      if (trimmed.match(/^(AssertionError|Error|TypeError|ReferenceError):/)) {
+        message = trimmed;
       }
-      if (line.trim().startsWith('❯')) {
+      // Also check for assertion messages like "expected ... to be ..."
+      else if (trimmed.match(/^expected .* to (be|equal|contain)/)) {
+        if (!message) message = trimmed;
+      }
+
+      // Collect stack trace lines
+      if (trimmed.startsWith('❯')) {
         stackTrace += line + '\n';
       }
     }
@@ -109,8 +131,8 @@ function parseJest(output: string): TestResult {
   };
 
   // Extract test counts
-  // Format: "Tests: X failed, Y passed, Z total"
-  const testsMatch = output.match(/Tests:\s+(?:(\d+)\s+failed,\s+)?(\d+)\s+passed,\s+(\d+)\s+total/);
+  // Format: "Tests: X failed, Y passed, Z total" OR "Tests: X failed, Y total" OR "Tests: X passed, Y total"
+  const testsMatch = output.match(/Tests:\s+(?:(\d+)\s+failed,\s+)?(?:(\d+)\s+passed,\s+)?(\d+)\s+total/);
   if (testsMatch) {
     result.failedTests = parseInt(testsMatch[1] || '0', 10);
     result.passedTests = parseInt(testsMatch[2] || '0', 10);
@@ -125,19 +147,27 @@ function parseJest(output: string): TestResult {
   }
 
   // Extract failures
-  const failureBlocks = output.split('●');
+  // Jest uses ● markers, but also FAIL for failures
+  const failureBlocks = output.includes('●') ? output.split('●') : output.split(' FAIL ');
   for (let i = 1; i < failureBlocks.length; i++) {
     const block = failureBlocks[i];
-    const lines = block?.split('\n') || [];
+    if (!block) continue;
+
+    const lines = block.split('\n');
 
     let message = '';
     let stackTrace = '';
 
     for (const line of lines) {
-      if (line.match(/^(Error|AssertionError|TypeError|ReferenceError):/)) {
-        message = line.trim();
+      const trimmed = line.trim();
+
+      // Check for standard error types
+      if (trimmed.match(/^(Error|AssertionError|TypeError|ReferenceError):/)) {
+        message = trimmed;
       }
-      if (line.trim().startsWith('at ')) {
+
+      // Collect stack trace lines (Jest uses "at " prefix)
+      if (trimmed.startsWith('at ')) {
         stackTrace += line + '\n';
       }
     }
