@@ -14,13 +14,36 @@ trap 'echo ""; ui_warning "Update interrupted by user"; exit 130' INT TERM
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
-    # Fallback colors
+    # Fallback UI functions (complete set)
     UI_PRIMARY='\033[0;36m'
     UI_SUCCESS='\033[0;32m'
     UI_ERROR='\033[0;31m'
+    UI_WARNING='\033[0;33m'
+    UI_INFO='\033[0;36m'
+    UI_BOLD='\033[1m'
+    UI_DIM='\033[2m'
     UI_RESET='\033[0m'
-    ui_error() { echo -e "${UI_ERROR}✗${UI_RESET} $1"; }
-    ui_success() { echo -e "${UI_SUCCESS}✓${UI_RESET} $1"; }
+    ICON_CHECK='✓'
+    ICON_ERROR='✗'
+    ICON_ARROW='→'
+    ICON_FOLDER='📁'
+    ICON_PACKAGE='📦'
+    ICON_SPARKLES='✨'
+    ICON_INFO='ℹ'
+    ICON_ROCKET='🚀'
+
+    ui_error() { echo -e "${UI_ERROR}${ICON_ERROR}${UI_RESET} $1"; }
+    ui_success() { echo -e "${UI_SUCCESS}${ICON_CHECK}${UI_RESET} $1"; }
+    ui_warning() { echo -e "${UI_WARNING}⚠${UI_RESET} $1"; }
+    ui_info() { echo -e "${UI_INFO}${ICON_INFO}${UI_RESET} $1"; }
+    ui_clear_screen() { clear; echo -e "\n${UI_PRIMARY}${UI_BOLD}Yoyo Dev ${1}${UI_RESET}\n"; }
+    ui_box_header() { echo -e "\n${UI_BOLD}$1${UI_RESET}\n"; }
+    ui_section() { echo -e "\n${UI_BOLD}$1${UI_RESET}"; }
+    ui_kv() { echo -e "  ${UI_DIM}$1:${UI_RESET} $2"; }
+    ui_step() { echo -e "${UI_PRIMARY}[$1/$2]${UI_RESET} $3"; }
+    ui_spinner() { wait $1; }
+    ui_ask() { return 0; }
+    ui_complete() { echo -e "\n${UI_SUCCESS}${UI_BOLD}$1${UI_RESET}\n"; }
 }
 
 # ============================================================================
