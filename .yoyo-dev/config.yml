@@ -209,6 +209,7 @@ split_view:
 
 # TUI enhancements (v5.0 Multi-Agent Orchestration)
 tui:
+  version: "v3"  # Options: "v3" (Python/Textual) or "v4" (TypeScript/Ink, experimental)
   symbols:
     enabled: true
   event_streaming:
