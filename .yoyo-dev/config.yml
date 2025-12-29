@@ -220,6 +220,13 @@ tui:
   background_indicators:
     enabled: true
 
+# Backend API for TUI v4 (TypeScript/Ink)
+backend:
+  enabled: true
+  port: 3457
+  host: "localhost"
+  heartbeat_interval: 30000  # milliseconds
+
 # Cost tracking (v5.0 Multi-Agent Orchestration)
 cost_tracking:
   enabled: true
