@@ -6,7 +6,7 @@
  */
 
 import { Hono } from 'hono';
-import { existsSync, readFileSync, readdirSync } from 'fs';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import type { Variables } from '../types.js';
 
@@ -53,6 +53,14 @@ interface RoadmapData {
   totalItems: number;
   completedItems: number;
   overallProgress: number;
+}
+
+interface PhaseBlock {
+  startLine: number;
+  endLine: number;
+  content: string[];
+  phaseNumber: number;
+  title: string;
 }
 
 // =============================================================================
@@ -250,6 +258,148 @@ function parseRoadmap(content: string, specs: string[], fixes: string[]): Roadma
   };
 }
 
+/**
+ * Extract phase blocks from roadmap content for reordering
+ */
+function extractPhaseBlocks(content: string): { header: string[]; phases: PhaseBlock[]; footer: string[] } {
+  const lines = content.split('\n');
+  const phases: PhaseBlock[] = [];
+  const header: string[] = [];
+  const footer: string[] = [];
+
+  let currentPhase: PhaseBlock | null = null;
+  let inPhases = false;
+  let afterPhases = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Check for phase heading
+    const phaseMatch = trimmed.match(/^## Phase (\d+): (.+)$/);
+    if (phaseMatch) {
+      inPhases = true;
+      afterPhases = false;
+
+      // Save previous phase
+      if (currentPhase) {
+        currentPhase.endLine = i - 1;
+        phases.push(currentPhase);
+      }
+
+      currentPhase = {
+        startLine: i,
+        endLine: i,
+        content: [line],
+        phaseNumber: parseInt(phaseMatch[1]),
+        title: phaseMatch[2],
+      };
+      continue;
+    }
+
+    // Check for non-phase ## heading (marks end of phases)
+    if (trimmed.startsWith('## ') && !trimmed.match(/^## Phase \d+:/)) {
+      if (currentPhase) {
+        currentPhase.endLine = i - 1;
+        phases.push(currentPhase);
+        currentPhase = null;
+      }
+      afterPhases = true;
+      inPhases = false;
+    }
+
+    // Collect lines
+    if (!inPhases && !afterPhases) {
+      header.push(line);
+    } else if (currentPhase) {
+      currentPhase.content.push(line);
+    } else if (afterPhases) {
+      footer.push(line);
+    }
+  }
+
+  // Save last phase
+  if (currentPhase) {
+    currentPhase.endLine = lines.length - 1;
+    phases.push(currentPhase);
+  }
+
+  return { header, phases, footer };
+}
+
+/**
+ * Reorder phases in roadmap content
+ */
+function reorderPhasesInContent(
+  content: string,
+  activeId: string,
+  overId: string
+): string {
+  const { header, phases, footer } = extractPhaseBlocks(content);
+
+  // Find indices
+  const activePhaseNum = parseInt(activeId.replace('phase-', ''));
+  const overPhaseNum = parseInt(overId.replace('phase-', ''));
+
+  const activeIndex = phases.findIndex(p => p.phaseNumber === activePhaseNum);
+  const overIndex = phases.findIndex(p => p.phaseNumber === overPhaseNum);
+
+  if (activeIndex === -1 || overIndex === -1 || activeIndex === overIndex) {
+    return content; // No change needed
+  }
+
+  // Reorder phases array
+  const [movedPhase] = phases.splice(activeIndex, 1);
+  phases.splice(overIndex, 0, movedPhase);
+
+  // Renumber phases and update content
+  const renumberedPhases = phases.map((phase, index) => {
+    const newNumber = index; // Start from 0 to preserve Phase 0, 1, 2... pattern
+    const oldHeading = phase.content[0];
+    const newHeading = oldHeading.replace(
+      /^(## Phase )\d+(:)/,
+      `$1${newNumber}$2`
+    );
+
+    return {
+      ...phase,
+      phaseNumber: newNumber,
+      content: [newHeading, ...phase.content.slice(1)],
+    };
+  });
+
+  // Reconstruct content
+  const newLines = [
+    ...header,
+    ...renumberedPhases.flatMap(p => p.content),
+    ...footer,
+  ];
+
+  return newLines.join('\n');
+}
+
+/**
+ * Update phase title in roadmap content
+ */
+function updatePhaseTitleInContent(
+  content: string,
+  phaseId: string,
+  newTitle: string
+): string {
+  const lines = content.split('\n');
+  const phaseNum = parseInt(phaseId.replace('phase-', ''));
+
+  for (let i = 0; i < lines.length; i++) {
+    const match = lines[i].match(/^(## Phase )(\d+)(: ).+$/);
+    if (match && parseInt(match[2]) === phaseNum) {
+      lines[i] = `${match[1]}${match[2]}${match[3]}${newTitle}`;
+      break;
+    }
+  }
+
+  return lines.join('\n');
+}
+
 function getSpecs(projectRoot: string): string[] {
   const specsPath = join(projectRoot, '.yoyo-dev', 'specs');
   if (!existsSync(specsPath)) return [];
@@ -334,4 +484,116 @@ roadmapRoutes.get('/phase/:id', (c) => {
   }
 
   return c.json(phase);
+});
+
+// PATCH /api/roadmap/phases/reorder - Reorder phases
+roadmapRoutes.patch('/phases/reorder', async (c) => {
+  const projectRoot = c.get('projectRoot') || process.cwd();
+  const roadmapPath = join(projectRoot, '.yoyo-dev', 'product', 'roadmap.md');
+
+  if (!existsSync(roadmapPath)) {
+    return c.json({ error: 'Roadmap not found' }, 404);
+  }
+
+  const body = await c.req.json<{ activeId: string; overId: string }>();
+  const { activeId, overId } = body;
+
+  if (!activeId || !overId) {
+    return c.json({ error: 'Missing activeId or overId' }, 400);
+  }
+
+  try {
+    const content = readFileSync(roadmapPath, 'utf-8');
+    const newContent = reorderPhasesInContent(content, activeId, overId);
+
+    if (newContent !== content) {
+      writeFileSync(roadmapPath, newContent, 'utf-8');
+    }
+
+    // Return updated roadmap data
+    const specs = getSpecs(projectRoot);
+    const fixes = getFixes(projectRoot);
+    const roadmap = parseRoadmap(newContent, specs, fixes);
+
+    return c.json(roadmap);
+  } catch (error) {
+    console.error('Failed to reorder phases:', error);
+    return c.json({ error: 'Failed to reorder phases' }, 500);
+  }
+});
+
+// PATCH /api/roadmap/phases/:id - Update phase (name, status, etc.)
+roadmapRoutes.patch('/phases/:id', async (c) => {
+  const projectRoot = c.get('projectRoot') || process.cwd();
+  const phaseId = c.req.param('id');
+  const roadmapPath = join(projectRoot, '.yoyo-dev', 'product', 'roadmap.md');
+
+  if (!existsSync(roadmapPath)) {
+    return c.json({ error: 'Roadmap not found' }, 404);
+  }
+
+  const body = await c.req.json<{ name?: string; status?: string }>();
+  const { name } = body;
+
+  if (!name) {
+    return c.json({ error: 'No update fields provided' }, 400);
+  }
+
+  try {
+    const content = readFileSync(roadmapPath, 'utf-8');
+    const newContent = updatePhaseTitleInContent(content, phaseId, name);
+
+    if (newContent !== content) {
+      writeFileSync(roadmapPath, newContent, 'utf-8');
+    }
+
+    // Return updated phase
+    const specs = getSpecs(projectRoot);
+    const fixes = getFixes(projectRoot);
+    const roadmap = parseRoadmap(newContent, specs, fixes);
+    const phase = roadmap.phases.find(p => p.id === phaseId || p.id === `phase-${phaseId}`);
+
+    if (!phase) {
+      return c.json({ error: 'Phase not found after update' }, 404);
+    }
+
+    return c.json({ phase });
+  } catch (error) {
+    console.error('Failed to update phase:', error);
+    return c.json({ error: 'Failed to update phase' }, 500);
+  }
+});
+
+// GET /api/roadmap/specs - Get specs linked to roadmap phases
+roadmapRoutes.get('/specs', (c) => {
+  const projectRoot = c.get('projectRoot') || process.cwd();
+  const roadmapPath = join(projectRoot, '.yoyo-dev', 'product', 'roadmap.md');
+
+  if (!existsSync(roadmapPath)) {
+    return c.json({ error: 'Roadmap not found' }, 404);
+  }
+
+  const content = readFileSync(roadmapPath, 'utf-8');
+  const specs = getSpecs(projectRoot);
+  const fixes = getFixes(projectRoot);
+  const roadmap = parseRoadmap(content, specs, fixes);
+
+  // Collect all linked specs from roadmap items
+  const linkedSpecs: Array<{ specId: string; phaseId: string; itemTitle: string }> = [];
+
+  for (const phase of roadmap.phases) {
+    for (const section of phase.sections) {
+      for (const item of section.items) {
+        if (item.linkedSpec) {
+          linkedSpecs.push({
+            specId: item.linkedSpec,
+            phaseId: phase.id,
+            itemTitle: item.title,
+          });
+        }
+      }
+    }
+  }
+
+  return c.json({ linkedSpecs, totalSpecs: specs.length });
 });

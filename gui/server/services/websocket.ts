@@ -23,7 +23,12 @@ export interface WSMessage {
     | 'fix:updated'
     | 'task:updated'
     | 'execution:progress'
-    | 'system:status';
+    | 'system:status'
+    | 'agent:started'
+    | 'agent:progress'
+    | 'agent:completed'
+    | 'agent:failed'
+    | 'agent:log';
   payload?: {
     path?: string;
     paths?: string[];

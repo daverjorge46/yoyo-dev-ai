@@ -28,6 +28,9 @@ import { fixesRoutes } from './routes/fixes.js';
 import { roadmapRoutes } from './routes/roadmap.js';
 import { recapsRoutes } from './routes/recaps.js';
 import { patternsRoutes } from './routes/patterns.js';
+import { agentsRoutes } from './routes/agents.js';
+import { changelogRoutes } from './routes/changelog.js';
+import { chatRoutes } from './routes/chat.js';
 import { wsManager } from './services/websocket.js';
 import { fileWatcher } from './services/file-watcher.js';
 
@@ -119,6 +122,9 @@ app.route('/api/fixes', fixesRoutes);
 app.route('/api/roadmap', roadmapRoutes);
 app.route('/api/recaps', recapsRoutes);
 app.route('/api/patterns', patternsRoutes);
+app.route('/api/agents', agentsRoutes);
+app.route('/api/changelog', changelogRoutes);
+app.route('/api/chat', chatRoutes);
 
 // Health check with WebSocket status
 app.get('/api/health', (c) => {

@@ -2,7 +2,7 @@
  * Specs Page
  *
  * Enhanced specifications page with CRUD operations,
- * sub-specs display, decisions log, and state info.
+ * sub-specs display, decisions log, changelog generation, and state info.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -18,10 +18,12 @@ import {
   GitBranch,
   Clock,
   CheckCircle,
+  ScrollText,
 } from 'lucide-react';
 import { FileEditorModal } from '../components/FileEditorModal';
 import { CreateSpecModal } from '../components/CreateSpecModal';
 import { DeleteConfirmModal } from '../components/DeleteConfirmModal';
+import { ChangelogGenerator } from '../components/changelog';
 
 // =============================================================================
 // Types
@@ -224,9 +226,11 @@ function CollapsibleSection({
 function SpecDetailView({
   specId,
   onDelete,
+  onGenerateChangelog,
 }: {
   specId: string;
   onDelete: () => void;
+  onGenerateChangelog: () => void;
 }) {
   const [editingFile, setEditingFile] = useState<string | null>(null);
   const queryClient = useQueryClient();
@@ -257,6 +261,8 @@ function SpecDetailView({
   const progress = spec.state?.completedTasks?.length
     ? Math.round((spec.state.completedTasks.length / 10) * 100)
     : 0;
+  const isCompleted = spec.state?.status?.toLowerCase() === 'completed';
+  const hasTasks = spec.tasks !== null;
 
   return (
     <div className="space-y-4">
@@ -273,13 +279,34 @@ function SpecDetailView({
             {spec.state && <StatusBadge status={spec.state.status} />}
           </div>
         </div>
-        <button
-          onClick={onDelete}
-          className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-          title="Delete specification"
-        >
-          <Trash2 className="h-5 w-5" />
-        </button>
+        <div className="flex items-center gap-2">
+          {/* Generate Changelog button - shown for specs with tasks */}
+          {hasTasks && (
+            <button
+              onClick={onGenerateChangelog}
+              className={`
+                flex items-center gap-2 px-3 py-2
+                text-sm font-medium
+                rounded-lg transition-colors
+                ${isCompleted
+                  ? 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                }
+              `}
+              title="Generate changelog from spec"
+            >
+              <ScrollText className="h-4 w-4" />
+              Changelog
+            </button>
+          )}
+          <button
+            onClick={onDelete}
+            className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+            title="Delete specification"
+          >
+            <Trash2 className="h-5 w-5" />
+          </button>
+        </div>
       </div>
 
       {/* State Info */}
@@ -441,6 +468,7 @@ export default function Specs() {
   const [selectedSpec, setSelectedSpec] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Spec | null>(null);
+  const [changelogSpec, setChangelogSpec] = useState<{ id: string; name: string } | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -529,6 +557,12 @@ export default function Specs() {
                     const spec = specs.find((s) => s.id === selectedSpec);
                     if (spec) setDeleteTarget(spec);
                   }}
+                  onGenerateChangelog={() => {
+                    const spec = specs.find((s) => s.id === selectedSpec);
+                    if (spec) {
+                      setChangelogSpec({ id: spec.id, name: spec.name });
+                    }
+                  }}
                 />
               ) : (
                 <div className="text-center text-gray-500 dark:text-gray-400 py-8">
@@ -564,6 +598,16 @@ export default function Specs() {
           itemType="spec"
           itemName={deleteTarget.name}
           itemId={deleteTarget.id}
+        />
+      )}
+
+      {/* Changelog Generator Modal */}
+      {changelogSpec && (
+        <ChangelogGenerator
+          isOpen={!!changelogSpec}
+          onClose={() => setChangelogSpec(null)}
+          specId={changelogSpec.id}
+          specName={changelogSpec.name}
         />
       )}
     </div>

@@ -37,6 +37,8 @@ interface ParsedTasks {
   completedTasks: number;
 }
 
+type ColumnId = 'backlog' | 'in_progress' | 'review' | 'completed';
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -153,6 +155,17 @@ function getAllTasks(projectRoot: string): ParsedTasks[] {
   return allTasks;
 }
 
+/**
+ * Map Kanban column to task status.
+ * - backlog -> pending (unchecked)
+ * - in_progress -> pending (unchecked) - visual only in Kanban
+ * - review -> pending (unchecked) - visual only in Kanban
+ * - completed -> completed (checked)
+ */
+function columnToStatus(column: ColumnId): 'pending' | 'completed' {
+  return column === 'completed' ? 'completed' : 'pending';
+}
+
 // =============================================================================
 // Routes
 // =============================================================================
@@ -204,6 +217,77 @@ tasksRoutes.get('/:specId', (c) => {
     totalTasks,
     completedTasks,
     progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+  });
+});
+
+// PATCH /api/tasks/:specId/:groupId/:taskId/column - Update task column (Kanban)
+tasksRoutes.patch('/:specId/:groupId/:taskId/column', async (c) => {
+  const projectRoot = c.get('projectRoot') || process.cwd();
+  const { specId, groupId, taskId } = c.req.param();
+
+  const body = await c.req.json<{ column: ColumnId }>();
+
+  // Validate column
+  const validColumns: ColumnId[] = ['backlog', 'in_progress', 'review', 'completed'];
+  if (!body.column || !validColumns.includes(body.column)) {
+    return c.json({ error: 'Invalid column. Must be one of: backlog, in_progress, review, completed' }, 400);
+  }
+
+  const tasksPath = join(projectRoot, '.yoyo-dev', 'specs', specId, 'tasks.md');
+  if (!existsSync(tasksPath)) {
+    return c.json({ error: 'Tasks not found' }, 404);
+  }
+
+  let content = readFileSync(tasksPath, 'utf-8');
+  const lines = content.split('\n');
+  let inTargetGroup = false;
+  let taskCount = 0;
+  const targetTaskNum = parseInt(taskId, 10);
+  let updated = false;
+
+  // Determine the new status based on column
+  const newStatus = columnToStatus(body.column);
+  const newCheckbox = newStatus === 'completed' ? 'x' : ' ';
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Check for group header
+    const groupMatch = line.match(/^##\s+(\d+)\.\s+/);
+    if (groupMatch) {
+      inTargetGroup = groupMatch[1] === groupId;
+      taskCount = 0;
+      continue;
+    }
+
+    // Check for task
+    if (inTargetGroup) {
+      const taskMatch = line.match(/^(-\s+\[)([ xX])(\]\s+)(.+)$/);
+      if (taskMatch) {
+        taskCount++;
+        if (taskCount === targetTaskNum) {
+          lines[i] = `${taskMatch[1]}${newCheckbox}${taskMatch[3]}${taskMatch[4]}`;
+          updated = true;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!updated) {
+    return c.json({ error: 'Task not found' }, 404);
+  }
+
+  content = lines.join('\n');
+  writeFileSync(tasksPath, content, 'utf-8');
+
+  return c.json({
+    success: true,
+    specId,
+    groupId,
+    taskId,
+    column: body.column,
+    status: newStatus,
   });
 });
 

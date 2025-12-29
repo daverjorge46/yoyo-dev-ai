@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback, useEffect, useRef, KeyboardEvent } from 'react';
+import { Link } from 'react-router-dom';
+import { LayoutGrid } from 'lucide-react';
 
 interface Task {
   id: string;
@@ -317,7 +319,7 @@ function TaskItem({
                 key={idx}
                 className="text-xs text-gray-500 dark:text-gray-400"
               >
-                • {subtask}
+                * {subtask}
               </li>
             ))}
           </ul>
@@ -798,9 +800,19 @@ export default function Tasks() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Tasks
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Tasks
+            </h1>
+            <Link
+              to="/tasks/kanban"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-900/30 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
+              title="View as Kanban Board"
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Board View
+            </Link>
+          </div>
           <p className="mt-1 text-gray-600 dark:text-gray-400">
             Track and manage your development tasks
             <button

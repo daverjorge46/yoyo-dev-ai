@@ -1,27 +1,143 @@
-import { Routes, Route, NavLink } from 'react-router-dom';
+/**
+ * App Component
+ *
+ * Root application component with panel-based layout.
+ * Features resizable sidebar, main content area, and detail panel.
+ */
+
+import { Routes, Route } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import Dashboard from './pages/Dashboard';
 import Specs from './pages/Specs';
 import Fixes from './pages/Fixes';
 import Tasks from './pages/Tasks';
+import TasksKanban from './pages/TasksKanban';
 import Roadmap from './pages/Roadmap';
 import Memory from './pages/Memory';
 import Skills from './pages/Skills';
 import Recaps from './pages/Recaps';
 import Patterns from './pages/Patterns';
+import Chat from './pages/Chat';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useWebSocketContext } from './contexts/WebSocketContext';
+import type { ConnectionStatus as ConnectionStatusType } from './hooks/useWebSocket';
+import {
+  PanelLayout,
+  PanelLayoutProvider,
+  CollapsibleSidebar,
+  DetailPanel,
+  usePanelLayoutContext,
+} from './components/layout';
 
-// API client
+// =============================================================================
+// API Client
+// =============================================================================
+
 async function fetchStatus() {
   const res = await fetch('/api/status');
   if (!res.ok) throw new Error('Failed to fetch status');
   return res.json();
 }
 
-function App() {
+// =============================================================================
+// Header Component
+// =============================================================================
+
+interface HeaderProps {
+  isLoading: boolean;
+  status: { framework?: { installed?: boolean } } | undefined;
+  wsStatus: ConnectionStatusType;
+  onReconnect: () => void;
+}
+
+function Header({ isLoading, status, wsStatus, onReconnect }: HeaderProps) {
+  return (
+    <header
+      className="
+        flex items-center justify-between h-14 px-4
+        bg-white dark:bg-gray-800
+        border-b border-gray-200 dark:border-gray-700
+      "
+      role="banner"
+    >
+      {/* Page title area - can be customized per page */}
+      <div className="flex-1" />
+
+      {/* Status indicators */}
+      <div className="flex items-center gap-4">
+        {/* Project status */}
+        {!isLoading && !status?.framework?.installed && (
+          <span className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded">
+            Not initialized
+          </span>
+        )}
+        {/* WebSocket connection status */}
+        <ConnectionStatus status={wsStatus} onReconnect={onReconnect} />
+      </div>
+    </header>
+  );
+}
+
+// =============================================================================
+// Main Content Wrapper
+// =============================================================================
+
+interface MainContentProps {
+  isLoading: boolean;
+  status: { framework?: { installed?: boolean } } | undefined;
+  wsStatus: ConnectionStatusType;
+  onReconnect: () => void;
+}
+
+function MainContent({ isLoading, status, wsStatus, onReconnect }: MainContentProps) {
+  return (
+    <>
+      {/* Header */}
+      <Header
+        isLoading={isLoading}
+        status={status}
+        wsStatus={wsStatus}
+        onReconnect={onReconnect}
+      />
+
+      {/* Skip link for keyboard navigation */}
+      <a href="#page-content" className="skip-link">
+        Skip to page content
+      </a>
+
+      {/* Page content */}
+      <div
+        id="page-content"
+        className="flex-1 overflow-y-auto px-4 sm:px-6 lg:px-8 py-6"
+      >
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/specs" element={<Specs />} />
+            <Route path="/fixes" element={<Fixes />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/tasks/kanban" element={<TasksKanban />} />
+            <Route path="/roadmap" element={<Roadmap />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/memory" element={<Memory />} />
+            <Route path="/skills" element={<Skills />} />
+            <Route path="/recaps" element={<Recaps />} />
+            <Route path="/patterns" element={<Patterns />} />
+          </Routes>
+        </ErrorBoundary>
+      </div>
+    </>
+  );
+}
+
+// =============================================================================
+// App Layout (uses context)
+// =============================================================================
+
+function AppLayout() {
   const { status: wsStatus, reconnect } = useWebSocketContext();
+  const { state, toggleSidebar, detailContent, detailOpen, closeDetail } = usePanelLayoutContext();
 
   const { data: status, isLoading } = useQuery({
     queryKey: ['status'],
@@ -31,173 +147,41 @@ function App() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Skip link for keyboard navigation */}
-      <a href="#main-content" className="skip-link">
-        Skip to main content
-      </a>
+    <PanelLayout
+      sidebar={
+        <CollapsibleSidebar
+          collapsed={state.sidebarCollapsed}
+          onToggle={toggleSidebar}
+        />
+      }
+      detail={
+        detailOpen && detailContent ? (
+          <DetailPanel onClose={closeDetail}>
+            {detailContent}
+          </DetailPanel>
+        ) : undefined
+      }
+      detailOpen={detailOpen}
+    >
+      <MainContent
+        isLoading={isLoading}
+        status={status}
+        wsStatus={wsStatus}
+        onReconnect={reconnect}
+      />
+    </PanelLayout>
+  );
+}
 
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700" role="banner">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Logo */}
-            <div className="flex items-center gap-3">
-              <img src="/yoyo.svg" alt="Yoyo" className="h-8 w-8" />
-              <span className="text-xl font-bold text-gray-900 dark:text-white">
-                Yoyo Dev
-              </span>
-            </div>
+// =============================================================================
+// App Component (wraps with providers)
+// =============================================================================
 
-            {/* Navigation */}
-            <nav className="flex items-center gap-1" role="navigation" aria-label="Main navigation">
-              <NavLink
-                to="/"
-                end
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-                  }`
-                }
-              >
-                Dashboard
-              </NavLink>
-              <NavLink
-                to="/specs"
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-                  }`
-                }
-              >
-                Specs
-              </NavLink>
-              <NavLink
-                to="/fixes"
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-                  }`
-                }
-              >
-                Fixes
-              </NavLink>
-              <NavLink
-                to="/tasks"
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-                  }`
-                }
-              >
-                Tasks
-              </NavLink>
-              <NavLink
-                to="/roadmap"
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-                  }`
-                }
-              >
-                Roadmap
-              </NavLink>
-              <NavLink
-                to="/memory"
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-                  }`
-                }
-              >
-                Memory
-              </NavLink>
-              <NavLink
-                to="/skills"
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-                  }`
-                }
-              >
-                Skills
-              </NavLink>
-              <NavLink
-                to="/recaps"
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-                  }`
-                }
-              >
-                Recaps
-              </NavLink>
-              <NavLink
-                to="/patterns"
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    isActive
-                      ? 'bg-teal-100 text-teal-700 dark:bg-teal-900 dark:text-teal-200'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-700'
-                  }`
-                }
-              >
-                Patterns
-              </NavLink>
-            </nav>
-
-            {/* Status indicator */}
-            <div className="flex items-center gap-4">
-              {/* Project status */}
-              {!isLoading && !status?.framework?.installed && (
-                <span className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded">
-                  Not initialized
-                </span>
-              )}
-              {/* WebSocket connection status */}
-              <ConnectionStatus status={wsStatus} onReconnect={reconnect} />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main content */}
-      <main
-        id="main-content"
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in"
-        role="main"
-      >
-        <ErrorBoundary>
-          <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/specs" element={<Specs />} />
-            <Route path="/fixes" element={<Fixes />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/roadmap" element={<Roadmap />} />
-            <Route path="/memory" element={<Memory />} />
-            <Route path="/skills" element={<Skills />} />
-            <Route path="/recaps" element={<Recaps />} />
-            <Route path="/patterns" element={<Patterns />} />
-          </Routes>
-        </ErrorBoundary>
-      </main>
-    </div>
+function App() {
+  return (
+    <PanelLayoutProvider>
+      <AppLayout />
+    </PanelLayoutProvider>
   );
 }
 
