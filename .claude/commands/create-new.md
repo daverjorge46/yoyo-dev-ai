@@ -1,3 +1,7 @@
+---
+description: Create new feature with spec, tasks, and intelligent orchestration
+---
+
 # Create New Feature
 
 Create a new feature with full specification workflow and task generation using Yoyo-AI orchestration.

@@ -1,3 +1,9 @@
+---
+description: Fix design violations from audit (colors, spacing, contrast, focus)
+---
+
+# Design Fix
+
 Systematically fix design system violations found in audit reports.
 
 ## What This Command Does

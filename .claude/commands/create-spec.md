@@ -1,3 +1,7 @@
+---
+description: Create detailed feature specification with technical requirements
+---
+
 # Create Spec
 
 Create a detailed spec for a new feature with technical specifications and task breakdown

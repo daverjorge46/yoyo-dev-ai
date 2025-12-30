@@ -1,3 +1,9 @@
+---
+description: Create UI component with strict design token validation and accessibility
+---
+
+# Design Component
+
 Create a new UI component with enforced design system consistency.
 
 ## What This Command Does

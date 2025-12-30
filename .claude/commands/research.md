@@ -1,3 +1,7 @@
+---
+description: Research topic in background (docs, GitHub, web) - returns notification
+---
+
 # Research
 
 Delegate deep research to the librarian agent (runs in background).

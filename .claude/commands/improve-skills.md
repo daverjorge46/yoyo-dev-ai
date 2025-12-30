@@ -1,3 +1,7 @@
+---
+description: Optimize Claude Code skill descriptions for better triggering
+---
+
 # Improve Skills
 
 Optimize Claude Code Skills for better discoverability and triggering.

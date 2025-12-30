@@ -1,3 +1,7 @@
+---
+description: Display all Yoyo Dev commands, flags, and usage examples
+---
+
 # Yoyo Dev Command Reference
 
 Display comprehensive help for all Yoyo Dev commands and flags.

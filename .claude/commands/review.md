@@ -1,3 +1,7 @@
+---
+description: Critical code review (--devil, --security, --performance, --production)
+---
+
 # Review Code with Critical Analysis
 
 Perform critical code review using specialized review modes (devil's advocate, security, performance, production readiness).

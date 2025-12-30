@@ -1,3 +1,7 @@
+---
+description: Advanced multi-agent orchestration with manual agent/standards assignment
+---
+
 # Orchestrate Tasks
 
 Advanced orchestration for complex multi-agent task execution scenarios.

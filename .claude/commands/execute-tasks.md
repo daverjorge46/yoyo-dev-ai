@@ -1,3 +1,7 @@
+---
+description: Execute tasks with multi-agent orchestration, TDD, and auto-recovery
+---
+
 # Execute Tasks
 
 Execute tasks using the Yoyo-AI orchestrator or legacy workflow.

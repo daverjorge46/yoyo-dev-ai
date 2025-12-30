@@ -1,3 +1,9 @@
+---
+description: Audit design system compliance (tokens, contrast, accessibility)
+---
+
+# Design Audit
+
 Audit the codebase for design system compliance and generate a comprehensive report of violations.
 
 ## What This Command Does

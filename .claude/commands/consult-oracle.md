@@ -1,3 +1,7 @@
+---
+description: Get strategic architecture advice or debug complex issues with Oracle agent
+---
+
 # Consult Oracle
 
 Ask the Oracle agent for strategic architecture guidance and debugging assistance.
