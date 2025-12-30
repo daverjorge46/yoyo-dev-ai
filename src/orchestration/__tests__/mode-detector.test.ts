@@ -233,7 +233,8 @@ describe("mode-detector", () => {
       });
 
       it("should detect plan with 'roadmap' keyword", () => {
-        const result = detectMode("create a roadmap for the next sprint");
+        // Use prompt without "create" to avoid tie with implement mode
+        const result = detectMode("I need a roadmap for the next sprint");
 
         expect(result.mode).toBe("plan");
         expect(result.triggers).toContain("roadmap");

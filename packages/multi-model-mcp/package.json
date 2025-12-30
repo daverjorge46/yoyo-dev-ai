@@ -1,0 +1,50 @@
+{
+  "name": "@yoyo-dev/multi-model-mcp",
+  "version": "1.0.0",
+  "description": "MCP server for multi-model LLM access (OpenAI, Google, Ollama)",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "multi-model-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "mcp",
+    "llm",
+    "openai",
+    "google",
+    "gemini",
+    "ollama",
+    "multi-model"
+  ],
+  "author": "Yoyo Dev",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "openai": "^4.0.0",
+    "@google/generative-ai": "^0.21.0",
+    "ollama": "^0.5.0",
+    "zod": "^3.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0",
+    "vitest": "^2.1.0"
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}
