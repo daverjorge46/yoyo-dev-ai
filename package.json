@@ -1,6 +1,6 @@
 {
   "name": "@yoyo-ai/cli",
-  "version": "4.0.0-alpha.1",
+  "version": "5.0.0",
   "description": "Memory-first AI development framework CLI",
   "type": "module",
   "main": "dist/index.js",

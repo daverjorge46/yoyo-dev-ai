@@ -104,7 +104,9 @@ class HelpScreen(Screen):
             ("plan-product", "Set up mission & roadmap for a new product"),
             ("create-new", "Create new feature with spec + tasks"),
             ("create-fix", "Analyze and fix bugs/issues"),
-            ("execute-tasks", "Execute tasks and build features"),
+            ("execute-tasks", "Execute tasks with multi-agent orchestration"),
+            ("research", "Background research with librarian agent"),
+            ("consult-oracle", "Strategic guidance from Oracle agent"),
             ("review", "Critical code review"),
         ]
 

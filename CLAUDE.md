@@ -27,15 +27,24 @@ The system guides AI agents through product planning, specification creation, ta
 
 ### Updating Yoyo Dev
 
+**v5.0 Consolidated Launchers:**
+
+Yoyo Dev v5.0 consolidates 10+ legacy scripts into 4 primary entry points:
+
+1. **`yoyo`** - Launch TUI + Claude + GUI (default mode)
+2. **`yoyo-gui`** - Launch browser GUI standalone
+3. **`yoyo-update`** - Update Yoyo Dev to latest version
+4. **`install.sh`** - Install/setup Yoyo Dev
+
 ```bash
 # Update to latest (overwrites framework files by default)
-~/.yoyo-dev/setup/yoyo-update.sh
+yoyo-update
 
 # Preserve customizations
-~/.yoyo-dev/setup/yoyo-update.sh --no-overwrite
+yoyo-update --no-overwrite
 
 # Skip MCP verification during update
-~/.yoyo-dev/setup/yoyo-update.sh --skip-mcp-check
+yoyo-update --skip-mcp-check
 ```
 
 **Note:** Product docs (`.yoyo-dev/product/`), specs, fixes, recaps, and patterns are ALWAYS protected during updates.
@@ -193,7 +202,9 @@ Each agent has restricted tool access for safety:
 - **Frontend Engineer**: Write, Read, Playwright (no call_agent to prevent loops)
 - **Explore**: Search tools only (Glob, Grep, Read)
 
-**Detailed Documentation:** See `.yoyo-dev/instructions/core/yoyo-ai-orchestration.md`
+**Detailed Documentation:**
+- `.yoyo-dev/instructions/core/yoyo-ai-orchestration.md` - Complete orchestrator workflow
+- `docs/multi-agent-orchestration.md` - User-facing guide
 
 ## MCP Server Installation
 
@@ -549,39 +560,65 @@ The TUI dashboard displays memory status in the Project Overview panel, showing 
 
 ### Directory Structure
 
+**Two Primary Directories:**
+
+- **`.yoyo-dev/`** - Framework files (instructions, standards, specs, fixes, product)
+- **`.yoyo-ai/`** - Memory system (SQLite database for persistent context)
+
+**Complete Structure:**
+
 ```
 .yoyo-dev/
-├── instructions/          # AI agent workflow instructions
-│   ├── core/             # Core workflows (plan, spec, execute)
-│   └── meta/             # Meta instructions (pre/post-flight)
-├── standards/            # Development standards and guidelines
-├── claude-code/agents/   # Specialized agents
+├── product/              # Product docs (mission, roadmap, tech-stack)
+├── specs/                # Feature specifications
+│   └── YYYY-MM-DD-name/
+│       ├── spec.md
+│       ├── spec-lite.md
+│       ├── tasks.md
+│       ├── state.json
+│       └── sub-specs/
+├── fixes/                # Bug fix documentation
+├── recaps/               # Development recaps
+├── patterns/             # Saved patterns library
+├── instructions/core/    # AI workflow instructions
+│   ├── yoyo-ai-orchestration.md  # v5.0 orchestrator
+│   ├── execute-tasks.md
+│   ├── create-new.md
+│   └── ...
+├── standards/            # Development standards
 ├── setup/                # Installation scripts
+│   ├── install.sh        # Primary installer
+│   ├── yoyo.sh           # TUI launcher
+│   ├── yoyo-gui.sh       # GUI launcher
+│   └── yoyo-update.sh    # Update script
 └── config.yml            # Configuration
 
 .yoyo-ai/                 # Memory system (v4.0+)
 └── memory/
     └── memory.db         # SQLite database for memory blocks
 
-workflows/                # Reusable workflow components (v1.6.0+)
+.claude/                  # Claude Code integration
+├── commands/             # Slash commands
+│   ├── research.md       # v5.0 research command
+│   ├── consult-oracle.md # v5.0 Oracle consultation
+│   └── ...
+└── agents/               # Agent configurations
+    ├── yoyo-ai.md        # v5.0 orchestrator
+    ├── oracle.md         # v5.0 strategic advisor
+    ├── librarian.md      # v5.0 research specialist
+    ├── frontend-engineer.md  # v5.0 UI specialist
+    └── ...
+
+workflows/                # Reusable workflow components
 ├── planning/
 ├── specification/
 └── implementation/
 
-.claude/                  # Claude Code configuration
-├── commands/             # Slash commands entry points
-└── agents/               # Agent configurations
-
-lib/yoyo_tui_v3/          # Modern TUI implementation
-
-src/memory/               # TypeScript memory system
-├── types.ts              # Type definitions
-├── store.ts              # SQLite operations
-├── scopes.ts             # Scope management
-├── service.ts            # Main API
-├── commands/             # Slash command implementations
-└── __tests__/            # Test suites
+lib/yoyo_tui_v3/          # TUI v3 (Python + Textual)
+src/memory/               # Memory system (TypeScript)
 ```
+
+**Detailed Guide:** See `docs/directory-structure.md`
 
 ### Key Files
 

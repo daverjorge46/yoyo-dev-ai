@@ -23,7 +23,7 @@ readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 # Yoyo Dev version
-readonly VERSION="4.0.0"
+readonly VERSION="5.0.0"
 
 # IMPORTANT: Save user's current working directory FIRST
 readonly USER_PROJECT_DIR="$(pwd)"
