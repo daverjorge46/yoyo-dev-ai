@@ -35,6 +35,7 @@ export class ApiClient extends EventEmitter {
   private reconnectAttempts = 0;
   private reconnectTimer: NodeJS.Timeout | null = null;
   private isManualClose = false;
+  private debug = false; // Disable logging to avoid interfering with Ink
 
   constructor(config: ApiClientConfig) {
     super();
@@ -48,11 +49,21 @@ export class ApiClient extends EventEmitter {
   }
 
   /**
+   * Log message (only when debug is enabled)
+   * Using stderr to avoid interfering with Ink's stdout rendering
+   */
+  private log(message: string): void {
+    if (this.debug) {
+      process.stderr.write(`[ApiClient] ${message}\n`);
+    }
+  }
+
+  /**
    * Connect to backend WebSocket server
    */
   connect(): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.warn('[ApiClient] Already connected');
+      this.log('Already connected');
       return;
     }
 
@@ -60,13 +71,13 @@ export class ApiClient extends EventEmitter {
     this.setConnectionState('connecting');
 
     const url = `ws://${this.config.host}:${this.config.port}`;
-    console.log(`[ApiClient] Connecting to ${url}...`);
+    this.log(`Connecting to ${url}...`);
 
     try {
       this.ws = new WebSocket(url);
 
       this.ws.on('open', () => {
-        console.log('[ApiClient] Connected successfully');
+        this.log('Connected successfully');
         this.setConnectionState('connected');
         this.reconnectAttempts = 0; // Reset attempts on successful connection
         this.emit('connected');
@@ -77,12 +88,12 @@ export class ApiClient extends EventEmitter {
           const message = JSON.parse(data.toString());
           this.handleMessage(message);
         } catch (error) {
-          console.error('[ApiClient] Failed to parse message:', error);
+          this.log(`Failed to parse message: ${error}`);
         }
       });
 
       this.ws.on('close', () => {
-        console.log('[ApiClient] Connection closed');
+        this.log('Connection closed');
         this.setConnectionState('disconnected');
         this.emit('disconnected');
 
@@ -92,13 +103,13 @@ export class ApiClient extends EventEmitter {
         }
       });
 
-      this.ws.on('error', (error) => {
-        console.error('[ApiClient] WebSocket error:', error);
+      this.ws.on('error', () => {
+        // Silently handle errors - emit event for handlers
         this.setConnectionState('error');
-        this.emit('error', error);
+        this.emit('error');
       });
     } catch (error) {
-      console.error('[ApiClient] Failed to create WebSocket:', error);
+      this.log(`Failed to create WebSocket: ${error}`);
       this.setConnectionState('error');
       this.scheduleReconnect();
     }
@@ -142,7 +153,7 @@ export class ApiClient extends EventEmitter {
    */
   send(message: any): boolean {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) {
-      console.warn('[ApiClient] Cannot send message: not connected');
+      this.log('Cannot send message: not connected');
       return false;
     }
 
@@ -150,7 +161,7 @@ export class ApiClient extends EventEmitter {
       this.ws.send(JSON.stringify(message));
       return true;
     } catch (error) {
-      console.error('[ApiClient] Failed to send message:', error);
+      this.log(`Failed to send message: ${error}`);
       return false;
     }
   }
@@ -184,7 +195,7 @@ export class ApiClient extends EventEmitter {
    */
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
-      console.error('[ApiClient] Max reconnect attempts reached, giving up');
+      this.log('Max reconnect attempts reached, giving up');
       this.emit('reconnect_failed');
       return;
     }
@@ -196,9 +207,7 @@ export class ApiClient extends EventEmitter {
     );
 
     this.reconnectAttempts++;
-    console.log(
-      `[ApiClient] Reconnecting in ${interval}ms (attempt ${this.reconnectAttempts})...`
-    );
+    this.log(`Reconnecting in ${interval}ms (attempt ${this.reconnectAttempts})...`);
 
     this.reconnectTimer = setTimeout(() => {
       this.connect();

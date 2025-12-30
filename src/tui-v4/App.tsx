@@ -61,7 +61,7 @@ export const App: React.FC = () => {
   useEffect(() => {
     if (shouldRefresh) {
       // Trigger data refresh (will be implemented by backend)
-      console.log('[App] Refresh triggered');
+      // Note: Don't use console.log here as it interferes with Ink's terminal rendering
     }
   }, [shouldRefresh]);
 

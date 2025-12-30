@@ -89,19 +89,9 @@ launch_typescript_tui() {
         exit 1
     fi
 
-    $tui_cmd "$YOYO_INSTALL_DIR/src/tui-v4/index.tsx"
-    local exit_code=$?
-
-    if [ $exit_code -ne 0 ]; then
-        echo ""
-        ui_warning "TUI v4 exited with error code $exit_code"
-        echo "  See .yoyo-dev/tui-errors.log for details"
-        echo ""
-        sleep 1
-        return 1
-    fi
-
-    return 0
+    # Use exec to replace shell with tsx process for proper terminal control
+    # This ensures stdin/stdout/signals are properly forwarded to the TUI
+    exec $tui_cmd "$YOYO_INSTALL_DIR/src/tui-v4/index.tsx"
 }
 
 # ============================================================================
