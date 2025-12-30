@@ -19,7 +19,7 @@ export const SpecIndicator: React.FC = () => {
   if (!activeSpec) {
     return (
       <Box paddingX={1} paddingY={0}>
-        <Text dimColor color={textStyles.textSecondary}>
+        <Text dimColor color={textStyles.secondary.color}>
           No active spec
         </Text>
       </Box>
@@ -36,7 +36,7 @@ export const SpecIndicator: React.FC = () => {
       <Text bold color={semanticColors.primary}>
         📋 {displayPath}
       </Text>
-      <Text dimColor color={textStyles.textSecondary}>
+      <Text dimColor color={textStyles.secondary.color}>
         {' '}({activeSpec.phase})
       </Text>
     </Box>
