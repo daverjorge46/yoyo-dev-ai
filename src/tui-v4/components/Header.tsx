@@ -19,6 +19,7 @@ export interface HeaderProps {
   gitBranch: string | null;
   memoryBlockCount: number;
   mcpServerCount: number;
+  claudeConnected?: boolean;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -26,6 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
   gitBranch,
   memoryBlockCount,
   mcpServerCount,
+  claudeConnected = false,
 }) => {
   return (
     <Box
@@ -60,8 +62,15 @@ export const Header: React.FC<HeaderProps> = ({
         )}
       </Box>
 
-      {/* Right: Memory & MCP status */}
+      {/* Right: Claude, Memory & MCP status */}
       <Box flexDirection="row" columnGap={3}>
+        {/* Claude status */}
+        <Box>
+          <Text color={claudeConnected ? semanticColors.success : semanticColors.error}>
+            Claude: <Text bold>{claudeConnected ? '●' : '○'}</Text>
+          </Text>
+        </Box>
+
         {/* Memory blocks */}
         <Box>
           <Text color={semanticColors.memoryActive}>

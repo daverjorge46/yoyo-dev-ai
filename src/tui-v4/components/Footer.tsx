@@ -3,15 +3,17 @@
  *
  * Bottom bar displaying context-aware keyboard shortcuts.
  * Shows different shortcuts based on which panel is currently focused.
+ * Updated for 3-pane layout (Tasks | Chat | Execution).
  */
 
 import React from 'react';
 import { Box, Text } from 'ink';
 import { textStyles } from '../theme/styles.js';
 import { semanticColors } from '../theme/colors.js';
+import type { FocusablePanel } from './Layout.js';
 
 export interface FooterProps {
-  focusedPanel: 'left' | 'right';
+  focusedPanel: FocusablePanel;
 }
 
 interface Shortcut {
@@ -30,51 +32,89 @@ export const Footer: React.FC<FooterProps> = ({ focusedPanel }) => {
 
   // Panel switching shortcuts
   const panelShortcuts: Shortcut[] = [
-    { key: '←/→', description: 'switch panel' },
+    { key: '1/2/3', description: 'panels' },
+    { key: '←/→', description: 'switch' },
     { key: 'Tab', description: 'cycle' },
   ];
 
   // Context-specific shortcuts based on focused panel
   const leftPanelShortcuts: Shortcut[] = [
     { key: 'j/k', description: 'navigate' },
-    { key: 'Enter', description: 'expand/collapse' },
-    { key: 'Space', description: 'select' },
+    { key: 'Enter', description: 'expand' },
     { key: 'g/G', description: 'top/bottom' },
   ];
 
+  const centerPanelShortcuts: Shortcut[] = [
+    { key: 'Ctrl+Enter', description: 'send' },
+    { key: 'Esc', description: 'clear input' },
+    { key: '↑/↓', description: 'scroll' },
+  ];
+
   const rightPanelShortcuts: Shortcut[] = [
-    { key: 'Ctrl+d/u', description: 'page down/up' },
-    { key: 'Ctrl+c', description: 'cancel' },
+    { key: 'Ctrl+d/u', description: 'page' },
     { key: 'c', description: 'clear logs' },
   ];
 
-  // Combine shortcuts based on context
-  const contextShortcuts = focusedPanel === 'left'
-    ? leftPanelShortcuts
-    : rightPanelShortcuts;
+  // Get context shortcuts based on focused panel
+  const getContextShortcuts = (): Shortcut[] => {
+    switch (focusedPanel) {
+      case 'left':
+        return leftPanelShortcuts;
+      case 'center':
+        return centerPanelShortcuts;
+      case 'right':
+        return rightPanelShortcuts;
+      default:
+        return [];
+    }
+  };
 
+  // Get panel indicator
+  const getPanelIndicator = (): string => {
+    switch (focusedPanel) {
+      case 'left':
+        return '[Tasks]';
+      case 'center':
+        return '[Chat]';
+      case 'right':
+        return '[Exec]';
+      default:
+        return '';
+    }
+  };
+
+  const contextShortcuts = getContextShortcuts();
   const allShortcuts = [...globalShortcuts, ...panelShortcuts, ...contextShortcuts];
 
   return (
     <Box
       flexDirection="row"
-      justifyContent="flex-start"
+      justifyContent="space-between"
       paddingX={2}
       paddingY={0}
       borderStyle="round"
       borderColor={semanticColors.border}
-      columnGap={2}
     >
-      {allShortcuts.map((shortcut, index) => (
-        <Box key={index} flexDirection="row" columnGap={1}>
-          <Text bold color={semanticColors.primary}>
-            {shortcut.key}
-          </Text>
-          <Text color={textStyles.secondary.color}>
-            {shortcut.description}
-          </Text>
-        </Box>
-      ))}
+      {/* Shortcuts */}
+      <Box flexDirection="row" columnGap={2}>
+        {allShortcuts.map((shortcut, index) => (
+          <Box key={index} flexDirection="row" columnGap={1}>
+            <Text bold color={semanticColors.primary}>
+              {shortcut.key}
+            </Text>
+            <Text color={textStyles.secondary.color}>
+              {shortcut.description}
+            </Text>
+          </Box>
+        ))}
+      </Box>
+
+      {/* Panel indicator */}
+      <Box>
+        <Text color={semanticColors.info}>
+          {getPanelIndicator()}
+        </Text>
+      </Box>
     </Box>
   );
 };

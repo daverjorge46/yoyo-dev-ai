@@ -33,13 +33,20 @@ export const borders = {
  * Layout dimensions and spacing
  */
 export const layout = {
-  // Column proportions
+  // Two-column proportions (legacy)
   leftPanelWidth: 0.4,   // 40% of terminal width
   rightPanelWidth: 0.6,  // 60% of terminal width
 
+  // Three-column proportions (with chat)
+  threeColumn: {
+    left: 0.25,    // 25% - Tasks panel
+    center: 0.50,  // 50% - Chat panel
+    right: 0.25,   // 25% - Execution panel
+  },
+
   // Responsive breakpoints
   minWidthTwoColumn: 100,  // Minimum width for two-column layout
-  minWidthThreeColumn: 150, // Future: three-column layout
+  minWidthThreeColumn: 140, // Minimum width for three-column layout
 
   // Spacing
   padding: {

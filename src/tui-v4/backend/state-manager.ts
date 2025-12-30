@@ -56,6 +56,33 @@ export interface MemoryStatus {
   lastUpdated: string | null;
 }
 
+// Chat types
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: string;
+  tools?: ToolCall[];
+  isStreaming?: boolean;
+}
+
+export interface ToolCall {
+  id: string;
+  name: string;
+  parameters: Record<string, unknown>;
+  result?: string;
+  status: 'pending' | 'approved' | 'denied' | 'completed' | 'failed';
+}
+
+export interface ChatSession {
+  id: string;
+  name: string;
+  messages: ChatMessage[];
+  model: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // =============================================================================
 // State Interface
 // =============================================================================
@@ -85,6 +112,22 @@ interface AppState {
   // Memory state
   memory: MemoryStatus;
   setMemoryStatus: (status: MemoryStatus) => void;
+
+  // Chat state
+  chatMessages: ChatMessage[];
+  chatSessions: ChatSession[];
+  activeSessionId: string | null;
+  isClaudeConnected: boolean;
+  isClaudeThinking: boolean;
+  addMessage: (message: ChatMessage) => void;
+  updateMessage: (messageId: string, updates: Partial<ChatMessage>) => void;
+  clearMessages: () => void;
+  setActiveSession: (sessionId: string | null) => void;
+  addSession: (session: ChatSession) => void;
+  updateSession: (sessionId: string, updates: Partial<ChatSession>) => void;
+  setClaudeConnected: (connected: boolean) => void;
+  setClaudeThinking: (thinking: boolean) => void;
+  updateToolStatus: (messageId: string, toolId: string, status: ToolCall['status'], result?: string) => void;
 }
 
 // =============================================================================
@@ -100,7 +143,11 @@ export type StateEvent =
   | 'git_status'
   | 'mcp_status'
   | 'memory_status'
-  | 'execution_log';
+  | 'execution_log'
+  | 'chat_message'
+  | 'chat_session'
+  | 'claude_connected'
+  | 'tool_approval';
 
 // =============================================================================
 // Zustand Store
@@ -179,6 +226,85 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ memory: status });
     stateEvents.emit('memory_status', { status });
   },
+
+  // Chat state
+  chatMessages: [],
+  chatSessions: [],
+  activeSessionId: null,
+  isClaudeConnected: false,
+  isClaudeThinking: false,
+
+  addMessage: (message) => {
+    set((state) => ({
+      chatMessages: [...state.chatMessages, message],
+    }));
+    stateEvents.emit('chat_message', { message, action: 'add' });
+  },
+
+  updateMessage: (messageId, updates) => {
+    set((state) => ({
+      chatMessages: state.chatMessages.map((msg) =>
+        msg.id === messageId ? { ...msg, ...updates } : msg
+      ),
+    }));
+    stateEvents.emit('chat_message', { messageId, updates, action: 'update' });
+  },
+
+  clearMessages: () => {
+    set({ chatMessages: [] });
+    stateEvents.emit('chat_message', { action: 'clear' });
+  },
+
+  setActiveSession: (sessionId) => {
+    const session = sessionId
+      ? get().chatSessions.find((s) => s.id === sessionId)
+      : null;
+    set({
+      activeSessionId: sessionId,
+      chatMessages: session?.messages || [],
+    });
+    stateEvents.emit('chat_session', { sessionId, action: 'activate' });
+  },
+
+  addSession: (session) => {
+    set((state) => ({
+      chatSessions: [...state.chatSessions, session],
+    }));
+    stateEvents.emit('chat_session', { session, action: 'add' });
+  },
+
+  updateSession: (sessionId, updates) => {
+    set((state) => ({
+      chatSessions: state.chatSessions.map((s) =>
+        s.id === sessionId ? { ...s, ...updates, updatedAt: new Date().toISOString() } : s
+      ),
+    }));
+    stateEvents.emit('chat_session', { sessionId, updates, action: 'update' });
+  },
+
+  setClaudeConnected: (connected) => {
+    set({ isClaudeConnected: connected });
+    stateEvents.emit('claude_connected', { connected });
+  },
+
+  setClaudeThinking: (thinking) => {
+    set({ isClaudeThinking: thinking });
+  },
+
+  updateToolStatus: (messageId, toolId, status, result) => {
+    set((state) => ({
+      chatMessages: state.chatMessages.map((msg) => {
+        if (msg.id !== messageId || !msg.tools) return msg;
+        return {
+          ...msg,
+          tools: msg.tools.map((tool) =>
+            tool.id === toolId ? { ...tool, status, result } : tool
+          ),
+        };
+      }),
+    }));
+    stateEvents.emit('tool_approval', { messageId, toolId, status, result });
+  },
 }));
 
 // =============================================================================
@@ -191,3 +317,10 @@ export const selectActiveSpec = (state: AppState) => state.activeSpec;
 export const selectGitStatus = (state: AppState) => state.git;
 export const selectMcpStatus = (state: AppState) => state.mcp;
 export const selectMemoryStatus = (state: AppState) => state.memory;
+
+// Chat selectors
+export const selectChatMessages = (state: AppState) => state.chatMessages;
+export const selectChatSessions = (state: AppState) => state.chatSessions;
+export const selectActiveSessionId = (state: AppState) => state.activeSessionId;
+export const selectIsClaudeConnected = (state: AppState) => state.isClaudeConnected;
+export const selectIsClaudeThinking = (state: AppState) => state.isClaudeThinking;

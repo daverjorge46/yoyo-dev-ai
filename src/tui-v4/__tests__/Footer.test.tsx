@@ -5,11 +5,11 @@
  * - Context-aware keyboard shortcuts
  * - Panel-specific shortcut display
  * - Proper formatting and layout
+ * - 3-pane layout support
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from 'ink-testing-library';
-import React from 'react';
 import { Footer } from '../components/Footer.js';
 
 describe('Footer Component', () => {
@@ -36,9 +36,21 @@ describe('Footer Component', () => {
 
     const output = lastFrame();
     // Task tree navigation shortcuts
-    expect(output).toContain('j/');  // j/k navigation
-    expect(output).toContain('Ente');  // Enter (may be truncated)
-    expect(output).toContain('Spac');  // Space (may be truncated)
+    expect(output).toContain('j/k');  // j/k navigation
+    expect(output).toContain('navigate');
+  });
+
+  it('shows center panel shortcuts when center is focused', () => {
+    const { lastFrame } = render(
+      <Footer focusedPanel="center" />
+    );
+
+    const output = lastFrame();
+    // Chat panel shortcuts - use regex for terminal wrapping
+    expect(output).toMatch(/Ctrl\+Enter/);  // send
+    expect(output).toMatch(/send/);
+    // Panel indicator may be wrapped - look for [Cha since Chat gets wrapped
+    expect(output).toMatch(/\[Cha/);
   });
 
   it('shows right panel shortcuts when right is focused', () => {
@@ -49,6 +61,8 @@ describe('Footer Component', () => {
     const output = lastFrame();
     // Execution panel shortcuts
     expect(output).toBeTruthy();
+    // Panel indicator may be wrapped - look for [Exe since Exec gets wrapped
+    expect(output).toMatch(/\[Exe/);
   });
 
   it('shows panel switching shortcuts', () => {
@@ -57,8 +71,9 @@ describe('Footer Component', () => {
     );
 
     const output = lastFrame();
-    // Panel switching
-    expect(output).toMatch(/[←→]/);  // arrow keys or h/l
+    // Panel switching with number keys
+    expect(output).toContain('1/2/3');
+    expect(output).toContain('panels');
   });
 
   it('updates shortcuts when focused panel changes', () => {
@@ -67,15 +82,22 @@ describe('Footer Component', () => {
     );
 
     const leftOutput = lastFrame();
-    expect(leftOutput).toBeTruthy();
+    // Check for [Task - may be clipped to [Task due to terminal width
+    expect(leftOutput).toMatch(/\[Task/);
+
+    rerender(
+      <Footer focusedPanel="center" />
+    );
+
+    const centerOutput = lastFrame();
+    expect(centerOutput).toMatch(/\[Chat/);
 
     rerender(
       <Footer focusedPanel="right" />
     );
 
     const rightOutput = lastFrame();
-    expect(rightOutput).toBeTruthy();
-    // Shortcuts should have changed
+    expect(rightOutput).toMatch(/\[Exec/);
   });
 
   it('displays shortcuts in consistent format', () => {
@@ -86,16 +108,18 @@ describe('Footer Component', () => {
     const output = lastFrame();
     // Should have consistent formatting (key + description)
     expect(output).toBeTruthy();
-    expect(output.length).toBeGreaterThan(0);
+    if (output) {
+      expect(output.length).toBeGreaterThan(0);
+    }
   });
 
-  it('handles special keys correctly', () => {
+  it('shows Tab for cycling between panels', () => {
     const { lastFrame } = render(
-      <Footer focusedPanel="right" />
+      <Footer focusedPanel="center" />
     );
 
     const output = lastFrame();
-    // Special keys should be formatted clearly (right panel has Ctrl shortcuts)
-    expect(output).toContain('Ctrl');  // For Ctrl+C, Ctrl+d, Ctrl+u
+    expect(output).toContain('Tab');
+    expect(output).toContain('cycle');
   });
 });

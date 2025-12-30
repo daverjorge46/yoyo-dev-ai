@@ -14,7 +14,7 @@ import { writeFileSync, readFileSync, existsSync } from 'fs';
 import { join } from 'path';
 
 export interface SessionState {
-  focusedPanel: 'left' | 'right';
+  focusedPanel: 'left' | 'center' | 'right';
   scrollPosition: {
     tasks: number;
     logs: number;
