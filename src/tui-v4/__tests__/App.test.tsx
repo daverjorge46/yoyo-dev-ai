@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from 'ink-testing-library';
-import React from 'react';
+
 import { App } from '../App.js';
 
 describe('App Component', () => {
@@ -30,7 +30,7 @@ describe('App Component', () => {
     const output = lastFrame();
     // App should render all three main sections
     expect(output).toBeTruthy();
-    expect(output.length).toBeGreaterThan(0);
+    expect(output?.length).toBeGreaterThan(0);
   });
 
   it('handles terminal resize events', () => {

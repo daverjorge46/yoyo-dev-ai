@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from 'ink-testing-library';
-import React from 'react';
+
 import { Layout } from '../components/Layout.js';
 import { Text } from 'ink';
 

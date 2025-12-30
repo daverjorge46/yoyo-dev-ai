@@ -27,7 +27,7 @@ export function useSpecState(): UseSpecStateResult {
 
   useEffect(() => {
     // Subscribe to spec updates
-    const handleSpecChange = (data: any) => {
+    const handleSpecChange = (_data: any) => {
       setIsLoading(false);
       setError(null);
 

@@ -60,6 +60,7 @@
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
     "@types/uuid": "^10.0.0",
+    "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^2.1.9",
     "ink-testing-library": "^4.0.0",
     "shadcn": "^3.5.1",

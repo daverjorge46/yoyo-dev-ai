@@ -11,6 +11,8 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useAppStore, Task } from '../backend/state-manager.js';
 
+export type FlatTask = Task & { depth: number };
+
 export interface UseTaskNavigationResult {
   cursorPosition: number;
   handleUp: () => void;
@@ -19,8 +21,8 @@ export interface UseTaskNavigationResult {
   handleBottom: () => void;
   handleSelect: () => void;
   handleToggle: () => void;
-  getCurrentTask: () => Task | null;
-  getFlatTasks: () => Task[];
+  getCurrentTask: () => FlatTask | null;
+  getFlatTasks: () => FlatTask[];
   isExpanded: (taskId: string) => boolean;
 }
 

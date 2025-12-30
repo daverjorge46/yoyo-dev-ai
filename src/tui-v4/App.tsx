@@ -27,8 +27,10 @@ import { useExecutionStream } from './hooks/useExecutionStream.js';
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js';
 import { useDataLoader, useDataRefresh } from './hooks/useDataLoader.js';
 import { useClaudeChat } from './hooks/useClaudeChat.js';
+import { useInputMode } from './hooks/useInputMode.js';
 import { useAppStore } from './backend/state-manager.js';
 import { loadSession, saveSession } from './utils/session-persistence.js';
+import { layout } from './theme/styles.js';
 import Spinner from 'ink-spinner';
 
 export const App: React.FC = () => {
@@ -50,6 +52,7 @@ export const App: React.FC = () => {
   const memory = useAppStore((s) => s.memory);
   const specs = useAppStore((s) => s.specs);
   const tasks = useAppStore((s) => s.tasks);
+  const project = useAppStore((s) => s.project);
 
   // Keyboard shortcuts and modals
   const {
@@ -60,6 +63,9 @@ export const App: React.FC = () => {
     onHelp,
     closeModals,
   } = useKeyboardShortcuts();
+
+  // Input mode tracking (when user is typing vs navigating)
+  const { isInputMode, enterInputMode, exitInputMode } = useInputMode();
 
   // Connect to Claude on mount
   useEffect(() => {
@@ -96,8 +102,8 @@ export const App: React.FC = () => {
 
   // Handle keyboard input for panel switching
   useInput((input, key) => {
-    // Don't handle navigation if modals are open
-    if (showHelp || showCommandPalette) {
+    // Don't handle navigation if modals are open or user is typing
+    if (showHelp || showCommandPalette || isInputMode) {
       return;
     }
 
@@ -213,12 +219,18 @@ export const App: React.FC = () => {
   // Left panel: Task Navigation Panel or Welcome Screen
   const leftPanelContent = showWelcome ? <WelcomeScreen /> : <TaskPanel />;
 
+  // Calculate center panel width for chat sizing
+  const centerPanelWidth = Math.floor(width * layout.threeColumn.center);
+
   // Center panel: Chat with Claude
   const centerPanelContent = (
     <ChatPanel
       isFocused={focusedPanel === 'center'}
       sessionName="Claude Chat"
       onSendMessage={sendMessage}
+      width={centerPanelWidth}
+      onInputFocus={enterInputMode}
+      onInputBlur={exitInputMode}
     />
   );
 
@@ -229,6 +241,9 @@ export const App: React.FC = () => {
     <Box flexDirection="column" height={height}>
       {/* Header: Spiral logo, project info, git, memory, MCP, Claude status */}
       <Header
+        projectName={project.name}
+        projectTagline={project.tagline}
+        projectTechStack={project.techStack}
         gitBranch={git.branch}
         memoryBlockCount={memory.blockCount}
         mcpServerCount={mcp.serverCount}

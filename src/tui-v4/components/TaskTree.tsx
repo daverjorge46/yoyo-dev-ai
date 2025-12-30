@@ -18,7 +18,7 @@ export interface TaskTreeProps {
   initialCollapsed?: boolean;
 }
 
-export const TaskTree: React.FC<TaskTreeProps> = ({ initialCollapsed = false }) => {
+export const TaskTree: React.FC<TaskTreeProps> = ({ initialCollapsed: _initialCollapsed = false }) => {
   const tasks = useAppStore((state) => state.tasks);
   const activeTask = useAppStore((state) => state.activeTask);
   const navigation = useTaskNavigation();

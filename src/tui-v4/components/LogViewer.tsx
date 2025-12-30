@@ -59,7 +59,7 @@ export const LogViewer: React.FC<LogViewerProps> = ({
         return semanticColors.success;
       case 'info':
       default:
-        return semanticColors.textBody;
+        return semanticColors.textPrimary;
     }
   };
 

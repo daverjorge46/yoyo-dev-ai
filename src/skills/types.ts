@@ -385,16 +385,19 @@ export interface TaskContext {
   description: string;
 
   /** Detected technologies */
-  technologies: string[];
+  technologies?: string[];
 
   /** File types involved */
-  fileTypes: string[];
+  fileTypes?: string[];
 
   /** Task type */
-  taskType: 'feature' | 'fix' | 'refactor' | 'test' | 'docs' | 'other';
+  taskType?: 'feature' | 'fix' | 'refactor' | 'test' | 'docs' | 'other';
 
   /** Additional keywords */
-  keywords: string[];
+  keywords?: string[];
+
+  /** Current file being worked on (for extension-based hints) */
+  currentFile?: string;
 }
 
 /**
@@ -402,13 +405,16 @@ export interface TaskContext {
  */
 export interface SkillMatch {
   /** Matched skill */
-  skill: SkillEntry;
+  skill: Skill;
 
   /** Relevance score (0.0 - 1.0) */
-  score: number;
+  relevance: number;
 
-  /** Why this skill matched */
-  matchReasons: string[];
+  /** Matched trigger keywords */
+  matchedTriggers: string[];
+
+  /** Matched tags */
+  matchedTags: string[];
 }
 
 /**

@@ -10,7 +10,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render } from 'ink-testing-library';
-import React from 'react';
+
 import { TaskTree } from '../components/TaskTree.js';
 import { useAppStore } from '../backend/state-manager.js';
 

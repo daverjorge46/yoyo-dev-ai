@@ -16,6 +16,8 @@ import { Logo } from './Logo.js';
 
 export interface HeaderProps {
   projectName?: string;  // Optional, Logo component includes "Yoyo Dev" text
+  projectTagline?: string;  // Short description/tagline
+  projectTechStack?: string[];  // Key tech stack items
   gitBranch: string | null;
   memoryBlockCount: number;
   mcpServerCount: number;
@@ -24,6 +26,8 @@ export interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   projectName,
+  projectTagline,
+  projectTechStack = [],
   gitBranch,
   memoryBlockCount,
   mcpServerCount,
@@ -38,27 +42,45 @@ export const Header: React.FC<HeaderProps> = ({
       borderStyle="round"
       borderColor={semanticColors.border}
     >
-      {/* Left: Spiral Logo + Project name */}
-      <Box>
-        <Logo variant="compact" showText={true} />
-        {projectName && projectName !== 'Yoyo Dev' && (
-          <Text dimColor color={textStyles.secondary.color}>
-            {' '}• {projectName}
-          </Text>
+      {/* Left: Spiral Logo + Project info */}
+      <Box flexDirection="column">
+        <Box>
+          <Logo variant="compact" showText={true} />
+          {projectName && projectName !== 'Yoyo Dev' && (
+            <Text dimColor color={textStyles.secondary.color}>
+              {' '}• {projectName}
+            </Text>
+          )}
+        </Box>
+        {projectTagline && (
+          <Box marginLeft={3}>
+            <Text dimColor italic>
+              {projectTagline}
+            </Text>
+          </Box>
         )}
       </Box>
 
-      {/* Center: Git branch */}
-      <Box>
-        {gitBranch && (
-          <Text color={gitStyles.branch.color}>
-            {gitStyles.branch.icon} {gitBranch}
-          </Text>
-        )}
-        {!gitBranch && (
-          <Text dimColor color={textStyles.muted.color}>
-            No git branch
-          </Text>
+      {/* Center: Git branch + Tech stack */}
+      <Box flexDirection="column" alignItems="center">
+        <Box>
+          {gitBranch && (
+            <Text color={gitStyles.branch.color}>
+              {gitStyles.branch.icon} {gitBranch}
+            </Text>
+          )}
+          {!gitBranch && (
+            <Text dimColor color={textStyles.muted.color}>
+              No git branch
+            </Text>
+          )}
+        </Box>
+        {projectTechStack.length > 0 && (
+          <Box>
+            <Text dimColor>
+              {projectTechStack.slice(0, 4).join(' • ')}
+            </Text>
+          </Box>
         )}
       </Box>
 

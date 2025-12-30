@@ -12,6 +12,7 @@ import { taskService } from '../backend/services/TaskService.js';
 import { gitService } from '../backend/services/GitService.js';
 import { mcpService } from '../backend/services/McpService.js';
 import { memoryService } from '../backend/services/MemoryService.js';
+import { projectService } from '../backend/services/ProjectService.js';
 
 export interface DataLoaderState {
   isLoading: boolean;
@@ -36,6 +37,7 @@ export function useDataLoader(): DataLoaderState {
   const setGitStatus = useAppStore((s) => s.setGitStatus);
   const setMcpStatus = useAppStore((s) => s.setMcpStatus);
   const setMemoryStatus = useAppStore((s) => s.setMemoryStatus);
+  const setProjectInfo = useAppStore((s) => s.setProjectInfo);
 
   useEffect(() => {
     let isMounted = true;
@@ -43,12 +45,13 @@ export function useDataLoader(): DataLoaderState {
     async function loadAllData() {
       try {
         // Load all data in parallel
-        const [specs, tasks, gitStatus, mcpStatus, memoryStatus] = await Promise.all([
+        const [specs, tasks, gitStatus, mcpStatus, memoryStatus, projectInfo] = await Promise.all([
           specService.getAllSpecs(),
           taskService.getTasks(),
           gitService.getStatus(),
           mcpService.getStatus(),
           memoryService.getStatus(),
+          projectService.getProjectInfo(),
         ]);
 
         // Only update if still mounted
@@ -60,6 +63,7 @@ export function useDataLoader(): DataLoaderState {
         setGitStatus(gitStatus);
         setMcpStatus(mcpStatus);
         setMemoryStatus(memoryStatus);
+        setProjectInfo(projectInfo);
 
         // Set active spec (most recent incomplete)
         const activeSpec = await specService.getActiveSpec();
@@ -88,7 +92,7 @@ export function useDataLoader(): DataLoaderState {
     return () => {
       isMounted = false;
     };
-  }, [setTasks, setSpecs, setActiveSpec, setGitStatus, setMcpStatus, setMemoryStatus]);
+  }, [setTasks, setSpecs, setActiveSpec, setGitStatus, setMcpStatus, setMemoryStatus, setProjectInfo]);
 
   return state;
 }
@@ -103,14 +107,16 @@ export function useDataRefresh() {
   const setGitStatus = useAppStore((s) => s.setGitStatus);
   const setMcpStatus = useAppStore((s) => s.setMcpStatus);
   const setMemoryStatus = useAppStore((s) => s.setMemoryStatus);
+  const setProjectInfo = useAppStore((s) => s.setProjectInfo);
 
   async function refresh() {
-    const [specs, tasks, gitStatus, mcpStatus, memoryStatus] = await Promise.all([
+    const [specs, tasks, gitStatus, mcpStatus, memoryStatus, projectInfo] = await Promise.all([
       specService.getAllSpecs(),
       taskService.getTasks(),
       gitService.getStatus(),
       mcpService.getStatus(),
       memoryService.getStatus(),
+      projectService.getProjectInfo(),
     ]);
 
     setSpecs(specs);
@@ -118,6 +124,7 @@ export function useDataRefresh() {
     setGitStatus(gitStatus);
     setMcpStatus(mcpStatus);
     setMemoryStatus(memoryStatus);
+    setProjectInfo(projectInfo);
 
     const activeSpec = await specService.getActiveSpec();
     if (activeSpec) {

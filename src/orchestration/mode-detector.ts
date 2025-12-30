@@ -163,7 +163,7 @@ export function detectMode(userPrompt: string): DetectedMode {
   const best = scores[0];
 
   // Require at least 1 match for non-default mode
-  if (best.score === 0) {
+  if (!best || best.score === 0) {
     return {
       mode: "default",
       confidence: 1.0,

@@ -7,7 +7,6 @@
 
 import React from 'react';
 import { Box, Text } from 'ink';
-import { Logo } from './Logo.js';
 import { semanticColors } from '../theme/colors.js';
 
 export const WelcomeScreen: React.FC = () => {

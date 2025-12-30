@@ -37,16 +37,16 @@ export const layout = {
   leftPanelWidth: 0.4,   // 40% of terminal width
   rightPanelWidth: 0.6,  // 60% of terminal width
 
-  // Three-column proportions (with chat)
+  // Three-column proportions (with chat - chat-focused layout)
   threeColumn: {
-    left: 0.25,    // 25% - Tasks panel
-    center: 0.50,  // 50% - Chat panel
-    right: 0.25,   // 25% - Execution panel
+    left: 0.20,    // 20% - Tasks panel (compact)
+    center: 0.60,  // 60% - Chat panel (main focus)
+    right: 0.20,   // 20% - Execution panel (compact)
   },
 
   // Responsive breakpoints
-  minWidthTwoColumn: 100,  // Minimum width for two-column layout
-  minWidthThreeColumn: 140, // Minimum width for three-column layout
+  minWidthTwoColumn: 80,   // Minimum width for two-column layout
+  minWidthThreeColumn: 100, // Minimum width for three-column layout (reduced for better usability)
 
   // Spacing
   padding: {

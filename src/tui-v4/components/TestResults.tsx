@@ -56,9 +56,11 @@ export const TestResults: React.FC<TestResultsProps> = ({ results }) => {
             </Box>
           ))}
           {results.failures.length > 5 && (
-            <Text dimColor marginLeft={2}>
-              ... and {results.failures.length - 5} more failures
-            </Text>
+            <Box marginLeft={2}>
+              <Text dimColor>
+                ... and {results.failures.length - 5} more failures
+              </Text>
+            </Box>
           )}
         </Box>
       )}

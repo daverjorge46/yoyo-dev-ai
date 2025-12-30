@@ -23,7 +23,6 @@ import {
   getSkillSuggestions,
   type SkillPaths,
   type SkillEntry,
-  type Skill,
 } from '../skills/index.js';
 
 // =============================================================================
@@ -140,7 +139,7 @@ function handleList(args: string, cwd: string): CommandResult {
  * Show skill details.
  */
 function handleShow(args: string, cwd: string): CommandResult {
-  const { paths, scope } = getPathsFromScope(args, cwd);
+  const { paths } = getPathsFromScope(args, cwd);
 
   // Extract skill ID (first non-flag argument)
   const skillId = args.split(/\s+/)
@@ -422,7 +421,7 @@ function handleSearch(args: string, cwd: string): CommandResult {
 /**
  * Skill command handler.
  */
-function skillHandler(args: string, context: CommandContext): CommandResult {
+function skillHandler(args: string, _context: CommandContext): CommandResult {
   const { subcommand, rest } = parseSubcommand(args);
   const cwd = process.cwd();
 

@@ -100,14 +100,20 @@ export class TaskService {
         const children = this.parseSubtasks(sectionContent, header.number);
 
         // Determine task status
-        let status: Task['status'] = 'pending';
-        if (header.completed) {
-          status = 'completed';
-        } else if (children.some(c => c.status === 'completed')) {
-          status = 'in_progress';
-        }
+        const status: Task['status'] = header.completed
+          ? 'completed'
+          : children.some(c => c.status === 'completed')
+            ? 'in_progress'
+            : 'pending';
 
-      const taskTemplate = `task-${header.number}`;
+        tasks.push({
+          id: `task-${header.number}`,
+          number: parseInt(header.number),
+          title: header.name,
+          status,
+          dependencies: [],
+          children,
+        });
       }
 
       // Calculate totals
@@ -162,7 +168,7 @@ export class TaskService {
         if (taskTitle) {
           subtasks.push({
             id: `task-${parentNumber}-${subtasks.length + 1}`,
-            number: Number.parseInt(parentNumber + '.' + (subtasks.length + 1)), // Decimal numbering
+            number: `${parentNumber}.${subtasks.length + 1}`, // String decimal numbering
             title: taskTitle,
             status: isCompleted ? 'completed' : 'pending',
             dependencies: [],

@@ -56,6 +56,12 @@ export interface MemoryStatus {
   lastUpdated: string | null;
 }
 
+export interface ProjectInfo {
+  name: string;
+  tagline: string;
+  techStack: string[];
+}
+
 // Chat types
 export interface ChatMessage {
   id: string;
@@ -112,6 +118,10 @@ interface AppState {
   // Memory state
   memory: MemoryStatus;
   setMemoryStatus: (status: MemoryStatus) => void;
+
+  // Project state
+  project: ProjectInfo;
+  setProjectInfo: (info: ProjectInfo) => void;
 
   // Chat state
   chatMessages: ChatMessage[];
@@ -227,6 +237,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     stateEvents.emit('memory_status', { status });
   },
 
+  // Project state
+  project: {
+    name: 'Yoyo Dev',
+    tagline: 'AI Development Framework',
+    techStack: [],
+  },
+
+  setProjectInfo: (info) => {
+    set({ project: info });
+  },
+
   // Chat state
   chatMessages: [],
   chatSessions: [],
@@ -317,6 +338,7 @@ export const selectActiveSpec = (state: AppState) => state.activeSpec;
 export const selectGitStatus = (state: AppState) => state.git;
 export const selectMcpStatus = (state: AppState) => state.mcp;
 export const selectMemoryStatus = (state: AppState) => state.memory;
+export const selectProjectInfo = (state: AppState) => state.project;
 
 // Chat selectors
 export const selectChatMessages = (state: AppState) => state.chatMessages;

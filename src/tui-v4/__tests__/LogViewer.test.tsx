@@ -10,8 +10,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { render } from 'ink-testing-library';
-import React from 'react';
-import { LogViewer } from '../components/LogViewer.js';
+
+import { LogViewer, LogEntry } from '../components/LogViewer.js';
 
 describe('LogViewer Component', () => {
   it('renders empty state when no logs', () => {
@@ -22,7 +22,7 @@ describe('LogViewer Component', () => {
   });
 
   it('displays log lines', () => {
-    const logs = [
+    const logs: LogEntry[] = [
       { timestamp: '10:00:00', level: 'info', message: 'Starting task...' },
       { timestamp: '10:00:01', level: 'info', message: 'Running tests...' },
       { timestamp: '10:00:02', level: 'success', message: 'Tests passed!' },
@@ -38,9 +38,9 @@ describe('LogViewer Component', () => {
 
   it('limits display to last 1000 lines', () => {
     // Create 1500 log lines
-    const logs = Array.from({ length: 1500 }, (_, i) => ({
+    const logs: LogEntry[] = Array.from({ length: 1500 }, (_, i) => ({
       timestamp: '10:00:00',
-      level: 'info',
+      level: 'info' as const,
       message: `Log line ${i}`,
     }));
 
@@ -54,7 +54,7 @@ describe('LogViewer Component', () => {
   });
 
   it('preserves ANSI color codes', () => {
-    const logs = [
+    const logs: LogEntry[] = [
       {
         timestamp: '10:00:00',
         level: 'error',
@@ -70,7 +70,7 @@ describe('LogViewer Component', () => {
   });
 
   it('shows timestamps when enabled', () => {
-    const logs = [
+    const logs: LogEntry[] = [
       { timestamp: '10:00:00', level: 'info', message: 'Test message' },
     ];
 
@@ -81,7 +81,7 @@ describe('LogViewer Component', () => {
   });
 
   it('hides timestamps when disabled', () => {
-    const logs = [
+    const logs: LogEntry[] = [
       { timestamp: '10:00:00', level: 'info', message: 'Test message' },
     ];
 
@@ -93,7 +93,7 @@ describe('LogViewer Component', () => {
   });
 
   it('applies level-based colors', () => {
-    const logs = [
+    const logs: LogEntry[] = [
       { timestamp: '10:00:00', level: 'info', message: 'Info message' },
       { timestamp: '10:00:01', level: 'error', message: 'Error message' },
       { timestamp: '10:00:02', level: 'success', message: 'Success message' },
@@ -110,7 +110,7 @@ describe('LogViewer Component', () => {
   });
 
   it('updates when new logs arrive', () => {
-    const initialLogs = [
+    const initialLogs: LogEntry[] = [
       { timestamp: '10:00:00', level: 'info', message: 'Initial log' },
     ];
 
@@ -118,7 +118,7 @@ describe('LogViewer Component', () => {
 
     expect(lastFrame()).toContain('Initial log');
 
-    const updatedLogs = [
+    const updatedLogs: LogEntry[] = [
       ...initialLogs,
       { timestamp: '10:00:01', level: 'info', message: 'New log' },
     ];
@@ -131,7 +131,7 @@ describe('LogViewer Component', () => {
   });
 
   it('handles multiline log messages', () => {
-    const logs = [
+    const logs: LogEntry[] = [
       {
         timestamp: '10:00:00',
         level: 'error',

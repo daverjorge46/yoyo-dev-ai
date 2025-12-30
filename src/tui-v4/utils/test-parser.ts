@@ -75,7 +75,7 @@ function parseVitest(output: string): TestResult {
 
   // Alternative format: "Tests  X passed (X)"
   const passOnlyMatch = output.match(/Tests\s+(\d+)\s+passed\s+\((\d+)\)/);
-  if (passOnlyMatch && !testsMatch) {
+  if (passOnlyMatch && !testsMatch && passOnlyMatch[1] && passOnlyMatch[2]) {
     result.passedTests = parseInt(passOnlyMatch[1], 10);
     result.totalTests = parseInt(passOnlyMatch[2], 10);
   }
@@ -141,7 +141,7 @@ function parseJest(output: string): TestResult {
 
   // Alternative format: "Tests: X passed, Y total"
   const passOnlyMatch = output.match(/Tests:\s+(\d+)\s+passed,\s+(\d+)\s+total/);
-  if (passOnlyMatch && !testsMatch) {
+  if (passOnlyMatch && !testsMatch && passOnlyMatch[1] && passOnlyMatch[2]) {
     result.passedTests = parseInt(passOnlyMatch[1], 10);
     result.totalTests = parseInt(passOnlyMatch[2], 10);
   }

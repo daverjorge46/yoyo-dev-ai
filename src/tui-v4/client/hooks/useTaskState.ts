@@ -25,7 +25,7 @@ export function useTaskState(): UseTaskStateResult {
 
   useEffect(() => {
     // Subscribe to task updates
-    const handleTaskUpdate = (data: any) => {
+    const handleTaskUpdate = (_data: any) => {
       setIsLoading(false);
       setError(null);
 

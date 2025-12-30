@@ -17,17 +17,30 @@ interface InputAreaProps {
   isConnected?: boolean;
   placeholder?: string;
   maxLength?: number;
+  /** Called when input gains focus */
+  onFocus?: () => void;
+  /** Called when input loses focus (Escape key) */
+  onBlur?: () => void;
 }
 
 export const InputArea: React.FC<InputAreaProps> = ({
   onSubmit,
   isLoading = false,
   isConnected = true,
-  placeholder = 'Type a message... (Ctrl+Enter to send)',
+  placeholder = 'Type a message... (Enter to send)',
   maxLength = 10000,
+  onFocus,
+  onBlur,
 }) => {
   const [value, setValue] = useState('');
   const [focused, setFocused] = useState(true);
+
+  // Notify parent of focus state changes
+  React.useEffect(() => {
+    if (focused && onFocus) {
+      onFocus();
+    }
+  }, [focused, onFocus]);
 
   // Handle input changes
   const handleChange = useCallback((newValue: string) => {
@@ -47,13 +60,21 @@ export const InputArea: React.FC<InputAreaProps> = ({
 
   // Handle keyboard shortcuts
   useInput((input, key) => {
-    // Ctrl+Enter or Ctrl+S to submit
+    // Enter to submit (without Shift)
+    if (key.return && !key.shift) {
+      handleSubmit();
+      return;
+    }
+    // Ctrl+Enter or Ctrl+S to submit (alternative)
     if ((key.ctrl && key.return) || (key.ctrl && input === 's')) {
       handleSubmit();
+      return;
     }
-    // Escape to clear
+    // Escape to exit input mode and clear
     if (key.escape) {
       setValue('');
+      setFocused(false);
+      onBlur?.();
     }
   });
 
@@ -112,11 +133,11 @@ export const InputArea: React.FC<InputAreaProps> = ({
         <Box justifyContent="space-between" marginTop={1}>
           <Box>
             <Text dimColor>
-              Ctrl+Enter
+              Enter
             </Text>
             <Text color={colors.overlay0}> send</Text>
             <Text dimColor> | Esc</Text>
-            <Text color={colors.overlay0}> clear</Text>
+            <Text color={colors.overlay0}> exit input</Text>
           </Box>
           <Box>
             <Text color={isNearLimit ? semanticColors.warning : colors.overlay0}>

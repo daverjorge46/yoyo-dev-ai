@@ -166,7 +166,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   const maxVisibleMessages = 50; // Limit for performance
 
   // Handle keyboard scrolling
-  useInput((input, key) => {
+  useInput((_input, key) => {
     if (key.upArrow) {
       scrollOffset.current = Math.min(
         scrollOffset.current + 1,

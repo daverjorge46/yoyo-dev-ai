@@ -9,7 +9,7 @@
  * Triggers state updates via services on file changes.
  */
 
-import chokidar from 'chokidar';
+import chokidar, { FSWatcher } from 'chokidar';
 import { debounce } from './utils.js';
 import { taskService } from './services/TaskService.js';
 import { specService } from './services/SpecService.js';
@@ -24,7 +24,7 @@ const WATCH_PATHS = [
 ];
 
 export class FileWatcherService {
-  private watcher: chokidar.FSWatcher | null = null;
+  private watcher: FSWatcher | null = null;
   private isWatching = false;
 
   /**
@@ -67,7 +67,7 @@ export class FileWatcherService {
     }, DEBOUNCE_MS);
 
     // Watch for file changes
-    this.watcher.on('change', (path) => {
+    this.watcher.on('change', (path: string) => {
       if (path.includes('tasks.md')) {
         handleTaskChange();
       } else if (path.includes('spec.md') || path.includes('spec-lite.md')) {
@@ -80,7 +80,7 @@ export class FileWatcherService {
     });
 
     // Watch for new files
-    this.watcher.on('add', (path) => {
+    this.watcher.on('add', (path: string) => {
       console.log('[FileWatcher] New file detected:', path);
       if (path.includes('tasks.md') || path.includes('spec.md')) {
         handleTaskChange();
@@ -89,7 +89,7 @@ export class FileWatcherService {
     });
 
     // Watch for deleted files
-    this.watcher.on('unlink', (path) => {
+    this.watcher.on('unlink', (path: string) => {
       console.log('[FileWatcher] File deleted:', path);
       if (path.includes('tasks.md') || path.includes('spec.md')) {
         handleTaskChange();
@@ -98,7 +98,7 @@ export class FileWatcherService {
     });
 
     // Handle errors
-    this.watcher.on('error', (error) => {
+    this.watcher.on('error', (error: Error) => {
       console.error('[FileWatcher] Error:', error);
     });
 

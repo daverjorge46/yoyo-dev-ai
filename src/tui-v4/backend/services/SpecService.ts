@@ -8,7 +8,6 @@
 import { readdir, readFile, stat } from 'fs/promises';
 import { join } from 'path';
 import type { Spec } from '../state-manager.js';
-import { taskService } from './TaskService.js';
 
 export class SpecService {
   private specsDir = '.yoyo-dev/specs';
@@ -104,7 +103,7 @@ export class SpecService {
    */
   private extractDate(folderName: string): string {
     const match = folderName.match(/^(\d{4}-\d{2}-\d{2})/);
-    return match ? match[1] : 'unknown';
+    return match && match[1] ? match[1] : 'unknown';
   }
 
   /**
@@ -112,9 +111,10 @@ export class SpecService {
    */
   private extractCleanName(folderName: string): string {
     const parts = folderName.split('-');
+    const firstPart = parts[0];
 
     // If we have at least 4 parts (YYYY-MM-DD-name), remove date
-    if (parts.length >= 4 && parts[0].length === 4 && /^\d+$/.test(parts[0])) {
+    if (parts.length >= 4 && firstPart && firstPart.length === 4 && /^\d+$/.test(firstPart)) {
       return parts.slice(3).join('-');
     }
 

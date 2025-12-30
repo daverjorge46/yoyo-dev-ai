@@ -9,7 +9,7 @@
 
 import { WebSocketServer, WebSocket } from 'ws';
 import { createServer } from 'http';
-import { stateEvents, StateEvent } from './state-manager.js';
+import { stateEvents } from './state-manager.js';
 
 // =============================================================================
 // Configuration
@@ -184,7 +184,7 @@ export class BackendServer {
    * Handle incoming message from client
    */
   private handleMessage(ws: WebSocket, message: any): void {
-    const { type, payload } = message;
+    const { type } = message;
 
     switch (type) {
       case 'subscribe':

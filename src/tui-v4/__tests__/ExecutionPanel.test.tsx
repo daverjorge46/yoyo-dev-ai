@@ -9,7 +9,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { render } from 'ink-testing-library';
-import React from 'react';
+
 import { ExecutionPanel } from '../components/ExecutionPanel.js';
 
 describe('ExecutionPanel Component', () => {

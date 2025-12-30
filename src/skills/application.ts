@@ -335,7 +335,7 @@ export function injectSkillsIntoContext(
 export function recordSkillsApplied(
   paths: SkillPaths,
   appliedSkills: SkillMatch[],
-  taskDescription: string
+  _taskDescription: string
 ): void {
   for (const match of appliedSkills) {
     // Update usage count in registry
@@ -398,7 +398,13 @@ export function getSkillContext(
 ): string {
   const result = applySkills(
     paths,
-    { description },
+    {
+      description,
+      technologies: [],
+      fileTypes: [],
+      taskType: 'other',
+      keywords: [],
+    },
     undefined,
     { compact }
   );

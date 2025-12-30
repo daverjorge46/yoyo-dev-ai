@@ -11,7 +11,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from 'ink-testing-library';
-import React from 'react';
+
 import { Header } from '../components/Header.js';
 
 describe('Header Component', () => {
@@ -141,5 +141,78 @@ describe('Header Component', () => {
     expect(output).toContain('develop');
     expect(output).toContain('10');
     expect(output).toContain('5');
+  });
+
+  it('displays project tagline when provided', () => {
+    const { lastFrame } = render(
+      <Header
+        projectName="Test Project"
+        projectTagline="A test development framework"
+        gitBranch="main"
+        memoryBlockCount={5}
+        mcpServerCount={3}
+      />
+    );
+
+    expect(lastFrame()).toContain('A test development framework');
+  });
+
+  it('displays tech stack items when provided', () => {
+    const { lastFrame } = render(
+      <Header
+        projectName="Test Project"
+        projectTechStack={['TypeScript', 'React', 'SQLite']}
+        gitBranch="main"
+        memoryBlockCount={5}
+        mcpServerCount={3}
+      />
+    );
+
+    const output = lastFrame();
+    expect(output).toContain('TypeScript');
+    expect(output).toContain('React');
+    expect(output).toContain('SQLite');
+  });
+
+  it('limits tech stack to 4 items', () => {
+    const { lastFrame } = render(
+      <Header
+        projectName="Test Project"
+        projectTechStack={['TypeScript', 'React', 'SQLite', 'Bun', 'Extra']}
+        gitBranch="main"
+        memoryBlockCount={5}
+        mcpServerCount={3}
+      />
+    );
+
+    const output = lastFrame();
+    expect(output).toContain('TypeScript');
+    expect(output).toContain('Bun');
+    expect(output).not.toContain('Extra');
+  });
+
+  it('shows Claude connection status', () => {
+    const { lastFrame, rerender } = render(
+      <Header
+        gitBranch="main"
+        memoryBlockCount={5}
+        mcpServerCount={3}
+        claudeConnected={true}
+      />
+    );
+
+    expect(lastFrame()).toContain('Claude');
+    expect(lastFrame()).toContain('●');
+
+    rerender(
+      <Header
+        gitBranch="main"
+        memoryBlockCount={5}
+        mcpServerCount={3}
+        claudeConnected={false}
+      />
+    );
+
+    expect(lastFrame()).toContain('○');
   });
 });

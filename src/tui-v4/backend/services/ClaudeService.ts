@@ -238,7 +238,7 @@ export class ClaudeService extends EventEmitter {
   /**
    * Handle disconnect
    */
-  private handleDisconnect(code: number | null, signal: string | null): void {
+  private handleDisconnect(code: number | null, _signal: string | null): void {
     this.isConnected = false;
     this.process = null;
     this.emit('disconnected');
@@ -269,7 +269,7 @@ export class ClaudeService extends EventEmitter {
   /**
    * Approve a tool call
    */
-  async approveTool(toolId: string): Promise<void> {
+  async approveTool(_toolId: string): Promise<void> {
     if (!this.isConnected || !this.process?.stdin) {
       throw new Error('Not connected to Claude');
     }
@@ -281,7 +281,7 @@ export class ClaudeService extends EventEmitter {
   /**
    * Deny a tool call
    */
-  async denyTool(toolId: string): Promise<void> {
+  async denyTool(_toolId: string): Promise<void> {
     if (!this.isConnected || !this.process?.stdin) {
       throw new Error('Not connected to Claude');
     }

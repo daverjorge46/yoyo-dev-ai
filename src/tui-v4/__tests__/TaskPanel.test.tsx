@@ -9,7 +9,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { render } from 'ink-testing-library';
-import React from 'react';
+
 import { TaskPanel } from '../components/TaskPanel.js';
 import { useAppStore } from '../backend/state-manager.js';
 

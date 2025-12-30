@@ -112,7 +112,7 @@ export class GitService {
 
       if (branchLine) {
         const match = branchLine.match(/\+(\d+) -(\d+)/);
-        if (match) {
+        if (match && match[1] && match[2]) {
           return {
             ahead: parseInt(match[1], 10),
             behind: parseInt(match[2], 10),

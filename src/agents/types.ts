@@ -77,6 +77,9 @@ export interface AgentMetadata {
 
   /** Tags for categorization */
   tags?: string[];
+
+  /** Mode override (from mode detection) */
+  mode?: string;
 }
 
 /**

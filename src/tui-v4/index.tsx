@@ -5,7 +5,6 @@
  * This file is invoked by the `yoyo --tui-v4` CLI command.
  */
 
-import React from 'react';
 import { render } from 'ink';
 import { App } from './App.js';
 import { setupGlobalErrorHandlers, handleFatalError } from './utils/error-handler.js';

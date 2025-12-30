@@ -7,7 +7,7 @@
  */
 
 import React, { useCallback } from 'react';
-import { Box, Text } from 'ink';
+import { Box, Text, useStdout } from 'ink';
 import { MessageList } from './MessageList.js';
 import { InputArea } from './InputArea.js';
 import { useAppStore, ChatMessage } from '../../backend/state-manager.js';
@@ -18,6 +18,12 @@ interface ChatPanelProps {
   isFocused?: boolean;
   sessionName?: string;
   onSendMessage?: (message: string) => Promise<void>;
+  /** Panel width for dynamic sizing */
+  width?: number;
+  /** Callback when input gains focus */
+  onInputFocus?: () => void;
+  /** Callback when input loses focus */
+  onInputBlur?: () => void;
 }
 
 /**
@@ -29,9 +35,19 @@ function generateMessageId(): string {
 
 export const ChatPanel: React.FC<ChatPanelProps> = ({
   isFocused = true,
-  sessionName = 'Chat',
+  sessionName = 'Claude Chat',
   onSendMessage,
+  width,
+  onInputFocus,
+  onInputBlur,
 }) => {
+  // Get terminal width for dynamic sizing
+  const { stdout } = useStdout();
+  const terminalWidth = stdout?.columns || 80;
+
+  // Calculate divider width (panel width minus padding/borders, or fallback)
+  const dividerWidth = width ? Math.max(width - 6, 20) : Math.floor(terminalWidth * 0.5);
+
   // Get state from store
   const chatMessages = useAppStore((s) => s.chatMessages);
   const isClaudeConnected = useAppStore((s) => s.isClaudeConnected);
@@ -105,17 +121,17 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
 
       {/* Divider */}
       <Box>
-        <Text dimColor>{'─'.repeat(40)}</Text>
+        <Text dimColor>{'─'.repeat(dividerWidth)}</Text>
       </Box>
 
-      {/* Messages Area */}
-      <Box flexDirection="column" flexGrow={1} marginY={1}>
+      {/* Messages Area - takes all available space */}
+      <Box flexDirection="column" flexGrow={1} marginY={1} overflow="hidden">
         <MessageList messages={chatMessages} />
       </Box>
 
       {/* Divider */}
       <Box>
-        <Text dimColor>{'─'.repeat(40)}</Text>
+        <Text dimColor>{'─'.repeat(dividerWidth)}</Text>
       </Box>
 
       {/* Input Area */}
@@ -124,6 +140,8 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           onSubmit={handleSubmit}
           isLoading={isClaudeThinking}
           isConnected={isClaudeConnected}
+          onFocus={onInputFocus}
+          onBlur={onInputBlur}
         />
       </Box>
     </Box>

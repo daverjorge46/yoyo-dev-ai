@@ -50,7 +50,7 @@ const EXECUTION_SHORTCUTS: Shortcut[] = [
   { key: 'Ctrl+u', description: 'Scroll logs up (page)' },
 ];
 
-export const HelpOverlay: React.FC<HelpOverlayProps> = ({ isVisible, onClose }) => {
+export const HelpOverlay: React.FC<HelpOverlayProps> = ({ isVisible }) => {
   if (!isVisible) {
     return null;
   }

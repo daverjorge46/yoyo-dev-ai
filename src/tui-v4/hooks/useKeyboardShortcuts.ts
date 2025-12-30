@@ -10,7 +10,7 @@
  * - Esc (close modals)
  */
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useInput } from 'ink';
 
 export interface KeyboardShortcuts {
