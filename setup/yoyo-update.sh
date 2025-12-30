@@ -236,13 +236,32 @@ done
 
 echo ""
 
-# Proceed with update (no confirmation needed - user ran yoyo-update intentionally)
-
+# Brief pause so user can see the plan
+echo -e "${UI_INFO}${ICON_INFO}${UI_RESET}  Starting update in 2 seconds..."
+sleep 2
 echo ""
 
 # ============================================================================
 # Update Steps
 # ============================================================================
+
+# Helper function to log verbose output
+log_verbose() {
+    if [ "$VERBOSE" = true ]; then
+        echo -e "  ${UI_DIM}$1${UI_RESET}"
+    fi
+}
+
+# Helper function to show progress with optional details
+show_progress() {
+    local message="$1"
+    local detail="${2:-}"
+    if [ -n "$detail" ]; then
+        echo -e "  ${ICON_ARROW} ${message}: ${UI_DIM}${detail}${UI_RESET}"
+    else
+        echo -e "  ${ICON_ARROW} ${message}"
+    fi
+}
 
 TOTAL_STEPS=10
 CURRENT_STEP=0
@@ -255,7 +274,9 @@ BASE_YOYO_DEV="$(dirname "$SCRIPT_DIR")"
 ui_step $CURRENT_STEP $TOTAL_STEPS "Creating backup..."
 
 BACKUP_DIR=".yoyo-dev/backups/$(date +%Y%m%d_%H%M%S)"
+show_progress "Creating backup directory" "$BACKUP_DIR"
 mkdir -p "$BACKUP_DIR"
+show_progress "Copying config.yml"
 cp .yoyo-dev/config.yml "$BACKUP_DIR/config.yml" 2>/dev/null || true
 
 ui_success "Backup created: $BACKUP_DIR"
@@ -266,12 +287,32 @@ echo ""
 ui_step $CURRENT_STEP $TOTAL_STEPS "Pulling latest version..."
 
 if [ -d "$BASE_YOYO_DEV/.git" ]; then
-    (cd "$BASE_YOYO_DEV" && git pull --quiet) &
-    spinner_pid=$!
-    ui_spinner $spinner_pid "  Updating base installation"
-    wait $spinner_pid
+    show_progress "Checking for updates from" "$BASE_YOYO_DEV"
+    cd "$BASE_YOYO_DEV"
+
+    # Get current branch and show it
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+    show_progress "Current branch" "$CURRENT_BRANCH"
+
+    # Fetch and show status
+    show_progress "Fetching latest changes..."
+    if git fetch origin 2>&1 | head -5; then
+        # Check if there are updates
+        LOCAL=$(git rev-parse HEAD 2>/dev/null)
+        REMOTE=$(git rev-parse @{u} 2>/dev/null || echo "$LOCAL")
+
+        if [ "$LOCAL" = "$REMOTE" ]; then
+            show_progress "Already up to date"
+        else
+            show_progress "Pulling updates..."
+            git pull 2>&1 | head -10
+        fi
+    fi
+
+    cd "$CURRENT_DIR"
     ui_success "Base installation updated"
 else
+    show_progress "Source directory" "$BASE_YOYO_DEV"
     ui_info "No git repository found, using current base installation"
 fi
 
@@ -282,12 +323,21 @@ if [ "$OVERWRITE_INSTRUCTIONS" = true ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Updating instructions..."
 
-    rsync -a --delete "$BASE_YOYO_DEV/instructions/" ".yoyo-dev/instructions/" 2>&1 | grep -v "sending incremental" || true
-    ui_success "Instructions updated"
+    show_progress "Source" "$BASE_YOYO_DEV/instructions/"
+    show_progress "Destination" ".yoyo-dev/instructions/"
+
+    # Count files being updated
+    FILE_COUNT=$(find "$BASE_YOYO_DEV/instructions/" -type f 2>/dev/null | wc -l)
+    show_progress "Copying $FILE_COUNT files..."
+
+    rsync -a --delete "$BASE_YOYO_DEV/instructions/" ".yoyo-dev/instructions/" 2>&1
+
+    ui_success "Instructions updated ($FILE_COUNT files)"
     echo ""
 else
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Keeping existing instructions..."
+    show_progress "Skipped (--no-overwrite-instructions)"
     echo ""
 fi
 
@@ -296,12 +346,21 @@ if [ "$OVERWRITE_STANDARDS" = true ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Updating standards..."
 
-    rsync -a --delete "$BASE_YOYO_DEV/standards/" ".yoyo-dev/standards/" 2>&1 | grep -v "sending incremental" || true
-    ui_success "Standards updated"
+    show_progress "Source" "$BASE_YOYO_DEV/standards/"
+    show_progress "Destination" ".yoyo-dev/standards/"
+
+    # Count files being updated
+    FILE_COUNT=$(find "$BASE_YOYO_DEV/standards/" -type f 2>/dev/null | wc -l)
+    show_progress "Copying $FILE_COUNT files..."
+
+    rsync -a --delete "$BASE_YOYO_DEV/standards/" ".yoyo-dev/standards/" 2>&1
+
+    ui_success "Standards updated ($FILE_COUNT files)"
     echo ""
 else
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Keeping existing standards..."
+    show_progress "Skipped (--no-overwrite-standards)"
     echo ""
 fi
 
@@ -310,12 +369,25 @@ if [ "$OVERWRITE_COMMANDS" = true ] && [ -d ".claude/commands" ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Updating CLI commands..."
 
-    rsync -a "$BASE_YOYO_DEV/.claude/commands/" ".claude/commands/" 2>&1 | grep -v "sending incremental" || true
-    ui_success "Commands updated"
+    show_progress "Source" "$BASE_YOYO_DEV/.claude/commands/"
+    show_progress "Destination" ".claude/commands/"
+
+    # Count files being updated
+    FILE_COUNT=$(find "$BASE_YOYO_DEV/.claude/commands/" -type f 2>/dev/null | wc -l)
+    show_progress "Copying $FILE_COUNT command files..."
+
+    rsync -a "$BASE_YOYO_DEV/.claude/commands/" ".claude/commands/" 2>&1
+
+    ui_success "Commands updated ($FILE_COUNT files)"
     echo ""
 else
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping command update..."
+    if [ ! -d ".claude/commands" ]; then
+        show_progress "Skipped (.claude/commands not found)"
+    else
+        show_progress "Skipped (--no-overwrite-commands)"
+    fi
     echo ""
 fi
 
@@ -324,12 +396,25 @@ if [ "$OVERWRITE_AGENTS" = true ] && [ -d ".claude/agents" ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Updating agents..."
 
-    rsync -a "$BASE_YOYO_DEV/.claude/agents/" ".claude/agents/" 2>&1 | grep -v "sending incremental" || true
-    ui_success "Agents updated"
+    show_progress "Source" "$BASE_YOYO_DEV/.claude/agents/"
+    show_progress "Destination" ".claude/agents/"
+
+    # Count files being updated
+    FILE_COUNT=$(find "$BASE_YOYO_DEV/.claude/agents/" -type f 2>/dev/null | wc -l)
+    show_progress "Copying $FILE_COUNT agent definitions..."
+
+    rsync -a "$BASE_YOYO_DEV/.claude/agents/" ".claude/agents/" 2>&1
+
+    ui_success "Agents updated ($FILE_COUNT files)"
     echo ""
 else
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping agent update..."
+    if [ ! -d ".claude/agents" ]; then
+        show_progress "Skipped (.claude/agents not found)"
+    else
+        show_progress "Skipped (--no-overwrite-agents)"
+    fi
     echo ""
 fi
 
@@ -338,11 +423,13 @@ fi
 ui_step $CURRENT_STEP $TOTAL_STEPS "Merging configuration..."
 
 # Update version number
+show_progress "Updating version to" "$VERSION"
 sed -i.bak "s/yoyo_dev_version:.*/yoyo_dev_version: $VERSION/" .yoyo-dev/config.yml
 rm -f .yoyo-dev/config.yml.bak
 
 # Add new config options if missing
 if ! grep -q "^backend:" .yoyo-dev/config.yml 2>/dev/null; then
+    show_progress "Adding backend configuration block"
     cat >> .yoyo-dev/config.yml << EOF
 
 # Backend API (for TUI v4)
@@ -351,6 +438,8 @@ backend:
   port: 3457
   host: "localhost"
 EOF
+else
+    show_progress "Backend config already exists"
 fi
 
 ui_success "Configuration merged"
@@ -362,18 +451,28 @@ if [ "$CURRENT_TUI_VERSION" = "v4" ] && [ "$AUTO_UPDATE_TUI_V4" = true ]; then
     ui_step $CURRENT_STEP $TOTAL_STEPS "Updating TUI v4 dependencies..."
 
     if command -v npm &> /dev/null; then
-        (cd "$BASE_YOYO_DEV" && npm update --silent 2>&1 | grep -v "npm WARN" || true) &
-        spinner_pid=$!
-        ui_spinner $spinner_pid "  Updating Node packages"
-        wait $spinner_pid
+        show_progress "Running npm update in" "$BASE_YOYO_DEV"
+        cd "$BASE_YOYO_DEV"
+
+        # Run npm update and show output
+        show_progress "Checking for package updates..."
+        npm update 2>&1 | head -20 || true
+
+        cd "$CURRENT_DIR"
         ui_success "TUI v4 dependencies updated"
     else
+        show_progress "npm command not found"
         ui_warning "npm not found - skipping dependency update"
     fi
     echo ""
 else
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping TUI v4 dependency update..."
+    if [ "$CURRENT_TUI_VERSION" != "v4" ]; then
+        show_progress "TUI version is $CURRENT_TUI_VERSION (not v4)"
+    else
+        show_progress "Skipped (--no-tui-update)"
+    fi
     echo ""
 fi
 
@@ -383,14 +482,26 @@ if [ "$SKIP_MCP_CHECK" = false ]; then
     ui_step $CURRENT_STEP $TOTAL_STEPS "Checking MCP servers..."
 
     if [ -f "$SCRIPT_DIR/docker-mcp-setup.sh" ]; then
-        bash "$SCRIPT_DIR/docker-mcp-setup.sh" --skip-if-no-docker 2>&1 | grep -E "✓|✗" || ui_info "MCP check complete"
+        show_progress "Running Docker MCP setup check"
+
+        # Run MCP check and capture output
+        MCP_OUTPUT=$(bash "$SCRIPT_DIR/docker-mcp-setup.sh" --skip-if-no-docker 2>&1 || true)
+
+        # Show the output
+        if [ -n "$MCP_OUTPUT" ]; then
+            echo "$MCP_OUTPUT" | head -30
+        fi
+
+        ui_success "MCP check complete"
     else
+        show_progress "MCP setup script not found at" "$SCRIPT_DIR/docker-mcp-setup.sh"
         ui_info "MCP setup script not found"
     fi
     echo ""
 else
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping MCP server check..."
+    show_progress "Skipped (--skip-mcp-check)"
     echo ""
 fi
 
@@ -400,20 +511,32 @@ ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying update..."
 
 errors=()
 
+show_progress "Checking version in config.yml"
 if ! grep -q "yoyo_dev_version: $VERSION" .yoyo-dev/config.yml; then
     errors+=("Version number not updated")
+fi
+
+show_progress "Checking instructions directory"
+if [ ! -d ".yoyo-dev/instructions" ]; then
+    errors+=("Instructions directory missing")
+fi
+
+show_progress "Checking standards directory"
+if [ ! -d ".yoyo-dev/standards" ]; then
+    errors+=("Standards directory missing")
 fi
 
 if [ ${#errors[@]} -gt 0 ]; then
     ui_error "Update verification failed"
     for error in "${errors[@]}"; do
-        echo "  - $error"
+        echo "  ${UI_ERROR}${ICON_ERROR}${UI_RESET} $error"
     done
     echo ""
     echo "  Backup available at: $BACKUP_DIR"
     exit 1
 fi
 
+show_progress "All checks passed"
 ui_success "Update verified"
 echo ""
 
