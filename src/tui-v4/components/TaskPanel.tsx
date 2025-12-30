@@ -12,10 +12,10 @@ import { Box, Text } from 'ink';
 import { SpecIndicator } from './SpecIndicator.js';
 import { TaskTree } from './TaskTree.js';
 import { useAppStore } from '../backend/state-manager.js';
-import { semanticColors } from '../theme/colors.js';
-import { textStyles } from '../theme/styles.js';
+import { semanticColors, textStyles, taskStyles } from '../theme/styles.js';
+import { textStyles, taskStyles } from '../theme/styles.js';
 
-export const TaskPanel: React.FC = () => {
+  const TaskPanel: React.FC = () => {
   const mcp = useAppStore((state) => state.mcp);
   const memory = useAppStore((state) => state.memory);
 
@@ -30,12 +30,12 @@ export const TaskPanel: React.FC = () => {
       </Box>
 
       {/* Bottom: MCP/Memory status */}
-      <Box paddingX={1} paddingY={0} borderStyle="single" borderColor={semanticColors.textSecondary}>
+      <Box paddingX={1} paddingY={0} borderStyle="single" borderColor={semanticColors.border}>
         <Box flexDirection="row" gap={2}>
-          <Text dimColor color={textStyles.textSecondary}>
+          <Text color={textStyles.body}>
             MCP: {mcp.serverCount} {mcp.connected ? '●' : '○'}
           </Text>
-          <Text dimColor color={textStyles.textSecondary}>
+          <Text color={textStyles.body}>
             Memory: {memory.blockCount} blocks
           </Text>
         </Box>

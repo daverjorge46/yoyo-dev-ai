@@ -5,8 +5,7 @@
  * Queries the SQLite database at .yoyo-ai/memory/memory.db
  */
 
-import { stat } from 'fs/promises';
-import { join } from 'path';
+import { stat } from 'node:fs/promises';
 import type { MemoryStatus } from '../state-manager.js';
 
 export class MemoryService {

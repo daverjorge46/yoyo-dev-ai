@@ -4,22 +4,30 @@
  * Automatically prompts the agent to continue working when session goes idle
  * but incomplete todos remain in the todo list.
  *
+ * This module has been refactored to use the new hook registry system.
+ * The core functionality is now in builtin/todo-continuation.ts.
+ *
  * @version 5.0.0
  * @author Yoyo Dev Team
  */
 
-interface Todo {
-  content: string;
-  activeForm: string;
-  status: "pending" | "in_progress" | "completed";
-}
+import { hookRegistry } from "./registry.js";
+import {
+  todoContinuationHook,
+  todoUpdatedHook,
+  createTodoContinuationHook,
+  clearSessionState,
+  clearAllSessionStates,
+  type TodoContinuationConfig,
+} from "./builtin/todo-continuation.js";
+import type { Todo, HookContext, HookResult } from "./types.js";
 
-interface HookContext {
-  sessionId: string;
-  event: string;
-  timestamp: Date;
-  metadata?: Record<string, unknown>;
-}
+// Re-export types for backward compatibility
+export type { Todo, HookContext, HookResult, TodoContinuationConfig };
+
+// =============================================================================
+// Legacy Interface (for backward compatibility)
+// =============================================================================
 
 // Cooldown tracking: session ID -> last injection timestamp
 const lastInjectionTimes = new Map<string, number>();
@@ -36,13 +44,28 @@ const CONFIG = {
 };
 
 /**
- * Get current todos from the session context
- * In production, this would read from the actual todo store
+ * Initialize the todo continuation enforcer
+ *
+ * Registers the hook with the global hook registry.
+ * Call this once during application startup.
+ *
+ * @param config - Optional configuration overrides
  */
-function getCurrentTodos(sessionId: string): Todo[] {
-  // TODO: Integrate with actual todo storage system
-  // For now, return empty array (will be implemented with todo store integration)
-  return [];
+export function initializeTodoContinuation(
+  config?: Partial<TodoContinuationConfig>
+): void {
+  // Create hook with optional config
+  const hook = config
+    ? createTodoContinuationHook(config)
+    : todoContinuationHook;
+
+  // Register with global registry
+  hookRegistry.register(hook);
+
+  // Also register the todo update tracker
+  hookRegistry.register(todoUpdatedHook);
+
+  console.log("[Todo Continuation] Initialized with hook registry");
 }
 
 /**
@@ -85,6 +108,7 @@ async function injectContinuationMessage(
     (t) => t.status === "in_progress"
   ).length;
 
+  const firstTodo = incompleteTodos[0];
   const message = `
 [SYSTEM REMINDER - TODO CONTINUATION]
 
@@ -93,7 +117,7 @@ Incomplete tasks remain in your todo list:
 - ${pendingCount} pending
 
 Next incomplete task:
-${incompleteTodos[0].content}
+${firstTodo?.content ?? "No task content"}
 
 **Action Required:**
 1. Continue working on the next pending task
@@ -109,7 +133,17 @@ ${incompleteTodos[0].content}
 Continue now.
 `.trim();
 
-  // TODO: Integrate with Claude Code session message injection API
+  // Execute via hook registry
+  await hookRegistry.execute("sessionEnd", {
+    sessionId,
+    timestamp: new Date(),
+    metadata: {
+      todos,
+      triggerSource: "legacy-enforcer",
+    },
+  });
+
+  // Also log for debugging
   console.log(`[Todo Continuation] Injecting message to session ${sessionId}`);
   console.log(message);
 
@@ -157,12 +191,44 @@ function cancelCountdown(sessionId: string): void {
 }
 
 /**
- * Hook handler for session events
+ * Get current todos from the session context
  *
- * Listens for session.idle events and triggers todo continuation if needed
+ * @param sessionId - Session ID to get todos for
+ * @param todoProvider - Optional function to get todos from external source
+ * @returns Array of todos
+ */
+function getCurrentTodos(
+  sessionId: string,
+  todoProvider?: (sessionId: string) => Todo[]
+): Todo[] {
+  if (todoProvider) {
+    return todoProvider(sessionId);
+  }
+  // Default: return empty array (integration point for todo store)
+  return [];
+}
+
+/**
+ * Legacy hook context interface (for backward compatibility)
+ */
+interface LegacyHookContext {
+  sessionId: string;
+  event: string;
+  timestamp: Date;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Legacy hook handler for session events
+ *
+ * @deprecated Use hookRegistry.execute() with sessionEnd event instead
+ *
+ * Listens for session.idle events and triggers todo continuation if needed.
+ * This is kept for backward compatibility with existing code.
  */
 export async function todoContinuationEnforcer(
-  context: HookContext
+  context: LegacyHookContext,
+  todoProvider?: (sessionId: string) => Todo[]
 ): Promise<void> {
   const { sessionId, event, timestamp } = context;
 
@@ -180,7 +246,7 @@ export async function todoContinuationEnforcer(
   );
 
   // Get current todos
-  const todos = getCurrentTodos(sessionId);
+  const todos = getCurrentTodos(sessionId, todoProvider);
 
   // Check if there are incomplete todos
   if (!hasIncompleteTodos(todos)) {
@@ -203,10 +269,35 @@ export async function todoContinuationEnforcer(
 }
 
 /**
+ * Trigger todo continuation check via hook registry
+ *
+ * This is the preferred way to trigger todo continuation checks.
+ *
+ * @param sessionId - Session ID
+ * @param todos - Current todos
+ */
+export async function triggerTodoContinuation(
+  sessionId: string,
+  todos: Todo[]
+): Promise<HookResult[]> {
+  const results = await hookRegistry.execute("sessionEnd", {
+    sessionId,
+    timestamp: new Date(),
+    metadata: { todos },
+  });
+
+  return results
+    .filter((r) => r.success && r.result)
+    .map((r) => r.result!);
+}
+
+/**
  * Cleanup function to clear all timers (call on shutdown)
  */
 export function cleanup(): void {
-  for (const [sessionId, timer] of countdownTimers.entries()) {
+  // Clear legacy timers
+  const timerEntries = Array.from(countdownTimers.entries());
+  for (const [sessionId, timer] of timerEntries) {
     clearTimeout(timer);
     console.log(
       `[Todo Continuation] Cleaned up timer for session ${sessionId}`
@@ -214,6 +305,15 @@ export function cleanup(): void {
   }
   countdownTimers.clear();
   lastInjectionTimes.clear();
+
+  // Clear new registry session states
+  clearAllSessionStates();
+
+  // Unregister hooks from registry
+  hookRegistry.unregister("todo-continuation-enforcer");
+  hookRegistry.unregister("todo-update-tracker");
+
+  console.log("[Todo Continuation] Cleanup complete");
 }
 
 /**
@@ -230,5 +330,14 @@ export function updateConfig(updates: Partial<typeof CONFIG>): void {
   Object.assign(CONFIG, updates);
 }
 
-// Export types
-export type { Todo, HookContext };
+// =============================================================================
+// Re-exports for convenience
+// =============================================================================
+
+export {
+  todoContinuationHook,
+  todoUpdatedHook,
+  createTodoContinuationHook,
+  clearSessionState,
+  clearAllSessionStates,
+};

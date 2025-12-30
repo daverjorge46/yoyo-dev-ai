@@ -2,10 +2,16 @@
  * Agent Registry
  *
  * Central registry for all built-in agents in the Yoyo Dev framework.
+ * Supports hierarchical configuration loading with dynamic overrides.
  * All agents use Claude models (Opus 4.5 primary, Sonnet 4.5 fallback).
  */
 
 import type { AgentConfig } from "./types.js";
+import type { MergedAgentConfig, ConfigLoadResult } from "../config/types.js";
+
+// =============================================================================
+// Built-in Agent Configurations
+// =============================================================================
 
 /**
  * Built-in agent configurations
@@ -153,22 +159,102 @@ const builtinAgents: Record<string, AgentConfig> = {
   },
 };
 
+// =============================================================================
+// Dynamic Config Cache
+// =============================================================================
+
+/**
+ * Cached configuration result from hierarchical loading
+ */
+let cachedConfigResult: ConfigLoadResult | null = null;
+
+/**
+ * Set the cached configuration result
+ * Called by the config loader after loading hierarchical configs
+ */
+export function setConfigCache(result: ConfigLoadResult): void {
+  cachedConfigResult = result;
+}
+
+/**
+ * Clear the cached configuration result
+ */
+export function clearConfigCache(): void {
+  cachedConfigResult = null;
+}
+
+/**
+ * Check if dynamic config is loaded
+ */
+export function hasConfigCache(): boolean {
+  return cachedConfigResult !== null;
+}
+
+/**
+ * Get the cached config result
+ */
+export function getConfigCache(): ConfigLoadResult | null {
+  return cachedConfigResult;
+}
+
+// =============================================================================
+// Agent Access Functions
+// =============================================================================
+
 /**
  * Get agent configuration by name
+ *
+ * Returns merged config if available, otherwise builtin config.
  *
  * @param name - Agent name (e.g., "yoyo-ai", "oracle")
  * @returns Agent configuration or undefined if not found
  */
-export function getAgent(name: string): AgentConfig | undefined {
+export function getAgent(name: string): AgentConfig | MergedAgentConfig | undefined {
+  // Try cached merged config first
+  if (cachedConfigResult) {
+    const merged = cachedConfigResult.agents[name];
+    if (merged) {
+      return merged;
+    }
+  }
+
+  // Fall back to builtin
+  return builtinAgents[name];
+}
+
+/**
+ * Get builtin agent configuration by name (ignores overrides)
+ *
+ * @param name - Agent name (e.g., "yoyo-ai", "oracle")
+ * @returns Builtin agent configuration or undefined if not found
+ */
+export function getBuiltinAgent(name: string): AgentConfig | undefined {
   return builtinAgents[name];
 }
 
 /**
  * Get all registered agent configurations
  *
+ * Returns merged configs if available, otherwise builtin configs.
+ *
  * @returns Array of all agent configurations
  */
 export function getAllAgents(): AgentConfig[] {
+  // Return merged configs if available
+  if (cachedConfigResult) {
+    return Object.values(cachedConfigResult.agents);
+  }
+
+  // Fall back to builtins
+  return Object.values(builtinAgents);
+}
+
+/**
+ * Get all builtin agent configurations (ignores overrides)
+ *
+ * @returns Array of all builtin agent configurations
+ */
+export function getAllBuiltinAgents(): AgentConfig[] {
   return Object.values(builtinAgents);
 }
 
@@ -184,10 +270,25 @@ export function getEnabledAgents(): AgentConfig[] {
 /**
  * Check if an agent exists in the registry
  *
+ * Checks both merged configs and builtins.
+ *
  * @param name - Agent name to check
  * @returns True if agent exists, false otherwise
  */
 export function hasAgent(name: string): boolean {
+  if (cachedConfigResult && name in cachedConfigResult.agents) {
+    return true;
+  }
+  return name in builtinAgents;
+}
+
+/**
+ * Check if an agent exists in builtin registry
+ *
+ * @param name - Agent name to check
+ * @returns True if builtin agent exists, false otherwise
+ */
+export function hasBuiltinAgent(name: string): boolean {
   return name in builtinAgents;
 }
 
@@ -257,9 +358,10 @@ export function validateAgentConfig(agent: AgentConfig): string[] {
  * @returns Array of agent names that prefer Sonnet
  */
 export function getPreferFallbackAgents(): string[] {
-  return Object.entries(builtinAgents)
-    .filter(([_, agent]) => agent.preferFallback === true)
-    .map(([name, _]) => name);
+  const agents = getAllAgents();
+  return agents
+    .filter((agent) => agent.preferFallback === true)
+    .map((agent) => agent.name.toLowerCase().replace(/\s+/g, "-"));
 }
 
 /**
@@ -281,4 +383,41 @@ export function getAgentsByMode(
  */
 export function getPrimaryAgent(): AgentConfig | undefined {
   return getAgentsByMode("primary")[0];
+}
+
+/**
+ * Get custom agents (not in builtin registry)
+ *
+ * @returns Array of custom agent configurations
+ */
+export function getCustomAgents(): MergedAgentConfig[] {
+  if (!cachedConfigResult) {
+    return [];
+  }
+
+  return Object.values(cachedConfigResult.agents).filter(
+    (agent) => agent.isCustom
+  );
+}
+
+/**
+ * Get agent configuration sources
+ *
+ * @param name - Agent name
+ * @returns Array of config sources that contributed to this agent
+ */
+export function getAgentSources(name: string): string[] {
+  if (cachedConfigResult) {
+    const merged = cachedConfigResult.agents[name];
+    if (merged) {
+      return merged.sources;
+    }
+  }
+
+  // Builtin only
+  if (builtinAgents[name]) {
+    return ["builtin"];
+  }
+
+  return [];
 }
