@@ -59,7 +59,6 @@ OVERWRITE_COMMANDS=true
 OVERWRITE_AGENTS=true
 VERBOSE=false
 SKIP_MCP_CHECK=false
-INTERACTIVE=true
 AUTO_UPDATE_TUI_V4=true
 
 # ============================================================================
@@ -103,10 +102,6 @@ while [[ $# -gt 0 ]]; do
             VERBOSE=true
             shift
             ;;
-        --non-interactive)
-            INTERACTIVE=false
-            shift
-            ;;
         -h|--help)
             cat << EOF
 
@@ -127,7 +122,6 @@ Options:
   ${UI_PRIMARY}--no-overwrite${UI_RESET}                 Keep all existing framework files
   ${UI_PRIMARY}--skip-mcp-check${UI_RESET}               Skip MCP server verification
   ${UI_PRIMARY}--no-tui-update${UI_RESET}                Skip TUI v4 dependency updates
-  ${UI_PRIMARY}--non-interactive${UI_RESET}              Run without prompts
   ${UI_PRIMARY}-v, --verbose${UI_RESET}                  Show detailed update information
   ${UI_PRIMARY}-h, --help${UI_RESET}                     Show this help message
 
@@ -242,14 +236,7 @@ done
 
 echo ""
 
-if [ "$INTERACTIVE" = true ]; then
-    if ! ui_ask "Proceed with update?" "y"; then
-        echo ""
-        ui_warning "Update cancelled by user"
-        echo ""
-        exit 0
-    fi
-fi
+# Proceed with update (no confirmation needed - user ran yoyo-update intentionally)
 
 echo ""
 
