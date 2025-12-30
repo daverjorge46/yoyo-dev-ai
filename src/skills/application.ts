@@ -398,13 +398,7 @@ export function getSkillContext(
 ): string {
   const result = applySkills(
     paths,
-    {
-      description,
-      technologies: [],
-      fileTypes: [],
-      taskType: 'other',
-      keywords: [],
-    },
+    { description },
     undefined,
     { compact }
   );

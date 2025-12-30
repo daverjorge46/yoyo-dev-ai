@@ -10,7 +10,6 @@ import type {
   ExtractedPattern,
   ExtractedPitfall,
 } from './types.js';
-import { generateSkillId } from './directory.js';
 
 // =============================================================================
 // Types
@@ -310,11 +309,16 @@ function extractToolSequences(toolCalls: ToolCall[]): { tools: string[] }[] {
 
   // Look for common sequences
   for (let i = 0; i < tools.length - 1; i++) {
-    const sequence = [tools[i], tools[i + 1]];
-    if (i + 2 < tools.length) {
-      sequence.push(tools[i + 2]);
+    const tool1 = tools[i];
+    const tool2 = tools[i + 1];
+    if (tool1 && tool2) {
+      const sequence = [tool1, tool2];
+      const tool3 = tools[i + 2];
+      if (tool3) {
+        sequence.push(tool3);
+      }
+      sequences.push({ tools: sequence });
     }
-    sequences.push({ tools: sequence });
   }
 
   return sequences.slice(0, 3); // Limit to 3 sequences
@@ -333,6 +337,7 @@ export function extractPitfalls(trajectory: Trajectory): ExtractedPitfall[] {
   // Look for error patterns
   for (let i = 0; i < messages.length; i++) {
     const message = messages[i];
+    if (!message) continue;
     const content = message.content.toLowerCase();
 
     // Check for error mentions
@@ -340,6 +345,7 @@ export function extractPitfalls(trajectory: Trajectory): ExtractedPitfall[] {
       // Look for resolution in next messages
       for (let j = i + 1; j < Math.min(i + 3, messages.length); j++) {
         const nextMessage = messages[j];
+        if (!nextMessage) continue;
         const nextContent = nextMessage.content.toLowerCase();
 
         if (

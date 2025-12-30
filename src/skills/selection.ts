@@ -11,7 +11,6 @@ import type {
   TaskContext,
   SkillMatch,
   SkillPaths,
-  MAX_SKILLS_PER_TASK,
 } from './types.js';
 import { getAllSkillEntries, findSkillsByTrigger, findSkillsByTag } from './discovery.js';
 import { parseSkill } from './parser.js';
@@ -326,8 +325,7 @@ export function selectTopSkills(
  * @returns True if there might be relevant skills
  */
 export function hasRelevantSkills(paths: SkillPaths, description: string): boolean {
-  const context: TaskContext = { description };
-  const analyzed = analyzeTaskContext(context);
+  const analyzed = analyzeTaskContext({ description });
 
   // Quick check - do we have any potential matches?
   const allTerms = [...analyzed.keywords, ...analyzed.technologies, ...analyzed.actions];

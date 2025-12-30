@@ -98,7 +98,7 @@ export class FileWatcherService {
     });
 
     // Handle errors
-    this.watcher.on('error', (error: Error) => {
+    this.watcher.on('error', (error: unknown) => {
       console.error('[FileWatcher] Error:', error);
     });
 

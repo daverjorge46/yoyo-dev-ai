@@ -7,7 +7,6 @@
 
 import type {
   BackgroundTask,
-  BackgroundTaskStatus,
   LaunchBackgroundTaskOptions,
   BackgroundTaskResult,
 } from "./task.js";

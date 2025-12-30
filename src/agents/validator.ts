@@ -35,8 +35,8 @@ export function validateAgent(agent: AgentConfig): ValidationResult {
 
   // Tool access validation
   const toolValidation = validateToolAccess(agent.tools);
-  errors.push(...toolValidation.errors);
-  warnings.push(...toolValidation.warnings);
+  errors.push(...(toolValidation.errors || []));
+  warnings.push(...(toolValidation.warnings || []));
 
   // Model configuration validation
   if (agent.preferFallback && !agent.fallbackModel) {

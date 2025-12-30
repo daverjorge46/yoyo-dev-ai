@@ -280,7 +280,7 @@ export function mergeReflections(reflections: ReflectionResult[]): SkillCreation
     throw new Error('No reflections to merge');
   }
 
-  if (reflections.length === 1) {
+  if (reflections.length === 1 && reflections[0]) {
     return { reflection: reflections[0] };
   }
 
@@ -314,7 +314,7 @@ export function mergeReflections(reflections: ReflectionResult[]): SkillCreation
     shouldCreateSkill: reflections.some(r => r.shouldCreateSkill),
     patterns: uniquePatterns.slice(0, 5),
     pitfalls: uniquePitfalls.slice(0, 5),
-    suggestedName: reflections[0].suggestedName,
+    suggestedName: reflections[0]?.suggestedName,
     suggestedTags: uniqueTags.slice(0, 10),
     suggestedTriggers: uniqueTriggers.slice(0, 10),
   };

@@ -118,7 +118,7 @@ export async function pollTask(
  * @returns True if incomplete todos exist
  */
 async function checkIncompleteTodos(
-  task: BackgroundTask
+  _task: BackgroundTask
 ): Promise<boolean> {
   // TODO: Integrate with Claude Code SDK to query todo status
   // const todos = await claudeCode.getTodos(task.id)

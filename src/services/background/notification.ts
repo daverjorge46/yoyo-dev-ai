@@ -164,7 +164,7 @@ export function formatNotificationMessage(
  * @param message - Notification message
  */
 async function showToast(
-  sessionId: string,
+  _sessionId: string,
   message: NotificationMessage
 ): Promise<void> {
   // TODO: Integrate with TUI system

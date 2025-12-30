@@ -6,7 +6,6 @@
  */
 
 import { backgroundManager } from "../services/background/manager.js";
-import { formatTaskProgress } from "../services/background/polling.js";
 import type { BackgroundTask } from "../services/background/task.js";
 
 /**

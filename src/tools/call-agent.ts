@@ -106,7 +106,7 @@ export async function callAgent(
  * @param params - Session execution parameters
  * @returns Session execution result
  */
-async function executeAgentSession(params: {
+async function executeAgentSession(_params: {
   agent: any;
   prompt: string;
   timeout: number;

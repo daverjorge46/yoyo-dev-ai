@@ -108,10 +108,11 @@ export class TaskService {
 
         tasks.push({
           id: `task-${header.number}`,
-          number: parseInt(header.number),
+          number: header.number,
           title: header.name,
           status,
           dependencies: [],
+          parallelSafe: true,
           children,
         });
       }
@@ -161,7 +162,7 @@ export class TaskService {
       
       // Match: - [ ] Task name or - [x] Task name
       const checkboxMatch = trimmedLine.match(/^-\s+\[([ x✓✓])\]\s+(.+)$/);
-      if (checkboxMatch) {
+      if (checkboxMatch && checkboxMatch[1] && checkboxMatch[2]) {
         const isCompleted = checkboxMatch[1] !== ' ' && checkboxMatch[1] !== 'x';
         const taskTitle = checkboxMatch[2].trim();
         
@@ -172,6 +173,7 @@ export class TaskService {
             title: taskTitle,
             status: isCompleted ? 'completed' : 'pending',
             dependencies: [],
+            parallelSafe: true,
             children: [],
           });
         }
