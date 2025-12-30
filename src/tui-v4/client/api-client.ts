@@ -103,10 +103,12 @@ export class ApiClient extends EventEmitter {
         }
       });
 
-      this.ws.on('error', () => {
-        // Silently handle errors - emit event for handlers
+      this.ws.on('error', (err) => {
+        // Silently handle errors - just update state
+        // Don't emit 'error' event as it throws if no listeners (Node.js EventEmitter behavior)
         this.setConnectionState('error');
-        this.emit('error');
+        // Emit a safe event that won't throw
+        this.emit('connection_error', err);
       });
     } catch (error) {
       this.log(`Failed to create WebSocket: ${error}`);

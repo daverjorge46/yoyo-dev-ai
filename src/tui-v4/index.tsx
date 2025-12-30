@@ -59,11 +59,10 @@ export async function launchTUI(): Promise<void> {
   }
 }
 
-// If run directly (not imported), launch the TUI
-if (import.meta.url === `file://${process.argv[1]}`) {
-  launchTUI().catch((error) => {
-    // This catch block should rarely be reached due to internal error handling
-    // But it provides a final safety net
-    handleFatalError(error instanceof Error ? error : new Error(String(error)), 'Startup');
-  });
-}
+// Always launch when this file is executed directly
+// The import.meta check doesn't work reliably with tsx
+launchTUI().catch((error) => {
+  // This catch block should rarely be reached due to internal error handling
+  // But it provides a final safety net
+  handleFatalError(error instanceof Error ? error : new Error(String(error)), 'Startup');
+});
