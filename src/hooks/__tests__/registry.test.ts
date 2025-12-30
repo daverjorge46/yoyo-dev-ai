@@ -57,6 +57,11 @@ describe("HookRegistry Initialization", () => {
   it("should export a singleton instance", () => {
     expect(hookRegistry).toBeInstanceOf(HookRegistry);
   });
+
+  it("should accept debug option in constructor", () => {
+    const registry = new HookRegistry({ debug: true });
+    expect(registry).toBeInstanceOf(HookRegistry);
+  });
 });
 
 // =============================================================================
@@ -114,6 +119,16 @@ describe("HookRegistry.register", () => {
     expect(hooks).toHaveLength(1);
     expect(hooks[0]?.enabled).toBe(false);
   });
+
+  it("should store hook config when provided", () => {
+    const hook = createTestHook({
+      config: { cooldown: 5000, maxRetries: 3 },
+    });
+    registry.register(hook);
+
+    const registered = registry.get("test-hook");
+    expect(registered?.config).toEqual({ cooldown: 5000, maxRetries: 3 });
+  });
 });
 
 // =============================================================================
@@ -156,6 +171,13 @@ describe("HookRegistry.unregister", () => {
     const hooks = registry.getByEvent("sessionStart");
     expect(hooks).toHaveLength(1);
     expect(hooks[0]?.name).toBe("hook-2");
+  });
+
+  it("should clean up event index when last hook for event is removed", () => {
+    registry.register(createTestHook({ name: "only-hook", event: "sessionStart" }));
+    registry.unregister("only-hook");
+
+    expect(registry.getByEvent("sessionStart")).toHaveLength(0);
   });
 });
 
@@ -314,6 +336,27 @@ describe("HookRegistry.execute", () => {
     expect(results[0]?.result?.action).toBe("log");
     expect(results[0]?.result?.message).toBe("test message");
   });
+
+  it("should return empty array when no hooks registered for event", async () => {
+    const results = await registry.execute("sessionStart", createTestContext());
+    expect(results).toHaveLength(0);
+  });
+
+  it("should handle hooks returning data", async () => {
+    registry.register(
+      createTestHook({
+        handler: async () => ({
+          action: "notify",
+          message: "Found issues",
+          data: { count: 5, issues: ["a", "b"] },
+        }),
+      })
+    );
+
+    const results = await registry.execute("sessionStart", createTestContext());
+
+    expect(results[0]?.result?.data).toEqual({ count: 5, issues: ["a", "b"] });
+  });
 });
 
 // =============================================================================
@@ -428,6 +471,36 @@ describe("HookRegistry Error Handling", () => {
     expect(results[0]?.durationMs).toBeGreaterThanOrEqual(0);
     expect(results[1]?.durationMs).toBeGreaterThanOrEqual(0);
   });
+
+  it("should handle non-Error throws", async () => {
+    registry.register(
+      createTestHook({
+        handler: async () => {
+          throw "string error";
+        },
+      })
+    );
+
+    const results = await registry.execute("sessionStart", createTestContext());
+
+    expect(results[0]?.success).toBe(false);
+    expect(results[0]?.error?.message).toBe("string error");
+  });
+
+  it("should include hook name in error result", async () => {
+    registry.register(
+      createTestHook({
+        name: "my-failing-hook",
+        handler: async () => {
+          throw new Error("Oops");
+        },
+      })
+    );
+
+    const results = await registry.execute("sessionStart", createTestContext());
+
+    expect(results[0]?.hookName).toBe("my-failing-hook");
+  });
 });
 
 // =============================================================================
@@ -468,6 +541,117 @@ describe("HookRegistry.getByEvent", () => {
 });
 
 // =============================================================================
+// Get Hook Tests
+// =============================================================================
+
+describe("HookRegistry.get", () => {
+  let registry: HookRegistry;
+
+  beforeEach(() => {
+    registry = new HookRegistry();
+  });
+
+  it("should return hook by name", () => {
+    registry.register(createTestHook({ name: "my-hook" }));
+
+    const hook = registry.get("my-hook");
+    expect(hook?.name).toBe("my-hook");
+  });
+
+  it("should return undefined for non-existent hook", () => {
+    const hook = registry.get("non-existent");
+    expect(hook).toBeUndefined();
+  });
+});
+
+// =============================================================================
+// Has Hook Tests
+// =============================================================================
+
+describe("HookRegistry.has", () => {
+  let registry: HookRegistry;
+
+  beforeEach(() => {
+    registry = new HookRegistry();
+  });
+
+  it("should return true for registered hook", () => {
+    registry.register(createTestHook({ name: "my-hook" }));
+    expect(registry.has("my-hook")).toBe(true);
+  });
+
+  it("should return false for non-existent hook", () => {
+    expect(registry.has("non-existent")).toBe(false);
+  });
+});
+
+// =============================================================================
+// Enable/Disable Tests
+// =============================================================================
+
+describe("HookRegistry.enable", () => {
+  let registry: HookRegistry;
+
+  beforeEach(() => {
+    registry = new HookRegistry();
+  });
+
+  it("should enable a disabled hook", () => {
+    registry.register(createTestHook({ name: "my-hook", enabled: false }));
+
+    const result = registry.enable("my-hook");
+
+    expect(result).toBe(true);
+    expect(registry.get("my-hook")?.enabled).toBe(true);
+  });
+
+  it("should return false for non-existent hook", () => {
+    const result = registry.enable("non-existent");
+    expect(result).toBe(false);
+  });
+
+  it("should keep enabled hook enabled", () => {
+    registry.register(createTestHook({ name: "my-hook", enabled: true }));
+
+    registry.enable("my-hook");
+
+    expect(registry.get("my-hook")?.enabled).toBe(true);
+  });
+});
+
+describe("HookRegistry.disable", () => {
+  let registry: HookRegistry;
+
+  beforeEach(() => {
+    registry = new HookRegistry();
+  });
+
+  it("should disable an enabled hook", () => {
+    registry.register(createTestHook({ name: "my-hook", enabled: true }));
+
+    const result = registry.disable("my-hook");
+
+    expect(result).toBe(true);
+    expect(registry.get("my-hook")?.enabled).toBe(false);
+  });
+
+  it("should return false for non-existent hook", () => {
+    const result = registry.disable("non-existent");
+    expect(result).toBe(false);
+  });
+
+  it("should prevent disabled hook from executing", async () => {
+    const handler = vi.fn(async () => ({ action: "continue" as const }));
+    registry.register(createTestHook({ name: "my-hook", handler }));
+
+    registry.disable("my-hook");
+    await registry.execute("sessionStart", createTestContext());
+
+    expect(handler).not.toHaveBeenCalled();
+  });
+});
+
+// =============================================================================
 // Clear and Reset Tests
 // =============================================================================
 
@@ -486,6 +670,49 @@ describe("HookRegistry.clear", () => {
 
     expect(registry.getByEvent("sessionStart")).toHaveLength(0);
     expect(registry.getByEvent("sessionEnd")).toHaveLength(0);
+  });
+
+  it("should reset listAll to empty", () => {
+    registry.register(createTestHook({ name: "hook-1" }));
+    registry.register(createTestHook({ name: "hook-2" }));
+
+    registry.clear();
+
+    expect(registry.listAll()).toHaveLength(0);
+  });
+});
+
+// =============================================================================
+// Get Stats Tests
+// =============================================================================
+
+describe("HookRegistry.getStats", () => {
+  let registry: HookRegistry;
+
+  beforeEach(() => {
+    registry = new HookRegistry();
+  });
+
+  it("should return hook counts by event", () => {
+    registry.register(createTestHook({ name: "start-1", event: "sessionStart" }));
+    registry.register(createTestHook({ name: "start-2", event: "sessionStart" }));
+    registry.register(createTestHook({ name: "end-1", event: "sessionEnd" }));
+    registry.register(createTestHook({ name: "error-1", event: "errorOccurred" }));
+    registry.register(createTestHook({ name: "error-2", event: "errorOccurred" }));
+    registry.register(createTestHook({ name: "error-3", event: "errorOccurred" }));
+
+    const stats = registry.getStats();
+
+    expect(stats.sessionStart).toBe(2);
+    expect(stats.sessionEnd).toBe(1);
+    expect(stats.errorOccurred).toBe(3);
+  });
+
+  it("should return empty stats for empty registry", () => {
+    const stats = registry.getStats();
+
+    // Should be an empty object or have undefined/0 values
+    expect(stats.sessionStart).toBeUndefined();
   });
 });
 
@@ -624,6 +851,82 @@ describe("HookRegistry Agent Switch Events", () => {
 });
 
 // =============================================================================
+// Todo Updated Event Tests
+// =============================================================================
+
+describe("HookRegistry Todo Updated Events", () => {
+  let registry: HookRegistry;
+
+  beforeEach(() => {
+    registry = new HookRegistry();
+  });
+
+  it("should pass todo data in todoUpdated context", async () => {
+    let capturedContext: HookContext | undefined;
+    registry.register(
+      createTestHook({
+        event: "todoUpdated",
+        handler: async (ctx) => {
+          capturedContext = ctx;
+          return { action: "log", message: "Todo updated" };
+        },
+      })
+    );
+
+    await registry.execute("todoUpdated", createTestContext({
+      metadata: {
+        todo: {
+          content: "Implement feature X",
+          status: "completed",
+          activeForm: "task",
+        },
+      },
+    }));
+
+    expect(capturedContext?.metadata?.todo).toEqual({
+      content: "Implement feature X",
+      status: "completed",
+      activeForm: "task",
+    });
+  });
+});
+
+// =============================================================================
+// File Changed Event Tests
+// =============================================================================
+
+describe("HookRegistry File Changed Events", () => {
+  let registry: HookRegistry;
+
+  beforeEach(() => {
+    registry = new HookRegistry();
+  });
+
+  it("should pass file path in fileChanged context", async () => {
+    let capturedContext: HookContext | undefined;
+    registry.register(
+      createTestHook({
+        event: "fileChanged",
+        handler: async (ctx) => {
+          capturedContext = ctx;
+          return { action: "continue" };
+        },
+      })
+    );
+
+    await registry.execute("fileChanged", createTestContext({
+      metadata: {
+        filePath: "/src/components/Button.tsx",
+        changeType: "modified",
+      },
+    }));
+
+    expect(capturedContext?.metadata?.filePath).toBe("/src/components/Button.tsx");
+    expect(capturedContext?.metadata?.changeType).toBe("modified");
+  });
+});
+
+// =============================================================================
 // List All Hooks Tests
 // =============================================================================
 
@@ -647,5 +950,53 @@ describe("HookRegistry.listAll", () => {
 
   it("should return empty array when no hooks", () => {
     expect(registry.listAll()).toEqual([]);
+  });
+});
+
+// =============================================================================
+// Debug Mode Tests
+// =============================================================================
+
+describe("HookRegistry Debug Mode", () => {
+  let registry: HookRegistry;
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    registry = new HookRegistry({ debug: true });
+  });
+
+  afterEach(() => {
+    consoleSpy.mockRestore();
+  });
+
+  it("should log when registering a hook in debug mode", () => {
+    registry.register(createTestHook({ name: "debug-hook" }));
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Registered hook: debug-hook")
+    );
+  });
+
+  it("should log when unregistering a hook in debug mode", () => {
+    registry.register(createTestHook({ name: "debug-hook" }));
+    consoleSpy.mockClear();
+
+    registry.unregister("debug-hook");
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Unregistered hook: debug-hook")
+    );
+  });
+
+  it("should log when clearing hooks in debug mode", () => {
+    registry.register(createTestHook({ name: "hook-1" }));
+    consoleSpy.mockClear();
+
+    registry.clear();
+
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining("All hooks cleared")
+    );
   });
 });

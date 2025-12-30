@@ -27,12 +27,8 @@ import type {
   ProjectAgentsConfig,
   DiscoveredAgent,
   ConfigCacheEntry,
-  CONFIG_PRIORITY,
 } from "./types.js";
-import {
-  validateAgentOverride,
-  validateConfigFile,
-} from "./validator.js";
+import { validateConfigFile } from "./validator.js";
 
 // =============================================================================
 // Constants
@@ -119,7 +115,7 @@ export async function loadAgentConfigs(
     errors.push(...userResult.errors);
 
     if (userResult.config) {
-      applyUserConfig(agents, userResult.config, builtinAgents);
+      applyUserConfig(agents, userResult.config);
     }
   }
 
@@ -130,18 +126,18 @@ export async function loadAgentConfigs(
     errors.push(...projectResult.errors);
 
     if (projectResult.config) {
-      applyProjectConfig(agents, projectResult.config, builtinAgents);
+      applyProjectConfig(agents, projectResult.config);
     }
   }
 
   // Load local agent overrides (highest priority)
   if (!skipSources.includes("local")) {
-    const localResult = await loadLocalAgents(projectRoot);
+    const localResult = await loadLocalAgents(projectRoot, builtinAgents);
     loadedFiles.push(...localResult.files);
     errors.push(...localResult.errors);
 
     for (const discovered of localResult.agents) {
-      applyLocalOverride(agents, discovered, builtinAgents);
+      applyLocalOverride(agents, discovered);
     }
   }
 
@@ -174,7 +170,8 @@ export async function loadAgentConfigs(
 export async function discoverLocalAgents(
   projectRoot: string
 ): Promise<DiscoveredAgent[]> {
-  const result = await loadLocalAgents(projectRoot);
+  const builtinAgents = await getBuiltinAgents();
+  const result = await loadLocalAgents(projectRoot, builtinAgents);
   return result.agents;
 }
 
@@ -196,7 +193,7 @@ export function mergeAgentConfig(
   source: ConfigSource
 ): MergedAgentConfig {
   // Initialize or copy property source tracking
-  const propertySource: Record<string, ConfigSource> = {
+  const propertySource: Partial<Record<keyof AgentConfig, ConfigSource>> = {
     ...(isMergedConfig(base) ? base.propertySource : {}),
   };
 
@@ -213,7 +210,7 @@ export function mergeAgentConfig(
   const merged: MergedAgentConfig = {
     ...(base as AgentConfig),
     sources,
-    propertySource: { ...propertySource },
+    propertySource: propertySource as Record<keyof AgentConfig, ConfigSource>,
     isCustom: isMergedConfig(base) ? base.isCustom : false,
   };
 
@@ -332,7 +329,7 @@ async function getBuiltinAgents(): Promise<Record<string, AgentConfig>> {
  * Initialize a merged config from base agent config
  */
 function initializeMergedConfig(config: AgentConfig): MergedAgentConfig {
-  const propertySource: Record<string, ConfigSource> = {};
+  const propertySource: Partial<Record<keyof AgentConfig, ConfigSource>> = {};
 
   // All properties start as builtin
   const props: (keyof AgentConfig)[] = [
@@ -358,7 +355,7 @@ function initializeMergedConfig(config: AgentConfig): MergedAgentConfig {
   return {
     ...config,
     sources: ["builtin"],
-    propertySource,
+    propertySource: propertySource as Record<keyof AgentConfig, ConfigSource>,
     isCustom: false,
   };
 }
@@ -471,7 +468,10 @@ async function loadProjectConfig(projectRoot: string): Promise<{
 /**
  * Load local agent overrides
  */
-async function loadLocalAgents(projectRoot: string): Promise<{
+async function loadLocalAgents(
+  projectRoot: string,
+  builtinAgents: Record<string, AgentConfig>
+): Promise<{
   agents: DiscoveredAgent[];
   files: ConfigFileInfo[];
   errors: ConfigError[];
@@ -485,7 +485,6 @@ async function loadLocalAgents(projectRoot: string): Promise<{
     return { agents, files, errors };
   }
 
-  const builtinAgents = await getBuiltinAgents();
   const entries = readdirSync(agentsDir);
 
   for (const entry of entries) {
@@ -553,8 +552,7 @@ async function loadLocalAgents(projectRoot: string): Promise<{
  */
 function applyUserConfig(
   agents: Record<string, MergedAgentConfig>,
-  config: UserAgentsConfigFile,
-  builtinAgents: Record<string, AgentConfig>
+  config: UserAgentsConfigFile
 ): void {
   if (!config.agents) return;
 
@@ -578,8 +576,7 @@ function applyUserConfig(
  */
 function applyProjectConfig(
   agents: Record<string, MergedAgentConfig>,
-  config: ProjectAgentsConfig,
-  builtinAgents: Record<string, AgentConfig>
+  config: ProjectAgentsConfig
 ): void {
   // Apply defaults to all agents first
   if (config.defaults) {
@@ -614,8 +611,7 @@ function applyProjectConfig(
  */
 function applyLocalOverride(
   agents: Record<string, MergedAgentConfig>,
-  discovered: DiscoveredAgent,
-  builtinAgents: Record<string, AgentConfig>
+  discovered: DiscoveredAgent
 ): void {
   const existing = agents[discovered.name];
 
