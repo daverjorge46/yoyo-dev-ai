@@ -37,47 +37,16 @@ fi
 
 readonly VERSION="5.0.0"
 readonly USER_PROJECT_DIR="$(pwd)"
-readonly TUI_MODULE="lib.yoyo_tui_v3.cli"
 
 GUI_ENABLED=true
 GUI_PORT=5173
 GUI_DEV_MODE=true
 
 # ============================================================================
-# TUI Version Detection
+# TUI v4 (TypeScript) Requirements Check
 # ============================================================================
 
-get_tui_version() {
-    local config_file=".yoyo-dev/config.yml"
-
-    if [ ! -f "$config_file" ]; then
-        echo "v3"
-        return
-    fi
-
-    local version
-    version=$(awk '
-        /^tui:/ { in_tui=1; next }
-        in_tui && /^  version:/ {
-            gsub(/^  version: */, "");
-            gsub(/"/, "");
-            gsub(/'"'"'/, "");
-            gsub(/ *#.*$/, "");
-            gsub(/^ *| *$/, "");
-            print;
-            exit
-        }
-        /^[a-z]/ && !/^tui:/ { in_tui=0 }
-    ' "$config_file")
-
-    if [ -z "$version" ]; then
-        echo "v3"
-    else
-        echo "$version"
-    fi
-}
-
-# Check if TypeScript TUI (v4) can be launched
+# Check if TypeScript TUI can be launched
 check_typescript_tui() {
     if ! command -v node &> /dev/null; then
         return 1
@@ -117,9 +86,7 @@ launch_typescript_tui() {
         echo "  Install with: ${UI_PRIMARY}npm install -g tsx${UI_RESET}"
         echo "  Or run: ${UI_PRIMARY}cd $YOYO_INSTALL_DIR && npm install${UI_RESET}"
         echo ""
-        echo "  Falling back to Python TUI..."
-        sleep 2
-        return 1
+        exit 1
     fi
 
     $tui_cmd "$YOYO_INSTALL_DIR/src/tui-v4/index.tsx"
@@ -217,14 +184,13 @@ show_help() {
     echo -e "    ${UI_DIM}Analyze and fix bugs systematically${UI_RESET}"
     echo ""
 
-    # TUI v4 Features
-    ui_section "TUI v4 Features" "$ICON_SPARKLES"
+    # TUI Features
+    ui_section "TUI Features (TypeScript/Ink)" "$ICON_SPARKLES"
 
     echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} ${UI_DIM}60fps rendering with React/Ink${UI_RESET}"
     echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} ${UI_DIM}<100MB memory footprint${UI_RESET}"
     echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} ${UI_DIM}Session persistence (saves your state)${UI_RESET}"
     echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} ${UI_DIM}Real-time WebSocket updates${UI_RESET}"
-    echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} ${UI_DIM}Graceful fallback to v3 on errors${UI_RESET}"
     echo ""
 
     # Keyboard Shortcuts
@@ -245,8 +211,8 @@ show_help() {
     echo -e "    ${UI_DIM}Launch full interface (TUI + Claude + GUI)${UI_RESET}"
     echo ""
 
-    echo -e "  ${UI_PRIMARY}\$${UI_RESET} yoyo --tui-v4"
-    echo -e "    ${UI_DIM}Try the new TypeScript TUI${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}\$${UI_RESET} yoyo --tui-only"
+    echo -e "    ${UI_DIM}Launch TUI without GUI${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_PRIMARY}\$${UI_RESET} yoyo --help"
@@ -295,51 +261,42 @@ check_yoyo_installed_or_install() {
 launch_tui() {
     check_yoyo_installed_or_install
 
-    local tui_version
-    tui_version=$(get_tui_version)
-
     # Show launch banner
     echo ""
     ui_box_header "YOYO DEV LAUNCHER" 70 "$UI_PRIMARY"
     echo ""
 
     ui_kv "Project" "$(basename "$USER_PROJECT_DIR")"
-    ui_kv "TUI Version" "$tui_version"
+    ui_kv "TUI Version" "v4 (TypeScript/Ink)"
     ui_kv "Config" ".yoyo-dev/config.yml"
+    echo ""
 
-    # Try TUI v4 if configured
-    if [ "$tui_version" = "v4" ]; then
+    # Check TUI v4 requirements
+    if ! check_typescript_tui; then
+        ui_error "TUI v4 requirements not met"
         echo ""
+        echo "  ${UI_DIM}Missing requirements:${UI_RESET}"
 
-        if check_typescript_tui; then
-            if launch_typescript_tui; then
-                exit 0
-            else
-                ui_warning "Falling back to Python TUI (v3)..."
-                sleep 1
-            fi
-        else
-            ui_warning "TUI v4 configured but not available"
-            echo ""
-            echo "  Requirements:"
-            echo "    1. Node.js installed"
-            echo "    2. Dependencies installed: ${UI_PRIMARY}cd $YOYO_INSTALL_DIR && npm install${UI_RESET}"
-            echo "    3. tsx installed: ${UI_PRIMARY}npm install -g tsx${UI_RESET}"
-            echo ""
-            echo "  Falling back to Python TUI (v3)..."
-            sleep 2
+        if ! command -v node &> /dev/null; then
+            echo "    ${UI_ERROR}✗${UI_RESET} Node.js not installed"
+            echo "       ${UI_DIM}Install from: https://nodejs.org/${UI_RESET}"
         fi
+
+        if [ ! -d "$YOYO_INSTALL_DIR/node_modules" ]; then
+            echo "    ${UI_ERROR}✗${UI_RESET} Dependencies not installed"
+            echo "       ${UI_DIM}Run: cd $YOYO_INSTALL_DIR && npm install${UI_RESET}"
+        fi
+
+        if [ ! -f "$YOYO_INSTALL_DIR/src/tui-v4/index.tsx" ]; then
+            echo "    ${UI_ERROR}✗${UI_RESET} TUI v4 source files missing"
+        fi
+
+        echo ""
+        exit 1
     fi
 
-    # Fall back to Python TUI v3
-    echo ""
-    ui_info "Launching TUI v3 (Python/Textual)..."
-    echo ""
-
-    # (Python TUI launch logic here - same as original yoyo.sh)
-    cd "$USER_PROJECT_DIR"
-    export PYTHONPATH="$YOYO_INSTALL_DIR${PYTHONPATH:+:$PYTHONPATH}"
-    exec python3 -m $TUI_MODULE
+    # Launch TUI v4
+    launch_typescript_tui
 }
 
 # ============================================================================
@@ -356,18 +313,7 @@ main() {
         --version|-v)
             show_version
             ;;
-        --tui-v4)
-            GUI_ENABLED=false
-            if check_typescript_tui; then
-                launch_typescript_tui
-            else
-                ui_error "TUI v4 not available"
-                echo ""
-                echo "  Install Node.js and run: ${UI_PRIMARY}cd $YOYO_INSTALL_DIR && npm install${UI_RESET}"
-                exit 1
-            fi
-            ;;
-        --py|--python|--tui)
+        --tui|--tui-only)
             GUI_ENABLED=false
             launch_tui
             ;;

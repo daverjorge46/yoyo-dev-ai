@@ -69,8 +69,6 @@ export function displayError(error: Error, context?: string): void {
   console.error(`Error: ${error.message}`);
   console.error('');
   console.error(`Error details have been logged to: ${ERROR_LOG_FILE}`);
-  console.error('');
-  console.error('Falling back to Python TUI...');
   console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
   console.error('\n');
 }
@@ -85,7 +83,7 @@ export function handleFatalError(error: Error, context?: string): never {
   logError(error, context);
   displayError(error, context);
 
-  // Exit with code 1 to trigger fallback in bash script
+  // Exit with error code 1
   process.exit(1);
 }
 
