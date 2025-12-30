@@ -12,10 +12,10 @@ import { Box, Text } from 'ink';
 import { SpecIndicator } from './SpecIndicator.js';
 import { TaskTree } from './TaskTree.js';
 import { useAppStore } from '../backend/state-manager.js';
-import { semanticColors, textStyles, taskStyles } from '../theme/styles.js';
 import { textStyles, taskStyles } from '../theme/styles.js';
+import { semanticColors } from '../theme/colors.js';
 
-  const TaskPanel: React.FC = () => {
+export const TaskPanel: React.FC = () => {
   const mcp = useAppStore((state) => state.mcp);
   const memory = useAppStore((state) => state.memory);
 

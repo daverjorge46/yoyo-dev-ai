@@ -175,3 +175,5 @@ export class TaskService {
     return subtasks;
   }
 }
+
+export const taskService = new TaskService();
