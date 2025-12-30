@@ -52,7 +52,7 @@ source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
 # Configuration
 # ============================================================================
 
-VERSION="4.0.0"
+VERSION="5.0.0"
 OVERWRITE_INSTRUCTIONS=true
 OVERWRITE_STANDARDS=true
 OVERWRITE_COMMANDS=true

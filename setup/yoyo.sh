@@ -35,7 +35,7 @@ fi
 # Configuration
 # ============================================================================
 
-readonly VERSION="4.0.0"
+readonly VERSION="5.0.0"
 readonly USER_PROJECT_DIR="$(pwd)"
 readonly TUI_MODULE="lib.yoyo_tui_v3.cli"
 
@@ -175,6 +175,14 @@ show_help() {
     echo -e "    ${UI_DIM}Force launch TUI v3 (Python/Textual)${UI_RESET}"
     echo ""
 
+    echo -e "  ${UI_SUCCESS}yoyo --stop-gui${UI_RESET}"
+    echo -e "    ${UI_DIM}Stop background GUI server${UI_RESET}"
+    echo ""
+
+    echo -e "  ${UI_SUCCESS}yoyo --gui-status${UI_RESET}"
+    echo -e "    ${UI_DIM}Check if GUI server is running${UI_RESET}"
+    echo ""
+
     # Configuration
     ui_section "Configuration" "$ICON_WRENCH"
 
@@ -194,7 +202,15 @@ show_help() {
     echo ""
 
     echo -e "  ${UI_SUCCESS}/execute-tasks${UI_RESET}"
-    echo -e "    ${UI_DIM}Build and ship code (interactive)${UI_RESET}"
+    echo -e "    ${UI_DIM}Build and ship code with multi-agent orchestration${UI_RESET}"
+    echo ""
+
+    echo -e "  ${UI_SUCCESS}/research${UI_RESET} ${UI_YELLOW}[topic]${UI_RESET}"
+    echo -e "    ${UI_DIM}Background research with librarian agent (v5.0)${UI_RESET}"
+    echo ""
+
+    echo -e "  ${UI_SUCCESS}/consult-oracle${UI_RESET} ${UI_YELLOW}[question]${UI_RESET}"
+    echo -e "    ${UI_DIM}Strategic guidance from Oracle agent (v5.0)${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_SUCCESS}/create-fix${UI_RESET} ${UI_YELLOW}[problem]${UI_RESET}"

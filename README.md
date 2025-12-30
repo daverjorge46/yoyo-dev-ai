@@ -54,57 +54,42 @@ Multi-agent orchestration system for AI-assisted software development with Claud
 
 ## 📦 Installation
 
+### Prerequisites
+
+- **Docker Desktop 4.32+** with MCP Toolkit enabled
+- **Claude Code CLI** installed and configured
+- **Node.js 22 LTS**
+- **Python 3.10+**
+
 ### Quick Install
 
 ```bash
-# Install in current project (recommended)
-curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/project.sh | bash -s -- --no-base --claude-code
+# Install from GitHub
+curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/install.sh | bash -s -- --claude-code
 
 # OR if you have base installation
-~/.yoyo-dev/setup/project.sh --claude-code
+~/.yoyo-dev/setup/install.sh --claude-code
 ```
 
-### Installation Options
+This automatically:
+- Installs Yoyo Dev framework
+- Sets up Claude Code integration
+- Configures MCP servers (playwright, github-official, duckduckgo, filesystem)
+- Installs global `yoyo` command
 
-| Flag | Description |
-|------|-------------|
-| `--claude-code` | Install Claude Code integration (required) |
-| `--cursor` | Also install Cursor IDE support |
-| `--no-base` | Install from GitHub without base installation |
-| `--project-type=TYPE` | Use specific project configuration |
-| `--overwrite-instructions` | Overwrite existing instructions |
-| `--overwrite-standards` | Overwrite existing standards |
-
-### Install Global Command
+### Verify Installation
 
 ```bash
-# After project installation, make 'yoyo' work globally
-bash .yoyo-dev/setup/install-global-command.sh
-```
-
-### MCP Server Setup
-
-**Docker MCP Gateway** (recommended):
-
-```bash
-# Install Docker MCP servers
-~/.yoyo-dev/setup/docker-mcp-setup.sh
-
-# Verify
+# Check MCP servers (should show 4 servers)
 docker mcp server ls
+
+# Launch Yoyo Dev
+yoyo
+
+# Should show TUI + Claude + GUI
 ```
 
-**MCP Servers:**
-- **playwright** - Browser automation and testing
-- **github-official** - GitHub repository management
-- **duckduckgo** - Web search integration
-- **filesystem** - File system access
-
-**Requirements:**
-- Docker Desktop 4.32+ with MCP Toolkit enabled
-- Claude Code CLI installed
-
-📖 **Detailed Guide:** See [MCP Setup Guide](docs/installation/mcp-setup.md)
+📖 **Full Installation Guide:** [docs/INSTALLATION.md](docs/INSTALLATION.md)
 
 ---
 
@@ -112,50 +97,69 @@ docker mcp server ls
 
 ### Launch Dashboard
 
+**v5.0 Default Mode** (TUI + Claude + GUI):
+
 ```bash
-# Launch TUI + Claude + GUI (default in v4.0+)
+# Launch all three interfaces
 yoyo
 
-# Launch TUI + Claude without GUI
-yoyo --no-gui
-
-# Launch TUI only (no Claude, no GUI)
-yoyo --no-split
-
-# Custom split ratio
-yoyo --split-ratio 0.5
-
-# Stop background GUI server
-yoyo --stop-gui
+# Left pane: Claude Code CLI
+# Right pane: TUI dashboard
+# Browser: GUI at http://localhost:3456
 ```
 
-### Quick Start Guide
+**Other Launch Modes:**
 
-**5 minutes to your first feature:**
+```bash
+# Without GUI
+yoyo --no-gui
 
-1. **Initialize project:**
-   ```bash
-   /plan-product
-   ```
+# TUI only (no Claude, no GUI)
+yoyo --no-split
 
-2. **Create feature:**
-   ```bash
-   /create-new "Add user authentication"
-   ```
+# Stop GUI server
+yoyo --stop-gui
 
-3. **Execute with Yoyo-AI:**
-   ```bash
-   /execute-tasks
-   ```
+# GUI standalone
+yoyo-gui
+```
 
-Yoyo-AI will automatically:
-- Research best practices (background librarian)
-- Delegate UI work to frontend-engineer
-- Implement with TDD approach
-- Escalate to Oracle if 3+ failures
-- Create PR when done
+### 5-Minute Tutorial
 
-📖 **Full Guide:** See [Quick Start Guide](docs/installation/quick-start.md)
+**1. Initialize Memory**
+```bash
+/init
+```
+
+**2. Create Product Mission**
+```bash
+/plan-product
+```
+
+**3. Create Your First Feature**
+```bash
+/create-new "Add user authentication"
+```
+
+**4. Execute with Yoyo-AI (Multi-Agent Orchestration)**
+```bash
+/execute-tasks
+```
+
+Yoyo-AI automatically:
+- Classifies intent (Planning/Implementation/Research/Debug)
+- Fires background research with librarian agent
+- Auto-delegates frontend work to frontend-engineer
+- Implements with TDD approach
+- Escalates to Oracle after 3 failures
+- Creates PR when done
+
+**5. Review & Merge**
+```
+Open PR link → Review code → Merge
+```
+
+📖 **Full Tutorial:** [docs/QUICK-START.md](docs/QUICK-START.md)
 
 ---
 
@@ -557,22 +561,28 @@ bash .yoyo-dev/setup/yoyo-update.sh --skip-mcp-check
 
 ## 📖 Documentation
 
-### Core Docs
+### Getting Started
 
-- **[Quick Start](docs/installation/quick-start.md)** - 5-minute setup
-- **[MCP Setup](docs/installation/mcp-setup.md)** - Docker MCP Gateway
-- **[Troubleshooting](docs/installation/troubleshooting.md)** - Common issues
-- **[Command Reference](docs/COMMAND-REFERENCE.md)** - All commands
-- **[Multi-Agent System](docs/features/multi-agent-system.md)** - Agent guide
-- **[Migration to v5.0](docs/MIGRATION-v5.md)** - Upgrade guide
+- **[Installation Guide](docs/INSTALLATION.md)** - Prerequisites, MCP setup, verification
+- **[Quick Start](docs/QUICK-START.md)** - 5-minute tutorial
+- **[Architecture](docs/ARCHITECTURE.md)** - System architecture overview
+- **[Directory Structure](docs/directory-structure.md)** - File organization
+
+### Core Features
+
+- **[Command Reference](docs/commands.md)** - Complete slash command reference
+- **[Multi-Agent Orchestration](docs/multi-agent-orchestration.md)** - v5.0 agent system
+- **[GUI Dashboard](docs/gui-dashboard.md)** - Browser-based dashboard
+- **[Memory System](docs/memory-system.md)** - Persistent context management
 
 ### In-Project Docs
 
 - `.yoyo-dev/standards/best-practices.md` - Development guidelines
 - `.yoyo-dev/standards/tech-stack.md` - Technology decisions
 - `.yoyo-dev/standards/design-system.md` - Design philosophy
+- `.yoyo-dev/instructions/core/yoyo-ai-orchestration.md` - Orchestrator details
 
-### Online
+### Online Resources
 
 - **Claude Code**: https://docs.claude.com/en/docs/claude-code
 - **GitHub**: https://github.com/daverjorge46/yoyo-dev-ai
@@ -686,6 +696,6 @@ Built with:
 
 ---
 
-**Version**: 5.0.0
-**Last Updated**: 2025-12-29
-**Status**: Production Ready
+**Version:** 5.0.0
+**Last Updated:** 2025-12-29
+**Status:** Production Ready
