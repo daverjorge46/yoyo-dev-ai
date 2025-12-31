@@ -221,7 +221,83 @@ describe('Chat Routes', () => {
         }),
       });
 
-      expect(mockChat).toHaveBeenCalledWith('What is this codebase about?');
+      expect(mockChat).toHaveBeenCalledWith('What is this codebase about?', undefined);
+    });
+
+    it('should pass sessionId to chat service when provided', async () => {
+      async function* mockStream() {
+        yield 'Response';
+      }
+      mockChat.mockReturnValue(mockStream());
+
+      const sessionId = 'test-session-abc-123';
+      await app.request('/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: 'First message',
+          sessionId,
+        }),
+      });
+
+      expect(mockChat).toHaveBeenCalledWith('First message', sessionId);
+    });
+
+    it('should work without sessionId for backwards compatibility', async () => {
+      async function* mockStream() {
+        yield 'Response';
+      }
+      mockChat.mockReturnValue(mockStream());
+
+      await app.request('/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          message: 'Message without session',
+        }),
+      });
+
+      expect(mockChat).toHaveBeenCalledWith('Message without session', undefined);
+    });
+
+    it('should pass different sessionIds for different conversations', async () => {
+      async function* mockStream1() {
+        yield 'Response 1';
+      }
+      async function* mockStream2() {
+        yield 'Response 2';
+      }
+      mockChat
+        .mockReturnValueOnce(mockStream1())
+        .mockReturnValueOnce(mockStream2());
+
+      // First conversation
+      await app.request('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'First conversation',
+          sessionId: 'session-1',
+        }),
+      });
+
+      // Second conversation
+      await app.request('/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: 'Second conversation',
+          sessionId: 'session-2',
+        }),
+      });
+
+      expect(mockChat).toHaveBeenCalledTimes(2);
+      expect(mockChat).toHaveBeenNthCalledWith(1, 'First conversation', 'session-1');
+      expect(mockChat).toHaveBeenNthCalledWith(2, 'Second conversation', 'session-2');
     });
   });
 

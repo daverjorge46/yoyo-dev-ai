@@ -144,7 +144,7 @@ describe('ChatService', () => {
       expect(chunks).toEqual(['Hello', ', ', 'world!']);
       expect(mockSpawn).toHaveBeenCalledWith(
         'claude',
-        ['--print', 'Test message'],
+        ['-p', 'Test message'],
         expect.objectContaining({
           cwd: testProjectRoot,
           env: expect.any(Object),
@@ -235,6 +235,98 @@ describe('ChatService', () => {
           cwd: customRoot,
         })
       );
+    });
+
+    it('should pass --session-id when sessionId is provided', async () => {
+      const mockProcess = createMockProcess({
+        stdout: ['Response'],
+        exitCode: 0,
+      });
+      mockSpawn.mockReturnValue(mockProcess);
+
+      const chatService = new ChatService(testProjectRoot, { spawn: mockSpawn });
+      const sessionId = 'test-session-123';
+      const stream = chatService.chat('Test message', sessionId);
+
+      for await (const _ of stream) {
+        // Consume stream
+      }
+
+      expect(mockSpawn).toHaveBeenCalledWith(
+        'claude',
+        expect.arrayContaining(['--session-id', sessionId]),
+        expect.any(Object)
+      );
+    });
+
+    it('should not include --session-id when sessionId is not provided', async () => {
+      const mockProcess = createMockProcess({
+        stdout: ['Response'],
+        exitCode: 0,
+      });
+      mockSpawn.mockReturnValue(mockProcess);
+
+      const chatService = new ChatService(testProjectRoot, { spawn: mockSpawn });
+      const stream = chatService.chat('Test message');
+
+      for await (const _ of stream) {
+        // Consume stream
+      }
+
+      const callArgs = mockSpawn.mock.calls[0][1] as string[];
+      expect(callArgs).not.toContain('--session-id');
+    });
+
+    it('should use -p flag instead of --print for consistency', async () => {
+      const mockProcess = createMockProcess({
+        stdout: ['Response'],
+        exitCode: 0,
+      });
+      mockSpawn.mockReturnValue(mockProcess);
+
+      const chatService = new ChatService(testProjectRoot, { spawn: mockSpawn });
+      const stream = chatService.chat('Test message');
+
+      for await (const _ of stream) {
+        // Consume stream
+      }
+
+      const callArgs = mockSpawn.mock.calls[0][1] as string[];
+      expect(callArgs).toContain('-p');
+    });
+
+    it('should maintain session context across multiple messages', async () => {
+      const sessionId = 'persistent-session-456';
+      const chatService = new ChatService(testProjectRoot, { spawn: mockSpawn });
+
+      // First message
+      const mockProcess1 = createMockProcess({
+        stdout: ['First response'],
+        exitCode: 0,
+      });
+      mockSpawn.mockReturnValue(mockProcess1);
+
+      const stream1 = chatService.chat('First message', sessionId);
+      for await (const _ of stream1) {
+        // Consume
+      }
+
+      // Second message with same session
+      const mockProcess2 = createMockProcess({
+        stdout: ['Second response'],
+        exitCode: 0,
+      });
+      mockSpawn.mockReturnValue(mockProcess2);
+
+      const stream2 = chatService.chat('Second message', sessionId);
+      for await (const _ of stream2) {
+        // Consume
+      }
+
+      // Both calls should use the same session ID
+      expect(mockSpawn).toHaveBeenCalledTimes(2);
+      expect(mockSpawn.mock.calls[0][1]).toContain(sessionId);
+      expect(mockSpawn.mock.calls[1][1]).toContain(sessionId);
     });
   });
 

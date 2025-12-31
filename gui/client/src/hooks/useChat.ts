@@ -65,6 +65,8 @@ export interface UseChatReturn {
   availabilityError?: string;
   /** Whether availability check is in progress */
   isCheckingAvailability: boolean;
+  /** Current session ID for conversation continuity */
+  sessionId: string | null;
 }
 
 // =============================================================================
@@ -160,6 +162,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const lastFailedMessageRef = useRef<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
   const currentAssistantIdRef = useRef<string | null>(null);
+  const sessionIdRef = useRef<string | null>(null);
 
   // Check Claude availability
   const {
@@ -197,13 +200,18 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
       abortControllerRef.current = controller;
       currentAssistantIdRef.current = assistantMessageId;
 
+      // Generate sessionId on first message if not set
+      if (!sessionIdRef.current) {
+        sessionIdRef.current = crypto.randomUUID();
+      }
+
       try {
         const response = await fetch(endpoint, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ message }),
+          body: JSON.stringify({ message, sessionId: sessionIdRef.current }),
           signal: controller.signal,
         });
 
@@ -322,6 +330,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     setMessages([]);
     setError(null);
     lastFailedMessageRef.current = null;
+    sessionIdRef.current = null; // Reset session for new conversation
     localStorage.removeItem(storageKey);
   }, [storageKey]);
 
@@ -360,6 +369,7 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
     claudeVersion,
     availabilityError,
     isCheckingAvailability,
+    sessionId: sessionIdRef.current,
   };
 }
 

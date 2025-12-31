@@ -110,8 +110,11 @@ export class ChatService {
   /**
    * Send a chat message and stream the response
    * Returns an async iterable that yields response chunks
+   *
+   * @param message - The message to send to Claude
+   * @param sessionId - Optional session ID for conversation continuity
    */
-  chat(message: string): AsyncIterable<string> {
+  chat(message: string, sessionId?: string): AsyncIterable<string> {
     const self = this;
 
     return {
@@ -125,8 +128,15 @@ export class ChatService {
         let done = false;
         let timeoutId: NodeJS.Timeout | null = null;
 
+        // Build CLI arguments
+        const args = ['-p'];
+        if (sessionId) {
+          args.push('--session-id', sessionId);
+        }
+        args.push(message);
+
         // Start the process
-        proc = self.spawn('claude', ['--print', message], {
+        proc = self.spawn('claude', args, {
           cwd: self.projectRoot,
           env: { ...process.env },
           stdio: ['ignore', 'pipe', 'pipe'],

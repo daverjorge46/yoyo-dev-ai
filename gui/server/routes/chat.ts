@@ -18,6 +18,7 @@ export const chatRoutes = new Hono<{ Variables: Variables }>();
 
 interface PostChatBody {
   message: string;
+  sessionId?: string;
 }
 
 // =============================================================================
@@ -85,10 +86,13 @@ chatRoutes.post('/', async (c) => {
   // Get chat service
   const chatService = getChatService(projectRoot);
 
+  // Extract optional sessionId
+  const sessionId = body.sessionId;
+
   // Stream response via SSE
   return streamSSE(c, async (stream) => {
     try {
-      const responseStream = chatService.chat(message);
+      const responseStream = chatService.chat(message, sessionId);
 
       for await (const chunk of responseStream) {
         await stream.writeSSE({

@@ -656,4 +656,173 @@ describe('useChat Hook', () => {
       expect(result.current.messages[0].content).toBe('Custom');
     });
   });
+
+  describe('Session Management', () => {
+    it('should generate sessionId on first message', async () => {
+      mockFetch.mockImplementation((url: string, _options?: RequestInit) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ available: true, version: '2.0.76' }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return Promise.resolve(
+          createSSEResponse([JSON.stringify({ content: 'Response' })])
+        );
+      });
+
+      const { result } = renderHook(() => useChat(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.isAvailable).toBe(true);
+      });
+
+      act(() => {
+        result.current.sendMessage('First message');
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Verify sessionId was included in the request
+      const chatCall = mockFetch.mock.calls.find(
+        (call) => !call[0].toString().endsWith('/status')
+      );
+      expect(chatCall).toBeDefined();
+      const body = JSON.parse(chatCall![1]?.body as string);
+      expect(body.sessionId).toBeDefined();
+      expect(typeof body.sessionId).toBe('string');
+      expect(body.sessionId.length).toBeGreaterThan(0);
+    });
+
+    it('should use same sessionId for subsequent messages', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ available: true, version: '2.0.76' }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return Promise.resolve(
+          createSSEResponse([JSON.stringify({ content: 'Response' })])
+        );
+      });
+
+      const { result } = renderHook(() => useChat(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.isAvailable).toBe(true);
+      });
+
+      // First message
+      act(() => {
+        result.current.sendMessage('First message');
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Second message
+      act(() => {
+        result.current.sendMessage('Second message');
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Get sessionIds from both chat calls
+      const chatCalls = mockFetch.mock.calls.filter(
+        (call) => !call[0].toString().endsWith('/status')
+      );
+      expect(chatCalls.length).toBe(2);
+
+      const firstBody = JSON.parse(chatCalls[0][1]?.body as string);
+      const secondBody = JSON.parse(chatCalls[1][1]?.body as string);
+
+      expect(firstBody.sessionId).toBe(secondBody.sessionId);
+    });
+
+    it('should generate new sessionId after clearing history', async () => {
+      mockFetch.mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ available: true, version: '2.0.76' }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return Promise.resolve(
+          createSSEResponse([JSON.stringify({ content: 'Response' })])
+        );
+      });
+
+      const { result } = renderHook(() => useChat(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.isAvailable).toBe(true);
+      });
+
+      // First message
+      act(() => {
+        result.current.sendMessage('First message');
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Clear history
+      act(() => {
+        result.current.clearHistory();
+      });
+
+      // New message after clear
+      act(() => {
+        result.current.sendMessage('New conversation');
+      });
+
+      await waitFor(() => {
+        expect(result.current.isLoading).toBe(false);
+      });
+
+      // Get sessionIds from both chat calls
+      const chatCalls = mockFetch.mock.calls.filter(
+        (call) => !call[0].toString().endsWith('/status')
+      );
+      expect(chatCalls.length).toBe(2);
+
+      const firstBody = JSON.parse(chatCalls[0][1]?.body as string);
+      const secondBody = JSON.parse(chatCalls[1][1]?.body as string);
+
+      // Should have different session IDs after clear
+      expect(firstBody.sessionId).not.toBe(secondBody.sessionId);
+    });
+
+    it('should expose sessionId in return value', async () => {
+      const { result } = renderHook(() => useChat(), {
+        wrapper: createWrapper(),
+      });
+
+      await waitFor(() => {
+        expect(result.current.isCheckingAvailability).toBe(false);
+      });
+
+      // Initially no sessionId
+      expect(result.current.sessionId).toBeNull();
+    });
+  });
 });
