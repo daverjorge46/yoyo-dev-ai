@@ -1,12 +1,14 @@
 /**
  * Chat API Routes
  *
- * Provides chat endpoints for codebase exploration.
+ * Provides chat endpoints using Claude Code CLI integration.
+ * Streams responses via Server-Sent Events (SSE).
  */
 
 import { Hono } from 'hono';
+import { streamSSE } from 'hono/streaming';
 import type { Variables } from '../types.js';
-import { getChatService, type ChatRequest } from '../services/chat.js';
+import { getChatService } from '../services/chat.js';
 
 export const chatRoutes = new Hono<{ Variables: Variables }>();
 
@@ -16,10 +18,6 @@ export const chatRoutes = new Hono<{ Variables: Variables }>();
 
 interface PostChatBody {
   message: string;
-  context?: Array<{
-    role: 'user' | 'assistant';
-    content: string;
-  }>;
 }
 
 // =============================================================================
@@ -27,128 +25,104 @@ interface PostChatBody {
 // =============================================================================
 
 /**
+ * GET /api/chat/status
+ *
+ * Check if Claude Code CLI is available.
+ * Returns availability status with version or error message.
+ */
+chatRoutes.get('/status', async (c) => {
+  const projectRoot = c.get('projectRoot') || process.cwd();
+
+  try {
+    const chatService = getChatService(projectRoot);
+    const availability = await chatService.checkClaudeAvailability();
+
+    return c.json(availability);
+  } catch (error) {
+    console.error('[Chat API] Status check error:', error);
+
+    return c.json(
+      { error: error instanceof Error ? error.message : 'Failed to check Claude Code availability' },
+      500
+    );
+  }
+});
+
+/**
  * POST /api/chat
  *
- * Send a chat message and get a response from Claude.
+ * Send a chat message and stream the response via SSE.
+ * Uses Claude Code CLI subprocess for communication.
  */
 chatRoutes.post('/', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
 
+  // Parse and validate request body
+  let body: PostChatBody;
   try {
-    // Parse request body
-    const body = await c.req.json<PostChatBody>();
+    body = await c.req.json<PostChatBody>();
+  } catch {
+    return c.json({ error: 'Invalid JSON body' }, 400);
+  }
 
-    // Validate message
-    if (!body.message || typeof body.message !== 'string') {
-      return c.json(
-        { error: 'Message is required and must be a string' },
-        400
-      );
-    }
-
-    // Get trimmed message
-    const message = body.message.trim();
-    if (!message) {
-      return c.json(
-        { error: 'Message cannot be empty' },
-        400
-      );
-    }
-
-    // Get chat service
-    const chatService = getChatService(projectRoot);
-
-    // Build request
-    const request: ChatRequest = {
-      message,
-      context: body.context,
-    };
-
-    // Send to Claude
-    const response = await chatService.chat(request);
-
-    return c.json(response);
-  } catch (error) {
-    console.error('[Chat API] Error:', error);
-
-    const errorMessage =
-      error instanceof Error ? error.message : 'Internal server error';
-
+  // Validate message
+  if (!body.message || typeof body.message !== 'string') {
     return c.json(
-      { error: errorMessage },
-      500
+      { error: 'Message is required and must be a string' },
+      400
     );
   }
-});
 
-/**
- * POST /api/chat/configure
- *
- * Configure API key for chat service.
- */
-chatRoutes.post('/configure', async (c) => {
-  const projectRoot = c.get('projectRoot') || process.cwd();
+  // Get trimmed message
+  const message = body.message.trim();
+  if (!message) {
+    return c.json(
+      { error: 'Message cannot be empty' },
+      400
+    );
+  }
 
-  try {
-    // Parse request body
-    const body = await c.req.json<{ apiKey?: unknown }>();
+  // Get chat service
+  const chatService = getChatService(projectRoot);
 
-    // Validate apiKey field exists
-    if (body.apiKey === undefined || body.apiKey === null) {
-      return c.json(
-        { error: 'API key is required' },
-        400
-      );
-    }
+  // Stream response via SSE
+  return streamSSE(c, async (stream) => {
+    try {
+      const responseStream = chatService.chat(message);
 
-    // Validate apiKey is string
-    if (typeof body.apiKey !== 'string') {
-      return c.json(
-        { error: 'API key must be a string' },
-        400
-      );
-    }
+      for await (const chunk of responseStream) {
+        await stream.writeSSE({
+          data: JSON.stringify({ content: chunk }),
+        });
+      }
 
-    // Get chat service
-    const chatService = getChatService(projectRoot);
+      // Signal completion
+      await stream.writeSSE({
+        data: '[DONE]',
+      });
+    } catch (error) {
+      console.error('[Chat API] Stream error:', error);
 
-    // Update API key (service will validate if it's valid)
-    const success = await chatService.updateApiKey(body.apiKey);
-
-    if (success) {
-      return c.json({ success: true });
-    } else {
-      return c.json({
-        success: false,
-        error: 'Invalid API key or configuration failed',
+      // Send error event
+      await stream.writeSSE({
+        data: JSON.stringify({
+          error: error instanceof Error ? error.message : 'Stream error',
+        }),
       });
     }
-  } catch (error) {
-    console.error('[Chat API] Configuration error:', error);
-
-    const errorMessage =
-      error instanceof Error ? error.message : 'Internal server error';
-
-    return c.json(
-      { error: errorMessage },
-      500
-    );
-  }
+  });
 });
 
 /**
- * GET /api/chat/status
+ * POST /api/chat/abort
  *
- * Check if chat service is available.
+ * Abort the current chat request.
  */
-chatRoutes.get('/status', (c) => {
+chatRoutes.post('/abort', (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
   const chatService = getChatService(projectRoot);
 
-  return c.json({
-    available: chatService.isAvailable(),
-    message: chatService.isAvailable()
-      ? 'Chat service is ready'
-      : 'Chat feature requires ANTHROPIC_API_KEY environment variable',
-  });
+  chatService.abort();
+
+  return c.json({ success: true });
 });

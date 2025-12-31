@@ -1,12 +1,12 @@
 /**
  * useChat Hook
  *
- * Manages chat state, history persistence, and API communication.
- * Persists chat history to localStorage.
+ * Manages chat state, history persistence, and Claude Code CLI communication.
+ * Uses Server-Sent Events (SSE) for streaming responses.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 // =============================================================================
 // Types
@@ -27,9 +27,10 @@ export interface FileReference {
   snippet?: string;
 }
 
-export interface ChatResponse {
-  response: string;
-  references: FileReference[];
+export interface ClaudeAvailability {
+  available: boolean;
+  version?: string;
+  error?: string;
 }
 
 export interface UseChatOptions {
@@ -54,6 +55,16 @@ export interface UseChatReturn {
   clearHistory: () => void;
   /** Retry last failed message */
   retry: () => void;
+  /** Abort current request */
+  abort: () => void;
+  /** Whether Claude Code CLI is available */
+  isAvailable: boolean;
+  /** Claude Code version if available */
+  claudeVersion?: string;
+  /** Availability error message if not available */
+  availabilityError?: string;
+  /** Whether availability check is in progress */
+  isCheckingAvailability: boolean;
 }
 
 // =============================================================================
@@ -107,33 +118,24 @@ function saveMessages(storageKey: string, messages: ChatMessage[], maxHistory: n
 }
 
 /**
- * Send chat message to API
+ * Parse SSE data line
  */
-async function sendChatRequest(
-  endpoint: string,
-  message: string,
-  context?: ChatMessage[]
-): Promise<ChatResponse> {
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message,
-      context: context?.map((m) => ({
-        role: m.role,
-        content: m.content,
-      })),
-    }),
-  });
-
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Request failed' }));
-    throw new Error(error.error || error.message || 'Failed to send message');
+function parseSSEData(line: string): { content?: string; error?: string; done?: boolean } | null {
+  if (!line.startsWith('data: ')) {
+    return null;
   }
 
-  return response.json();
+  const data = line.slice(6); // Remove 'data: ' prefix
+
+  if (data === '[DONE]') {
+    return { done: true };
+  }
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    return null;
+  }
 }
 
 // =============================================================================
@@ -151,42 +153,137 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>(() =>
     loadMessages(storageKey)
   );
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  // Track last failed message for retry
+  // Refs
   const lastFailedMessageRef = useRef<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const currentAssistantIdRef = useRef<string | null>(null);
+
+  // Check Claude availability
+  const {
+    data: availability,
+    isLoading: isCheckingAvailability,
+    error: availabilityQueryError,
+  } = useQuery<ClaudeAvailability>({
+    queryKey: ['claude-availability', endpoint],
+    queryFn: async () => {
+      const response = await fetch(`${endpoint}/status`);
+      if (!response.ok) {
+        throw new Error('Failed to check Claude availability');
+      }
+      return response.json();
+    },
+    staleTime: 30000, // Cache for 30 seconds
+    retry: 1,
+  });
+
+  // Derived availability state
+  const isAvailable = availability?.available ?? false;
+  const claudeVersion = availability?.version;
+  const availabilityError =
+    availability?.error ?? availabilityQueryError?.message;
 
   // Save messages to localStorage when they change
   useEffect(() => {
     saveMessages(storageKey, messages, maxHistory);
   }, [messages, storageKey, maxHistory]);
 
-  // Mutation for sending messages
-  const mutation = useMutation({
-    mutationFn: async (content: string) => {
-      // Get recent context (last 10 messages for context window)
-      const recentMessages = messages.slice(-10);
-      return sendChatRequest(endpoint, content, recentMessages);
-    },
-    onSuccess: (data) => {
-      // Add assistant response
-      const assistantMessage: ChatMessage = {
-        id: generateId(),
-        role: 'assistant',
-        content: data.response,
-        timestamp: Date.now(),
-        references: data.references,
-      };
+  // Stream chat response
+  const streamChat = useCallback(
+    async (message: string, assistantMessageId: string) => {
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+      currentAssistantIdRef.current = assistantMessageId;
 
-      setMessages((prev) => [...prev, assistantMessage]);
-      setError(null);
-      lastFailedMessageRef.current = null;
+      try {
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ message }),
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+          throw new Error(errorData.error || errorData.message || 'Failed to send message');
+        }
+
+        if (!response.body) {
+          throw new Error('No response body');
+        }
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let accumulatedContent = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (done) {
+            break;
+          }
+
+          buffer += decoder.decode(value, { stream: true });
+
+          // Process complete SSE lines
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+          for (const line of lines) {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) continue;
+
+            const parsed = parseSSEData(trimmedLine);
+            if (!parsed) continue;
+
+            if (parsed.done) {
+              // Stream complete
+              break;
+            }
+
+            if (parsed.error) {
+              throw new Error(parsed.error);
+            }
+
+            if (parsed.content) {
+              accumulatedContent += parsed.content;
+
+              // Update assistant message with accumulated content
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMessageId
+                    ? { ...msg, content: accumulatedContent }
+                    : msg
+                )
+              );
+            }
+          }
+        }
+
+        setError(null);
+        lastFailedMessageRef.current = null;
+      } catch (err) {
+        if (err instanceof Error && err.name === 'AbortError') {
+          // Request was aborted, don't set error
+          return;
+        }
+
+        const error = err instanceof Error ? err : new Error('Unknown error');
+        setError(error);
+        lastFailedMessageRef.current = message;
+      } finally {
+        setIsLoading(false);
+        abortControllerRef.current = null;
+        currentAssistantIdRef.current = null;
+      }
     },
-    onError: (err: Error, content: string) => {
-      setError(err);
-      lastFailedMessageRef.current = content;
-    },
-  });
+    [endpoint]
+  );
 
   // Send message
   const sendMessage = useCallback(
@@ -202,13 +299,22 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
         timestamp: Date.now(),
       };
 
-      setMessages((prev) => [...prev, userMessage]);
-      setError(null);
+      // Add placeholder assistant message
+      const assistantMessage: ChatMessage = {
+        id: generateId(),
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+      };
 
-      // Send to API (use mutate instead of mutateAsync to avoid unhandled rejections)
-      mutation.mutate(trimmedContent);
+      setMessages((prev) => [...prev, userMessage, assistantMessage]);
+      setError(null);
+      setIsLoading(true);
+
+      // Start streaming
+      streamChat(trimmedContent, assistantMessage.id);
     },
-    [mutation]
+    [streamChat]
   );
 
   // Clear history
@@ -222,20 +328,38 @@ export function useChat(options: UseChatOptions = {}): UseChatReturn {
   // Retry last failed message
   const retry = useCallback(() => {
     if (lastFailedMessageRef.current) {
-      // Remove the failed user message first
-      setMessages((prev) => prev.slice(0, -1));
+      const failedMessage = lastFailedMessageRef.current;
+      // Remove the failed user message and empty assistant message
+      setMessages((prev) => prev.slice(0, -2));
       // Resend
-      sendMessage(lastFailedMessageRef.current);
+      sendMessage(failedMessage);
     }
   }, [sendMessage]);
 
+  // Abort current request
+  const abort = useCallback(() => {
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+
+    // Also call the abort endpoint to kill the subprocess
+    fetch(`${endpoint}/abort`, { method: 'POST' }).catch(() => {
+      // Ignore abort endpoint errors
+    });
+  }, [endpoint]);
+
   return {
     messages,
-    isLoading: mutation.isPending,
+    isLoading,
     error,
     sendMessage,
     clearHistory,
     retry,
+    abort,
+    isAvailable,
+    claudeVersion,
+    availabilityError,
+    isCheckingAvailability,
   };
 }
 

@@ -315,12 +315,50 @@ describe('ChatMessage', () => {
 // CodebaseChat Tests
 // =============================================================================
 
+// Helper to create SSE response for streaming
+function createSSEResponse(chunks: string[]): Response {
+  const encoder = new TextEncoder();
+  let chunkIndex = 0;
+
+  const stream = new ReadableStream({
+    pull(controller) {
+      if (chunkIndex < chunks.length) {
+        const chunk = chunks[chunkIndex];
+        controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+        chunkIndex++;
+      } else {
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    status: 200,
+    headers: { 'Content-Type': 'text/event-stream' },
+  });
+}
+
 describe('CodebaseChat', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
-    // Set mock API key so chat is configured
-    localStorage.setItem('YOYO_CHAT_API_KEY', 'sk-ant-test-key-mock');
+
+    // Mock status endpoint to return available
+    global.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url.endsWith('/status')) {
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ available: true, version: '2.0.76 (Claude Code)' }),
+            { status: 200, headers: { 'Content-Type': 'application/json' } }
+          )
+        );
+      }
+      // Default SSE response
+      return Promise.resolve(
+        createSSEResponse([JSON.stringify({ content: 'Test response' })])
+      );
+    });
   });
 
   afterEach(() => {
@@ -380,20 +418,16 @@ describe('CodebaseChat', () => {
     });
 
     it('should clear input after sending', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            response: 'Test response',
-            references: [],
-          }),
-      });
-
       render(
         <TestWrapper>
           <CodebaseChat />
         </TestWrapper>
       );
+
+      // Wait for availability check
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
 
       const input = screen.getByPlaceholderText(/ask.*codebase/i) as HTMLInputElement;
       await userEvent.type(input, 'Test question');
@@ -407,54 +441,60 @@ describe('CodebaseChat', () => {
     });
 
     it('should support Enter key to send', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            response: 'Test response',
-            references: [],
-          }),
-      });
-
       render(
         <TestWrapper>
           <CodebaseChat />
         </TestWrapper>
       );
 
+      // Wait for availability check
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
+
       const input = screen.getByPlaceholderText(/ask.*codebase/i);
       await userEvent.type(input, 'Test question{enter}');
 
       await waitFor(() => {
-        expect(global.fetch).toHaveBeenCalled();
+        // Check that chat endpoint was called (not just status)
+        expect(global.fetch).toHaveBeenCalledWith(
+          '/api/chat',
+          expect.objectContaining({ method: 'POST' })
+        );
       });
     });
   });
 
   describe('loading state', () => {
     it('should show loading indicator while processing', async () => {
-      // Create a promise that we can control
-      let resolveResponse: (value: unknown) => void;
-      const responsePromise = new Promise((resolve) => {
+      // Create a promise that we can control for the chat endpoint
+      let resolveResponse: (value: Response) => void;
+      const responsePromise = new Promise<Response>((resolve) => {
         resolveResponse = resolve;
       });
 
-      global.fetch = vi.fn().mockReturnValue(
-        responsePromise.then(() => ({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              response: 'Test response',
-              references: [],
-            }),
-        }))
-      );
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ available: true, version: '2.0.76' }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return responsePromise;
+      });
 
       render(
         <TestWrapper>
           <CodebaseChat />
         </TestWrapper>
       );
+
+      // Wait for availability check
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
 
       const input = screen.getByPlaceholderText(/ask.*codebase/i);
       await userEvent.type(input, 'Test question');
@@ -468,7 +508,7 @@ describe('CodebaseChat', () => {
       });
 
       // Resolve the response
-      resolveResponse!(undefined);
+      resolveResponse!(createSSEResponse([JSON.stringify({ content: 'Done' })]));
     });
   });
 

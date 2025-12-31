@@ -1,339 +1,251 @@
 /**
  * Chat Service
  *
- * Handles Claude API integration for codebase chat.
- * Gracefully handles missing API key with placeholder response.
+ * Handles Claude Code CLI integration for codebase chat.
+ * Uses subprocess communication with `claude --print` for programmatic interaction.
  */
 
-import Anthropic from '@anthropic-ai/sdk';
-import { readFileSync, existsSync, readdirSync } from 'fs';
-import { join } from 'path';
+import { spawn as nodeSpawn, type ChildProcess, type SpawnOptionsWithoutStdio } from 'child_process';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export interface ChatContext {
-  role: 'user' | 'assistant';
-  content: string;
+export interface ChatServiceOptions {
+  /** Timeout in milliseconds for chat requests (default: 5 minutes) */
+  timeoutMs?: number;
+  /** Custom spawn function for testing */
+  spawn?: typeof nodeSpawn;
 }
 
-export interface FileReference {
-  path: string;
-  lineNumber?: number;
-  endLineNumber?: number;
-  snippet?: string;
+export interface ClaudeAvailability {
+  available: boolean;
+  version?: string;
+  error?: string;
 }
 
-export interface ChatRequest {
-  message: string;
-  context?: ChatContext[];
-}
-
-export interface ChatResponse {
-  response: string;
-  references: FileReference[];
-}
+// Type for spawn function
+type SpawnFn = (
+  command: string,
+  args: string[],
+  options: SpawnOptionsWithoutStdio
+) => ChildProcess;
 
 // =============================================================================
 // Configuration
 // =============================================================================
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-const MAX_RESPONSE_TOKENS = 4096;
-const MODEL = 'claude-sonnet-4-20250514';
-
-// System prompt for codebase analysis
-const SYSTEM_PROMPT = `You are an expert software developer assistant analyzing a codebase. Your role is to:
-
-1. Answer questions about the codebase structure, patterns, and implementations
-2. Explain how specific features or components work
-3. Help users understand code architecture and design decisions
-4. Provide relevant code references when discussing files
-
-When referencing files, use this format: [FILE:path/to/file.ts] or [FILE:path/to/file.ts:42] for specific lines.
-
-Be concise but thorough. Use code blocks with appropriate language tags when showing code.
-Focus on being helpful and accurate. If you're not sure about something, say so.`;
+const DEFAULT_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+const CLAUDE_DOWNLOAD_URL = 'https://claude.ai/download';
 
 // =============================================================================
 // Service
 // =============================================================================
 
 export class ChatService {
-  private client: Anthropic | null = null;
   private projectRoot: string;
+  private timeoutMs: number;
+  private spawn: SpawnFn;
+  private currentProcess: ChildProcess | null = null;
 
-  constructor(projectRoot: string) {
+  constructor(projectRoot: string, options: ChatServiceOptions = {}) {
     this.projectRoot = projectRoot;
-
-    // Initialize Anthropic client if API key is available
-    if (ANTHROPIC_API_KEY) {
-      this.client = new Anthropic({
-        apiKey: ANTHROPIC_API_KEY,
-      });
-    }
+    this.timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+    this.spawn = (options.spawn ?? nodeSpawn) as SpawnFn;
   }
 
   /**
-   * Check if the chat service is available
+   * Check if Claude Code CLI is available on the system
    */
-  isAvailable(): boolean {
-    return this.client !== null;
-  }
+  async checkClaudeAvailability(): Promise<ClaudeAvailability> {
+    return new Promise((resolve) => {
+      let stdout = '';
+      let stderr = '';
 
-  /**
-   * Update API key and reinitialize client
-   * @param apiKey - The new Anthropic API key
-   * @returns Promise<boolean> - true if key is valid and client initialized, false otherwise
-   */
-  async updateApiKey(apiKey: string): Promise<boolean> {
-    try {
-      // Validate API key format
-      if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
-        this.client = null;
-        return false;
-      }
-
-      // Create new Anthropic client
-      const newClient = new Anthropic({
-        apiKey: apiKey.trim(),
+      const proc = this.spawn('claude', ['--version'], {
+        env: { ...process.env },
+        stdio: ['ignore', 'pipe', 'pipe'],
       });
 
-      // Validate API key with test request (lightweight validation)
-      await newClient.messages.create({
-        model: MODEL,
-        max_tokens: 10,
-        messages: [
-          {
-            role: 'user',
-            content: 'test',
-          },
-        ],
+      proc.stdout?.on('data', (data: Buffer) => {
+        stdout += data.toString();
       });
 
-      // If validation succeeds, update the client
-      this.client = newClient;
-      return true;
-    } catch (error) {
-      // API key is invalid or request failed
-      console.error('[ChatService] API key validation failed:', error instanceof Error ? error.message : error);
-      this.client = null;
-      return false;
-    }
-  }
-
-  /**
-   * Send a chat message and get a response
-   */
-  async chat(request: ChatRequest): Promise<ChatResponse> {
-    // Handle missing API key
-    if (!this.client) {
-      return this.getPlaceholderResponse();
-    }
-
-    try {
-      // Build conversation history
-      const messages = this.buildMessages(request);
-
-      // Get project context for system prompt
-      const projectContext = this.getProjectContext();
-
-      // Send request to Claude
-      const response = await this.client.messages.create({
-        model: MODEL,
-        max_tokens: MAX_RESPONSE_TOKENS,
-        system: `${SYSTEM_PROMPT}\n\n## Project Context\n${projectContext}`,
-        messages,
+      proc.stderr?.on('data', (data: Buffer) => {
+        stderr += data.toString();
       });
 
-      // Extract text response
-      const textContent = response.content.find((block) => block.type === 'text');
-      const responseText = textContent?.type === 'text' ? textContent.text : '';
+      proc.on('error', (error: NodeJS.ErrnoException) => {
+        if (error.code === 'ENOENT') {
+          resolve({
+            available: false,
+            error: `Claude Code CLI not found. Install from ${CLAUDE_DOWNLOAD_URL}`,
+          });
+        } else {
+          resolve({
+            available: false,
+            error: error.message,
+          });
+        }
+      });
 
-      // Extract file references from response
-      const references = this.extractFileReferences(responseText);
-
-      return {
-        response: responseText,
-        references,
-      };
-    } catch (error) {
-      console.error('[ChatService] Error:', error);
-      throw new Error(
-        error instanceof Error ? error.message : 'Failed to get response from Claude'
-      );
-    }
-  }
-
-  /**
-   * Build messages array for API request
-   */
-  private buildMessages(request: ChatRequest): Anthropic.MessageParam[] {
-    const messages: Anthropic.MessageParam[] = [];
-
-    // Add conversation context if provided
-    if (request.context) {
-      for (const ctx of request.context) {
-        messages.push({
-          role: ctx.role,
-          content: ctx.content,
-        });
-      }
-    }
-
-    // Add current message
-    messages.push({
-      role: 'user',
-      content: request.message,
+      proc.on('close', (code) => {
+        if (code === 0) {
+          resolve({
+            available: true,
+            version: stdout.trim(),
+          });
+        } else {
+          // Non-zero exit could mean auth required or other issues
+          const errorMsg = stderr.trim() || stdout.trim() || 'Unknown error';
+          resolve({
+            available: false,
+            error: errorMsg,
+          });
+        }
+      });
     });
-
-    return messages;
   }
 
   /**
-   * Get project context for Claude
+   * Send a chat message and stream the response
+   * Returns an async iterable that yields response chunks
    */
-  private getProjectContext(): string {
-    const parts: string[] = [];
+  chat(message: string): AsyncIterable<string> {
+    const self = this;
 
-    // Add project name from package.json
-    const pkgPath = join(this.projectRoot, 'package.json');
-    if (existsSync(pkgPath)) {
-      try {
-        const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
-        parts.push(`Project: ${pkg.name || 'Unknown'}`);
-        if (pkg.description) {
-          parts.push(`Description: ${pkg.description}`);
-        }
-      } catch {
-        // Ignore
-      }
-    }
-
-    // Add framework info
-    const yoyoDevPath = join(this.projectRoot, '.yoyo-dev');
-    if (existsSync(yoyoDevPath)) {
-      parts.push('Framework: Yoyo Dev (AI-assisted development workflow)');
-
-      // Check for mission
-      const missionPath = join(yoyoDevPath, 'product', 'mission.md');
-      if (existsSync(missionPath)) {
-        try {
-          const mission = readFileSync(missionPath, 'utf-8');
-          // Get first 500 chars of mission
-          const missionSummary = mission.slice(0, 500);
-          parts.push(`Mission: ${missionSummary}${mission.length > 500 ? '...' : ''}`);
-        } catch {
-          // Ignore
-        }
-      }
-    }
-
-    // Add high-level directory structure
-    const structure = this.getDirectoryStructure(this.projectRoot, 2);
-    if (structure) {
-      parts.push(`\nProject Structure:\n${structure}`);
-    }
-
-    return parts.join('\n');
-  }
-
-  /**
-   * Get directory structure as a tree
-   */
-  private getDirectoryStructure(dir: string, depth: number, prefix = ''): string {
-    if (depth === 0) return '';
-
-    const lines: string[] = [];
-    try {
-      const entries = readdirSync(dir, { withFileTypes: true })
-        .filter((entry) => {
-          // Skip hidden files, node_modules, etc.
-          const name = entry.name;
-          return (
-            !name.startsWith('.') &&
-            name !== 'node_modules' &&
-            name !== 'dist' &&
-            name !== 'build' &&
-            name !== 'coverage' &&
-            name !== '__pycache__'
-          );
-        })
-        .slice(0, 15); // Limit entries
-
-      for (const entry of entries) {
-        const isDir = entry.isDirectory();
-        lines.push(`${prefix}${isDir ? '/' : ''}${entry.name}`);
-
-        if (isDir && depth > 1) {
-          const subPath = join(dir, entry.name);
-          const subTree = this.getDirectoryStructure(subPath, depth - 1, prefix + '  ');
-          if (subTree) {
-            lines.push(subTree);
-          }
-        }
-      }
-    } catch {
-      // Ignore permission errors
-    }
-
-    return lines.join('\n');
-  }
-
-  /**
-   * Extract file references from response text
-   */
-  private extractFileReferences(text: string): FileReference[] {
-    const references: FileReference[] = [];
-    const pattern = /\[FILE:([^\]:]+)(?::(\d+)(?:-(\d+))?)?\]/g;
-
-    let match;
-    while ((match = pattern.exec(text)) !== null) {
-      const [, filePath, startLine, endLine] = match;
-
-      // Validate file exists
-      const fullPath = join(this.projectRoot, filePath);
-      if (existsSync(fullPath)) {
-        const ref: FileReference = {
-          path: filePath,
-        };
-
-        if (startLine) {
-          ref.lineNumber = parseInt(startLine, 10);
-          if (endLine) {
-            ref.endLineNumber = parseInt(endLine, 10);
-          }
-        }
-
-        // Avoid duplicates
-        if (!references.some((r) => r.path === ref.path && r.lineNumber === ref.lineNumber)) {
-          references.push(ref);
-        }
-      }
-    }
-
-    return references;
-  }
-
-  /**
-   * Return placeholder response when API key is missing
-   */
-  private getPlaceholderResponse(): ChatResponse {
     return {
-      response: `**Chat feature requires ANTHROPIC_API_KEY**
+      [Symbol.asyncIterator](): AsyncIterator<string> {
+        let proc: ChildProcess | null = null;
+        let stderr = '';
+        let processError: Error | null = null;
+        let resolveNext: ((value: IteratorResult<string>) => void) | null = null;
+        let rejectNext: ((error: Error) => void) | null = null;
+        const chunks: string[] = [];
+        let done = false;
+        let timeoutId: NodeJS.Timeout | null = null;
 
-To enable the codebase chat feature, please set the \`ANTHROPIC_API_KEY\` environment variable:
+        // Start the process
+        proc = self.spawn('claude', ['--print', message], {
+          cwd: self.projectRoot,
+          env: { ...process.env },
+          stdio: ['ignore', 'pipe', 'pipe'],
+        });
 
-\`\`\`bash
-export ANTHROPIC_API_KEY="your-api-key-here"
-\`\`\`
+        self.currentProcess = proc;
 
-You can get an API key from [Anthropic Console](https://console.anthropic.com/).
+        // Set up timeout
+        timeoutId = setTimeout(() => {
+          if (proc && !done) {
+            // Set error BEFORE kill() since kill may synchronously trigger close event
+            processError = new Error('Claude Code request timeout');
+            done = true;
+            proc.kill();
+            if (rejectNext) {
+              rejectNext(processError);
+              rejectNext = null;
+            }
+          }
+        }, self.timeoutMs);
 
-Once configured, restart the Yoyo Dev GUI server to enable chat functionality.`,
-      references: [],
+        proc.stdout?.on('data', (data: Buffer) => {
+          const chunk = data.toString();
+          if (resolveNext) {
+            resolveNext({ value: chunk, done: false });
+            resolveNext = null;
+          } else {
+            chunks.push(chunk);
+          }
+        });
+
+        proc.stderr?.on('data', (data: Buffer) => {
+          stderr += data.toString();
+        });
+
+        proc.on('error', (error: NodeJS.ErrnoException) => {
+          if (timeoutId) clearTimeout(timeoutId);
+          done = true;
+          self.currentProcess = null;
+
+          if (error.code === 'ENOENT') {
+            processError = new Error('Claude Code CLI not found. Install from ' + CLAUDE_DOWNLOAD_URL);
+          } else {
+            processError = error;
+          }
+
+          if (rejectNext) {
+            rejectNext(processError);
+            rejectNext = null;
+          }
+        });
+
+        proc.on('close', (code) => {
+          if (timeoutId) clearTimeout(timeoutId);
+          done = true;
+          self.currentProcess = null;
+
+          if (code !== 0 && !processError) {
+            const errorMsg = stderr.trim() || 'Claude Code exited with error';
+            processError = new Error(errorMsg);
+          }
+
+          if (resolveNext) {
+            if (processError) {
+              if (rejectNext) {
+                rejectNext(processError);
+                rejectNext = null;
+              }
+            } else {
+              resolveNext({ value: undefined as any, done: true });
+            }
+            resolveNext = null;
+          }
+        });
+
+        return {
+          async next(): Promise<IteratorResult<string>> {
+            // If we have buffered chunks, return them
+            if (chunks.length > 0) {
+              return { value: chunks.shift()!, done: false };
+            }
+
+            // If process is done
+            if (done) {
+              if (processError) {
+                throw processError;
+              }
+              return { value: undefined as any, done: true };
+            }
+
+            // Wait for next chunk
+            return new Promise((resolve, reject) => {
+              resolveNext = resolve;
+              rejectNext = reject;
+            });
+          },
+
+          async return(): Promise<IteratorResult<string>> {
+            if (timeoutId) clearTimeout(timeoutId);
+            if (proc && !done) {
+              proc.kill();
+            }
+            done = true;
+            self.currentProcess = null;
+            return { value: undefined as any, done: true };
+          },
+        };
+      },
     };
+  }
+
+  /**
+   * Abort the current chat request
+   */
+  abort(): void {
+    if (this.currentProcess) {
+      this.currentProcess.kill();
+      this.currentProcess = null;
+    }
   }
 }
 
@@ -347,10 +259,17 @@ let chatServiceInstance: ChatService | null = null;
  * Get or create chat service instance
  */
 export function getChatService(projectRoot: string): ChatService {
-  if (!chatServiceInstance || chatServiceInstance['projectRoot'] !== projectRoot) {
+  if (!chatServiceInstance || (chatServiceInstance as any).projectRoot !== projectRoot) {
     chatServiceInstance = new ChatService(projectRoot);
   }
   return chatServiceInstance;
+}
+
+/**
+ * Reset singleton instance (for testing)
+ */
+export function resetChatService(): void {
+  chatServiceInstance = null;
 }
 
 export default ChatService;
