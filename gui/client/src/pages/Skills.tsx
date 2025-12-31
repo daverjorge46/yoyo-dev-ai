@@ -73,6 +73,22 @@ async function fetchSkillDetail(id: string): Promise<SkillDetail> {
   return res.json();
 }
 
+async function updateSkill(id: string, content: string): Promise<void> {
+  const res = await fetch(`/api/skills/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content }),
+  });
+  if (!res.ok) throw new Error('Failed to update skill');
+}
+
+async function deleteSkill(id: string): Promise<void> {
+  const res = await fetch(`/api/skills/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) throw new Error('Failed to delete skill');
+}
+
 // =============================================================================
 // Stat Card Component
 // =============================================================================
@@ -302,14 +318,62 @@ function SkillCard({
 // Skill Detail View Component
 // =============================================================================
 
-function SkillDetailView({ skillId }: { skillId: string }) {
+function SkillDetailView({
+  skillId,
+  onDeleted,
+}: {
+  skillId: string;
+  onDeleted?: () => void;
+}) {
   const [showFullContent, setShowFullContent] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedContent, setEditedContent] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const queryClient = useQueryClient();
 
   const { data: skill, isLoading } = useQuery({
     queryKey: ['skill', skillId],
     queryFn: () => fetchSkillDetail(skillId),
     enabled: !!skillId,
   });
+
+  const updateMutation = useMutation({
+    mutationFn: (content: string) => updateSkill(skillId, content),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skill', skillId] });
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      setIsEditing(false);
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteSkill(skillId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['skills'] });
+      setShowDeleteConfirm(false);
+      onDeleted?.();
+    },
+  });
+
+  const handleEdit = () => {
+    if (skill) {
+      setEditedContent(skill.content);
+      setIsEditing(true);
+    }
+  };
+
+  const handleSave = () => {
+    updateMutation.mutate(editedContent);
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setEditedContent('');
+  };
+
+  const handleDelete = () => {
+    deleteMutation.mutate();
+  };
 
   if (isLoading) {
     return (
@@ -332,6 +396,7 @@ function SkillDetailView({ skillId }: { skillId: string }) {
 
   return (
     <div className="space-y-6">
+      {/* Header with action buttons */}
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -341,8 +406,61 @@ function SkillDetailView({ skillId }: { skillId: string }) {
             {skill.id}
           </p>
         </div>
-        {skill.stats && <SuccessRateBadge rate={skill.stats.successRate} />}
+        <div className="flex items-center gap-2">
+          {skill.stats && <SuccessRateBadge rate={skill.stats.successRate} />}
+          {!isEditing && (
+            <>
+              <button
+                onClick={handleEdit}
+                className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title="Edit skill"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowDeleteConfirm(true)}
+                className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                title="Delete skill"
+              >
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </>
+          )}
+        </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              Delete Skill
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Are you sure you want to delete "{skill.name}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteMutation.isPending}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 transition-colors"
+              >
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tags */}
       {skill.tags.length > 0 && (
@@ -428,7 +546,7 @@ function SkillDetailView({ skillId }: { skillId: string }) {
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
             Content
           </h3>
-          {contentWithoutFrontmatter.length > 500 && (
+          {!isEditing && contentWithoutFrontmatter.length > 500 && (
             <button
               onClick={() => setShowFullContent(!showFullContent)}
               className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
@@ -437,16 +555,63 @@ function SkillDetailView({ skillId }: { skillId: string }) {
             </button>
           )}
         </div>
-        <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 overflow-auto max-h-96">
-          <div className="prose prose-sm dark:prose-invert max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {showFullContent
-                ? contentWithoutFrontmatter
-                : contentWithoutFrontmatter.slice(0, 500) + (contentWithoutFrontmatter.length > 500 ? '...' : '')
-              }
-            </ReactMarkdown>
+
+        {isEditing ? (
+          <div className="space-y-3">
+            <textarea
+              value={editedContent}
+              onChange={(e) => setEditedContent(e.target.value)}
+              className="w-full h-96 p-4 font-mono text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+              placeholder="Enter skill content in markdown..."
+            />
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCancel}
+                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSave}
+                disabled={updateMutation.isPending}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+              >
+                {updateMutation.isPending ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                    Save
+                  </>
+                )}
+              </button>
+            </div>
+            {updateMutation.isError && (
+              <p className="text-sm text-red-600 dark:text-red-400">
+                Failed to save. Please try again.
+              </p>
+            )}
           </div>
-        </div>
+        ) : (
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 overflow-auto max-h-96">
+            <div className="prose prose-sm dark:prose-invert max-w-none">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {showFullContent
+                  ? contentWithoutFrontmatter
+                  : contentWithoutFrontmatter.slice(0, 500) + (contentWithoutFrontmatter.length > 500 ? '...' : '')
+                }
+              </ReactMarkdown>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -663,7 +828,10 @@ export default function Skills() {
             <div className="lg:col-span-2">
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sticky top-6">
                 {selectedSkill ? (
-                  <SkillDetailView skillId={selectedSkill} />
+                  <SkillDetailView
+                    skillId={selectedSkill}
+                    onDeleted={() => setSelectedSkill(null)}
+                  />
                 ) : (
                   <div className="text-center text-gray-500 dark:text-gray-400 py-8">
                     <svg className="h-12 w-12 mx-auto mb-4 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">

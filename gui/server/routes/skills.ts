@@ -5,7 +5,7 @@
  */
 
 import { Hono } from 'hono';
-import { existsSync, readdirSync, readFileSync } from 'fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import Database from 'better-sqlite3';
 import type { Variables } from '../types.js';
@@ -357,4 +357,53 @@ skillsRoutes.get('/:id', (c) => {
     content: content,
     stats,
   });
+});
+
+// PUT /api/skills/:id - Update skill content
+skillsRoutes.put('/:id', async (c) => {
+  const projectRoot = c.get('projectRoot') || process.cwd();
+  const skillId = c.req.param('id');
+
+  const skillsDir = getSkillsDir(projectRoot);
+  const filename = `${skillId}.md`;
+  const skillPath = join(skillsDir, filename);
+
+  if (!existsSync(skillPath)) {
+    return c.json({ error: 'Skill not found' }, 404);
+  }
+
+  try {
+    const body = await c.req.json<{ content: string }>();
+
+    if (!body.content || typeof body.content !== 'string') {
+      return c.json({ error: 'Content is required' }, 400);
+    }
+
+    writeFileSync(skillPath, body.content, 'utf-8');
+
+    return c.json({ success: true, message: 'Skill updated successfully' });
+  } catch (error) {
+    return c.json({ error: 'Failed to update skill' }, 500);
+  }
+});
+
+// DELETE /api/skills/:id - Delete a skill
+skillsRoutes.delete('/:id', (c) => {
+  const projectRoot = c.get('projectRoot') || process.cwd();
+  const skillId = c.req.param('id');
+
+  const skillsDir = getSkillsDir(projectRoot);
+  const filename = `${skillId}.md`;
+  const skillPath = join(skillsDir, filename);
+
+  if (!existsSync(skillPath)) {
+    return c.json({ error: 'Skill not found' }, 404);
+  }
+
+  try {
+    unlinkSync(skillPath);
+    return c.json({ success: true, message: 'Skill deleted successfully' });
+  } catch (error) {
+    return c.json({ error: 'Failed to delete skill' }, 500);
+  }
 });
