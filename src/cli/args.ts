@@ -5,6 +5,7 @@
  */
 
 import { Command } from 'commander';
+import { createRequire } from 'node:module';
 import type { CLIArgs, OutputFormat } from './types.js';
 
 // =============================================================================
@@ -12,7 +13,19 @@ import type { CLIArgs, OutputFormat } from './types.js';
 // =============================================================================
 
 /** CLI version */
-export const VERSION = '4.0.0-alpha.1';
+const require = createRequire(import.meta.url);
+let resolvedVersion = '5.0.0';
+
+try {
+  const pkg = require('../../package.json') as { version?: string };
+  if (pkg.version) {
+    resolvedVersion = pkg.version;
+  }
+} catch {
+  // Fallback to the bundled version when package.json is unavailable
+}
+
+export const VERSION = resolvedVersion;
 
 // =============================================================================
 // Argument Parsing

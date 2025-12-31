@@ -25,6 +25,7 @@ import type {
 } from './types.js';
 import {
   saveBlock as storeSaveBlock,
+  importBlock as storeImportBlock,
   getBlock as storeGetBlock,
   getAllBlocks as storeGetAllBlocks,
   deleteBlock as storeDeleteBlock,
@@ -370,7 +371,13 @@ export class MemoryService extends EventEmitter {
    * @returns Export data
    */
   exportMemory(filePath?: string): MemoryExport {
-    const blocks = this.getAllBlocks();
+    const projectStore = this.scopeManager.getProjectStore();
+    const globalStore = this.scopeManager.getGlobalStore();
+
+    const blocks = [
+      ...storeGetAllBlocks(globalStore, 'global'),
+      ...storeGetAllBlocks(projectStore, 'project'),
+    ];
 
     const exportData: MemoryExport = {
       version: 1,
@@ -408,8 +415,20 @@ export class MemoryService extends EventEmitter {
       data = dataOrPath;
     }
 
+    const projectStore = this.scopeManager.getProjectStore();
+    const globalStore = this.scopeManager.getGlobalStore();
+
     for (const block of data.blocks) {
-      this.saveBlock(block.type, block.content, block.scope);
+      const targetStore = block.scope === 'global' ? globalStore : projectStore;
+      storeImportBlock(targetStore, {
+        id: block.id,
+        type: block.type,
+        scope: block.scope,
+        content: block.content,
+        version: block.version,
+        createdAt: block.createdAt,
+        updatedAt: block.updatedAt,
+      });
     }
   }
 

@@ -66,6 +66,7 @@ export {
   // Store types
   type MemoryStore,
   type SaveBlockInput,
+  type ImportBlockInput,
   type CreateAgentInput,
   type Migration,
 
@@ -80,6 +81,7 @@ export {
 
   // Memory block operations
   saveBlock,
+  importBlock,
   getBlock,
   getAllBlocks,
   deleteBlock,

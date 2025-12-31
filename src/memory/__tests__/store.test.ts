@@ -13,6 +13,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { existsSync, unlinkSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
+import { MemoryService } from '../service.js';
 import {
   initializeDatabase,
   closeDatabase,
@@ -27,6 +28,7 @@ import {
   getAgent,
   updateAgentLastUsed,
   getSchemaVersion,
+  importBlock,
   type MemoryStore,
 } from '../store.js';
 import type {
@@ -234,6 +236,78 @@ describe('Memory Block Operations', () => {
       expect(block2.id).toBe(block1.id);
       expect(block2.version).toBe(2);
       expect(block2.content).toEqual(updatedContent);
+    });
+  });
+
+  describe('importBlock', () => {
+    it('should import a block preserving id and timestamps', () => {
+      const createdAt = '2024-01-01T00:00:00.000Z';
+      const updatedAt = '2024-01-02T00:00:00.000Z';
+
+      const imported = importBlock(store, {
+        id: 'import-id',
+        type: 'persona',
+        scope: 'project',
+        content: {
+          name: 'Imported',
+          traits: ['concise'],
+          communication_style: 'technical',
+          expertise_areas: ['TypeScript'],
+        },
+        version: 3,
+        createdAt,
+        updatedAt,
+      });
+
+      expect(imported.id).toBe('import-id');
+      expect(imported.version).toBe(3);
+      expect(imported.createdAt.toISOString()).toBe(createdAt);
+      expect(imported.updatedAt.toISOString()).toBe(updatedAt);
+    });
+
+    it('should replace existing block for same type and scope', () => {
+      const initial = saveBlock(store, {
+        type: 'persona',
+        scope: 'project',
+        content: {
+          name: 'Original',
+          traits: ['helpful'],
+          communication_style: 'friendly',
+          expertise_areas: ['Python'],
+        } as PersonaContent,
+      });
+
+      const updated = importBlock(store, {
+        id: 'replacement-id',
+        type: 'persona',
+        scope: 'project',
+        content: {
+          name: 'Replacement',
+          traits: ['direct'],
+          communication_style: 'concise',
+          expertise_areas: ['Go'],
+        },
+        version: 5,
+        createdAt: '2024-02-01T00:00:00.000Z',
+        updatedAt: '2024-02-02T00:00:00.000Z',
+      });
+
+      expect(updated.id).toBe('replacement-id');
+      expect(updated.version).toBe(5);
+      expect(updated.content).toEqual({
+        name: 'Replacement',
+        traits: ['direct'],
+        communication_style: 'concise',
+        expertise_areas: ['Go'],
+      });
+
+      const persisted = getBlock(store, 'persona', 'project');
+      expect(persisted?.id).toBe('replacement-id');
+      expect(persisted?.version).toBe(5);
+      expect(persisted?.createdAt.toISOString()).toBe('2024-02-01T00:00:00.000Z');
+      expect(persisted?.updatedAt.toISOString()).toBe('2024-02-02T00:00:00.000Z');
+      expect(persisted?.content).toEqual(updated.content);
+      expect(persisted?.id).not.toBe(initial.id);
     });
   });
 
@@ -501,5 +575,65 @@ describe('Agent Operations', () => {
       const updated = getAgent(store, agent.id);
       expect(updated?.lastUsed.getTime()).toBeGreaterThan(originalLastUsed.getTime());
     });
+  });
+});
+
+describe('Memory export/import integration', () => {
+  it('should export both scopes and preserve ids on import', () => {
+    const sourceDir = createTestDir();
+    const sourceGlobalPath = join(sourceDir, 'global-memory');
+    const destDir = createTestDir();
+    const destGlobalPath = join(destDir, 'global-memory');
+
+    const sourceService = new MemoryService({
+      projectRoot: sourceDir,
+      globalPath: sourceGlobalPath,
+    });
+    let destService: MemoryService | null = null;
+
+    try {
+      sourceService.initialize();
+
+      const globalBlock = sourceService.saveBlock(
+        'persona',
+        {
+          name: 'Global Persona',
+          traits: ['calm'],
+          communication_style: 'friendly',
+          expertise_areas: ['Docs'],
+        },
+        'global'
+      );
+      const projectBlock = sourceService.saveBlock('project', {
+        name: 'Project Block',
+        description: 'Project export test',
+        tech_stack: { language: 'TS', framework: 'Node' },
+        architecture: 'monolith',
+        patterns: [],
+        key_directories: {},
+      });
+
+      const exportData = sourceService.exportMemory();
+
+      destService = new MemoryService({
+        projectRoot: destDir,
+        globalPath: destGlobalPath,
+      });
+      destService.initialize();
+      destService.importMemory(exportData);
+
+      const importedGlobal = destService.getBlock('persona', 'global');
+      const importedProject = destService.getBlock('project', 'project');
+
+      expect(importedGlobal?.id).toBe(globalBlock.id);
+      expect(importedProject?.id).toBe(projectBlock.id);
+    } finally {
+      sourceService.close();
+      if (destService) {
+        destService.close();
+      }
+      cleanupTestDir(sourceDir);
+      cleanupTestDir(destDir);
+    }
   });
 });
