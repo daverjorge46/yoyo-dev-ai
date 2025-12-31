@@ -1,6 +1,8 @@
 # Python Development Expert
 
-Expert in Python development with focus on virtual environments, dependency management, Textual TUI applications, and modern Python best practices.
+Build Python applications with virtual environments, Textual TUIs, async patterns, and modern tooling.
+
+**Keywords:** python, pip, venv, virtualenv, requirements.txt, textual, rich, asyncio, pytest, import error, module not found
 
 ## When to use this skill
 

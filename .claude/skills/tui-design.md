@@ -1,6 +1,8 @@
 # TUI Design & UX Expert
 
-Expert in designing intuitive, performant Terminal User Interfaces (TUI) using Textual framework with focus on user experience and accessibility.
+Design and build terminal user interfaces with layouts, widgets, keyboard navigation, and responsive styling.
+
+**Keywords:** tui, terminal ui, textual css, widget, layout, panel, screen, keyboard shortcuts, bindings, focus, styling, colors, theme
 
 ## When to use this skill
 

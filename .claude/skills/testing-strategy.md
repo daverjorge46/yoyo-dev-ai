@@ -1,6 +1,8 @@
 # Testing Strategy Expert
 
-Expert in designing comprehensive test strategies with focus on TDD, integration testing, and regression test suites for bash and Python projects.
+Write tests using TDD, pytest, and bash testing patterns with mocking, fixtures, and coverage analysis.
+
+**Keywords:** test, tdd, pytest, unit test, integration test, mock, fixture, coverage, flaky test, failing test, test strategy, regression
 
 ## When to use this skill
 

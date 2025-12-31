@@ -1,6 +1,8 @@
 # Bash Scripting Expert
 
-Expert in writing robust, maintainable bash scripts with proper error handling, validation, and best practices.
+Write, debug, and optimize bash scripts with error handling, validation, and cross-platform compatibility.
+
+**Keywords:** bash, shell, script, sh, automation, setup script, installer, CLI tool, exit code, shebang
 
 ## When to use this skill
 
