@@ -82,6 +82,61 @@ chatRoutes.post('/', async (c) => {
 });
 
 /**
+ * POST /api/chat/configure
+ *
+ * Configure API key for chat service.
+ */
+chatRoutes.post('/configure', async (c) => {
+  const projectRoot = c.get('projectRoot') || process.cwd();
+
+  try {
+    // Parse request body
+    const body = await c.req.json<{ apiKey?: unknown }>();
+
+    // Validate apiKey field exists
+    if (body.apiKey === undefined || body.apiKey === null) {
+      return c.json(
+        { error: 'API key is required' },
+        400
+      );
+    }
+
+    // Validate apiKey is string
+    if (typeof body.apiKey !== 'string') {
+      return c.json(
+        { error: 'API key must be a string' },
+        400
+      );
+    }
+
+    // Get chat service
+    const chatService = getChatService(projectRoot);
+
+    // Update API key (service will validate if it's valid)
+    const success = await chatService.updateApiKey(body.apiKey);
+
+    if (success) {
+      return c.json({ success: true });
+    } else {
+      return c.json({
+        success: false,
+        error: 'Invalid API key or configuration failed',
+      });
+    }
+  } catch (error) {
+    console.error('[Chat API] Configuration error:', error);
+
+    const errorMessage =
+      error instanceof Error ? error.message : 'Internal server error';
+
+    return c.json(
+      { error: errorMessage },
+      500
+    );
+  }
+});
+
+/**
  * GET /api/chat/status
  *
  * Check if chat service is available.

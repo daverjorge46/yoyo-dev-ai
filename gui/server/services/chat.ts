@@ -83,6 +83,47 @@ export class ChatService {
   }
 
   /**
+   * Update API key and reinitialize client
+   * @param apiKey - The new Anthropic API key
+   * @returns Promise<boolean> - true if key is valid and client initialized, false otherwise
+   */
+  async updateApiKey(apiKey: string): Promise<boolean> {
+    try {
+      // Validate API key format
+      if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length === 0) {
+        this.client = null;
+        return false;
+      }
+
+      // Create new Anthropic client
+      const newClient = new Anthropic({
+        apiKey: apiKey.trim(),
+      });
+
+      // Validate API key with test request (lightweight validation)
+      await newClient.messages.create({
+        model: MODEL,
+        max_tokens: 10,
+        messages: [
+          {
+            role: 'user',
+            content: 'test',
+          },
+        ],
+      });
+
+      // If validation succeeds, update the client
+      this.client = newClient;
+      return true;
+    } catch (error) {
+      // API key is invalid or request failed
+      console.error('[ChatService] API key validation failed:', error instanceof Error ? error.message : error);
+      this.client = null;
+      return false;
+    }
+  }
+
+  /**
    * Send a chat message and get a response
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {

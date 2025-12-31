@@ -11,9 +11,11 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, Trash2, RefreshCw, MessageSquare, AlertCircle, Loader2 } from 'lucide-react';
+import { Send, Trash2, RefreshCw, MessageSquare, AlertCircle, Loader2, Settings } from 'lucide-react';
 import { ChatMessage } from './ChatMessage';
+import { ApiKeySettings } from './ApiKeySettings';
 import { useChat } from '../../hooks/useChat';
+import { useChatConfig } from '../../hooks/useChatConfig';
 
 // =============================================================================
 // Types
@@ -30,6 +32,7 @@ export interface CodebaseChatProps {
 
 export function CodebaseChat({ className = '' }: CodebaseChatProps) {
   const [input, setInput] = useState('');
+  const [showSettings, setShowSettings] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -41,6 +44,12 @@ export function CodebaseChat({ className = '' }: CodebaseChatProps) {
     clearHistory,
     retry,
   } = useChat();
+
+  const {
+    isConfigured,
+    isLoading: isConfiguringKey,
+    configureApiKey,
+  } = useChatConfig();
 
   // Scroll to bottom when new messages arrive
   useEffect(() => {
@@ -89,8 +98,19 @@ export function CodebaseChat({ className = '' }: CodebaseChatProps) {
     textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
   }, []);
 
+  // Handle API key configuration
+  const handleConfigureApiKey = useCallback(async (apiKey: string) => {
+    await configureApiKey(apiKey);
+  }, [configureApiKey]);
+
+  // Handle successful API key configuration
+  const handleConfigSuccess = useCallback(() => {
+    setShowSettings(false);
+  }, []);
+
   const hasMessages = messages.length > 0;
   const canSend = input.trim().length > 0 && !isLoading;
+  const shouldShowSettings = !isConfigured || showSettings;
 
   return (
     <div
@@ -115,24 +135,46 @@ export function CodebaseChat({ className = '' }: CodebaseChatProps) {
           </h2>
         </div>
 
-        {/* Clear history button */}
-        <button
-          onClick={clearHistory}
-          disabled={!hasMessages}
-          className="
-            flex items-center gap-1.5
-            px-2 py-1 rounded
-            text-sm font-medium
-            text-gray-600 dark:text-gray-400
-            hover:bg-gray-100 dark:hover:bg-gray-700
-            disabled:opacity-50 disabled:cursor-not-allowed
-            transition-colors duration-150
-          "
-          aria-label="Clear chat history"
-        >
-          <Trash2 className="h-4 w-4" />
-          <span className="hidden sm:inline">Clear</span>
-        </button>
+        {/* Header actions */}
+        <div className="flex items-center gap-2">
+          {/* Settings button */}
+          {isConfigured && (
+            <button
+              onClick={() => setShowSettings(!showSettings)}
+              className="
+                flex items-center gap-1.5
+                px-2 py-1 rounded
+                text-sm font-medium
+                text-gray-600 dark:text-gray-400
+                hover:bg-gray-100 dark:hover:bg-gray-700
+                transition-colors duration-150
+              "
+              aria-label="Toggle settings"
+            >
+              <Settings className="h-4 w-4" />
+              <span className="hidden sm:inline">Settings</span>
+            </button>
+          )}
+
+          {/* Clear history button */}
+          <button
+            onClick={clearHistory}
+            disabled={!hasMessages}
+            className="
+              flex items-center gap-1.5
+              px-2 py-1 rounded
+              text-sm font-medium
+              text-gray-600 dark:text-gray-400
+              hover:bg-gray-100 dark:hover:bg-gray-700
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-colors duration-150
+            "
+            aria-label="Clear chat history"
+          >
+            <Trash2 className="h-4 w-4" />
+            <span className="hidden sm:inline">Clear</span>
+          </button>
+        </div>
       </div>
 
       {/* Messages area */}
@@ -146,8 +188,20 @@ export function CodebaseChat({ className = '' }: CodebaseChatProps) {
         aria-live="polite"
         aria-label="Chat messages"
       >
-        {/* Empty state */}
-        {!hasMessages && !isLoading && (
+        {/* API Key Settings */}
+        {shouldShowSettings ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="w-full max-w-md">
+              <ApiKeySettings
+                onSave={handleConfigureApiKey}
+                onSuccess={handleConfigSuccess}
+              />
+            </div>
+          </div>
+        ) : (
+          <>
+            {/* Empty state */}
+            {!hasMessages && !isLoading && (
           <div className="flex flex-col items-center justify-center h-full text-center py-8">
             <div
               className="
@@ -254,8 +308,10 @@ export function CodebaseChat({ className = '' }: CodebaseChatProps) {
           </div>
         )}
 
-        {/* Scroll anchor */}
-        <div ref={messagesEndRef} />
+            {/* Scroll anchor */}
+            <div ref={messagesEndRef} />
+          </>
+        )}
       </div>
 
       {/* Input area */}

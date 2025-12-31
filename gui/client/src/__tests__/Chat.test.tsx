@@ -319,6 +319,8 @@ describe('CodebaseChat', () => {
   beforeEach(() => {
     localStorage.clear();
     vi.clearAllMocks();
+    // Set mock API key so chat is configured
+    localStorage.setItem('YOYO_CHAT_API_KEY', 'sk-ant-test-key-mock');
   });
 
   afterEach(() => {
