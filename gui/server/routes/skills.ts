@@ -52,7 +52,8 @@ function getSkillsDbPath(projectRoot: string): string {
 }
 
 function getSkillsDir(projectRoot: string): string {
-  return join(projectRoot, '.yoyo-ai', '.skills');
+  // Skills are stored in .claude/skills/ directory (Claude Code convention)
+  return join(projectRoot, '.claude', 'skills');
 }
 
 function getDatabase(projectRoot: string): Database.Database | null {
@@ -63,54 +64,91 @@ function getDatabase(projectRoot: string): Database.Database | null {
   return new Database(dbPath);
 }
 
-function parseSkillFile(content: string): Partial<SkillSummary> | null {
-  // Parse YAML frontmatter from markdown
-  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
-  if (!frontmatterMatch) {
-    return null;
-  }
-
-  const frontmatter = frontmatterMatch[1];
+function parseSkillFile(content: string, filename: string): Partial<SkillSummary> | null {
   const result: Partial<SkillSummary> = {};
 
-  // Parse simple YAML
-  const lines = frontmatter.split('\n');
-  for (const line of lines) {
-    const [key, ...valueParts] = line.split(':');
-    if (!key || valueParts.length === 0) continue;
+  // Try YAML frontmatter first
+  const frontmatterMatch = content.match(/^---\n([\s\S]*?)\n---/);
+  if (frontmatterMatch) {
+    const frontmatter = frontmatterMatch[1];
+    const lines = frontmatter.split('\n');
+    for (const line of lines) {
+      const [key, ...valueParts] = line.split(':');
+      if (!key || valueParts.length === 0) continue;
 
-    const value = valueParts.join(':').trim();
+      const value = valueParts.join(':').trim();
 
-    switch (key.trim()) {
-      case 'id':
-        result.id = value;
-        break;
-      case 'name':
-        result.name = value;
-        break;
-      case 'successRate':
-        result.successRate = parseFloat(value) || 0;
-        break;
-      case 'usageCount':
-        result.usageCount = parseInt(value, 10) || 0;
-        break;
-      case 'tags':
-        // Parse YAML array: [tag1, tag2]
-        const tagMatch = value.match(/\[(.*)\]/);
-        if (tagMatch) {
-          result.tags = tagMatch[1].split(',').map(t => t.trim().replace(/['"]/g, ''));
-        }
-        break;
-      case 'triggers':
-        const triggerMatch = value.match(/\[(.*)\]/);
-        if (triggerMatch) {
-          result.triggers = triggerMatch[1].split(',').map(t => t.trim().replace(/['"]/g, ''));
-        }
-        break;
+      switch (key.trim()) {
+        case 'id':
+          result.id = value;
+          break;
+        case 'name':
+          result.name = value;
+          break;
+        case 'successRate':
+          result.successRate = parseFloat(value) || 0;
+          break;
+        case 'usageCount':
+          result.usageCount = parseInt(value, 10) || 0;
+          break;
+        case 'tags':
+          const tagMatch = value.match(/\[(.*)\]/);
+          if (tagMatch) {
+            result.tags = tagMatch[1].split(',').map(t => t.trim().replace(/['"]/g, ''));
+          }
+          break;
+        case 'triggers':
+          const triggerMatch = value.match(/\[(.*)\]/);
+          if (triggerMatch) {
+            result.triggers = triggerMatch[1].split(',').map(t => t.trim().replace(/['"]/g, ''));
+          }
+          break;
+      }
     }
   }
 
-  return result;
+  // Fallback: Parse markdown format (# Title, **Keywords:** ...)
+  // Extract name from first H1 heading
+  if (!result.name) {
+    const titleMatch = content.match(/^#\s+(.+)$/m);
+    if (titleMatch) {
+      result.name = titleMatch[1].trim();
+    }
+  }
+
+  // Generate ID from filename if not set
+  if (!result.id) {
+    result.id = filename.replace(/\.md$/, '');
+  }
+
+  // Extract keywords/triggers from **Keywords:** line
+  if (!result.triggers || result.triggers.length === 0) {
+    const keywordsMatch = content.match(/\*\*Keywords:\*\*\s*(.+)$/m);
+    if (keywordsMatch) {
+      result.triggers = keywordsMatch[1].split(',').map(k => k.trim());
+    }
+  }
+
+  // Extract tags from "## What I'll help with" or "## Key Expertise" sections
+  if (!result.tags || result.tags.length === 0) {
+    const tags: string[] = [];
+
+    // Look for section headers to derive tags
+    if (content.includes('bash') || content.includes('shell')) tags.push('bash');
+    if (content.includes('python') || content.includes('pip')) tags.push('python');
+    if (content.includes('git') || content.includes('commit')) tags.push('git');
+    if (content.includes('test') || content.includes('pytest')) tags.push('testing');
+    if (content.includes('tui') || content.includes('textual')) tags.push('tui');
+
+    result.tags = tags;
+  }
+
+  // Only return if we have at least id and name
+  if (result.id && result.name) {
+    return result;
+  }
+
+  return null;
 }
 
 function getSkillsFromFiles(projectRoot: string): SkillSummary[] {
@@ -123,11 +161,11 @@ function getSkillsFromFiles(projectRoot: string): SkillSummary[] {
 
   try {
     const files = readdirSync(skillsDir)
-      .filter(f => f.endsWith('.md') && f !== 'README.md');
+      .filter(f => f.endsWith('.md') && f !== 'README.md' && !f.startsWith('optimization-report'));
 
     for (const file of files) {
       const content = readFileSync(join(skillsDir, file), 'utf-8');
-      const parsed = parseSkillFile(content);
+      const parsed = parseSkillFile(content, file);
       if (parsed && parsed.id && parsed.name) {
         skills.push({
           id: parsed.id,
@@ -273,14 +311,15 @@ skillsRoutes.get('/:id', (c) => {
   const skillId = c.req.param('id');
 
   const skillsDir = getSkillsDir(projectRoot);
-  const skillPath = join(skillsDir, `${skillId}.md`);
+  const filename = `${skillId}.md`;
+  const skillPath = join(skillsDir, filename);
 
   if (!existsSync(skillPath)) {
     return c.json({ error: 'Skill not found' }, 404);
   }
 
   const content = readFileSync(skillPath, 'utf-8');
-  const parsed = parseSkillFile(content);
+  const parsed = parseSkillFile(content, filename);
 
   if (!parsed) {
     return c.json({ error: 'Invalid skill file' }, 500);
