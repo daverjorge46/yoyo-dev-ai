@@ -366,12 +366,17 @@ describe('CodebaseChat', () => {
   });
 
   describe('rendering', () => {
-    it('should render chat input field', () => {
+    it('should render chat input field', async () => {
       render(
         <TestWrapper>
           <CodebaseChat />
         </TestWrapper>
       );
+
+      // Wait for availability check to complete
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
 
       const input = screen.getByPlaceholderText(/ask.*codebase/i);
       expect(input).toBeInTheDocument();
@@ -388,12 +393,17 @@ describe('CodebaseChat', () => {
       expect(sendButton).toBeInTheDocument();
     });
 
-    it('should show empty state when no messages', () => {
+    it('should show empty state when no messages', async () => {
       render(
         <TestWrapper>
           <CodebaseChat />
         </TestWrapper>
       );
+
+      // Wait for availability check to complete
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
 
       expect(screen.getByText(/ask questions/i)).toBeInTheDocument();
     });
@@ -406,6 +416,11 @@ describe('CodebaseChat', () => {
           <CodebaseChat />
         </TestWrapper>
       );
+
+      // Wait for availability check to complete
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
 
       const input = screen.getByPlaceholderText(/ask.*codebase/i);
       const sendButton = screen.getByRole('button', { name: /send/i });
@@ -514,20 +529,16 @@ describe('CodebaseChat', () => {
 
   describe('chat history', () => {
     it('should persist chat history to localStorage', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            response: 'Test response',
-            references: [],
-          }),
-      });
-
       render(
         <TestWrapper>
           <CodebaseChat />
         </TestWrapper>
       );
+
+      // Wait for availability check to complete
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
 
       const input = screen.getByPlaceholderText(/ask.*codebase/i);
       await userEvent.type(input, 'Test question');
@@ -543,7 +554,7 @@ describe('CodebaseChat', () => {
       });
     });
 
-    it('should load chat history from localStorage on mount', () => {
+    it('should load chat history from localStorage on mount', async () => {
       const mockHistory = [
         { id: '1', role: 'user', content: 'Previous question', timestamp: Date.now() },
         { id: '2', role: 'assistant', content: 'Previous answer', timestamp: Date.now() },
@@ -555,6 +566,11 @@ describe('CodebaseChat', () => {
           <CodebaseChat />
         </TestWrapper>
       );
+
+      // Wait for availability check to complete
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
 
       expect(screen.getByText('Previous question')).toBeInTheDocument();
       expect(screen.getByText('Previous answer')).toBeInTheDocument();
@@ -574,9 +590,22 @@ describe('CodebaseChat', () => {
 
   describe('error handling', () => {
     it('should display error message when API fails', async () => {
-      global.fetch = vi.fn().mockResolvedValue({
-        ok: false,
-        json: () => Promise.resolve({ error: 'API Error' }),
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ available: true, version: '2.0.76' }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        // Chat endpoint returns error
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({ error: 'API Error' }),
+            { status: 400, headers: { 'Content-Type': 'application/json' } }
+          )
+        );
       });
 
       render(
@@ -585,13 +614,18 @@ describe('CodebaseChat', () => {
         </TestWrapper>
       );
 
+      // Wait for availability check to complete
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
+
       const input = screen.getByPlaceholderText(/ask.*codebase/i);
       await userEvent.type(input, 'Test question');
 
       const sendButton = screen.getByRole('button', { name: /send/i });
       await userEvent.click(sendButton);
 
-      // Wait for the mutation to fail and error state to be set
+      // Wait for the error state to be set
       await waitFor(
         () => {
           expect(screen.getByText(/Failed to get response/i)).toBeInTheDocument();
@@ -602,39 +636,51 @@ describe('CodebaseChat', () => {
   });
 
   describe('accessibility', () => {
-    it('should have accessible form elements', () => {
+    it('should have accessible form elements', async () => {
       render(
         <TestWrapper>
           <CodebaseChat />
         </TestWrapper>
       );
+
+      // Wait for availability check to complete
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
 
       const input = screen.getByPlaceholderText(/ask.*codebase/i);
       expect(input).toHaveAttribute('aria-label');
     });
 
     it('should announce loading state to screen readers', async () => {
-      let resolveResponse: (value: unknown) => void;
-      const responsePromise = new Promise((resolve) => {
+      let resolveResponse: (value: Response) => void;
+      const responsePromise = new Promise<Response>((resolve) => {
         resolveResponse = resolve;
       });
 
-      global.fetch = vi.fn().mockReturnValue(
-        responsePromise.then(() => ({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              response: 'Test response',
-              references: [],
-            }),
-        }))
-      );
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ available: true, version: '2.0.76' }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        // Chat endpoint - return pending promise
+        return responsePromise;
+      });
 
       render(
         <TestWrapper>
           <CodebaseChat />
         </TestWrapper>
       );
+
+      // Wait for availability check to complete
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
 
       const input = screen.getByPlaceholderText(/ask.*codebase/i);
       await userEvent.type(input, 'Test question');
@@ -647,7 +693,8 @@ describe('CodebaseChat', () => {
         expect(loadingIndicator).toHaveAttribute('aria-live');
       });
 
-      resolveResponse!(undefined);
+      // Resolve with SSE response
+      resolveResponse!(createSSEResponse([JSON.stringify({ content: 'Done' })]));
     });
   });
 });
