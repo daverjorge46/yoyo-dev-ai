@@ -9,11 +9,14 @@
 import React from 'react';
 import { Box, Text } from 'ink';
 import { textStyles } from '../theme/styles.js';
-import { semanticColors } from '../theme/colors.js';
+import { semanticColors, colors } from '../theme/colors.js';
 import type { FocusablePanel } from './Layout.js';
+import type { ModeName } from '../hooks/useInputMode.js';
 
 export interface FooterProps {
   focusedPanel: FocusablePanel;
+  /** Vim-style mode indicator */
+  mode?: ModeName;
 }
 
 interface Shortcut {
@@ -21,7 +24,7 @@ interface Shortcut {
   description: string;
 }
 
-export const Footer: React.FC<FooterProps> = ({ focusedPanel }) => {
+export const Footer: React.FC<FooterProps> = ({ focusedPanel, mode = 'NORMAL' }) => {
   // Global shortcuts (always visible)
   const globalShortcuts: Shortcut[] = [
     { key: '?', description: 'help' },
@@ -44,11 +47,16 @@ export const Footer: React.FC<FooterProps> = ({ focusedPanel }) => {
     { key: 'g/G', description: 'top/bottom' },
   ];
 
-  const centerPanelShortcuts: Shortcut[] = [
-    { key: 'Ctrl+Enter', description: 'send' },
-    { key: 'Esc', description: 'clear input' },
-    { key: '↑/↓', description: 'scroll' },
-  ];
+  // Chat panel shortcuts depend on mode
+  const centerPanelShortcuts: Shortcut[] = mode === 'INSERT'
+    ? [
+        { key: 'Enter', description: 'send' },
+        { key: 'Esc', description: 'exit insert' },
+      ]
+    : [
+        { key: 'i', description: 'insert mode' },
+        { key: 'Enter', description: 'start typing' },
+      ];
 
   const rightPanelShortcuts: Shortcut[] = [
     { key: 'Ctrl+d/u', description: 'page' },
@@ -109,8 +117,19 @@ export const Footer: React.FC<FooterProps> = ({ focusedPanel }) => {
         ))}
       </Box>
 
-      {/* Panel indicator */}
-      <Box>
+      {/* Mode and Panel indicators */}
+      <Box columnGap={2}>
+        {/* Vim-style mode badge */}
+        <Box>
+          <Text
+            bold
+            color={mode === 'INSERT' ? colors.yellow : colors.green}
+            backgroundColor={mode === 'INSERT' ? colors.surface0 : undefined}
+          >
+            {` ${mode} `}
+          </Text>
+        </Box>
+        {/* Panel indicator */}
         <Text color={semanticColors.info}>
           {getPanelIndicator()}
         </Text>

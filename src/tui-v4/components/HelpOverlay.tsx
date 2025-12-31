@@ -24,25 +24,35 @@ interface Shortcut {
   description: string;
 }
 
+// Vim-style mode switching (most important - shown first)
+const MODE_SHORTCUTS: Shortcut[] = [
+  { key: 'i', description: 'Enter INSERT mode (type in chat)' },
+  { key: 'Enter', description: 'Enter INSERT mode (when on chat panel)' },
+  { key: 'Esc', description: 'Return to NORMAL mode' },
+];
+
 const GLOBAL_SHORTCUTS: Shortcut[] = [
   { key: '?', description: 'Toggle this help overlay' },
-  { key: 'q', description: 'Quit application' },
+  { key: 'q', description: 'Quit application (NORMAL mode only)' },
   { key: 'r', description: 'Refresh all data' },
   { key: '/', description: 'Open command palette' },
-  { key: 'Esc', description: 'Close modals/overlays' },
   { key: 'Ctrl+C', description: 'Force quit' },
 ];
 
 const NAVIGATION_SHORTCUTS: Shortcut[] = [
-  { key: 'h / ←', description: 'Focus left panel (tasks)' },
-  { key: 'l / →', description: 'Focus right panel (execution)' },
-  { key: 'Tab', description: 'Toggle panel focus' },
+  { key: 'h / ←', description: 'Focus left panel (NORMAL mode)' },
+  { key: 'l / →', description: 'Focus right panel (NORMAL mode)' },
+  { key: 'Tab', description: 'Cycle panels (NORMAL mode)' },
+  { key: '1/2/3', description: 'Jump to panel directly' },
   { key: 'j / ↓', description: 'Move down in task list' },
   { key: 'k / ↑', description: 'Move up in task list' },
   { key: 'g', description: 'Jump to top of list' },
   { key: 'G', description: 'Jump to bottom of list' },
-  { key: 'Enter', description: 'Expand/collapse task group' },
-  { key: 'Space', description: 'Select task' },
+];
+
+const CHAT_SHORTCUTS: Shortcut[] = [
+  { key: 'Enter', description: 'Send message (INSERT mode)' },
+  { key: 'Esc', description: 'Exit INSERT mode' },
 ];
 
 const EXECUTION_SHORTCUTS: Shortcut[] = [
@@ -84,8 +94,10 @@ export const HelpOverlay: React.FC<HelpOverlayProps> = ({ isVisible }) => {
         </Text>
       </Box>
 
+      {renderShortcutGroup('Mode Switching (vim-style)', MODE_SHORTCUTS)}
       {renderShortcutGroup('Global', GLOBAL_SHORTCUTS)}
-      {renderShortcutGroup('Navigation', NAVIGATION_SHORTCUTS)}
+      {renderShortcutGroup('Navigation (NORMAL mode)', NAVIGATION_SHORTCUTS)}
+      {renderShortcutGroup('Chat (INSERT mode)', CHAT_SHORTCUTS)}
       {renderShortcutGroup('Execution', EXECUTION_SHORTCUTS)}
 
       <Box marginTop={1} borderStyle="single" borderColor={textStyles.secondary.color} paddingX={1}>

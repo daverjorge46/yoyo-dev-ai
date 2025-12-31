@@ -21,26 +21,31 @@ interface InputAreaProps {
   onFocus?: () => void;
   /** Called when input loses focus (Escape key) */
   onBlur?: () => void;
+  /** Controlled focus state - when true, input is focused (vim INSERT mode) */
+  focus?: boolean;
 }
 
 export const InputArea: React.FC<InputAreaProps> = ({
   onSubmit,
   isLoading = false,
   isConnected = true,
-  placeholder = 'Type a message... (Enter to send)',
+  placeholder = 'Type a message... (press i to type, Enter to send)',
   maxLength = 10000,
   onFocus,
   onBlur,
+  focus: controlledFocus,
 }) => {
   const [value, setValue] = useState('');
-  const [focused, setFocused] = useState(true);
+  // Use controlled focus if provided, otherwise default to false (vim-style NORMAL mode)
+  const [internalFocused, setInternalFocused] = useState(false);
+  const focused = controlledFocus !== undefined ? controlledFocus : internalFocused;
 
-  // Notify parent of focus state changes
+  // Notify parent of focus state changes (only when controlled focus changes to true)
   React.useEffect(() => {
-    if (focused && onFocus) {
+    if (controlledFocus && onFocus) {
       onFocus();
     }
-  }, [focused, onFocus]);
+  }, [controlledFocus, onFocus]);
 
   // Handle input changes
   const handleChange = useCallback((newValue: string) => {
@@ -73,7 +78,7 @@ export const InputArea: React.FC<InputAreaProps> = ({
     // Escape to exit input mode and clear
     if (key.escape) {
       setValue('');
-      setFocused(false);
+      setInternalFocused(false);
       onBlur?.();
     }
   });

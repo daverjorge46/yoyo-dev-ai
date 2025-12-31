@@ -1,33 +1,44 @@
 /**
  * useInputMode Hook
  *
- * Tracks whether the user is currently in "input mode" (typing in a text field)
- * vs "navigation mode" (navigating between panels).
+ * Vim-style mode management for the TUI.
  *
- * When in input mode:
- * - Arrow keys, Tab, etc. should control text input
- * - Only Escape exits input mode
+ * NORMAL mode (default):
+ * - h/l/arrows/Tab switch panels
+ * - 1/2/3 direct panel access
+ * - q quits, ? shows help
+ * - 'i' or Enter enters INSERT mode
  *
- * When in navigation mode:
- * - h/l/arrows/Tab/1-2-3 switch panels
- * - Entering a text field activates input mode
+ * INSERT mode:
+ * - All keys go to text input
+ * - Escape returns to NORMAL mode
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
+
+/** Vim-style mode names */
+export type ModeName = 'NORMAL' | 'INSERT';
 
 export interface InputModeState {
-  /** Whether user is currently typing in an input field */
+  /** Whether user is currently typing in an input field (INSERT mode) */
   isInputMode: boolean;
-  /** Enter input mode (e.g., when focusing a text field) */
+  /** Vim-style mode name for display ('NORMAL' | 'INSERT') */
+  modeName: ModeName;
+  /** Enter INSERT mode (e.g., when pressing 'i' or Enter) */
   enterInputMode: () => void;
-  /** Exit input mode (e.g., when pressing Escape) */
+  /** Exit to NORMAL mode (e.g., when pressing Escape) */
   exitInputMode: () => void;
-  /** Toggle input mode */
+  /** Toggle between modes */
   toggleInputMode: () => void;
 }
 
 export function useInputMode(initialMode: boolean = false): InputModeState {
   const [isInputMode, setIsInputMode] = useState(initialMode);
+
+  // Compute vim-style mode name
+  const modeName: ModeName = useMemo(() => {
+    return isInputMode ? 'INSERT' : 'NORMAL';
+  }, [isInputMode]);
 
   const enterInputMode = useCallback(() => {
     setIsInputMode(true);
@@ -43,6 +54,7 @@ export function useInputMode(initialMode: boolean = false): InputModeState {
 
   return {
     isInputMode,
+    modeName,
     enterInputMode,
     exitInputMode,
     toggleInputMode,

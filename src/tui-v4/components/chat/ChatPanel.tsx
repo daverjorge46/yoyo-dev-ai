@@ -24,6 +24,8 @@ interface ChatPanelProps {
   onInputFocus?: () => void;
   /** Callback when input loses focus */
   onInputBlur?: () => void;
+  /** Whether input is in INSERT mode (vim-style) */
+  isInputMode?: boolean;
 }
 
 /**
@@ -40,6 +42,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
   width,
   onInputFocus,
   onInputBlur,
+  isInputMode = false,
 }) => {
   // Get terminal width for dynamic sizing
   const { stdout } = useStdout();
@@ -142,6 +145,7 @@ export const ChatPanel: React.FC<ChatPanelProps> = ({
           isConnected={isClaudeConnected}
           onFocus={onInputFocus}
           onBlur={onInputBlur}
+          focus={isInputMode}
         />
       </Box>
     </Box>

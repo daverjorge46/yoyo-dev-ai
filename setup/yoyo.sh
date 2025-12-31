@@ -245,6 +245,45 @@ check_yoyo_installed_or_install() {
 }
 
 # ============================================================================
+# GUI Launch Functions
+# ============================================================================
+
+# Launch GUI in background mode
+launch_gui_background() {
+    local gui_script="$SCRIPT_DIR/yoyo-gui.sh"
+
+    if [ ! -f "$gui_script" ]; then
+        ui_warning "GUI launcher not found at: $gui_script"
+        return 1
+    fi
+
+    ui_info "Starting GUI server in background..."
+
+    # Launch GUI in background with dev mode
+    bash "$gui_script" --dev --background --no-open
+
+    return $?
+}
+
+# Stop GUI server
+stop_gui() {
+    local gui_script="$SCRIPT_DIR/yoyo-gui.sh"
+
+    if [ -f "$gui_script" ]; then
+        bash "$gui_script" --stop
+    fi
+}
+
+# Check GUI status
+check_gui_status() {
+    local gui_script="$SCRIPT_DIR/yoyo-gui.sh"
+
+    if [ -f "$gui_script" ]; then
+        bash "$gui_script" --status
+    fi
+}
+
+# ============================================================================
 # Main Launch Logic
 # ============================================================================
 
@@ -259,7 +298,26 @@ launch_tui() {
     ui_kv "Project" "$(basename "$USER_PROJECT_DIR")"
     ui_kv "TUI Version" "v4 (TypeScript/Ink)"
     ui_kv "Config" ".yoyo-dev/config.yml"
+
+    # Show GUI status
+    if [ "$GUI_ENABLED" = true ]; then
+        ui_kv "GUI" "Enabled (port $GUI_PORT)"
+    else
+        ui_kv "GUI" "Disabled"
+    fi
     echo ""
+
+    # Launch GUI in background if enabled
+    if [ "$GUI_ENABLED" = true ]; then
+        if launch_gui_background; then
+            echo ""
+            ui_success "GUI available at http://localhost:$GUI_PORT"
+            echo ""
+        else
+            ui_warning "GUI failed to start - continuing with TUI only"
+            echo ""
+        fi
+    fi
 
     # Check TUI v4 requirements
     if ! check_typescript_tui; then
@@ -310,6 +368,12 @@ main() {
         --no-split|--no-gui)
             GUI_ENABLED=false
             launch_tui
+            ;;
+        --stop-gui)
+            stop_gui
+            ;;
+        --gui-status)
+            check_gui_status
             ;;
         launch|"")
             # Default: check config and launch appropriate TUI

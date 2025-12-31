@@ -65,7 +65,7 @@ export const App: React.FC = () => {
   } = useKeyboardShortcuts();
 
   // Input mode tracking (when user is typing vs navigating)
-  const { isInputMode, enterInputMode, exitInputMode } = useInputMode();
+  const { isInputMode, modeName, enterInputMode, exitInputMode } = useInputMode();
 
   // Connect to Claude on mount
   useEffect(() => {
@@ -100,10 +100,27 @@ export const App: React.FC = () => {
     }
   }, [shouldRefresh, refreshData]);
 
-  // Handle keyboard input for panel switching
+  // Handle keyboard input for panel switching and vim-style mode switching
   useInput((input, key) => {
-    // Don't handle navigation if modals are open or user is typing
-    if (showHelp || showCommandPalette || isInputMode) {
+    // Don't handle navigation if modals are open
+    if (showHelp || showCommandPalette) {
+      return;
+    }
+
+    // Vim-style: 'i' enters INSERT mode (focus chat input) when in NORMAL mode
+    if (input === 'i' && !isInputMode && focusedPanel === 'center') {
+      enterInputMode();
+      return;
+    }
+
+    // Enter key also enters INSERT mode when chat panel is focused
+    if (key.return && !isInputMode && focusedPanel === 'center') {
+      enterInputMode();
+      return;
+    }
+
+    // Don't handle navigation if user is in INSERT mode (typing)
+    if (isInputMode) {
       return;
     }
 
@@ -231,6 +248,7 @@ export const App: React.FC = () => {
       width={centerPanelWidth}
       onInputFocus={enterInputMode}
       onInputBlur={exitInputMode}
+      isInputMode={isInputMode}
     />
   );
 
@@ -261,8 +279,8 @@ export const App: React.FC = () => {
         />
       </Box>
 
-      {/* Footer: Keyboard shortcuts */}
-      <Footer focusedPanel={focusedPanel} />
+      {/* Footer: Keyboard shortcuts with mode indicator */}
+      <Footer focusedPanel={focusedPanel} mode={modeName} />
 
       {/* Help Overlay Modal */}
       <HelpOverlay isVisible={showHelp} onClose={closeModals} />
