@@ -27,14 +27,15 @@ The system guides AI agents through product planning, specification creation, ta
 
 ### Updating Yoyo Dev
 
-**v5.0 Consolidated Launchers:**
+**v6.0 Claude Code Native Interface:**
 
-Yoyo Dev v5.0 consolidates 10+ legacy scripts into 4 primary entry points:
+Yoyo Dev v6.0 launches Claude Code directly with native customization:
 
-1. **`yoyo`** - Launch TUI + Claude + GUI (default mode)
+1. **`yoyo`** - Launch Claude Code + Browser GUI (default mode)
 2. **`yoyo-gui`** - Launch browser GUI standalone
 3. **`yoyo-update`** - Update Yoyo Dev to latest version
 4. **`install.sh`** - Install/setup Yoyo Dev
+5. **`yoyo --legacy-tui`** - Launch deprecated TUI interface
 
 ```bash
 # Update to latest (overwrites framework files by default)
@@ -54,48 +55,49 @@ yoyo-update --skip-mcp-check
 ## Quick Start
 
 ```bash
-# Launch TUI + Claude + GUI (default)
+# Launch Claude Code + Browser GUI (default)
 yoyo
 
-# Launch TUI + Claude without GUI
+# Launch Claude Code without browser GUI
 yoyo --no-gui
 
-# Launch TUI only (no Claude, no GUI)
-yoyo --no-split
-
-# Custom split ratio
-yoyo --split-ratio 0.5
+# Open browser GUI only
+yoyo --gui-only
 
 # Stop background GUI server
 yoyo --stop-gui
+
+# Launch legacy TUI interface (deprecated)
+yoyo --legacy-tui
 
 # Launch browser GUI standalone
 yoyo-gui
 ```
 
-**Default Mode (v4.0+):**
-- Launches TUI dashboard, Claude Code, and browser GUI together
-- GUI server runs in background on port 3456
-- Access GUI at http://localhost:3456
-- Use `--no-gui` to disable browser GUI
+**Default Mode (v6.0+):**
+- Launches Claude Code directly with Yoyo Dev customizations
+- Browser GUI runs in background on port 5173
+- Access GUI at http://localhost:5173
+- Custom status line shows: git branch, active spec, task progress, MCP count
+- Custom commands: `/status`, `/specs`, `/tasks`, `/fixes`
 
-**Split View Mode (v3.1+):**
-- Integrated Claude Code CLI + TUI dashboard in split screen
-- 40/60 default split ratio (configurable)
-- Independent pane operation
-- Persistent layout across sessions
-- Auto-fallback to TUI-only if Claude not installed
-- Linux only (macOS/Windows planned)
+**Yoyo Dev Commands in Claude Code:**
+- `/status` - Project dashboard with overview, active spec, recent activity
+- `/specs` - List all specifications with status and progress
+- `/spec <n>` - View detailed specification
+- `/tasks` - Show current task breakdown with status indicators
+- `/fixes` - List bug fix records
+- `/fix <n>` - View bug fix analysis
 
 **Command Flags:**
-- `--no-gui` - Launch without browser GUI
-- `--no-split` - Launch TUI only (no Claude, no GUI)
-- `--split-ratio RATIO` - Custom split ratio (0.0-1.0)
+- `--no-gui` - Launch Claude Code without browser GUI
+- `--gui-only` - Open browser GUI only (no Claude Code)
 - `--stop-gui` - Stop background GUI server
 - `--gui-status` - Check if GUI server is running
-- `--focus PANE` - Start with focus on "claude" or "tui"
+- `--legacy-tui` - Launch deprecated TUI interface
 
-Features: Real-time task/spec tracking, live updates, interactive commands (one-click copy), keyboard shortcuts (`?` for help, `q` to quit).
+**Legacy TUI (deprecated):**
+The TUI interface from v5.0 is still available via `yoyo --legacy-tui` but is deprecated due to reliability issues. It will be removed in a future version.
 
 ## Multi-Agent Orchestration (v5.0)
 
