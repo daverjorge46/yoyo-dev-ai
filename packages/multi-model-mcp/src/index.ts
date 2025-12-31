@@ -16,6 +16,38 @@
  *   OLLAMA_HOST - Ollama server URL (default: http://localhost:11434)
  */
 
+// Load environment variables from .env file
+// Searches current directory and parent directories up to project root
+import { config } from "dotenv";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
+import { existsSync } from "fs";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Find .env file by walking up directory tree
+function findEnvFile(): string | undefined {
+  let currentDir = process.cwd();
+  const root = resolve("/");
+
+  while (currentDir !== root) {
+    const envPath = resolve(currentDir, ".env");
+    if (existsSync(envPath)) {
+      return envPath;
+    }
+    currentDir = dirname(currentDir);
+  }
+  return undefined;
+}
+
+const envPath = findEnvFile();
+if (envPath) {
+  config({ path: envPath });
+  console.error(`[multi-model-mcp] Loaded .env from: ${envPath}`);
+} else {
+  console.error("[multi-model-mcp] No .env file found, using environment variables");
+}
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";

@@ -1,1 +1,14 @@
-{"mcpServers":{"multi-model":{"command":"node","args":["packages/multi-model-mcp/dist/index.js"],"type":"stdio","env":{"OPENAI_API_KEY":"${OPENAI_API_KEY}","GOOGLE_API_KEY":"${GOOGLE_API_KEY}","OLLAMA_HOST":"${OLLAMA_HOST}"}},"MCP_DOCKER":{"command":"docker","args":["mcp","gateway","run"],"type":"stdio"}}}
+{
+  "mcpServers": {
+    "multi-model": {
+      "command": "node",
+      "args": ["packages/multi-model-mcp/dist/index.js"],
+      "type": "stdio"
+    },
+    "MCP_DOCKER": {
+      "command": "docker",
+      "args": ["mcp", "gateway", "run"],
+      "type": "stdio"
+    }
+  }
+}
