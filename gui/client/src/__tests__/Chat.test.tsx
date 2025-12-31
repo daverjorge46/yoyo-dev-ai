@@ -697,4 +697,169 @@ describe('CodebaseChat', () => {
       resolveResponse!(createSSEResponse([JSON.stringify({ content: 'Done' })]));
     });
   });
+
+  describe('connection status indicator', () => {
+    it('should show checking state while status is loading', async () => {
+      // Status endpoint returns pending promise
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return new Promise(() => {}); // Never resolves
+        }
+        return Promise.resolve(createSSEResponse([]));
+      });
+
+      render(
+        <TestWrapper>
+          <CodebaseChat />
+        </TestWrapper>
+      );
+
+      const statusIndicator = screen.getByTestId('connection-status');
+      expect(statusIndicator).toHaveAttribute('data-status', 'checking');
+      expect(screen.getByText(/checking claude code/i)).toBeInTheDocument();
+    });
+
+    it('should show available state with version when connected', async () => {
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ available: true, version: '2.0.76 (Claude Code)' }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return Promise.resolve(createSSEResponse([]));
+      });
+
+      render(
+        <TestWrapper>
+          <CodebaseChat />
+        </TestWrapper>
+      );
+
+      // Wait for availability check to complete - available state removes connection-status
+      await waitFor(() => {
+        expect(screen.queryByTestId('connection-status')).not.toBeInTheDocument();
+      });
+
+      // Should show green dot indicator in header
+      expect(screen.getByTitle('Connected')).toBeInTheDocument();
+    });
+
+    it('should show unavailable state with installation instructions', async () => {
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                available: false,
+                error: 'Claude Code CLI not found. Install from https://claude.ai/download',
+              }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return Promise.resolve(createSSEResponse([]));
+      });
+
+      render(
+        <TestWrapper>
+          <CodebaseChat />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        // With an error message, it shows 'error' status not 'unavailable'
+        const statusIndicator = screen.getByTestId('connection-status');
+        expect(statusIndicator).toHaveAttribute('data-status', 'error');
+      });
+
+      expect(screen.getByText(/not found/i)).toBeInTheDocument();
+    });
+
+    it('should show unavailable state without error message', async () => {
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ available: false }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return Promise.resolve(createSSEResponse([]));
+      });
+
+      render(
+        <TestWrapper>
+          <CodebaseChat />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        const statusIndicator = screen.getByTestId('connection-status');
+        expect(statusIndicator).toHaveAttribute('data-status', 'unavailable');
+      });
+
+      // Should show installation instructions
+      expect(screen.getByText(/install claude code/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /download/i })).toHaveAttribute(
+        'href',
+        'https://claude.ai/download'
+      );
+    });
+
+    it('should show error state when network request fails', async () => {
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.reject(new Error('Network error'));
+        }
+        return Promise.resolve(createSSEResponse([]));
+      });
+
+      render(
+        <TestWrapper>
+          <CodebaseChat />
+        </TestWrapper>
+      );
+
+      await waitFor(
+        () => {
+          const statusIndicator = screen.getByTestId('connection-status');
+          expect(statusIndicator).toHaveAttribute('data-status', 'error');
+        },
+        { timeout: 3000 }
+      );
+
+      expect(screen.getByText(/network error/i)).toBeInTheDocument();
+    });
+
+    it('should disable input when not available', async () => {
+      global.fetch = vi.fn().mockImplementation((url: string) => {
+        if (url.endsWith('/status')) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({ available: false }),
+              { status: 200, headers: { 'Content-Type': 'application/json' } }
+            )
+          );
+        }
+        return Promise.resolve(createSSEResponse([]));
+      });
+
+      render(
+        <TestWrapper>
+          <CodebaseChat />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('connection-status')).toBeInTheDocument();
+      });
+
+      const input = screen.getByRole('textbox');
+      expect(input).toBeDisabled();
+    });
+  });
 });

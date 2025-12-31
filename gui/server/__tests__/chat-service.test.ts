@@ -7,15 +7,8 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EventEmitter } from 'events';
-import type { ChildProcess, SpawnOptionsWithoutStdio } from 'child_process';
+import type { ChildProcess } from 'child_process';
 import { ChatService, getChatService, resetChatService } from '../services/chat.js';
-
-// Type for mock spawn function
-type MockSpawnFn = (
-  command: string,
-  args: string[],
-  options: SpawnOptionsWithoutStdio
-) => ChildProcess;
 
 // Helper to create mock child process
 function createMockProcess(options: {

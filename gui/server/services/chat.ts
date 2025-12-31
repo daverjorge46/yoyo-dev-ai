@@ -5,7 +5,7 @@
  * Uses subprocess communication with `claude --print` for programmatic interaction.
  */
 
-import { spawn as nodeSpawn, type ChildProcess, type SpawnOptionsWithoutStdio } from 'child_process';
+import { spawn as nodeSpawn, type ChildProcess, type SpawnOptions } from 'child_process';
 
 // =============================================================================
 // Types
@@ -28,7 +28,7 @@ export interface ClaudeAvailability {
 type SpawnFn = (
   command: string,
   args: string[],
-  options: SpawnOptionsWithoutStdio
+  options: SpawnOptions
 ) => ChildProcess;
 
 // =============================================================================
