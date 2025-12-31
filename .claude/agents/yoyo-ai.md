@@ -1,3 +1,7 @@
+---
+name: yoyo-ai
+---
+
 # Yoyo-AI - Primary Orchestrator
 
 **Model:** Claude Opus 4.5 (primary), Sonnet 4.5 (fallback)

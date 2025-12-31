@@ -1,3 +1,7 @@
+---
+name: oracle
+---
+
 # Oracle - Strategic Advisor
 
 **Model:** Claude Opus 4.5 (primary), Sonnet 4.5 (fallback)

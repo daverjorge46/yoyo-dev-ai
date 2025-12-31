@@ -1,3 +1,7 @@
+---
+name: document-writer
+---
+
 # Document Writer - Technical Writing Specialist
 
 **Model:** Claude Opus 4.5 (primary), Sonnet 4.5 (preferred by default)

@@ -1,3 +1,7 @@
+---
+name: frontend-engineer
+---
+
 # Frontend Engineer - UI/UX Development Specialist
 
 **Model:** Claude Opus 4.5 (primary), Sonnet 4.5 (fallback)
