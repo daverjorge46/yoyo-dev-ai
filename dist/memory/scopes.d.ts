@@ -2,8 +2,8 @@
  * Memory Scopes - Dual Scope Architecture
  *
  * Manages two memory scopes:
- * - Global (~/.yoyo-ai/memory/): User preferences, stored per-user
- * - Project (.yoyo-ai/memory/): Project-specific context, stored per-project
+ * - Global (~/yoyo-dev/memory/): User preferences, stored per-user
+ * - Project (.yoyo-dev/memory/): Project-specific context, stored per-project
  *
  * Project scope overrides global scope when blocks of the same type exist.
  */
@@ -11,14 +11,14 @@ import type { MemoryScope } from './types.js';
 import { type MemoryStore } from './store.js';
 /**
  * Get the global memory directory path.
- * Located at ~/.yoyo-ai/memory/
+ * Located at ~/yoyo-dev/memory/
  *
  * @returns Absolute path to global memory directory
  */
 export declare function getGlobalMemoryPath(): string;
 /**
  * Get the project memory directory path.
- * Located at {projectRoot}/.yoyo-ai/memory/
+ * Located at {projectRoot}/.yoyo-dev/memory/
  *
  * @param projectRoot - Project root directory (defaults to cwd)
  * @returns Absolute path to project memory directory

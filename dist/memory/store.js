@@ -190,6 +190,40 @@ export function saveBlock(store, input) {
     return block;
 }
 /**
+ * Import a memory block preserving its original metadata.
+ * Replaces any existing block with the same type/scope to keep IDs aligned.
+ *
+ * @param store - MemoryStore instance
+ * @param input - Block data with metadata to import
+ * @returns The imported MemoryBlock
+ */
+export function importBlock(store, input) {
+    const stmt = store.db.prepare(`
+    INSERT INTO memory_blocks (id, type, scope, content, version, created_at, updated_at)
+    VALUES (@id, @type, @scope, @content, @version, @createdAt, @updatedAt)
+    ON CONFLICT(type, scope) DO UPDATE SET
+      id = excluded.id,
+      content = excluded.content,
+      version = excluded.version,
+      created_at = excluded.created_at,
+      updated_at = excluded.updated_at
+  `);
+    stmt.run({
+        id: input.id,
+        type: input.type,
+        scope: input.scope,
+        content: JSON.stringify(input.content),
+        version: input.version,
+        createdAt: input.createdAt,
+        updatedAt: input.updatedAt,
+    });
+    const block = getBlock(store, input.type, input.scope);
+    if (!block) {
+        throw new Error(`Failed to import block: ${input.type}/${input.scope}`);
+    }
+    return block;
+}
+/**
  * Get a memory block by type and scope.
  *
  * @param store - MemoryStore instance

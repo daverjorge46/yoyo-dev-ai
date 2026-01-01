@@ -10,7 +10,7 @@
  */
 import { readFileSync, writeFileSync } from 'node:fs';
 import { EventEmitter } from 'node:events';
-import { saveBlock as storeSaveBlock, getBlock as storeGetBlock, getAllBlocks as storeGetAllBlocks, deleteBlock as storeDeleteBlock, addMessage, getHistory, clearHistory, } from './store.js';
+import { saveBlock as storeSaveBlock, importBlock as storeImportBlock, getBlock as storeGetBlock, getAllBlocks as storeGetAllBlocks, deleteBlock as storeDeleteBlock, addMessage, getHistory, clearHistory, } from './store.js';
 import { ScopeManager } from './scopes.js';
 // =============================================================================
 // MemoryService Class
@@ -262,7 +262,12 @@ export class MemoryService extends EventEmitter {
      * @returns Export data
      */
     exportMemory(filePath) {
-        const blocks = this.getAllBlocks();
+        const projectStore = this.scopeManager.getProjectStore();
+        const globalStore = this.scopeManager.getGlobalStore();
+        const blocks = [
+            ...storeGetAllBlocks(globalStore, 'global'),
+            ...storeGetAllBlocks(projectStore, 'project'),
+        ];
         const exportData = {
             version: 1,
             exportedAt: new Date().toISOString(),
@@ -295,8 +300,19 @@ export class MemoryService extends EventEmitter {
         else {
             data = dataOrPath;
         }
+        const projectStore = this.scopeManager.getProjectStore();
+        const globalStore = this.scopeManager.getGlobalStore();
         for (const block of data.blocks) {
-            this.saveBlock(block.type, block.content, block.scope);
+            const targetStore = block.scope === 'global' ? globalStore : projectStore;
+            storeImportBlock(targetStore, {
+                id: block.id,
+                type: block.type,
+                scope: block.scope,
+                content: block.content,
+                version: block.version,
+                createdAt: block.createdAt,
+                updatedAt: block.updatedAt,
+            });
         }
     }
     // ===========================================================================

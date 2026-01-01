@@ -22,6 +22,18 @@ export interface SaveBlockInput {
     content: MemoryBlockContent;
 }
 /**
+ * Input for importing a memory block with existing metadata.
+ */
+export interface ImportBlockInput {
+    id: string;
+    type: MemoryBlockType;
+    scope: MemoryScope;
+    content: MemoryBlockContent;
+    version: number;
+    createdAt: string;
+    updatedAt: string;
+}
+/**
  * Input for creating an agent.
  */
 export interface CreateAgentInput {
@@ -77,6 +89,15 @@ export declare function migrateDatabase(store: MemoryStore): void;
  * @returns The saved MemoryBlock
  */
 export declare function saveBlock(store: MemoryStore, input: SaveBlockInput): MemoryBlock;
+/**
+ * Import a memory block preserving its original metadata.
+ * Replaces any existing block with the same type/scope to keep IDs aligned.
+ *
+ * @param store - MemoryStore instance
+ * @param input - Block data with metadata to import
+ * @returns The imported MemoryBlock
+ */
+export declare function importBlock(store: MemoryStore, input: ImportBlockInput): MemoryBlock;
 /**
  * Get a memory block by type and scope.
  *

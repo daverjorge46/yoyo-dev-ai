@@ -82,17 +82,26 @@ merge_settings() {
 
     if [ -f "$dest" ]; then
         # Backup existing settings
-        cp "$dest" "$dest.backup.$(date +%Y%m%d%H%M%S)"
+        local backup_file="$dest.backup.$(date +%Y%m%d%H%M%S)"
+        cp "$dest" "$backup_file"
         info "Backed up existing settings"
 
         # Merge settings using jq if available
         if command -v jq &> /dev/null; then
-            # Merge: existing values take precedence except for new keys
-            jq -s '.[0] * .[1]' "$dest.backup."* "$src" > "$dest" 2>/dev/null || {
-                # If merge fails, just copy the new settings
+            # Deep merge: source settings take precedence for new keys
+            # Existing user permissions are preserved, but hooks are always updated
+            jq -s '
+              .[0] as $existing |
+              .[1] as $new |
+              $existing * $new |
+              # Ensure hooks are always from new (Yoyo Dev source)
+              .hooks = $new.hooks
+            ' "$backup_file" "$src" > "$dest" 2>/dev/null || {
+                # If merge fails, copy new settings
                 cp "$src" "$dest"
+                warning "Merge failed, using new settings"
             }
-            success "Merged settings: $dest"
+            success "Merged settings with orchestration hooks: $dest"
         else
             warning "jq not installed - replacing settings (backup saved)"
             cp "$src" "$dest"

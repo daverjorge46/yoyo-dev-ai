@@ -23,7 +23,7 @@ SCHEMA_VERSION,
 // Database lifecycle
 initializeDatabase, closeDatabase, getSchemaVersion, migrateDatabase, 
 // Memory block operations
-saveBlock, getBlock, getAllBlocks, deleteBlock, 
+saveBlock, importBlock, getBlock, getAllBlocks, deleteBlock, 
 // Conversation operations
 addMessage, getHistory, clearHistory, 
 // Agent operations
