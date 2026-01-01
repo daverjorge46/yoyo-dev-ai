@@ -64,8 +64,6 @@ export function initializeTodoContinuation(
 
   // Also register the todo update tracker
   hookRegistry.register(todoUpdatedHook);
-
-  console.log("[Todo Continuation] Initialized with hook registry");
 }
 
 /**
@@ -143,10 +141,6 @@ Continue now.
     },
   });
 
-  // Also log for debugging
-  console.log(`[Todo Continuation] Injecting message to session ${sessionId}`);
-  console.log(message);
-
   // Update last injection time
   lastInjectionTimes.set(sessionId, Date.now());
 }
@@ -161,14 +155,7 @@ function startCountdown(sessionId: string, todos: Todo[]): void {
     clearTimeout(existingTimer);
   }
 
-  console.log(
-    `[Todo Continuation] Starting ${CONFIG.COUNTDOWN_DELAY}ms countdown for session ${sessionId}`
-  );
-
   const timer = setTimeout(() => {
-    console.log(
-      `[Todo Continuation] Countdown expired, injecting message to session ${sessionId}`
-    );
     injectContinuationMessage(sessionId, todos);
     countdownTimers.delete(sessionId);
   }, CONFIG.COUNTDOWN_DELAY);
@@ -182,9 +169,6 @@ function startCountdown(sessionId: string, todos: Todo[]): void {
 function cancelCountdown(sessionId: string): void {
   const timer = countdownTimers.get(sessionId);
   if (timer) {
-    console.log(
-      `[Todo Continuation] Cancelling countdown for session ${sessionId}`
-    );
     clearTimeout(timer);
     countdownTimers.delete(sessionId);
   }
@@ -241,26 +225,16 @@ export async function todoContinuationEnforcer(
     return;
   }
 
-  console.log(
-    `[Todo Continuation] Session ${sessionId} idle at ${timestamp.toISOString()}`
-  );
-
   // Get current todos
   const todos = getCurrentTodos(sessionId, todoProvider);
 
   // Check if there are incomplete todos
   if (!hasIncompleteTodos(todos)) {
-    console.log(
-      `[Todo Continuation] No incomplete todos for session ${sessionId}, skipping`
-    );
     return;
   }
 
   // Check cooldown period
   if (!isCooldownExpired(sessionId)) {
-    console.log(
-      `[Todo Continuation] Cooldown active for session ${sessionId}, skipping`
-    );
     return;
   }
 
@@ -297,11 +271,8 @@ export async function triggerTodoContinuation(
 export function cleanup(): void {
   // Clear legacy timers
   const timerEntries = Array.from(countdownTimers.entries());
-  for (const [sessionId, timer] of timerEntries) {
+  for (const [, timer] of timerEntries) {
     clearTimeout(timer);
-    console.log(
-      `[Todo Continuation] Cleaned up timer for session ${sessionId}`
-    );
   }
   countdownTimers.clear();
   lastInjectionTimes.clear();
@@ -312,8 +283,6 @@ export function cleanup(): void {
   // Unregister hooks from registry
   hookRegistry.unregister("todo-continuation-enforcer");
   hookRegistry.unregister("todo-update-tracker");
-
-  console.log("[Todo Continuation] Cleanup complete");
 }
 
 /**

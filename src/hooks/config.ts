@@ -116,7 +116,6 @@ export function loadHookConfig(projectRoot?: string): HookConfig {
   const configPath = join(root, ".yoyo-dev", "config.yml");
 
   if (!existsSync(configPath)) {
-    console.log("[HookConfig] No config.yml found, using defaults");
     return DEFAULT_HOOK_CONFIG;
   }
 
@@ -127,7 +126,6 @@ export function loadHookConfig(projectRoot?: string): HookConfig {
     // Extract hooks section
     const hooksConfig = extractHooksConfig(config);
 
-    console.log("[HookConfig] Loaded configuration from config.yml");
     return hooksConfig;
   } catch (error) {
     console.error("[HookConfig] Failed to load config.yml:", error);
@@ -197,7 +195,6 @@ export function applyHookConfig(config: HookConfig): void {
     for (const hook of hookRegistry.listAll()) {
       hookRegistry.disable(hook.name);
     }
-    console.log("[HookConfig] All hooks disabled by configuration");
     return;
   }
 
@@ -206,14 +203,12 @@ export function applyHookConfig(config: HookConfig): void {
     for (const [hookName, hookSettings] of Object.entries(config.hooks)) {
       const hook = hookRegistry.get(hookName);
       if (!hook) {
-        console.log(`[HookConfig] Hook not found: ${hookName}`);
         continue;
       }
 
       // Update enabled state
       if (hookSettings.enabled === false) {
         hookRegistry.disable(hookName);
-        console.log(`[HookConfig] Disabled hook: ${hookName}`);
       } else {
         hookRegistry.enable(hookName);
       }
@@ -225,13 +220,11 @@ export function applyHookConfig(config: HookConfig): void {
           priority: hookSettings.priority,
         };
         hookRegistry.register(updatedHook);
-        console.log(`[HookConfig] Updated priority for ${hookName}: ${hookSettings.priority}`);
       }
 
       // Update config
       if (hookSettings.config && hook.config) {
         Object.assign(hook.config, hookSettings.config);
-        console.log(`[HookConfig] Updated config for ${hookName}`);
       }
     }
   }
@@ -248,7 +241,6 @@ export function applyHookConfig(config: HookConfig): void {
 export function initializeHooksFromConfig(projectRoot?: string): void {
   const config = loadHookConfig(projectRoot);
   applyHookConfig(config);
-  console.log("[HookConfig] Hooks initialized from configuration");
 }
 
 /**
