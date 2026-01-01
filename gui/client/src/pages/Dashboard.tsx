@@ -1,5 +1,17 @@
 import { useQuery } from '@tanstack/react-query';
-import { FileText, CheckSquare, TrendingUp, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import {
+  FileText,
+  CheckSquare,
+  Bug,
+  GitBranch,
+  Server,
+  Brain,
+  Zap,
+  ChevronRight,
+  Terminal,
+  Activity,
+} from 'lucide-react';
 import { GitStatusCard } from '../components/GitStatusCard';
 import { MCPStatusCard } from '../components/MCPStatusCard';
 import { ExecutionProgressCard } from '../components/ExecutionProgressCard';
@@ -47,68 +59,218 @@ async function fetchTasksSummary(): Promise<{ summary: TasksSummary }> {
   return res.json();
 }
 
-function StatCard({
-  title,
-  value,
-  subtitle,
-  icon: Icon,
-  color = 'indigo',
-}: {
+// =============================================================================
+// Terminal-style Stat Card Component
+// =============================================================================
+
+interface StatCardProps {
   title: string;
   value: string | number;
   subtitle?: string;
-  icon: typeof FileText;
-  color?: 'indigo' | 'green' | 'yellow' | 'red' | 'blue';
-}) {
-  const colorClasses = {
-    indigo: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400',
-    green: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400',
-    yellow: 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
-    red: 'bg-red-50 text-red-600 dark:bg-red-900/30 dark:text-red-400',
-    blue: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+  icon: React.ElementType;
+  color: 'brand' | 'success' | 'info' | 'warning' | 'error';
+  href: string;
+  badge?: string;
+}
+
+function StatCard({ title, value, subtitle, icon: Icon, color, href, badge }: StatCardProps) {
+  const navigate = useNavigate();
+
+  const colorMap = {
+    brand: {
+      icon: 'text-brand dark:text-terminal-yellow',
+      bg: 'bg-brand/5 dark:bg-terminal-yellow/10',
+      border: 'border-brand/20 dark:border-terminal-yellow/20',
+      glow: 'hover:shadow-glow-brand',
+    },
+    success: {
+      icon: 'text-success dark:text-terminal-green',
+      bg: 'bg-success/5 dark:bg-terminal-green/10',
+      border: 'border-success/20 dark:border-terminal-green/20',
+      glow: 'hover:shadow-glow-success',
+    },
+    info: {
+      icon: 'text-info dark:text-terminal-blue',
+      bg: 'bg-info/5 dark:bg-terminal-blue/10',
+      border: 'border-info/20 dark:border-terminal-blue/20',
+      glow: 'hover:shadow-glow-info',
+    },
+    warning: {
+      icon: 'text-warning dark:text-terminal-orange',
+      bg: 'bg-warning/5 dark:bg-terminal-orange/10',
+      border: 'border-warning/20 dark:border-terminal-orange/20',
+      glow: 'hover:shadow-glow-brand',
+    },
+    error: {
+      icon: 'text-error dark:text-terminal-red',
+      bg: 'bg-error/5 dark:bg-terminal-red/10',
+      border: 'border-error/20 dark:border-terminal-red/20',
+      glow: 'hover:shadow-glow-error',
+    },
   };
 
+  const styles = colorMap[color];
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 card-hover">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
-            {title}
-          </p>
-          <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-white">
-            {value}
-          </p>
+    <button
+      onClick={() => navigate(href)}
+      className={`
+        w-full text-left terminal-card-interactive p-4
+        ${styles.glow}
+        group
+      `}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-terminal-text-muted">
+              {title}
+            </span>
+            {badge && (
+              <span className={`text-xs px-1.5 py-0.5 rounded ${styles.bg} ${styles.icon}`}>
+                {badge}
+              </span>
+            )}
+          </div>
+          <div className="terminal-stat">{value}</div>
           {subtitle && (
-            <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-xs text-gray-500 dark:text-terminal-text-muted truncate">
               {subtitle}
             </p>
           )}
         </div>
-        <div className={`p-2.5 rounded-full ${colorClasses[color]}`}>
-          <Icon className="h-5 w-5" />
+        <div className={`p-2.5 rounded ${styles.bg} border ${styles.border}`}>
+          <Icon className={`h-5 w-5 ${styles.icon}`} />
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-1 text-xs text-gray-400 dark:text-terminal-text-muted group-hover:text-brand dark:group-hover:text-terminal-yellow transition-colors">
+        <span>View details</span>
+        <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
+      </div>
+    </button>
+  );
+}
+
+// =============================================================================
+// Progress Display Component
+// =============================================================================
+
+function ProgressDisplay({ progress, completed, total }: { progress: number; completed: number; total: number }) {
+  const getProgressColor = () => {
+    if (progress === 100) return 'bg-terminal-green';
+    if (progress >= 75) return 'bg-terminal-cyan';
+    if (progress >= 50) return 'bg-terminal-yellow';
+    if (progress >= 25) return 'bg-terminal-orange';
+    return 'bg-terminal-text-muted';
+  };
+
+  return (
+    <div className="terminal-card p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div className="terminal-header mb-0">Overall Progress</div>
+        <div className="flex items-baseline gap-2">
+          <span className="text-2xl font-semibold text-gray-900 dark:text-terminal-text">
+            {progress}%
+          </span>
+          <span className="text-xs text-gray-500 dark:text-terminal-text-muted">
+            {completed}/{total}
+          </span>
+        </div>
+      </div>
+      <div className="terminal-progress">
+        <div
+          className={`terminal-progress-bar ${getProgressColor()}`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="mt-2 flex justify-between text-xs text-gray-400 dark:text-terminal-text-muted">
+        <span>0%</span>
+        <span>50%</span>
+        <span>100%</span>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// System Status Card Component
+// =============================================================================
+
+function SystemStatusCard({ status }: { status: StatusResponse }) {
+  const systems = [
+    {
+      name: 'Framework',
+      active: status?.framework?.installed,
+      icon: Terminal,
+    },
+    {
+      name: 'Memory',
+      active: status?.memory?.initialized,
+      icon: Brain,
+    },
+    {
+      name: 'Skills',
+      active: status?.skills?.initialized,
+      icon: Zap,
+    },
+  ];
+
+  return (
+    <div className="terminal-card p-4">
+      <div className="terminal-header">System Status</div>
+      <div className="space-y-2">
+        {systems.map((system) => (
+          <div
+            key={system.name}
+            className="flex items-center justify-between py-1.5"
+          >
+            <div className="flex items-center gap-2">
+              <system.icon className="h-4 w-4 text-gray-400 dark:text-terminal-text-muted" />
+              <span className="text-sm text-gray-600 dark:text-terminal-text-secondary">
+                {system.name}
+              </span>
+            </div>
+            <span
+              className={
+                system.active
+                  ? 'terminal-badge-success'
+                  : 'terminal-badge-neutral'
+              }
+            >
+              {system.active ? 'Active' : 'Inactive'}
+            </span>
+          </div>
+        ))}
+      </div>
+
+      {/* Project Info */}
+      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-terminal-border">
+        <div className="space-y-2">
+          <div>
+            <span className="text-xs text-gray-500 dark:text-terminal-text-muted">
+              Project
+            </span>
+            <p className="terminal-code mt-0.5 block truncate">
+              {status?.name ?? 'Unknown'}
+            </p>
+          </div>
+          <div>
+            <span className="text-xs text-gray-500 dark:text-terminal-text-muted">
+              Path
+            </span>
+            <p className="text-xs font-mono text-gray-500 dark:text-terminal-text-muted truncate mt-0.5">
+              {status?.path ?? 'Unknown'}
+            </p>
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function ProgressBar({ progress, label }: { progress: number; label?: string }) {
-  return (
-    <div
-      className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5"
-      role="progressbar"
-      aria-valuenow={progress}
-      aria-valuemin={0}
-      aria-valuemax={100}
-      aria-label={label || 'Progress'}
-    >
-      <div
-        className="bg-indigo-600 h-2.5 rounded-full transition-all duration-500 ease-out"
-        style={{ width: `${progress}%` }}
-      />
-    </div>
-  );
-}
+// =============================================================================
+// Dashboard Page Component
+// =============================================================================
 
 export default function Dashboard() {
   const { data: status, isLoading: statusLoading } = useQuery({
@@ -126,142 +288,98 @@ export default function Dashboard() {
   }
 
   const summary = tasks?.summary;
+  const fixesCount = status?.framework?.fixesCount ?? 0;
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Dashboard
-        </h1>
-        <p className="mt-1 text-gray-600 dark:text-gray-400">
-          Overview of {status?.name || 'your project'}
-        </p>
+      {/* Page Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-terminal-text flex items-center gap-2">
+            <Activity className="h-6 w-6 text-brand dark:text-terminal-yellow" />
+            Dashboard
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-terminal-text-muted">
+            <span className="terminal-prompt">{status?.name || 'project'}</span>
+          </p>
+        </div>
+        {summary && summary.totalTasks > 0 && (
+          <div className="text-right">
+            <div className="text-3xl font-bold text-gray-900 dark:text-terminal-text">
+              {summary.progress}
+              <span className="text-lg text-gray-400 dark:text-terminal-text-muted">%</span>
+            </div>
+            <div className="text-xs text-gray-500 dark:text-terminal-text-muted">
+              complete
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      {/* Quick Stats Grid - Clickable Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Specs"
           value={summary?.totalSpecs ?? 0}
           subtitle="Feature specifications"
           icon={FileText}
-          color="indigo"
+          color="brand"
+          href="/specs"
         />
         <StatCard
           title="Tasks"
           value={summary?.totalTasks ?? 0}
           subtitle={`${summary?.completedTasks ?? 0} completed`}
           icon={CheckSquare}
-          color="blue"
+          color="info"
+          href="/tasks"
+          badge={summary?.completedTasks === summary?.totalTasks && summary?.totalTasks > 0 ? 'Done' : undefined}
+        />
+        <StatCard
+          title="Fixes"
+          value={fixesCount}
+          subtitle="Bug fix records"
+          icon={Bug}
+          color={fixesCount > 0 ? 'warning' : 'success'}
+          href="/fixes"
         />
         <StatCard
           title="Progress"
           value={`${summary?.progress ?? 0}%`}
           subtitle="Overall completion"
-          icon={TrendingUp}
-          color={summary?.progress === 100 ? 'green' : 'yellow'}
-        />
-        <StatCard
-          title="Systems"
-          value={
-            (status?.memory?.initialized ? 1 : 0) + (status?.skills?.initialized ? 1 : 0)
-          }
-          subtitle="Memory & Skills"
-          icon={Settings}
-          color={status?.memory?.initialized && status?.skills?.initialized ? 'green' : 'yellow'}
+          icon={GitBranch}
+          color={summary?.progress === 100 ? 'success' : 'info'}
+          href="/tasks/kanban"
         />
       </div>
 
-      {/* Overall Progress Bar */}
+      {/* Progress Bar */}
       {summary && summary.totalTasks > 0 && (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Overall Progress
-            </h2>
-            <span className="text-sm text-gray-600 dark:text-gray-400">
-              {summary.completedTasks} / {summary.totalTasks} tasks
-            </span>
-          </div>
-          <ProgressBar progress={summary.progress} label="Overall task completion" />
-        </div>
+        <ProgressDisplay
+          progress={summary.progress}
+          completed={summary.completedTasks}
+          total={summary.totalTasks}
+        />
       )}
 
       {/* Main Dashboard Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column - Execution & Git */}
+        {/* Left Column */}
         <div className="space-y-6">
           <ExecutionProgressCard />
           <GitStatusCard />
         </div>
 
-        {/* Middle Column - MCP & Memory */}
+        {/* Middle Column */}
         <div className="space-y-6">
           <MCPStatusCard />
           <MemoryOverviewCard />
         </div>
 
-        {/* Right Column - Skills & System Status */}
+        {/* Right Column */}
         <div className="space-y-6">
           <SkillsSummaryCard />
-
-          {/* System Status Card */}
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
-              System Status
-            </h3>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Framework</span>
-                <span
-                  className={`badge ${
-                    status?.framework?.installed ? 'badge-success' : 'badge-error'
-                  }`}
-                >
-                  {status?.framework?.installed ? 'Installed' : 'Not installed'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Memory</span>
-                <span
-                  className={`badge ${
-                    status?.memory?.initialized ? 'badge-success' : 'badge-neutral'
-                  }`}
-                >
-                  {status?.memory?.initialized ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Skills</span>
-                <span
-                  className={`badge ${
-                    status?.skills?.initialized ? 'badge-success' : 'badge-neutral'
-                  }`}
-                >
-                  {status?.skills?.initialized ? 'Active' : 'Inactive'}
-                </span>
-              </div>
-            </div>
-
-            {/* Project Path */}
-            <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-700">
-              <span className="text-xs text-gray-500 dark:text-gray-400">Project</span>
-              <p className="text-xs font-mono text-gray-700 dark:text-gray-300 truncate mt-0.5">
-                {status?.path ?? 'Unknown'}
-              </p>
-            </div>
-
-            {/* Project Name */}
-            {status?.name && (
-              <div className="mt-2">
-                <span className="text-xs text-gray-500 dark:text-gray-400">Name</span>
-                <p className="text-xs text-indigo-600 dark:text-indigo-400 truncate mt-0.5">
-                  {status.name}
-                </p>
-              </div>
-            )}
-          </div>
+          <SystemStatusCard status={status!} />
         </div>
       </div>
     </div>

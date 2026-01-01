@@ -1,193 +1,347 @@
+/* JetBrains Mono - Terminal Font */
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Custom scrollbar styling */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
+/* =============================================================================
+   Base Styles - Terminal Theme
+   ============================================================================= */
 
-::-webkit-scrollbar-track {
-  background: theme('colors.gray.100');
-}
+@layer base {
+  html {
+    font-family: 'JetBrains Mono', monospace;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 
-::-webkit-scrollbar-thumb {
-  background: theme('colors.gray.300');
-  border-radius: 4px;
-}
+  body {
+    @apply bg-surface-bg-light dark:bg-terminal-bg text-gray-900 dark:text-terminal-text;
+    font-feature-settings: 'liga' 1, 'calt' 1;
+  }
 
-::-webkit-scrollbar-thumb:hover {
-  background: theme('colors.gray.400');
-}
+  /* Improved scrollbar for terminal feel */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
 
-.dark ::-webkit-scrollbar-track {
-  background: theme('colors.gray.800');
-}
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-terminal-black;
+  }
 
-.dark ::-webkit-scrollbar-thumb {
-  background: theme('colors.gray.600');
-}
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-terminal-border rounded;
+  }
 
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: theme('colors.gray.500');
-}
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-terminal-border-emphasis;
+  }
 
-/* Base styles */
-body {
-  @apply antialiased;
-}
-
-/* Card hover effect */
-.card-hover {
-  @apply transition-shadow duration-200 hover:shadow-lg;
-}
-
-/* Status badge styles */
-.badge {
-  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
-}
-
-.badge-success {
-  @apply bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200;
-}
-
-.badge-warning {
-  @apply bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200;
-}
-
-.badge-error {
-  @apply bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200;
-}
-
-.badge-info {
-  @apply bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200;
-}
-
-.badge-neutral {
-  @apply bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200;
+  /* Firefox scrollbar */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: theme('colors.terminal.border') theme('colors.terminal.black');
+  }
 }
 
 /* =============================================================================
-   Animations
+   Component Classes - Terminal Style
    ============================================================================= */
 
-/* Fade in animation */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
+@layer components {
+  /* Terminal Card - Main container component */
+  .terminal-card {
+    @apply bg-white dark:bg-terminal-card
+           border border-gray-200 dark:border-terminal-border
+           rounded transition-all duration-fast;
   }
-  to {
-    opacity: 1;
+
+  .terminal-card-hover {
+    @apply terminal-card hover:border-gray-300 dark:hover:border-terminal-border-emphasis
+           hover:shadow-md cursor-pointer;
+  }
+
+  .terminal-card-interactive {
+    @apply terminal-card-hover active:scale-[0.99];
+  }
+
+  /* Terminal Input */
+  .terminal-input {
+    @apply w-full px-3 py-2
+           bg-white dark:bg-terminal-black
+           border border-gray-300 dark:border-terminal-border
+           rounded text-sm font-mono
+           text-gray-900 dark:text-terminal-text
+           placeholder:text-gray-400 dark:placeholder:text-terminal-text-muted
+           focus:outline-none focus:border-brand dark:focus:border-brand
+           focus:ring-1 focus:ring-brand/30
+           transition-colors duration-fast;
+  }
+
+  /* Terminal Button Variants */
+  .terminal-btn {
+    @apply inline-flex items-center justify-center gap-2
+           px-3 py-1.5 rounded text-sm font-medium
+           transition-all duration-fast
+           focus:outline-none focus:ring-2 focus:ring-offset-2
+           dark:focus:ring-offset-terminal-bg
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .terminal-btn-primary {
+    @apply terminal-btn
+           bg-brand text-terminal-black
+           hover:bg-brand-light active:bg-brand-dark
+           focus:ring-brand;
+  }
+
+  .terminal-btn-secondary {
+    @apply terminal-btn
+           bg-gray-100 dark:bg-terminal-elevated text-gray-700 dark:text-terminal-text
+           border border-gray-300 dark:border-terminal-border
+           hover:bg-gray-200 dark:hover:bg-terminal-border-subtle
+           focus:ring-gray-400;
+  }
+
+  .terminal-btn-ghost {
+    @apply terminal-btn
+           text-gray-600 dark:text-terminal-text-secondary
+           hover:bg-gray-100 dark:hover:bg-terminal-elevated
+           focus:ring-gray-400;
+  }
+
+  .terminal-btn-danger {
+    @apply terminal-btn
+           bg-error text-white
+           hover:bg-error-dark active:bg-error-dark
+           focus:ring-error;
+  }
+
+  /* Terminal Status Badges */
+  .terminal-badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5
+           rounded text-xs font-medium
+           border;
+  }
+
+  .terminal-badge-success {
+    @apply terminal-badge
+           bg-success/10 text-success border-success/30
+           dark:bg-terminal-green/10 dark:text-terminal-green dark:border-terminal-green/30;
+  }
+
+  .terminal-badge-warning {
+    @apply terminal-badge
+           bg-warning/10 text-warning-dark border-warning/30
+           dark:bg-terminal-yellow/10 dark:text-terminal-yellow dark:border-terminal-yellow/30;
+  }
+
+  .terminal-badge-error {
+    @apply terminal-badge
+           bg-error/10 text-error border-error/30
+           dark:bg-terminal-red/10 dark:text-terminal-red dark:border-terminal-red/30;
+  }
+
+  .terminal-badge-info {
+    @apply terminal-badge
+           bg-info/10 text-info border-info/30
+           dark:bg-terminal-blue/10 dark:text-terminal-blue dark:border-terminal-blue/30;
+  }
+
+  .terminal-badge-neutral {
+    @apply terminal-badge
+           bg-gray-100 text-gray-600 border-gray-200
+           dark:bg-terminal-elevated dark:text-terminal-text-secondary dark:border-terminal-border;
+  }
+
+  /* Terminal Progress Bar */
+  .terminal-progress {
+    @apply w-full h-1.5 bg-gray-200 dark:bg-terminal-border rounded-full overflow-hidden;
+  }
+
+  .terminal-progress-bar {
+    @apply h-full rounded-full transition-all duration-slow;
+  }
+
+  /* Terminal Section Header */
+  .terminal-header {
+    @apply flex items-center gap-2 text-xs font-medium uppercase tracking-wider
+           text-gray-500 dark:text-terminal-text-muted
+           mb-3;
+  }
+
+  .terminal-header::before {
+    content: '>';
+    @apply text-brand;
+  }
+
+  /* Terminal Stat Display */
+  .terminal-stat {
+    @apply font-mono text-2xl font-semibold
+           text-gray-900 dark:text-terminal-text;
+  }
+
+  .terminal-stat-label {
+    @apply text-xs text-gray-500 dark:text-terminal-text-muted uppercase tracking-wide;
+  }
+
+  /* Terminal Code Block */
+  .terminal-code {
+    @apply px-1.5 py-0.5 rounded text-xs font-mono
+           bg-gray-100 dark:bg-terminal-elevated
+           text-gray-700 dark:text-terminal-text-secondary
+           border border-gray-200 dark:border-terminal-border-subtle;
+  }
+
+  /* Terminal Link */
+  .terminal-link {
+    @apply text-brand hover:text-brand-light
+           underline underline-offset-2 decoration-brand/30
+           hover:decoration-brand transition-colors duration-fast;
+  }
+
+  /* Terminal Divider */
+  .terminal-divider {
+    @apply border-t border-gray-200 dark:border-terminal-border;
+  }
+
+  /* Legacy badge classes (for backward compatibility) */
+  .badge {
+    @apply terminal-badge;
+  }
+  .badge-success {
+    @apply terminal-badge-success;
+  }
+  .badge-warning {
+    @apply terminal-badge-warning;
+  }
+  .badge-error {
+    @apply terminal-badge-error;
+  }
+  .badge-info {
+    @apply terminal-badge-info;
+  }
+  .badge-neutral {
+    @apply terminal-badge-neutral;
+  }
+
+  /* Legacy card classes */
+  .card-hover {
+    @apply terminal-card-hover;
+  }
+  .card-interactive {
+    @apply terminal-card-interactive;
   }
 }
 
-.animate-fade-in {
-  animation: fadeIn 200ms ease-out;
-}
+/* =============================================================================
+   Utility Classes
+   ============================================================================= */
 
-/* Slide up animation */
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
+@layer utilities {
+  /* Text colors with terminal semantics */
+  .text-terminal-success {
+    @apply text-success dark:text-terminal-green;
   }
-  to {
-    opacity: 1;
-    transform: translateY(0);
+  .text-terminal-warning {
+    @apply text-warning-dark dark:text-terminal-yellow;
   }
-}
-
-.animate-slide-up {
-  animation: slideUp 200ms ease-out;
-}
-
-/* Scale in animation */
-@keyframes scaleIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95);
+  .text-terminal-error {
+    @apply text-error dark:text-terminal-red;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+  .text-terminal-info {
+    @apply text-info dark:text-terminal-blue;
   }
-}
 
-.animate-scale-in {
-  animation: scaleIn 200ms ease-out;
-}
-
-/* Progress bar animation */
-@keyframes progressPulse {
-  0%, 100% {
-    opacity: 1;
+  /* Terminal prompt prefix */
+  .terminal-prompt::before {
+    content: '$ ';
+    @apply text-brand font-bold;
   }
-  50% {
-    opacity: 0.7;
+
+  /* Cursor blink effect */
+  .terminal-cursor::after {
+    content: '_';
+    @apply animate-cursor-blink text-brand;
   }
-}
 
-.animate-progress {
-  animation: progressPulse 2s ease-in-out infinite;
-}
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 
-/* Card hover effects */
-.card-interactive {
-  @apply transition-all duration-200 ease-out;
-}
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 
-.card-interactive:hover {
-  @apply shadow-lg;
-  transform: translateY(-2px);
-}
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
 
-.card-interactive:active {
-  transform: translateY(0);
-}
+  /* Glow effects */
+  .glow-brand {
+    @apply shadow-glow-brand;
+  }
+  .glow-success {
+    @apply shadow-glow-success;
+  }
+  .glow-error {
+    @apply shadow-glow-error;
+  }
 
-/* Smooth transitions */
-.transition-smooth {
-  @apply transition-all duration-200 ease-out;
+  /* Smooth transitions */
+  .transition-smooth {
+    @apply transition-all duration-150 ease-out;
+  }
 }
 
 /* =============================================================================
    Accessibility
    ============================================================================= */
 
-/* Focus visible outlines */
+/* Focus visible outlines - brand colored */
 :focus-visible {
-  @apply outline-2 outline-offset-2 outline-indigo-500;
+  @apply outline-2 outline-offset-2 outline-brand;
   outline-style: solid;
 }
 
-/* Remove default focus outline when not using keyboard */
 :focus:not(:focus-visible) {
   outline: none;
 }
 
-/* High contrast focus for buttons */
+/* High contrast focus for interactive elements */
 button:focus-visible,
 a:focus-visible,
 [role="button"]:focus-visible {
-  @apply ring-2 ring-indigo-500 ring-offset-2;
+  @apply ring-2 ring-brand ring-offset-2 dark:ring-offset-terminal-bg;
 }
 
 /* Skip link for keyboard navigation */
 .skip-link {
-  @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4;
-  @apply focus:z-50 focus:px-4 focus:py-2 focus:bg-indigo-600 focus:text-white;
-  @apply focus:rounded-md focus:shadow-lg;
+  @apply sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4
+         focus:z-50 focus:px-4 focus:py-2 focus:bg-brand focus:text-terminal-black
+         focus:rounded focus:shadow-lg font-medium;
 }
 
-/* Ensure interactive elements have minimum touch target size */
+/* Minimum touch target size */
 button,
 [role="button"],
 a,
 input[type="checkbox"],
 input[type="radio"] {
-  min-height: 44px;
-  min-width: 44px;
+  min-height: 36px;
+  min-width: 36px;
 }
 
 /* Exception for inline buttons */
@@ -209,13 +363,9 @@ input[type="radio"] {
 
 /* High contrast mode support */
 @media (prefers-contrast: high) {
-  .badge {
-    border: 2px solid currentColor;
-  }
-
-  button,
-  a {
-    text-decoration-thickness: 2px;
+  .terminal-badge,
+  .terminal-card {
+    border-width: 2px;
   }
 }
 
@@ -223,7 +373,7 @@ input[type="radio"] {
    Loading States
    ============================================================================= */
 
-/* Skeleton shimmer effect */
+/* Skeleton shimmer effect - terminal style */
 @keyframes shimmer {
   0% {
     background-position: -200% 0;
@@ -247,35 +397,27 @@ input[type="radio"] {
 .dark .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    theme('colors.gray.700') 0%,
-    theme('colors.gray.600') 50%,
-    theme('colors.gray.700') 100%
+    theme('colors.terminal.card') 0%,
+    theme('colors.terminal.elevated') 50%,
+    theme('colors.terminal.card') 100%
   );
   background-size: 200% 100%;
 }
 
 /* =============================================================================
-   Utility Classes
+   Animations
    ============================================================================= */
 
-/* Line clamp utilities */
-.line-clamp-1 {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+/* Progress bar animation */
+@keyframes progressPulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
 }
 
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.line-clamp-3 {
-  display: -webkit-box;
-  -webkit-line-clamp: 3;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.animate-progress {
+  animation: progressPulse 2s ease-in-out infinite;
 }

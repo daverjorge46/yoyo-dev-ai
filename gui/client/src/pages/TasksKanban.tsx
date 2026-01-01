@@ -1,7 +1,7 @@
 /**
  * TasksKanban Page
  *
- * Kanban board view for tasks with drag-and-drop, filtering,
+ * Terminal-styled Kanban board view for tasks with drag-and-drop, filtering,
  * and keyboard navigation.
  *
  * Features:
@@ -16,7 +16,7 @@ import { useEffect, useCallback } from 'react';
 import { KanbanBoard, TaskDetailPanel } from '../components/kanban';
 import { useKanban, type ColumnId } from '../hooks/useKanban';
 import { usePanelLayoutContext } from '../components/layout';
-import { Filter, LayoutGrid, HelpCircle, ArrowLeft } from 'lucide-react';
+import { Filter, LayoutGrid, ArrowLeft, Keyboard, Terminal } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 // =============================================================================
@@ -118,10 +118,6 @@ export default function TasksKanban() {
           setSelectedTask(null);
           setFocusedTaskId(null);
           break;
-        case '?':
-          e.preventDefault();
-          // Could open help modal here
-          break;
       }
     };
 
@@ -160,16 +156,20 @@ export default function TasksKanban() {
   // Error state
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center h-64">
-        <p className="text-red-500 dark:text-red-400 mb-2">
+      <div className="flex flex-col items-center justify-center h-64 terminal-card p-8">
+        <Terminal className="h-10 w-10 text-error dark:text-terminal-red mb-3" />
+        <p className="text-error dark:text-terminal-red font-medium mb-1">
           Failed to load tasks
         </p>
-        <p className="text-sm text-gray-500 dark:text-gray-400">
+        <p className="text-sm text-gray-500 dark:text-terminal-text-muted">
           {error.message}
         </p>
       </div>
     );
   }
+
+  const totalTasks = columns.reduce((sum, col) => sum + col.tasks.length, 0);
+  const completedTasks = columns.find(c => c.id === 'completed')?.tasks.length || 0;
 
   return (
     <div className="space-y-4">
@@ -179,18 +179,18 @@ export default function TasksKanban() {
           <div className="flex items-center gap-3">
             <Link
               to="/tasks"
-              className="p-1.5 rounded-lg text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              className="terminal-btn-ghost p-1.5"
               title="Back to Task List"
             >
               <ArrowLeft className="h-5 w-5" />
             </Link>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-              <LayoutGrid className="h-6 w-6" />
+            <h1 className="text-2xl font-semibold text-gray-900 dark:text-terminal-text flex items-center gap-2">
+              <LayoutGrid className="h-6 w-6 text-brand dark:text-terminal-yellow" />
               Task Board
             </h1>
           </div>
-          <p className="mt-1 text-gray-600 dark:text-gray-400">
-            Drag tasks between columns to update their status
+          <p className="mt-1 text-sm text-gray-500 dark:text-terminal-text-muted ml-10">
+            Drag tasks between columns to update status
           </p>
         </div>
 
@@ -198,18 +198,13 @@ export default function TasksKanban() {
         <div className="flex items-center gap-3">
           {/* Spec Filter */}
           <div className="relative">
-            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-terminal-text-muted" />
             <select
               value={specFilter}
               onChange={(e) => setSpecFilter(e.target.value)}
               className="
-                pl-9 pr-4 py-2 rounded-lg
-                border border-gray-300 dark:border-gray-600
-                bg-white dark:bg-gray-800
-                text-sm text-gray-900 dark:text-white
-                focus:outline-none focus:ring-2 focus:ring-indigo-500
+                terminal-input pl-9 pr-8 py-2 min-w-[180px]
                 appearance-none cursor-pointer
-                min-w-[180px]
               "
               aria-label="Filter by specification"
             >
@@ -221,7 +216,7 @@ export default function TasksKanban() {
               ))}
             </select>
             <svg
-              className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none"
+              className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 dark:text-terminal-text-muted pointer-events-none"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -234,47 +229,26 @@ export default function TasksKanban() {
               />
             </svg>
           </div>
-
-          {/* Keyboard Shortcuts Help */}
-          <button
-            className="
-              p-2 rounded-lg
-              text-gray-500 dark:text-gray-400
-              hover:text-gray-700 dark:hover:text-gray-200
-              hover:bg-gray-100 dark:hover:bg-gray-700
-              transition-colors
-            "
-            title="Keyboard shortcuts: Arrow keys to navigate, Enter to select, Escape to deselect"
-          >
-            <HelpCircle className="h-5 w-5" />
-          </button>
         </div>
       </div>
 
       {/* Keyboard shortcuts legend */}
-      <div className="hidden sm:flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400">
-        <span className="flex items-center gap-1">
-          <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-mono">
-            Arrow
-          </kbd>
+      <div className="hidden sm:flex items-center gap-4 text-xs text-gray-500 dark:text-terminal-text-muted">
+        <Keyboard className="h-3.5 w-3.5" />
+        <span className="flex items-center gap-1.5">
+          <kbd className="terminal-code px-1.5">h/j/k/l</kbd>
           Navigate
         </span>
-        <span className="flex items-center gap-1">
-          <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-mono">
-            Enter
-          </kbd>
+        <span className="flex items-center gap-1.5">
+          <kbd className="terminal-code px-1.5">Enter</kbd>
           Select
         </span>
-        <span className="flex items-center gap-1">
-          <kbd className="px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 font-mono">
-            Esc
-          </kbd>
+        <span className="flex items-center gap-1.5">
+          <kbd className="terminal-code px-1.5">Esc</kbd>
           Deselect
         </span>
-        <span className="flex items-center gap-1">
-          <span className="text-gray-400">Drag</span>
-          to move tasks
-        </span>
+        <span className="text-gray-300 dark:text-terminal-border">|</span>
+        <span>Drag to move</span>
       </div>
 
       {/* Kanban Board */}
@@ -286,14 +260,14 @@ export default function TasksKanban() {
         focusedTaskId={focusedTaskId}
       />
 
-      {/* Summary */}
+      {/* Summary Footer */}
       {!isLoading && (
-        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-200 dark:border-gray-700">
-          <span>
-            {columns.reduce((sum, col) => sum + col.tasks.length, 0)} total tasks
+        <div className="flex items-center justify-between text-sm pt-3 border-t border-gray-200 dark:border-terminal-border">
+          <span className="text-gray-500 dark:text-terminal-text-muted">
+            <span className="font-medium text-gray-700 dark:text-terminal-text">{totalTasks}</span> total tasks
           </span>
-          <span>
-            {columns.find(c => c.id === 'completed')?.tasks.length || 0} completed
+          <span className="text-gray-500 dark:text-terminal-text-muted">
+            <span className="font-medium text-terminal-green">{completedTasks}</span> completed
           </span>
         </div>
       )}
