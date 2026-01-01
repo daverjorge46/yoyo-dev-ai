@@ -7,13 +7,13 @@ export default {
   darkMode: 'class',
   theme: {
     extend: {
-      // Terminal-inspired color palette
+      // Terminal-inspired color palette - Claude Code CLI style
       colors: {
-        // Brand colors (Yellow accent)
+        // Brand colors (Anthropic Orange accent)
         brand: {
-          light: '#fbbf24',
-          DEFAULT: '#f59e0b',
-          dark: '#d97706',
+          light: '#ff8c42',
+          DEFAULT: '#e85d04',
+          dark: '#d45500',
         },
         // Semantic colors
         success: {
@@ -36,40 +36,46 @@ export default {
           DEFAULT: '#3b82f6',
           dark: '#2563eb',
         },
-        // Terminal-specific colors
+        // Terminal-specific colors (Claude Code inspired)
         terminal: {
-          black: '#0a0a0a',
-          bg: '#0a0a0a',
-          card: '#171717',
-          elevated: '#262626',
-          border: '#3f3f46',
-          'border-subtle': '#27272a',
-          'border-emphasis': '#52525b',
-          text: '#fafafa',
-          'text-secondary': '#a1a1aa',
-          'text-muted': '#71717a',
-          // ANSI-inspired colors
-          green: '#4ade80',
-          yellow: '#fbbf24',
-          red: '#f87171',
-          blue: '#60a5fa',
-          cyan: '#22d3ee',
-          magenta: '#e879f9',
-          orange: '#fb923c',
+          // Backgrounds
+          black: '#0d1117',
+          bg: '#0d1117',
+          card: '#161b22',
+          elevated: '#21262d',
+          surface: '#30363d',
+          // Borders
+          border: '#30363d',
+          'border-subtle': '#21262d',
+          'border-emphasis': '#484f58',
+          // Text
+          text: '#e6edf3',
+          'text-secondary': '#8b949e',
+          'text-muted': '#6e7681',
+          // ANSI-inspired colors (more vibrant)
+          green: '#3fb950',
+          yellow: '#d29922',
+          red: '#f85149',
+          blue: '#58a6ff',
+          cyan: '#39c5cf',
+          magenta: '#bc8cff',
+          orange: '#f0883e',
+          purple: '#a371f7',
+          pink: '#ff7b72',
         },
         // Surface colors for light/dark mode
         surface: {
           bg: {
-            light: '#fafafa',
-            dark: '#0a0a0a',
+            light: '#f6f8fa',
+            dark: '#0d1117',
           },
           card: {
             light: '#ffffff',
-            dark: '#171717',
+            dark: '#161b22',
           },
           elevated: {
-            light: '#f5f5f5',
-            dark: '#262626',
+            light: '#f6f8fa',
+            dark: '#21262d',
           },
         },
       },

@@ -5,18 +5,18 @@ import {
   CheckSquare,
   Bug,
   GitBranch,
-  Server,
-  Brain,
-  Zap,
-  ChevronRight,
   Terminal,
   Activity,
+  Cpu,
+  Database,
+  Zap,
+  ChevronRight,
+  Circle,
+  ArrowUpRight,
 } from 'lucide-react';
 import { GitStatusCard } from '../components/GitStatusCard';
 import { MCPStatusCard } from '../components/MCPStatusCard';
 import { ExecutionProgressCard } from '../components/ExecutionProgressCard';
-import { MemoryOverviewCard } from '../components/MemoryOverviewCard';
-import { SkillsSummaryCard } from '../components/SkillsSummaryCard';
 import { SkeletonDashboard } from '../components/SkeletonLoader';
 
 interface StatusResponse {
@@ -60,209 +60,266 @@ async function fetchTasksSummary(): Promise<{ summary: TasksSummary }> {
 }
 
 // =============================================================================
-// Terminal-style Stat Card Component
+// Terminal Command Line Component
 // =============================================================================
 
-interface StatCardProps {
-  title: string;
-  value: string | number;
-  subtitle?: string;
-  icon: React.ElementType;
-  color: 'brand' | 'success' | 'info' | 'warning' | 'error';
-  href: string;
-  badge?: string;
-}
-
-function StatCard({ title, value, subtitle, icon: Icon, color, href, badge }: StatCardProps) {
-  const navigate = useNavigate();
-
-  const colorMap = {
-    brand: {
-      icon: 'text-brand dark:text-terminal-yellow',
-      bg: 'bg-brand/5 dark:bg-terminal-yellow/10',
-      border: 'border-brand/20 dark:border-terminal-yellow/20',
-      glow: 'hover:shadow-glow-brand',
-    },
-    success: {
-      icon: 'text-success dark:text-terminal-green',
-      bg: 'bg-success/5 dark:bg-terminal-green/10',
-      border: 'border-success/20 dark:border-terminal-green/20',
-      glow: 'hover:shadow-glow-success',
-    },
-    info: {
-      icon: 'text-info dark:text-terminal-blue',
-      bg: 'bg-info/5 dark:bg-terminal-blue/10',
-      border: 'border-info/20 dark:border-terminal-blue/20',
-      glow: 'hover:shadow-glow-info',
-    },
-    warning: {
-      icon: 'text-warning dark:text-terminal-orange',
-      bg: 'bg-warning/5 dark:bg-terminal-orange/10',
-      border: 'border-warning/20 dark:border-terminal-orange/20',
-      glow: 'hover:shadow-glow-brand',
-    },
-    error: {
-      icon: 'text-error dark:text-terminal-red',
-      bg: 'bg-error/5 dark:bg-terminal-red/10',
-      border: 'border-error/20 dark:border-terminal-red/20',
-      glow: 'hover:shadow-glow-error',
-    },
-  };
-
-  const styles = colorMap[color];
-
+function TerminalHeader({ projectName }: { projectName: string }) {
   return (
-    <button
-      onClick={() => navigate(href)}
-      className={`
-        w-full text-left terminal-card-interactive p-4
-        ${styles.glow}
-        group
-      `}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-terminal-text-muted">
-              {title}
-            </span>
-            {badge && (
-              <span className={`text-xs px-1.5 py-0.5 rounded ${styles.bg} ${styles.icon}`}>
-                {badge}
-              </span>
-            )}
-          </div>
-          <div className="terminal-stat">{value}</div>
-          {subtitle && (
-            <p className="mt-1 text-xs text-gray-500 dark:text-terminal-text-muted truncate">
-              {subtitle}
-            </p>
-          )}
+    <div className="terminal-card p-4 mb-6">
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex gap-1.5">
+          <span className="w-3 h-3 rounded-full bg-terminal-red" />
+          <span className="w-3 h-3 rounded-full bg-terminal-yellow" />
+          <span className="w-3 h-3 rounded-full bg-terminal-green" />
         </div>
-        <div className={`p-2.5 rounded ${styles.bg} border ${styles.border}`}>
-          <Icon className={`h-5 w-5 ${styles.icon}`} />
-        </div>
+        <span className="text-xs text-gray-500 dark:text-terminal-text-muted font-mono">
+          yoyo-dev — {projectName}
+        </span>
       </div>
-      <div className="mt-3 flex items-center gap-1 text-xs text-gray-400 dark:text-terminal-text-muted group-hover:text-brand dark:group-hover:text-terminal-yellow transition-colors">
-        <span>View details</span>
-        <ChevronRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
-      </div>
-    </button>
-  );
-}
-
-// =============================================================================
-// Progress Display Component
-// =============================================================================
-
-function ProgressDisplay({ progress, completed, total }: { progress: number; completed: number; total: number }) {
-  const getProgressColor = () => {
-    if (progress === 100) return 'bg-terminal-green';
-    if (progress >= 75) return 'bg-terminal-cyan';
-    if (progress >= 50) return 'bg-terminal-yellow';
-    if (progress >= 25) return 'bg-terminal-orange';
-    return 'bg-terminal-text-muted';
-  };
-
-  return (
-    <div className="terminal-card p-4">
-      <div className="flex items-center justify-between mb-3">
-        <div className="terminal-header mb-0">Overall Progress</div>
-        <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-semibold text-gray-900 dark:text-terminal-text">
-            {progress}%
-          </span>
-          <span className="text-xs text-gray-500 dark:text-terminal-text-muted">
-            {completed}/{total}
-          </span>
-        </div>
-      </div>
-      <div className="terminal-progress">
-        <div
-          className={`terminal-progress-bar ${getProgressColor()}`}
-          style={{ width: `${progress}%` }}
-        />
-      </div>
-      <div className="mt-2 flex justify-between text-xs text-gray-400 dark:text-terminal-text-muted">
-        <span>0%</span>
-        <span>50%</span>
-        <span>100%</span>
+      <div className="font-mono text-sm text-gray-700 dark:text-terminal-text">
+        <span className="text-terminal-green">$</span>{' '}
+        <span className="text-brand dark:text-terminal-orange">yoyo</span>{' '}
+        <span className="text-gray-500 dark:text-terminal-text-secondary">status</span>
+        <span className="animate-cursor-blink text-brand dark:text-terminal-orange ml-1">_</span>
       </div>
     </div>
   );
 }
 
 // =============================================================================
-// System Status Card Component
+// Quick Stat Card Component - Terminal Style
 // =============================================================================
 
-function SystemStatusCard({ status }: { status: StatusResponse }) {
+interface QuickStatProps {
+  label: string;
+  value: string | number;
+  subvalue?: string;
+  icon: React.ElementType;
+  href: string;
+  color: 'orange' | 'green' | 'blue' | 'purple' | 'yellow' | 'red';
+  badge?: string;
+}
+
+function QuickStat({ label, value, subvalue, icon: Icon, href, color, badge }: QuickStatProps) {
+  const navigate = useNavigate();
+
+  const colorClasses = {
+    orange: 'text-brand dark:text-terminal-orange border-brand/30 dark:border-terminal-orange/30 hover:border-brand dark:hover:border-terminal-orange',
+    green: 'text-success dark:text-terminal-green border-success/30 dark:border-terminal-green/30 hover:border-success dark:hover:border-terminal-green',
+    blue: 'text-info dark:text-terminal-blue border-info/30 dark:border-terminal-blue/30 hover:border-info dark:hover:border-terminal-blue',
+    purple: 'text-purple-500 dark:text-terminal-purple border-purple-500/30 dark:border-terminal-purple/30 hover:border-purple-500 dark:hover:border-terminal-purple',
+    yellow: 'text-warning dark:text-terminal-yellow border-warning/30 dark:border-terminal-yellow/30 hover:border-warning dark:hover:border-terminal-yellow',
+    red: 'text-error dark:text-terminal-red border-error/30 dark:border-terminal-red/30 hover:border-error dark:hover:border-terminal-red',
+  };
+
+  return (
+    <button
+      onClick={() => navigate(href)}
+      className={`
+        group relative p-4 rounded-lg border-2 transition-all duration-150
+        bg-white dark:bg-terminal-card
+        ${colorClasses[color]}
+        hover:shadow-md dark:hover:shadow-lg
+        focus:outline-none focus:ring-2 focus:ring-brand dark:focus:ring-terminal-orange focus:ring-offset-2 dark:focus:ring-offset-terminal-bg
+        text-left w-full
+      `}
+    >
+      <div className="flex items-start justify-between">
+        <div className="space-y-1">
+          <div className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-terminal-text-muted">
+            {label}
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-3xl font-bold text-gray-900 dark:text-terminal-text">{value}</span>
+            {badge && (
+              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${colorClasses[color].split(' ')[0]} bg-current/10`}>
+                {badge}
+              </span>
+            )}
+          </div>
+          {subvalue && (
+            <div className="text-xs text-gray-500 dark:text-terminal-text-muted">{subvalue}</div>
+          )}
+        </div>
+        <div className={`p-2 rounded-lg bg-current/5 ${colorClasses[color].split(' ')[0]}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+      <div className="absolute bottom-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <ArrowUpRight className="h-4 w-4 text-gray-400 dark:text-terminal-text-muted" />
+      </div>
+    </button>
+  );
+}
+
+// =============================================================================
+// Progress Ring Component
+// =============================================================================
+
+function ProgressRing({ progress, size = 120 }: { progress: number; size?: number }) {
+  const strokeWidth = 8;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  const getColor = () => {
+    if (progress === 100) return 'text-terminal-green';
+    if (progress >= 75) return 'text-terminal-blue';
+    if (progress >= 50) return 'text-terminal-yellow';
+    if (progress >= 25) return 'text-terminal-orange';
+    return 'text-terminal-text-muted';
+  };
+
+  return (
+    <div className="relative inline-flex items-center justify-center">
+      <svg width={size} height={size} className="-rotate-90">
+        <circle
+          className="text-gray-200 dark:text-terminal-border"
+          strokeWidth={strokeWidth}
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+        <circle
+          className={`${getColor()} transition-all duration-500`}
+          strokeWidth={strokeWidth}
+          strokeDasharray={circumference}
+          strokeDashoffset={strokeDashoffset}
+          strokeLinecap="round"
+          stroke="currentColor"
+          fill="transparent"
+          r={radius}
+          cx={size / 2}
+          cy={size / 2}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center">
+        <span className="text-2xl font-bold text-gray-900 dark:text-terminal-text">{progress}%</span>
+        <span className="text-xs text-gray-500 dark:text-terminal-text-muted">complete</span>
+      </div>
+    </div>
+  );
+}
+
+// =============================================================================
+// System Status Component
+// =============================================================================
+
+function SystemStatus({ status }: { status: StatusResponse }) {
   const systems = [
     {
       name: 'Framework',
       active: status?.framework?.installed,
       icon: Terminal,
+      detail: status?.framework?.installed ? 'Installed' : 'Not installed',
     },
     {
       name: 'Memory',
       active: status?.memory?.initialized,
-      icon: Brain,
+      icon: Database,
+      detail: status?.memory?.initialized ? `${status.memory.blocksCount} blocks` : 'Not initialized',
     },
     {
       name: 'Skills',
       active: status?.skills?.initialized,
       icon: Zap,
+      detail: status?.skills?.initialized ? `${status.skills.skillsCount} skills` : 'Not initialized',
     },
   ];
 
   return (
     <div className="terminal-card p-4">
-      <div className="terminal-header">System Status</div>
-      <div className="space-y-2">
+      <div className="flex items-center gap-2 mb-4">
+        <Cpu className="h-4 w-4 text-brand dark:text-terminal-orange" />
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text uppercase tracking-wide">
+          System Status
+        </h3>
+      </div>
+      <div className="space-y-3">
         {systems.map((system) => (
           <div
             key={system.name}
-            className="flex items-center justify-between py-1.5"
+            className="flex items-center justify-between py-2 px-3 rounded bg-gray-50 dark:bg-terminal-elevated"
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <system.icon className="h-4 w-4 text-gray-400 dark:text-terminal-text-muted" />
-              <span className="text-sm text-gray-600 dark:text-terminal-text-secondary">
-                {system.name}
+              <div>
+                <div className="text-sm font-medium text-gray-900 dark:text-terminal-text">
+                  {system.name}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-terminal-text-muted">
+                  {system.detail}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Circle
+                className={`h-2 w-2 ${
+                  system.active
+                    ? 'text-terminal-green fill-terminal-green'
+                    : 'text-gray-300 dark:text-terminal-text-muted fill-current'
+                }`}
+              />
+              <span
+                className={`text-xs font-medium ${
+                  system.active
+                    ? 'text-terminal-green'
+                    : 'text-gray-400 dark:text-terminal-text-muted'
+                }`}
+              >
+                {system.active ? 'Active' : 'Inactive'}
               </span>
             </div>
-            <span
-              className={
-                system.active
-                  ? 'terminal-badge-success'
-                  : 'terminal-badge-neutral'
-              }
-            >
-              {system.active ? 'Active' : 'Inactive'}
-            </span>
           </div>
         ))}
       </div>
+    </div>
+  );
+}
 
-      {/* Project Info */}
-      <div className="mt-4 pt-3 border-t border-gray-200 dark:border-terminal-border">
-        <div className="space-y-2">
-          <div>
-            <span className="text-xs text-gray-500 dark:text-terminal-text-muted">
-              Project
-            </span>
-            <p className="terminal-code mt-0.5 block truncate">
-              {status?.name ?? 'Unknown'}
-            </p>
-          </div>
-          <div>
-            <span className="text-xs text-gray-500 dark:text-terminal-text-muted">
-              Path
-            </span>
-            <p className="text-xs font-mono text-gray-500 dark:text-terminal-text-muted truncate mt-0.5">
-              {status?.path ?? 'Unknown'}
-            </p>
-          </div>
-        </div>
+// =============================================================================
+// Quick Actions Component
+// =============================================================================
+
+function QuickActions() {
+  const navigate = useNavigate();
+
+  const actions = [
+    { label: 'View Specs', icon: FileText, href: '/specs' },
+    { label: 'View Tasks', icon: CheckSquare, href: '/tasks' },
+    { label: 'Task Board', icon: Activity, href: '/tasks/kanban' },
+    { label: 'Roadmap', icon: GitBranch, href: '/roadmap' },
+  ];
+
+  return (
+    <div className="terminal-card p-4">
+      <div className="flex items-center gap-2 mb-4">
+        <ChevronRight className="h-4 w-4 text-brand dark:text-terminal-orange" />
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text uppercase tracking-wide">
+          Quick Actions
+        </h3>
+      </div>
+      <div className="space-y-2">
+        {actions.map((action) => (
+          <button
+            key={action.href}
+            onClick={() => navigate(action.href)}
+            className="
+              w-full flex items-center gap-3 px-3 py-2 rounded
+              text-sm text-left
+              text-gray-700 dark:text-terminal-text-secondary
+              hover:bg-gray-50 dark:hover:bg-terminal-elevated
+              hover:text-brand dark:hover:text-terminal-orange
+              transition-colors
+            "
+          >
+            <action.icon className="h-4 w-4" />
+            <span>{action.label}</span>
+            <ChevronRight className="h-3 w-3 ml-auto opacity-50" />
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -291,75 +348,81 @@ export default function Dashboard() {
   const fixesCount = status?.framework?.fixesCount ?? 0;
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-terminal-text flex items-center gap-2">
-            <Activity className="h-6 w-6 text-brand dark:text-terminal-yellow" />
-            Dashboard
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-terminal-text-muted">
-            <span className="terminal-prompt">{status?.name || 'project'}</span>
-          </p>
-        </div>
-        {summary && summary.totalTasks > 0 && (
-          <div className="text-right">
-            <div className="text-3xl font-bold text-gray-900 dark:text-terminal-text">
-              {summary.progress}
-              <span className="text-lg text-gray-400 dark:text-terminal-text-muted">%</span>
+    <div className="space-y-6 max-w-7xl mx-auto">
+      {/* Terminal Header */}
+      <TerminalHeader projectName={status?.name || 'project'} />
+
+      {/* Main Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <QuickStat
+          label="Specifications"
+          value={summary?.totalSpecs ?? 0}
+          subvalue="Feature specs"
+          icon={FileText}
+          href="/specs"
+          color="orange"
+        />
+        <QuickStat
+          label="Tasks"
+          value={summary?.totalTasks ?? 0}
+          subvalue={`${summary?.completedTasks ?? 0} completed`}
+          icon={CheckSquare}
+          href="/tasks"
+          color="blue"
+          badge={summary?.completedTasks === summary?.totalTasks && (summary?.totalTasks ?? 0) > 0 ? 'Done' : undefined}
+        />
+        <QuickStat
+          label="Bug Fixes"
+          value={fixesCount}
+          subvalue="Fix records"
+          icon={Bug}
+          href="/fixes"
+          color={fixesCount > 0 ? 'yellow' : 'green'}
+        />
+        <QuickStat
+          label="Progress"
+          value={`${summary?.progress ?? 0}%`}
+          subvalue="Overall completion"
+          icon={Activity}
+          href="/tasks/kanban"
+          color={summary?.progress === 100 ? 'green' : 'purple'}
+        />
+      </div>
+
+      {/* Progress Section */}
+      {summary && summary.totalTasks > 0 && (
+        <div className="terminal-card p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text uppercase tracking-wide mb-4">
+                Overall Progress
+              </h3>
+              <div className="space-y-2">
+                <div className="terminal-progress h-3">
+                  <div
+                    className={`terminal-progress-bar ${
+                      summary.progress === 100
+                        ? 'bg-terminal-green'
+                        : summary.progress >= 75
+                        ? 'bg-terminal-blue'
+                        : summary.progress >= 50
+                        ? 'bg-terminal-yellow'
+                        : 'bg-terminal-orange'
+                    }`}
+                    style={{ width: `${summary.progress}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-gray-500 dark:text-terminal-text-muted">
+                  <span>{summary.completedTasks} of {summary.totalTasks} tasks completed</span>
+                  <span>{summary.progress}%</span>
+                </div>
+              </div>
             </div>
-            <div className="text-xs text-gray-500 dark:text-terminal-text-muted">
-              complete
+            <div className="ml-8 hidden sm:block">
+              <ProgressRing progress={summary.progress} size={100} />
             </div>
           </div>
-        )}
-      </div>
-
-      {/* Quick Stats Grid - Clickable Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          title="Specs"
-          value={summary?.totalSpecs ?? 0}
-          subtitle="Feature specifications"
-          icon={FileText}
-          color="brand"
-          href="/specs"
-        />
-        <StatCard
-          title="Tasks"
-          value={summary?.totalTasks ?? 0}
-          subtitle={`${summary?.completedTasks ?? 0} completed`}
-          icon={CheckSquare}
-          color="info"
-          href="/tasks"
-          badge={summary?.completedTasks === summary?.totalTasks && summary?.totalTasks > 0 ? 'Done' : undefined}
-        />
-        <StatCard
-          title="Fixes"
-          value={fixesCount}
-          subtitle="Bug fix records"
-          icon={Bug}
-          color={fixesCount > 0 ? 'warning' : 'success'}
-          href="/fixes"
-        />
-        <StatCard
-          title="Progress"
-          value={`${summary?.progress ?? 0}%`}
-          subtitle="Overall completion"
-          icon={GitBranch}
-          color={summary?.progress === 100 ? 'success' : 'info'}
-          href="/tasks/kanban"
-        />
-      </div>
-
-      {/* Progress Bar */}
-      {summary && summary.totalTasks > 0 && (
-        <ProgressDisplay
-          progress={summary.progress}
-          completed={summary.completedTasks}
-          total={summary.totalTasks}
-        />
+        </div>
       )}
 
       {/* Main Dashboard Grid */}
@@ -367,19 +430,41 @@ export default function Dashboard() {
         {/* Left Column */}
         <div className="space-y-6">
           <ExecutionProgressCard />
-          <GitStatusCard />
+          <QuickActions />
         </div>
 
         {/* Middle Column */}
         <div className="space-y-6">
+          <GitStatusCard />
           <MCPStatusCard />
-          <MemoryOverviewCard />
         </div>
 
         {/* Right Column */}
         <div className="space-y-6">
-          <SkillsSummaryCard />
-          <SystemStatusCard status={status!} />
+          <SystemStatus status={status!} />
+          {/* Project Info */}
+          <div className="terminal-card p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Terminal className="h-4 w-4 text-brand dark:text-terminal-orange" />
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text uppercase tracking-wide">
+                Project Info
+              </h3>
+            </div>
+            <div className="space-y-3">
+              <div className="py-2 px-3 rounded bg-gray-50 dark:bg-terminal-elevated">
+                <div className="text-xs text-gray-500 dark:text-terminal-text-muted mb-1">Name</div>
+                <div className="text-sm font-mono text-gray-900 dark:text-terminal-text truncate">
+                  {status?.name ?? 'Unknown'}
+                </div>
+              </div>
+              <div className="py-2 px-3 rounded bg-gray-50 dark:bg-terminal-elevated">
+                <div className="text-xs text-gray-500 dark:text-terminal-text-muted mb-1">Path</div>
+                <div className="text-xs font-mono text-gray-500 dark:text-terminal-text-muted truncate">
+                  {status?.path ?? 'Unknown'}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

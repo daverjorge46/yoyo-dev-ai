@@ -7,6 +7,7 @@
 import { Hono } from 'hono';
 import { existsSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { openDatabase, queryOne } from '../lib/database.js';
 import type { Variables } from '../types.js';
 
 export const statusRoutes = new Hono<{ Variables: Variables }>();
@@ -96,18 +97,19 @@ function getFrameworkStatus(projectRoot: string): FrameworkStatus {
   return { installed, hasProduct, specsCount, fixesCount };
 }
 
-function getMemoryStatus(projectRoot: string): MemoryStatus {
+async function getMemoryStatus(projectRoot: string): Promise<MemoryStatus> {
   const memoryDbPath = join(projectRoot, '.yoyo-dev', 'memory', 'memory.db');
   const initialized = existsSync(memoryDbPath);
 
   let blocksCount = 0;
   if (initialized) {
     try {
-      const Database = require('better-sqlite3');
-      const db = new Database(memoryDbPath, { readonly: true });
-      const row = db.prepare('SELECT COUNT(*) as count FROM memory_blocks').get() as { count: number };
-      blocksCount = row.count;
-      db.close();
+      const db = await openDatabase(memoryDbPath);
+      if (db) {
+        const row = queryOne<{ count: number }>(db, 'SELECT COUNT(*) as count FROM memory_blocks');
+        blocksCount = row?.count || 0;
+        db.close();
+      }
     } catch {
       // Ignore
     }
@@ -120,18 +122,19 @@ function getMemoryStatus(projectRoot: string): MemoryStatus {
   };
 }
 
-function getSkillsStatus(projectRoot: string): SkillsStatus {
+async function getSkillsStatus(projectRoot: string): Promise<SkillsStatus> {
   const skillsDbPath = join(projectRoot, '.yoyo-dev', 'skills', 'skills.db');
   const initialized = existsSync(skillsDbPath);
 
   let skillsCount = 0;
   if (initialized) {
     try {
-      const Database = require('better-sqlite3');
-      const db = new Database(skillsDbPath, { readonly: true });
-      const row = db.prepare('SELECT COUNT(*) as count FROM skill_tracking').get() as { count: number };
-      skillsCount = row.count;
-      db.close();
+      const db = await openDatabase(skillsDbPath);
+      if (db) {
+        const row = queryOne<{ count: number }>(db, 'SELECT COUNT(*) as count FROM skill_tracking');
+        skillsCount = row?.count || 0;
+        db.close();
+      }
     } catch {
       // Ignore
     }
@@ -149,15 +152,15 @@ function getSkillsStatus(projectRoot: string): SkillsStatus {
 // =============================================================================
 
 // GET /api/status - Full project status
-statusRoutes.get('/', (c) => {
+statusRoutes.get('/', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
 
   const status: ProjectStatus = {
     name: getProjectName(projectRoot),
     path: projectRoot,
     framework: getFrameworkStatus(projectRoot),
-    memory: getMemoryStatus(projectRoot),
-    skills: getSkillsStatus(projectRoot),
+    memory: await getMemoryStatus(projectRoot),
+    skills: await getSkillsStatus(projectRoot),
   };
 
   return c.json(status);
@@ -170,13 +173,13 @@ statusRoutes.get('/framework', (c) => {
 });
 
 // GET /api/status/memory - Memory status only
-statusRoutes.get('/memory', (c) => {
+statusRoutes.get('/memory', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
-  return c.json(getMemoryStatus(projectRoot));
+  return c.json(await getMemoryStatus(projectRoot));
 });
 
 // GET /api/status/skills - Skills status only
-statusRoutes.get('/skills', (c) => {
+statusRoutes.get('/skills', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
-  return c.json(getSkillsStatus(projectRoot));
+  return c.json(await getSkillsStatus(projectRoot));
 });

@@ -3,6 +3,7 @@
  *
  * Root application component with panel-based layout.
  * Features resizable sidebar, main content area, and detail panel.
+ * Includes theme toggle for dark/light mode.
  */
 
 import { Routes, Route } from 'react-router-dom';
@@ -19,6 +20,7 @@ import Recaps from './pages/Recaps';
 import Patterns from './pages/Patterns';
 import Chat from './pages/Chat';
 import { ConnectionStatus } from './components/ConnectionStatus';
+import { ThemeToggle, useTheme } from './components/ThemeToggle';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useWebSocketContext } from './contexts/WebSocketContext';
 import type { ConnectionStatus as ConnectionStatusType } from './hooks/useWebSocket';
@@ -52,26 +54,35 @@ interface HeaderProps {
 }
 
 function Header({ isLoading, status, wsStatus, onReconnect }: HeaderProps) {
+  const { theme, setTheme } = useTheme();
+
   return (
     <header
       className="
         flex items-center justify-between h-14 px-4
-        bg-white dark:bg-gray-800
-        border-b border-gray-200 dark:border-gray-700
+        bg-white dark:bg-terminal-card
+        border-b border-gray-200 dark:border-terminal-border
       "
       role="banner"
     >
-      {/* Page title area - can be customized per page */}
+      {/* Left side - can add breadcrumbs or page title here */}
       <div className="flex-1" />
 
-      {/* Status indicators */}
-      <div className="flex items-center gap-4">
+      {/* Right side - Status indicators and theme toggle */}
+      <div className="flex items-center gap-3">
         {/* Project status */}
         {!isLoading && !status?.framework?.installed && (
-          <span className="text-xs text-yellow-600 dark:text-yellow-400 bg-yellow-100 dark:bg-yellow-900/30 px-2 py-1 rounded">
+          <span className="text-xs text-warning-dark dark:text-terminal-yellow bg-warning/10 dark:bg-terminal-yellow/10 px-2 py-1 rounded font-medium">
             Not initialized
           </span>
         )}
+
+        {/* Theme toggle */}
+        <ThemeToggle
+          theme={theme}
+          onThemeChange={setTheme}
+        />
+
         {/* WebSocket connection status */}
         <ConnectionStatus status={wsStatus} onReconnect={onReconnect} />
       </div>

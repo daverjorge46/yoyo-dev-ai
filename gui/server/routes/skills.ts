@@ -7,7 +7,7 @@
 import { Hono } from 'hono';
 import { existsSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
-import Database from 'better-sqlite3';
+import { openDatabase, queryAll, queryOne } from '../lib/database.js';
 import type { Variables } from '../types.js';
 
 export const skillsRoutes = new Hono<{ Variables: Variables }>();
@@ -54,14 +54,6 @@ function getSkillsDbPath(projectRoot: string): string {
 function getSkillsDir(projectRoot: string): string {
   // Skills are stored in .claude/skills/ directory (Claude Code convention)
   return join(projectRoot, '.claude', 'skills');
-}
-
-function getDatabase(projectRoot: string): Database.Database | null {
-  const dbPath = getSkillsDbPath(projectRoot);
-  if (!existsSync(dbPath)) {
-    return null;
-  }
-  return new Database(dbPath);
 }
 
 function parseSkillFile(content: string, filename: string): Partial<SkillSummary> | null {
@@ -184,28 +176,47 @@ function getSkillsFromFiles(projectRoot: string): SkillSummary[] {
   return skills;
 }
 
-function getStatsFromDb(projectRoot: string): SkillStats[] {
-  const db = getDatabase(projectRoot);
+async function getStatsFromDb(projectRoot: string): Promise<SkillStats[]> {
+  const dbPath = getSkillsDbPath(projectRoot);
+  const db = await openDatabase(dbPath);
+
   if (!db) {
     return [];
   }
 
   try {
-    const rows = db.prepare(`
+    const rows = queryAll<{
+      skill_id: string;
+      name: string;
+      total_usage: number;
+      success_count: number;
+      failure_count: number;
+      success_rate: number;
+      last_used: string | null;
+    }>(db, `
       SELECT
-        skill_id as skillId,
+        skill_id,
         name,
-        total_usage as totalUsage,
-        success_count as successCount,
-        failure_count as failureCount,
-        success_rate as successRate,
-        last_used as lastUsed
+        total_usage,
+        success_count,
+        failure_count,
+        success_rate,
+        last_used
       FROM skill_tracking
       ORDER BY total_usage DESC
-    `).all() as SkillStats[];
+    `);
 
     db.close();
-    return rows;
+
+    return rows.map(row => ({
+      skillId: row.skill_id,
+      name: row.name,
+      totalUsage: row.total_usage,
+      successCount: row.success_count,
+      failureCount: row.failure_count,
+      successRate: row.success_rate,
+      lastUsed: row.last_used,
+    }));
   } catch {
     db.close();
     return [];
@@ -217,14 +228,14 @@ function getStatsFromDb(projectRoot: string): SkillStats[] {
 // =============================================================================
 
 // GET /api/skills - List all skills
-skillsRoutes.get('/', (c) => {
+skillsRoutes.get('/', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
 
   // Get skills from markdown files
   const skills = getSkillsFromFiles(projectRoot);
 
   // Merge with database stats
-  const dbStats = getStatsFromDb(projectRoot);
+  const dbStats = await getStatsFromDb(projectRoot);
   const statsMap = new Map(dbStats.map(s => [s.skillId, s]));
 
   for (const skill of skills) {
@@ -243,10 +254,12 @@ skillsRoutes.get('/', (c) => {
 });
 
 // GET /api/skills/stats - Get aggregate statistics
-skillsRoutes.get('/stats', (c) => {
+skillsRoutes.get('/stats', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
 
-  const db = getDatabase(projectRoot);
+  const dbPath = getSkillsDbPath(projectRoot);
+  const db = await openDatabase(dbPath);
+
   if (!db) {
     return c.json({
       initialized: false,
@@ -257,17 +270,35 @@ skillsRoutes.get('/stats', (c) => {
 
   try {
     // Get all stats
-    const allStats = db.prepare(`
+    const rows = queryAll<{
+      skill_id: string;
+      name: string;
+      total_usage: number;
+      success_count: number;
+      failure_count: number;
+      success_rate: number;
+      last_used: string | null;
+    }>(db, `
       SELECT
-        skill_id as skillId,
+        skill_id,
         name,
-        total_usage as totalUsage,
-        success_count as successCount,
-        failure_count as failureCount,
-        success_rate as successRate,
-        last_used as lastUsed
+        total_usage,
+        success_count,
+        failure_count,
+        success_rate,
+        last_used
       FROM skill_tracking
-    `).all() as SkillStats[];
+    `);
+
+    const allStats: SkillStats[] = rows.map(row => ({
+      skillId: row.skill_id,
+      name: row.name,
+      totalUsage: row.total_usage,
+      successCount: row.success_count,
+      failureCount: row.failure_count,
+      successRate: row.success_rate,
+      lastUsed: row.last_used,
+    }));
 
     // Calculate aggregates
     const totalSkills = allStats.length;
@@ -306,7 +337,7 @@ skillsRoutes.get('/stats', (c) => {
 });
 
 // GET /api/skills/:id - Get skill details
-skillsRoutes.get('/:id', (c) => {
+skillsRoutes.get('/:id', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
   const skillId = c.req.param('id');
 
@@ -326,23 +357,44 @@ skillsRoutes.get('/:id', (c) => {
   }
 
   // Get stats from database
-  const db = getDatabase(projectRoot);
+  const dbPath = getSkillsDbPath(projectRoot);
+  const db = await openDatabase(dbPath);
   let stats: SkillStats | null = null;
 
   if (db) {
     try {
-      stats = db.prepare(`
+      const row = queryOne<{
+        skill_id: string;
+        name: string;
+        total_usage: number;
+        success_count: number;
+        failure_count: number;
+        success_rate: number;
+        last_used: string | null;
+      }>(db, `
         SELECT
-          skill_id as skillId,
+          skill_id,
           name,
-          total_usage as totalUsage,
-          success_count as successCount,
-          failure_count as failureCount,
-          success_rate as successRate,
-          last_used as lastUsed
+          total_usage,
+          success_count,
+          failure_count,
+          success_rate,
+          last_used
         FROM skill_tracking
         WHERE skill_id = ?
-      `).get(skillId) as SkillStats | undefined || null;
+      `, [skillId]);
+
+      if (row) {
+        stats = {
+          skillId: row.skill_id,
+          name: row.name,
+          totalUsage: row.total_usage,
+          successCount: row.success_count,
+          failureCount: row.failure_count,
+          successRate: row.success_rate,
+          lastUsed: row.last_used,
+        };
+      }
       db.close();
     } catch {
       db.close();

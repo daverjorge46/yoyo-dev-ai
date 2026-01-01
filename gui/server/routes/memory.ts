@@ -5,9 +5,8 @@
  */
 
 import { Hono } from 'hono';
-import { existsSync } from 'fs';
 import { join } from 'path';
-import Database from 'better-sqlite3';
+import { openDatabase, queryAll, queryOne, execute, saveDatabase } from '../lib/database.js';
 import type { Variables } from '../types.js';
 
 export const memoryRoutes = new Hono<{ Variables: Variables }>();
@@ -26,6 +25,16 @@ interface MemoryBlock {
   updatedAt: string;
 }
 
+interface MemoryBlockRow {
+  id: string;
+  type: string;
+  scope: string;
+  content: string;
+  version: number;
+  created_at: string;
+  updated_at: string;
+}
+
 // =============================================================================
 // Helpers
 // =============================================================================
@@ -34,23 +43,7 @@ function getMemoryDbPath(projectRoot: string): string {
   return join(projectRoot, '.yoyo-dev', 'memory', 'memory.db');
 }
 
-function getDatabase(projectRoot: string): Database.Database | null {
-  const dbPath = getMemoryDbPath(projectRoot);
-  if (!existsSync(dbPath)) {
-    return null;
-  }
-  return new Database(dbPath);
-}
-
-function rowToBlock(row: {
-  id: string;
-  type: string;
-  scope: string;
-  content: string;
-  version: number;
-  created_at: string;
-  updated_at: string;
-}): MemoryBlock {
+function rowToBlock(row: MemoryBlockRow): MemoryBlock {
   return {
     id: row.id,
     type: row.type as MemoryBlock['type'],
@@ -67,9 +60,10 @@ function rowToBlock(row: {
 // =============================================================================
 
 // GET /api/memory - List all memory blocks
-memoryRoutes.get('/', (c) => {
+memoryRoutes.get('/', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
-  const db = getDatabase(projectRoot);
+  const dbPath = getMemoryDbPath(projectRoot);
+  const db = await openDatabase(dbPath);
 
   if (!db) {
     return c.json({
@@ -80,22 +74,13 @@ memoryRoutes.get('/', (c) => {
   }
 
   try {
-    const rows = db.prepare(`
+    const rows = queryAll<MemoryBlockRow>(db, `
       SELECT id, type, scope, content, version, created_at, updated_at
       FROM memory_blocks
       ORDER BY type, scope
-    `).all() as Array<{
-      id: string;
-      type: string;
-      scope: string;
-      content: string;
-      version: number;
-      created_at: string;
-      updated_at: string;
-    }>;
+    `);
 
     const blocks = rows.map(rowToBlock);
-
     db.close();
 
     return c.json({
@@ -110,7 +95,7 @@ memoryRoutes.get('/', (c) => {
 });
 
 // GET /api/memory/:type - Get specific memory block
-memoryRoutes.get('/:type', (c) => {
+memoryRoutes.get('/:type', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
   const blockType = c.req.param('type');
 
@@ -118,25 +103,19 @@ memoryRoutes.get('/:type', (c) => {
     return c.json({ error: 'Invalid block type' }, 400);
   }
 
-  const db = getDatabase(projectRoot);
+  const dbPath = getMemoryDbPath(projectRoot);
+  const db = await openDatabase(dbPath);
+
   if (!db) {
     return c.json({ error: 'Memory system not initialized' }, 404);
   }
 
   try {
-    const row = db.prepare(`
+    const row = queryOne<MemoryBlockRow>(db, `
       SELECT id, type, scope, content, version, created_at, updated_at
       FROM memory_blocks
       WHERE type = ? AND scope = 'project'
-    `).get(blockType) as {
-      id: string;
-      type: string;
-      scope: string;
-      content: string;
-      version: number;
-      created_at: string;
-      updated_at: string;
-    } | undefined;
+    `, [blockType]);
 
     db.close();
 
@@ -165,7 +144,9 @@ memoryRoutes.put('/:type', async (c) => {
     return c.json({ error: 'Invalid content' }, 400);
   }
 
-  const db = getDatabase(projectRoot);
+  const dbPath = getMemoryDbPath(projectRoot);
+  const db = await openDatabase(dbPath);
+
   if (!db) {
     return c.json({ error: 'Memory system not initialized' }, 404);
   }
@@ -173,28 +154,25 @@ memoryRoutes.put('/:type', async (c) => {
   try {
     const now = new Date().toISOString();
 
-    db.prepare(`
+    execute(db, `
       UPDATE memory_blocks
       SET content = ?, version = version + 1, updated_at = ?
       WHERE type = ? AND scope = 'project'
-    `).run(JSON.stringify(body.content), now, blockType);
+    `, [JSON.stringify(body.content), now, blockType]);
 
     // Get updated block
-    const row = db.prepare(`
+    const row = queryOne<MemoryBlockRow>(db, `
       SELECT id, type, scope, content, version, created_at, updated_at
       FROM memory_blocks
       WHERE type = ? AND scope = 'project'
-    `).get(blockType) as {
-      id: string;
-      type: string;
-      scope: string;
-      content: string;
-      version: number;
-      created_at: string;
-      updated_at: string;
-    };
+    `, [blockType]);
 
+    saveDatabase(db, dbPath);
     db.close();
+
+    if (!row) {
+      return c.json({ error: 'Block not found after update' }, 500);
+    }
 
     return c.json(rowToBlock(row));
   } catch (error) {
@@ -220,7 +198,9 @@ memoryRoutes.post('/', async (c) => {
     return c.json({ error: 'Invalid content' }, 400);
   }
 
-  const db = getDatabase(projectRoot);
+  const dbPath = getMemoryDbPath(projectRoot);
+  const db = await openDatabase(dbPath);
+
   if (!db) {
     return c.json({ error: 'Memory system not initialized' }, 404);
   }
@@ -229,9 +209,9 @@ memoryRoutes.post('/', async (c) => {
 
   try {
     // Check if block already exists
-    const existing = db.prepare(`
+    const existing = queryOne<{ id: string }>(db, `
       SELECT id FROM memory_blocks WHERE type = ? AND scope = ?
-    `).get(body.type, scope);
+    `, [body.type, scope]);
 
     if (existing) {
       db.close();
@@ -241,27 +221,24 @@ memoryRoutes.post('/', async (c) => {
     const now = new Date().toISOString();
     const id = `${scope}-${body.type}-${Date.now()}`;
 
-    db.prepare(`
+    execute(db, `
       INSERT INTO memory_blocks (id, type, scope, content, version, created_at, updated_at)
       VALUES (?, ?, ?, ?, 1, ?, ?)
-    `).run(id, body.type, scope, JSON.stringify(body.content), now, now);
+    `, [id, body.type, scope, JSON.stringify(body.content), now, now]);
 
     // Get created block
-    const row = db.prepare(`
+    const row = queryOne<MemoryBlockRow>(db, `
       SELECT id, type, scope, content, version, created_at, updated_at
       FROM memory_blocks
       WHERE id = ?
-    `).get(id) as {
-      id: string;
-      type: string;
-      scope: string;
-      content: string;
-      version: number;
-      created_at: string;
-      updated_at: string;
-    };
+    `, [id]);
 
+    saveDatabase(db, dbPath);
     db.close();
+
+    if (!row) {
+      return c.json({ error: 'Failed to retrieve created block' }, 500);
+    }
 
     return c.json(rowToBlock(row), 201);
   } catch (error) {
@@ -271,7 +248,7 @@ memoryRoutes.post('/', async (c) => {
 });
 
 // DELETE /api/memory/:type - Delete memory block
-memoryRoutes.delete('/:type', (c) => {
+memoryRoutes.delete('/:type', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
   const blockType = c.req.param('type');
 
@@ -279,20 +256,24 @@ memoryRoutes.delete('/:type', (c) => {
     return c.json({ error: 'Cannot delete persona or project blocks' }, 400);
   }
 
-  const db = getDatabase(projectRoot);
+  const dbPath = getMemoryDbPath(projectRoot);
+  const db = await openDatabase(dbPath);
+
   if (!db) {
     return c.json({ error: 'Memory system not initialized' }, 404);
   }
 
   try {
-    const result = db.prepare(`
+    execute(db, `
       DELETE FROM memory_blocks
       WHERE type = ? AND scope = 'project'
-    `).run(blockType);
+    `, [blockType]);
 
+    const changes = db.getRowsModified();
+    saveDatabase(db, dbPath);
     db.close();
 
-    if (result.changes === 0) {
+    if (changes === 0) {
       return c.json({ error: 'Block not found' }, 404);
     }
 
