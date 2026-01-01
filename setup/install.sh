@@ -348,7 +348,7 @@ TOTAL_STEPS=8
 CURRENT_STEP=0
 
 # Step 1: Create directories
-((CURRENT_STEP++))
+((++CURRENT_STEP))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Creating project directories..."
 
 mkdir -p "$INSTALL_DIR"
@@ -370,7 +370,7 @@ ui_success "Directories created"
 echo ""
 
 # Step 2: Copy framework files
-((CURRENT_STEP++))
+((++CURRENT_STEP))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Installing framework files..."
 
 if [ "$IS_FROM_BASE" = true ]; then
@@ -391,7 +391,7 @@ ui_success "Framework files installed"
 echo ""
 
 # Step 3: Create config file
-((CURRENT_STEP++))
+((++CURRENT_STEP))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Creating configuration..."
 
 cat > "$INSTALL_DIR/config.yml" << EOF
@@ -417,7 +417,7 @@ echo ""
 
 # Step 4: Install MCP servers
 if [ "$AUTO_INSTALL_MCP" = true ]; then
-    ((CURRENT_STEP++))
+    ((++CURRENT_STEP))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Installing MCP servers..."
 
     if [ -f "$SCRIPT_DIR/docker-mcp-setup.sh" ]; then
@@ -427,13 +427,13 @@ if [ "$AUTO_INSTALL_MCP" = true ]; then
     fi
     echo ""
 else
-    ((CURRENT_STEP++))
+    ((++CURRENT_STEP))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping MCP server installation..."
     echo ""
 fi
 
 # Step 6: Create .gitignore entries
-((CURRENT_STEP++))
+((++CURRENT_STEP))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Updating .gitignore..."
 
 if [ ! -f ".gitignore" ]; then
@@ -459,7 +459,7 @@ ui_success ".gitignore updated"
 echo ""
 
 # Step 7: Create placeholder files
-((CURRENT_STEP++))
+((++CURRENT_STEP))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Creating placeholder files..."
 
 touch "$INSTALL_DIR/product/.gitkeep"
@@ -472,7 +472,7 @@ ui_success "Placeholders created"
 echo ""
 
 # Step 8: Verify installation
-((CURRENT_STEP++))
+((++CURRENT_STEP))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying installation..."
 
 errors=()
