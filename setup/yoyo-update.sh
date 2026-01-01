@@ -52,13 +52,19 @@ source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
 # Configuration
 # ============================================================================
 
-VERSION="6.0.0"
+VERSION="6.1.0"
 OVERWRITE_INSTRUCTIONS=true
 OVERWRITE_STANDARDS=true
 OVERWRITE_COMMANDS=true
 OVERWRITE_AGENTS=true
+OVERWRITE_HOOKS=true
 VERBOSE=false
 SKIP_MCP_CHECK=false
+
+# Track files changed during update
+declare -a CHANGED_FILES=()
+declare -a CREATED_FILES=()
+declare -a DELETED_FILES=()
 
 # ============================================================================
 # Parse Arguments
@@ -82,11 +88,16 @@ while [[ $# -gt 0 ]]; do
             OVERWRITE_AGENTS=false
             shift
             ;;
+        --no-overwrite-hooks)
+            OVERWRITE_HOOKS=false
+            shift
+            ;;
         --no-overwrite)
             OVERWRITE_INSTRUCTIONS=false
             OVERWRITE_STANDARDS=false
             OVERWRITE_COMMANDS=false
             OVERWRITE_AGENTS=false
+            OVERWRITE_HOOKS=false
             shift
             ;;
         --skip-mcp-check)
@@ -114,6 +125,7 @@ Options:
   ${UI_PRIMARY}--no-overwrite-standards${UI_RESET}       Keep existing standards files
   ${UI_PRIMARY}--no-overwrite-commands${UI_RESET}        Keep existing command files
   ${UI_PRIMARY}--no-overwrite-agents${UI_RESET}          Keep existing agent files
+  ${UI_PRIMARY}--no-overwrite-hooks${UI_RESET}           Keep existing orchestration hooks
   ${UI_PRIMARY}--no-overwrite${UI_RESET}                 Keep all existing framework files
   ${UI_PRIMARY}--skip-mcp-check${UI_RESET}               Skip MCP server verification
   ${UI_PRIMARY}-v, --verbose${UI_RESET}                  Show detailed update information
@@ -249,6 +261,12 @@ else
     update_items+=("Agents → Keep existing")
 fi
 
+if [ "$OVERWRITE_HOOKS" = true ]; then
+    update_items+=("Hooks → Latest orchestration hooks")
+else
+    update_items+=("Hooks → Keep existing")
+fi
+
 update_items+=("Config → Merge with new options")
 update_items+=("User Data → ${UI_BOLD}Protected${UI_RESET} (specs, fixes, recaps)")
 
@@ -293,7 +311,32 @@ show_progress() {
     fi
 }
 
-TOTAL_STEPS=10
+# Helper function to track file changes
+track_file_change() {
+    local file="$1"
+    local action="${2:-changed}"  # changed, created, deleted
+    case $action in
+        created)
+            CREATED_FILES+=("$file")
+            ;;
+        deleted)
+            DELETED_FILES+=("$file")
+            ;;
+        *)
+            CHANGED_FILES+=("$file")
+            ;;
+    esac
+}
+
+# Helper function to count files changed in rsync
+track_rsync_changes() {
+    local dest="$1"
+    local count="$2"
+    # Track the directory as a group change
+    CHANGED_FILES+=("$dest ($count files)")
+}
+
+TOTAL_STEPS=11
 CURRENT_STEP=0
 
 # Get base installation path
@@ -361,6 +404,7 @@ if [ "$OVERWRITE_INSTRUCTIONS" = true ]; then
     show_progress "Copying $FILE_COUNT files..."
 
     rsync -a --delete "$BASE_YOYO_DEV/instructions/" ".yoyo-dev/instructions/" 2>&1
+    track_rsync_changes ".yoyo-dev/instructions/" "$FILE_COUNT"
 
     ui_success "Instructions updated ($FILE_COUNT files)"
     echo ""
@@ -384,6 +428,7 @@ if [ "$OVERWRITE_STANDARDS" = true ]; then
     show_progress "Copying $FILE_COUNT files..."
 
     rsync -a --delete "$BASE_YOYO_DEV/standards/" ".yoyo-dev/standards/" 2>&1
+    track_rsync_changes ".yoyo-dev/standards/" "$FILE_COUNT"
 
     ui_success "Standards updated ($FILE_COUNT files)"
     echo ""
@@ -407,6 +452,7 @@ if [ "$OVERWRITE_COMMANDS" = true ] && [ -d ".claude/commands" ]; then
     show_progress "Copying $FILE_COUNT command files..."
 
     rsync -a "$BASE_YOYO_DEV/.claude/commands/" ".claude/commands/" 2>&1
+    track_rsync_changes ".claude/commands/" "$FILE_COUNT"
 
     ui_success "Commands updated ($FILE_COUNT files)"
     echo ""
@@ -434,6 +480,7 @@ if [ "$OVERWRITE_AGENTS" = true ] && [ -d ".claude/agents" ]; then
     show_progress "Copying $FILE_COUNT agent definitions..."
 
     rsync -a "$BASE_YOYO_DEV/.claude/agents/" ".claude/agents/" 2>&1
+    track_rsync_changes ".claude/agents/" "$FILE_COUNT"
 
     ui_success "Agents updated ($FILE_COUNT files)"
     echo ""
@@ -448,9 +495,51 @@ else
     echo ""
 fi
 
-# Step 7: Merge config
+# Step 7: Update orchestration hooks
+if [ "$OVERWRITE_HOOKS" = true ]; then
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Updating orchestration hooks..."
+
+    # Ensure .claude/hooks directory exists
+    mkdir -p ".claude/hooks"
+
+    # Copy hook bundle
+    if [ -f "$BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs" ]; then
+        show_progress "Copying orchestration hook bundle"
+        cp "$BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs" ".claude/hooks/"
+        track_file_change ".claude/hooks/orchestrate.cjs"
+    else
+        show_progress "Hook bundle not found at $BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs"
+    fi
+
+    # Copy settings.json with hook configuration
+    if [ -f "$BASE_YOYO_DEV/.claude/settings.json" ]; then
+        if [ -f ".claude/settings.json" ]; then
+            # Merge hook configuration into existing settings.json
+            show_progress "Updating hook configuration in settings.json"
+            # Simple approach: overwrite (user customizations should be in settings.local.json)
+            cp "$BASE_YOYO_DEV/.claude/settings.json" ".claude/settings.json"
+            track_file_change ".claude/settings.json"
+        else
+            show_progress "Creating settings.json with hook configuration"
+            cp "$BASE_YOYO_DEV/.claude/settings.json" ".claude/settings.json"
+            track_file_change ".claude/settings.json" "created"
+        fi
+    fi
+
+    ui_success "Orchestration hooks updated"
+    echo ""
+else
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping hooks update..."
+    show_progress "Skipped (--no-overwrite-hooks)"
+    echo ""
+fi
+
+# Step 8: Merge config
 ((CURRENT_STEP++))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Merging configuration..."
+track_file_change ".yoyo-dev/config.yml"
 
 # Update version number
 show_progress "Updating version to" "$VERSION"
@@ -602,6 +691,39 @@ ui_success "Update verified"
 echo ""
 
 # ============================================================================
+# Files Changed Summary
+# ============================================================================
+
+ui_section "Files Changed" "$ICON_FOLDER"
+
+if [ ${#CHANGED_FILES[@]} -gt 0 ]; then
+    echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} ${UI_BOLD}Updated:${UI_RESET}"
+    for file in "${CHANGED_FILES[@]}"; do
+        echo -e "     ${UI_DIM}${file}${UI_RESET}"
+    done
+fi
+
+if [ ${#CREATED_FILES[@]} -gt 0 ]; then
+    echo -e "  ${UI_PRIMARY}+${UI_RESET} ${UI_BOLD}Created:${UI_RESET}"
+    for file in "${CREATED_FILES[@]}"; do
+        echo -e "     ${UI_DIM}${file}${UI_RESET}"
+    done
+fi
+
+if [ ${#DELETED_FILES[@]} -gt 0 ]; then
+    echo -e "  ${UI_ERROR}-${UI_RESET} ${UI_BOLD}Deleted:${UI_RESET}"
+    for file in "${DELETED_FILES[@]}"; do
+        echo -e "     ${UI_DIM}${file}${UI_RESET}"
+    done
+fi
+
+if [ ${#CHANGED_FILES[@]} -eq 0 ] && [ ${#CREATED_FILES[@]} -eq 0 ] && [ ${#DELETED_FILES[@]} -eq 0 ]; then
+    echo -e "  ${UI_DIM}No files were changed${UI_RESET}"
+fi
+
+echo ""
+
+# ============================================================================
 # Completion
 # ============================================================================
 
@@ -611,9 +733,10 @@ ui_section "What's New in v${VERSION}" "$ICON_SPARKLES"
 
 echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} Yoyo Dev updated to ${UI_BOLD}v${VERSION}${UI_RESET}"
 echo ""
-echo -e "  ${ICON_SPARKLES} ${UI_SUCCESS}Claude Code Native Interface${UI_RESET}"
-echo -e "     ${UI_DIM}• Direct Claude Code integration${UI_RESET}"
-echo -e "     ${UI_DIM}• Custom status line with project info${UI_RESET}"
+echo -e "  ${ICON_SPARKLES} ${UI_SUCCESS}Global Orchestration Mode${UI_RESET}"
+echo -e "     ${UI_DIM}• Intent classification on every user message${UI_RESET}"
+echo -e "     ${UI_DIM}• Automatic agent delegation (research, frontend, codebase)${UI_RESET}"
+echo -e "     ${UI_DIM}• Claude Code hook integration${UI_RESET}"
 echo -e "     ${UI_DIM}• Browser GUI dashboard on port 5173${UI_RESET}"
 echo ""
 
