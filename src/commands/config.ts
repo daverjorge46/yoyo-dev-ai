@@ -27,8 +27,8 @@ function configHandler(args: string, context: CommandContext): CommandResult {
 
     output += '**Memory**\n';
     output += `  Enabled: ${config.memory.enabled}\n`;
-    output += `  Global Path: ${config.memory.globalPath ?? '~/.yoyo-ai/memory'}\n`;
-    output += `  Project Path: ${config.memory.projectPath ?? './.yoyo-ai/memory'}\n\n`;
+    output += `  Global Path: ${config.memory.globalPath ?? '~/.yoyo-dev/memory'}\n`;
+    output += `  Project Path: ${config.memory.projectPath ?? './.yoyo-dev/memory'}\n\n`;
 
     output += '**UI**\n';
     output += `  Theme: ${config.ui.theme}\n`;

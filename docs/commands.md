@@ -513,7 +513,7 @@ Initialize memory system by scanning codebase.
    - **Persona block** - AI assistant configuration
 
 **Output:**
-- `.yoyo-ai/memory/memory.db` (SQLite database)
+- `.yoyo-dev/memory/memory/memory.db` (SQLite database)
 
 **When to use:**
 - First time in project

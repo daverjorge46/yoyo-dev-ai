@@ -15,7 +15,7 @@ Gather the following information and display it in a professional, formatted das
 - Read `.yoyo-dev/product/mission-lite.md` for project name and tagline
 - Run `git branch --show-current` for current branch
 - Run `git status --porcelain` to check for uncommitted changes
-- Count memory blocks: `sqlite3 .yoyo-ai/memory/memory.db "SELECT COUNT(*) FROM memory_blocks"` (if exists)
+- Count memory blocks: `sqlite3 .yoyo-dev/memory/memory/memory.db "SELECT COUNT(*) FROM memory_blocks"` (if exists)
 - Count MCP servers: `docker mcp server ls 2>/dev/null | grep -c '^[a-z]'` (if docker available)
 
 ### 2. Active Specification

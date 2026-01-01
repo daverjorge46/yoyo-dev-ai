@@ -48,7 +48,7 @@ interface AggregateStats {
 // =============================================================================
 
 function getSkillsDbPath(projectRoot: string): string {
-  return join(projectRoot, '.yoyo-ai', '.skills', 'skills.db');
+  return join(projectRoot, '.yoyo-dev', 'skills', 'skills.db');
 }
 
 function getSkillsDir(projectRoot: string): string {

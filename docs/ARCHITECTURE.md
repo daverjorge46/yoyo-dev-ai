@@ -459,12 +459,12 @@ interface CorrectionsContent {
 
 ### Dual-Scope System
 
-**Project Scope** (`.yoyo-ai/memory/memory.db`):
+**Project Scope** (`.yoyo-dev/memory/memory/memory.db`):
 - Project-specific memory
 - Overrides global memory
 - Stored in project directory
 
-**Global Scope** (`~/.yoyo-ai/memory/memory.db`):
+**Global Scope** (`~/.yoyo-dev/memory/memory/memory.db`):
 - User preferences
 - Cross-project patterns
 - Stored in home directory
@@ -472,10 +472,10 @@ interface CorrectionsContent {
 **Loading Priority:**
 ```typescript
 // 1. Try project scope first
-const projectMemory = loadMemory('.yoyo-ai/memory/memory.db')
+const projectMemory = loadMemory('.yoyo-dev/memory/memory/memory.db')
 
 // 2. Merge with global scope
-const globalMemory = loadMemory('~/.yoyo-ai/memory/memory.db')
+const globalMemory = loadMemory('~/.yoyo-dev/memory/memory/memory.db')
 
 // 3. Project overrides global
 const memory = { ...globalMemory, ...projectMemory }
@@ -578,7 +578,7 @@ class YoyoTUIApp(App):
 ProjectService      # Reads .yoyo-dev/product/
 SpecsService        # Reads .yoyo-dev/specs/
 TasksService        # Reads tasks.md files
-MemoryBridge        # Reads .yoyo-ai/memory/
+MemoryBridge        # Reads .yoyo-dev/memory/memory/
 
 # File Watchers
 ProjectWatcher      # Watches product files
@@ -709,7 +709,7 @@ Create memory blocks
     ↓
 MemoryService.saveBlock()
     ↓
-SQLite write (.yoyo-ai/memory/memory.db)
+SQLite write (.yoyo-dev/memory/memory/memory.db)
     ↓
 TUI MemoryBridge detects change
     ↓
@@ -880,8 +880,8 @@ Each MCP server runs in isolated Docker container:
 ### File System Access
 
 Memory database stored in:
-- Project: `.yoyo-ai/memory/` (project-specific)
-- Global: `~/.yoyo-ai/memory/` (user directory)
+- Project: `.yoyo-dev/memory/memory/` (project-specific)
+- Global: `~/.yoyo-dev/memory/memory/` (user directory)
 
 Both locations are outside web-accessible directories.
 

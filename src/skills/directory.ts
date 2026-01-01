@@ -28,7 +28,7 @@ export function getSkillPaths(
   const root =
     scope === 'project'
       ? join(projectRoot ?? process.cwd(), SKILL_DIRECTORY)
-      : join(homedir(), '.yoyo-ai', SKILL_DIRECTORY);
+      : join(homedir(), '.yoyo-dev', SKILL_DIRECTORY);
 
   return {
     root,

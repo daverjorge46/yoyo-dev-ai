@@ -35,7 +35,6 @@ CLAUDE_CODE=false
 CURSOR=false
 PROJECT_TYPE=""
 AUTO_INSTALL_MCP=true
-ENABLE_TUI_V4=false  # Ask user during installation
 INTERACTIVE=true
 
 # Tech Stack Configuration
@@ -77,10 +76,6 @@ while [[ $# -gt 0 ]]; do
             AUTO_INSTALL_MCP=false
             shift
             ;;
-        --tui-v4)
-            ENABLE_TUI_V4=true
-            shift
-            ;;
         --non-interactive)
             INTERACTIVE=false
             shift
@@ -100,12 +95,11 @@ Options:
   ${UI_PRIMARY}--cursor${UI_RESET}                    Add Cursor support
   ${UI_PRIMARY}--project-type=TYPE${UI_RESET}         Use specific project type
   ${UI_PRIMARY}--no-auto-mcp${UI_RESET}               Skip automatic MCP server installation
-  ${UI_PRIMARY}--tui-v4${UI_RESET}                    Enable TUI v4 (TypeScript/Ink)
   ${UI_PRIMARY}--non-interactive${UI_RESET}           Run without prompts (use defaults)
   ${UI_PRIMARY}-h, --help${UI_RESET}                  Show this help message
 
 Examples:
-  $0 --claude-code --tui-v4    # Install with Claude Code and TUI v4
+  $0 --claude-code             # Install with Claude Code
   $0 --no-base                 # Install from GitHub
   $0 --cursor                  # Install with Cursor support
 
@@ -178,22 +172,6 @@ echo ""
 
 if [ "$INTERACTIVE" = true ]; then
     ui_section "Configuration Options" "$ICON_WRENCH"
-
-    # TUI Version Selection
-    if [ "$ENABLE_TUI_V4" = false ]; then
-        echo -e "${UI_BOLD}Which TUI version would you like to use?${UI_RESET}"
-        echo ""
-        ui_option "1" "TUI v4 (TypeScript/Ink)" "Modern, 60fps, <100MB memory (recommended)" true
-        ui_option "2" "TUI v3 (Python/Textual)" "Stable, backward compatible"
-
-        echo -n "  Choice [1]: "
-        read -r tui_choice
-        tui_choice=${tui_choice:-1}
-
-        if [ "$tui_choice" = "1" ]; then
-            ENABLE_TUI_V4=true
-        fi
-    fi
 
     # IDE Integration
     if [ "$CLAUDE_CODE" = false ] && [ "$CURSOR" = false ]; then
@@ -320,12 +298,6 @@ ui_section "Installation Summary" "$ICON_PACKAGE"
 summary_items=()
 summary_items+=("Project: $PROJECT_NAME")
 
-if [ "$ENABLE_TUI_V4" = true ]; then
-    summary_items+=("TUI: v4 (TypeScript/Ink)")
-else
-    summary_items+=("TUI: v3 (Python/Textual)")
-fi
-
 if [ "$CLAUDE_CODE" = true ]; then
     summary_items+=("IDE: Claude Code")
 fi
@@ -438,48 +410,12 @@ tech_stack:
   database: "${TECH_STACK_DATABASE:-none}"
   styling: "${TECH_STACK_STYLING:-other}"
 
-# TUI Configuration
-tui:
-  version: "$([ "$ENABLE_TUI_V4" = true ] && echo "v4" || echo "v3")"
-  symbols:
-    enabled: true
-  event_streaming:
-    enabled: true
-
-# Backend API (for TUI v4)
-backend:
-  enabled: $([ "$ENABLE_TUI_V4" = true ] && echo "true" || echo "false")
-  port: 3457
-  host: "localhost"
 EOF
 
 ui_success "Configuration created"
 echo ""
 
-# Step 4: Install Node.js dependencies (if TUI v4 enabled)
-if [ "$ENABLE_TUI_V4" = true ]; then
-    ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Installing TUI v4 dependencies..."
-
-    if command -v npm &> /dev/null; then
-        (cd "$BASE_YOYO_DEV" && npm install --silent 2>&1 | grep -v "npm WARN" || true) &
-        spinner_pid=$!
-        ui_spinner $spinner_pid "  Installing packages"
-        wait $spinner_pid
-
-        ui_success "TUI v4 dependencies installed"
-    else
-        ui_warning "npm not found - TUI v4 requires Node.js"
-        ui_info "Install Node.js and run: cd $BASE_YOYO_DEV && npm install"
-    fi
-    echo ""
-else
-    ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping TUI v4 dependencies (using v3)..."
-    echo ""
-fi
-
-# Step 5: Install MCP servers
+# Step 4: Install MCP servers
 if [ "$AUTO_INSTALL_MCP" = true ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Installing MCP servers..."
@@ -569,30 +505,17 @@ ui_complete "Installation Complete!"
 
 ui_section "Next Steps" "$ICON_ROCKET"
 
-echo -e "  ${UI_PRIMARY}1.${UI_RESET} Launch the TUI:"
-if [ "$ENABLE_TUI_V4" = true ]; then
-    echo -e "     ${UI_DIM}\$ yoyo${UI_RESET} ${UI_DIM}# Launches TUI v4 (TypeScript/Ink)${UI_RESET}"
-else
-    echo -e "     ${UI_DIM}\$ yoyo${UI_RESET} ${UI_DIM}# Launches TUI v3 (Python/Textual)${UI_RESET}"
-fi
+echo -e "  ${UI_PRIMARY}1.${UI_RESET} Launch Claude Code with Yoyo Dev:"
+echo -e "     ${UI_DIM}\$ yoyo${UI_RESET} ${UI_DIM}# Opens Claude Code + Browser GUI${UI_RESET}"
 echo ""
 
 echo -e "  ${UI_PRIMARY}2.${UI_RESET} Start planning your product:"
 echo -e "     ${UI_DIM}Use ${UI_SUCCESS}/plan-product${UI_RESET}${UI_DIM} in Claude Code${UI_RESET}"
 echo ""
 
-echo -e "  ${UI_PRIMARY}3.${UI_RESET} View keyboard shortcuts:"
-echo -e "     ${UI_DIM}Press ${UI_SUCCESS}?${UI_RESET}${UI_DIM} in the TUI${UI_RESET}"
+echo -e "  ${UI_PRIMARY}3.${UI_RESET} View all commands:"
+echo -e "     ${UI_DIM}Use ${UI_SUCCESS}/yoyo-help${UI_RESET}${UI_DIM} in Claude Code${UI_RESET}"
 echo ""
-
-if [ "$ENABLE_TUI_V4" = true ]; then
-    echo -e "  ${ICON_SPARKLES} ${UI_SUCCESS}TUI v4 Features:${UI_RESET}"
-    echo -e "     ${UI_DIM}• 60fps rendering${UI_RESET}"
-    echo -e "     ${UI_DIM}• <100MB memory footprint${UI_RESET}"
-    echo -e "     ${UI_DIM}• Session persistence${UI_RESET}"
-    echo -e "     ${UI_DIM}• Real-time WebSocket updates${UI_RESET}"
-    echo ""
-fi
 
 ui_info "For help, run: ${UI_PRIMARY}yoyo --help${UI_RESET}"
 echo ""

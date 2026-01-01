@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Yoyo Dev Update Script v2
-# Beautiful, clear update workflow with TUI v4 support
+# Yoyo Dev Update Script v3
+# Claude Code native interface update workflow
 
 set -e  # Exit on error
 
@@ -59,7 +59,6 @@ OVERWRITE_COMMANDS=true
 OVERWRITE_AGENTS=true
 VERBOSE=false
 SKIP_MCP_CHECK=false
-AUTO_UPDATE_TUI_V4=true
 
 # ============================================================================
 # Parse Arguments
@@ -94,10 +93,6 @@ while [[ $# -gt 0 ]]; do
             SKIP_MCP_CHECK=true
             shift
             ;;
-        --no-tui-update)
-            AUTO_UPDATE_TUI_V4=false
-            shift
-            ;;
         -v|--verbose)
             VERBOSE=true
             shift
@@ -121,7 +116,6 @@ Options:
   ${UI_PRIMARY}--no-overwrite-agents${UI_RESET}          Keep existing agent files
   ${UI_PRIMARY}--no-overwrite${UI_RESET}                 Keep all existing framework files
   ${UI_PRIMARY}--skip-mcp-check${UI_RESET}               Skip MCP server verification
-  ${UI_PRIMARY}--no-tui-update${UI_RESET}                Skip TUI v4 dependency updates
   ${UI_PRIMARY}-v, --verbose${UI_RESET}                  Show detailed update information
   ${UI_PRIMARY}-h, --help${UI_RESET}                     Show this help message
 
@@ -190,16 +184,24 @@ if [ ! -d "./.yoyo-dev" ]; then
     fi
 fi
 
-# Check for deprecated .yoyo/ directory
+# Check for deprecated .yoyo/ directory (v1-v3)
 if [ -d "./.yoyo" ]; then
-    ui_warning "Found deprecated .yoyo/ directory"
+    ui_warning "Found deprecated .yoyo/ directory (v1-v3)"
     echo ""
-    echo "  The .yoyo/ directory is from an old version."
-    echo "  Current Yoyo Dev uses:"
-    echo "    • .yoyo-dev/ for framework files and memory"
+    echo "  The .yoyo/ directory is from Yoyo v1-v3."
+    echo "  It should be deleted - no data can be migrated."
     echo ""
-    echo "  Run ${UI_PRIMARY}/yoyo-init${UI_RESET} in Claude Code to migrate."
+fi
+
+# Check for deprecated .yoyo-ai/ directory (v4-v5) and migrate
+NEEDS_MEMORY_MIGRATION=false
+if [ -d "./.yoyo-ai" ]; then
+    ui_warning "Found .yoyo-ai/ directory from v4-v5"
     echo ""
+    echo "  Memory is now stored in .yoyo-dev/memory/"
+    echo "  Will migrate automatically during update."
+    echo ""
+    NEEDS_MEMORY_MIGRATION=true
 fi
 
 # Show project info
@@ -208,9 +210,10 @@ ui_kv "Project Name" "$PROJECT_NAME"
 ui_kv "Current Version" "$(grep 'yoyo_dev_version:' .yoyo-dev/config.yml | cut -d: -f2 | tr -d ' ' || echo 'unknown')"
 ui_kv "New Version" "$VERSION"
 
-# Get current TUI version
-CURRENT_TUI_VERSION=$(grep -A1 '^tui:' .yoyo-dev/config.yml | grep 'version:' | cut -d: -f2 | tr -d ' "' || echo "v3")
-ui_kv "TUI Version" "$CURRENT_TUI_VERSION"
+# Check if memory migration is needed
+if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
+    ui_kv "Memory Migration" "Required (.yoyo-ai → .yoyo-dev/memory)"
+fi
 
 echo ""
 
@@ -249,8 +252,8 @@ fi
 update_items+=("Config → Merge with new options")
 update_items+=("User Data → ${UI_BOLD}Protected${UI_RESET} (specs, fixes, recaps)")
 
-if [ "$CURRENT_TUI_VERSION" = "v4" ] && [ "$AUTO_UPDATE_TUI_V4" = true ]; then
-    update_items+=("TUI v4 Dependencies → Update to latest")
+if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
+    update_items+=("Memory Migration → .yoyo-ai/ → .yoyo-dev/memory/")
 fi
 
 if [ "$SKIP_MCP_CHECK" = false ]; then
@@ -459,9 +462,9 @@ if ! grep -q "^backend:" .yoyo-dev/config.yml 2>/dev/null; then
     show_progress "Adding backend configuration block"
     cat >> .yoyo-dev/config.yml << EOF
 
-# Backend API (for TUI v4)
+# Backend API (for browser GUI)
 backend:
-  enabled: $([ "$CURRENT_TUI_VERSION" = "v4" ] && echo "true" || echo "false")
+  enabled: true
   port: 3457
   host: "localhost"
 EOF
@@ -472,34 +475,53 @@ fi
 ui_success "Configuration merged"
 echo ""
 
-# Step 8: Update TUI v4 dependencies
-if [ "$CURRENT_TUI_VERSION" = "v4" ] && [ "$AUTO_UPDATE_TUI_V4" = true ]; then
+# Step 8: Migrate memory from .yoyo-ai/ to .yoyo-dev/memory/
+if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Updating TUI v4 dependencies..."
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Migrating memory system..."
 
-    if command -v npm &> /dev/null; then
-        show_progress "Running npm update in" "$BASE_YOYO_DEV"
-        cd "$BASE_YOYO_DEV"
+    # Create new directories
+    show_progress "Creating .yoyo-dev/memory/"
+    mkdir -p .yoyo-dev/memory
+    mkdir -p .yoyo-dev/skills
 
-        # Run npm update and show output
-        show_progress "Checking for package updates..."
-        npm update 2>&1 | head -20 || true
-
-        cd "$CURRENT_DIR"
-        ui_success "TUI v4 dependencies updated"
+    # Move memory database if exists
+    if [ -f ".yoyo-ai/memory/memory.db" ]; then
+        show_progress "Moving memory.db to new location"
+        mv .yoyo-ai/memory/memory.db .yoyo-dev/memory/
+        mv .yoyo-ai/memory/memory.db-wal .yoyo-dev/memory/ 2>/dev/null || true
+        mv .yoyo-ai/memory/memory.db-shm .yoyo-dev/memory/ 2>/dev/null || true
+        ui_success "Memory database migrated"
     else
-        show_progress "npm command not found"
-        ui_warning "npm not found - skipping dependency update"
+        show_progress "No memory database found in .yoyo-ai/"
     fi
+
+    # Move skills if exist
+    if [ -d ".yoyo-ai/.skills" ] && [ "$(ls -A .yoyo-ai/.skills 2>/dev/null)" ]; then
+        show_progress "Moving skills to new location"
+        mv .yoyo-ai/.skills/* .yoyo-dev/skills/ 2>/dev/null || true
+        ui_success "Skills migrated"
+    fi
+
+    # Remove old directory
+    show_progress "Removing old .yoyo-ai/ directory"
+    rm -rf .yoyo-ai/
+    ui_success "Memory migration complete"
     echo ""
 else
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping TUI v4 dependency update..."
-    if [ "$CURRENT_TUI_VERSION" != "v4" ]; then
-        show_progress "TUI version is $CURRENT_TUI_VERSION (not v4)"
-    else
-        show_progress "Skipped (--no-tui-update)"
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Memory system check..."
+
+    # Ensure memory directories exist
+    if [ ! -d ".yoyo-dev/memory" ]; then
+        show_progress "Creating .yoyo-dev/memory/"
+        mkdir -p .yoyo-dev/memory
     fi
+    if [ ! -d ".yoyo-dev/skills" ]; then
+        show_progress "Creating .yoyo-dev/skills/"
+        mkdir -p .yoyo-dev/skills
+    fi
+    show_progress "Memory directories OK"
     echo ""
 fi
 
@@ -573,31 +595,29 @@ echo ""
 
 ui_complete "Update Complete!"
 
-ui_section "What's New" "$ICON_SPARKLES"
+ui_section "What's New in v${VERSION}" "$ICON_SPARKLES"
 
 echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} Yoyo Dev updated to ${UI_BOLD}v${VERSION}${UI_RESET}"
 echo ""
+echo -e "  ${ICON_SPARKLES} ${UI_SUCCESS}Claude Code Native Interface${UI_RESET}"
+echo -e "     ${UI_DIM}• Direct Claude Code integration${UI_RESET}"
+echo -e "     ${UI_DIM}• Custom status line with project info${UI_RESET}"
+echo -e "     ${UI_DIM}• Browser GUI dashboard on port 5173${UI_RESET}"
+echo ""
 
-if [ "$CURRENT_TUI_VERSION" = "v4" ]; then
-    echo -e "  ${ICON_SPARKLES} ${UI_SUCCESS}TUI v4 Active${UI_RESET}"
-    echo -e "     ${UI_DIM}• Latest React/Ink components${UI_RESET}"
-    echo -e "     ${UI_DIM}• Improved performance & stability${UI_RESET}"
-    echo ""
-else
-    echo -e "  ${UI_INFO}${ICON_INFO}${UI_RESET}  Want to try TUI v4?"
-    echo -e "     ${UI_DIM}Edit .yoyo-dev/config.yml:${UI_RESET}"
-    echo -e "     ${UI_DIM}tui.version: \"v4\"${UI_RESET}"
+if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
+    echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} Memory migrated to ${UI_BOLD}.yoyo-dev/memory/${UI_RESET}"
     echo ""
 fi
 
 ui_section "Next Steps" "$ICON_ROCKET"
 
-echo -e "  ${UI_PRIMARY}1.${UI_RESET} Review changes:"
-echo -e "     ${UI_DIM}\$ cat .yoyo-dev/config.yml${UI_RESET}"
+echo -e "  ${UI_PRIMARY}1.${UI_RESET} Launch Claude Code with Yoyo Dev:"
+echo -e "     ${UI_DIM}\$ yoyo${UI_RESET}"
 echo ""
 
-echo -e "  ${UI_PRIMARY}2.${UI_RESET} Launch the TUI:"
-echo -e "     ${UI_DIM}\$ yoyo${UI_RESET}"
+echo -e "  ${UI_PRIMARY}2.${UI_RESET} Initialize memory system (if not done):"
+echo -e "     ${UI_DIM}In Claude Code: /yoyo-ai-memory${UI_RESET}"
 echo ""
 
 echo -e "  ${UI_PRIMARY}3.${UI_RESET} Check for breaking changes:"

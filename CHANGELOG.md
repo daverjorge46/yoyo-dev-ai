@@ -57,7 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### Directory Naming Clarification
 - **`.yoyo-dev/`** - Framework files (instructions, standards, specs, fixes, product)
-- **`.yoyo-ai/`** - Memory system (SQLite database for persistent context)
+- **`.yoyo-dev/memory/`** - Memory system (SQLite database for persistent context)
 
 ### ✨ New Features
 

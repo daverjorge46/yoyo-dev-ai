@@ -505,11 +505,11 @@ rm -rf ~/.yoyo-dev
 
 # Remove project files
 rm -rf .yoyo-dev
-rm -rf .yoyo-ai
+rm -rf .yoyo-dev/memory
 rm -f .mcp.json
 
 # Remove global memory (optional)
-rm -rf ~/.yoyo-ai
+rm -rf ~/.yoyo-dev
 
 # Disconnect Claude from MCP Gateway
 docker mcp client disconnect claude-code

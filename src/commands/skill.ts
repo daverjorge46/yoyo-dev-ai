@@ -470,7 +470,7 @@ function skillHandler(args: string, _context: CommandContext): CommandResult {
                 `\`/skill search <query> [--global]\`\n` +
                 `  Search for skills\n\n` +
                 `**Flags:**\n` +
-                `  --global, -g    Use global skills (~/.yoyo-ai/.skills/)\n` +
+                `  --global, -g    Use global skills (~/.yoyo-dev/skills/)\n` +
                 `  --compact, -c   Use compact format for apply\n` +
                 `  --confirm, -y   Confirm deletion`,
       };

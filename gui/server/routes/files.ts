@@ -36,10 +36,8 @@ function isPathAllowed(projectRoot: string, filePath: string): boolean {
     return true;
   }
 
-  // Allow .yoyo-ai directory
-  if (normalizedPath.includes('/.yoyo-ai/')) {
-    return true;
-  }
+  // Allow .yoyo-dev directory (all project files are here now)
+  // Note: .yoyo-ai is deprecated and migrated to .yoyo-dev/memory/
 
   return false;
 }

@@ -190,8 +190,8 @@ Configuration is loaded from multiple sources in order of priority:
 
 1. **CLI arguments** (highest priority)
 2. **Environment variables** (`YOYO_*`)
-3. **Project config** (`.yoyo-ai/config.yml`)
-4. **Global config** (`~/.yoyo-ai/config.yml`)
+3. **Project config** (`.yoyo-dev/memory/config.yml`)
+4. **Global config** (`~/.yoyo-dev/memory/config.yml`)
 5. **Default values** (lowest priority)
 
 ### Environment Variables
@@ -204,13 +204,13 @@ Configuration is loaded from multiple sources in order of priority:
 
 ### Configuration File
 
-Example `.yoyo-ai/config.yml`:
+Example `.yoyo-dev/memory/config.yml`:
 
 ```yaml
 defaultModel: claude-3-sonnet
 memory:
   enabled: true
-  globalPath: ~/.yoyo-ai
+  globalPath: ~/.yoyo-dev
 ui:
   colors: true
   animations: true
@@ -222,8 +222,8 @@ debug:
 
 The CLI integrates with Yoyo AI's memory system:
 
-- **Project Memory** (`.yoyo-ai/memory.db`): Project-specific context
-- **Global Memory** (`~/.yoyo-ai/memory.db`): User preferences and patterns
+- **Project Memory** (`.yoyo-dev/memory/memory.db`): Project-specific context
+- **Global Memory** (`~/.yoyo-dev/memory/memory.db`): User preferences and patterns
 
 Memory is automatically loaded in interactive mode and optionally in headless mode.
 
@@ -259,7 +259,7 @@ npm config get prefix
 
 If memory fails to initialize:
 
-1. Check write permissions for `.yoyo-ai/` directory
+1. Check write permissions for `.yoyo-dev/memory/` directory
 2. Ensure SQLite is available on your system
 3. Try running with `--verbose` for detailed errors
 

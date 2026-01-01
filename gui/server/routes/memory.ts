@@ -31,7 +31,7 @@ interface MemoryBlock {
 // =============================================================================
 
 function getMemoryDbPath(projectRoot: string): string {
-  return join(projectRoot, '.yoyo-ai', 'memory', 'memory.db');
+  return join(projectRoot, '.yoyo-dev', 'memory', 'memory.db');
 }
 
 function getDatabase(projectRoot: string): Database.Database | null {

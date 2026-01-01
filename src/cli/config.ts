@@ -3,8 +3,8 @@
  *
  * Loads configuration from multiple sources with hierarchy:
  * 1. Default config
- * 2. Global config (~/.yoyo-ai/settings.json)
- * 3. Project config (.yoyo-ai/settings.json)
+ * 2. Global config (~/.yoyo-dev/settings.json)
+ * 3. Project config (.yoyo-dev/settings.json)
  * 4. Environment variables
  * 5. CLI arguments
  */
@@ -23,7 +23,7 @@ import { DEFAULT_CONFIG } from './types.js';
  * Get the global config directory.
  */
 export function getGlobalConfigDir(): string {
-  return join(homedir(), '.yoyo-ai');
+  return join(homedir(), '.yoyo-dev');
 }
 
 /**
@@ -39,7 +39,7 @@ export function getGlobalSettingsPath(): string {
  * @param cwd - Current working directory
  */
 export function getProjectSettingsPath(cwd: string): string {
-  return join(cwd, '.yoyo-ai', 'settings.json');
+  return join(cwd, '.yoyo-dev', 'settings.json');
 }
 
 // =============================================================================

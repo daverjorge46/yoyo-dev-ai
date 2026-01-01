@@ -459,7 +459,7 @@ Complete reference for all Yoyo Dev commands.
 /init
 ```
 
-**Creates:** `.yoyo-ai/memory/memory.db` (SQLite)
+**Creates:** `.yoyo-dev/memory/memory/memory.db` (SQLite)
 
 **When to use:** First time using Yoyo Dev in a project
 
@@ -476,7 +476,7 @@ Complete reference for all Yoyo Dev commands.
 /remember This project uses Convex for the backend
 ```
 
-**Stores in:** Project memory (`.yoyo-ai/memory/`)
+**Stores in:** Project memory (`.yoyo-dev/memory/memory/`)
 
 **When to use:** Saving preferences, patterns, project-specific knowledge
 
@@ -491,7 +491,7 @@ Complete reference for all Yoyo Dev commands.
 /clear
 ```
 
-**Preserves:** All memory blocks in `.yoyo-ai/memory/`
+**Preserves:** All memory blocks in `.yoyo-dev/memory/memory/`
 
 **When to use:** Starting fresh conversation, context limit reached
 

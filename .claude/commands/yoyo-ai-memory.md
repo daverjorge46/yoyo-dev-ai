@@ -4,17 +4,20 @@ description: Initialize Yoyo AI Memory System in current project (memory system)
 
 # Initialize Yoyo AI Memory System
 
-This command sets up the `.yoyo-ai/` memory system for the current project.
+This command sets up the memory system inside `.yoyo-dev/` for the current project.
 
 ## Step 1: Check Current State
 
 Run these checks:
 ```bash
-# Check if .yoyo-ai already exists
-ls -la .yoyo-ai/ 2>/dev/null && echo "YOYO_AI_EXISTS" || echo "YOYO_AI_NOT_EXISTS"
+# Check if .yoyo-dev exists (framework must be installed first)
+ls -la .yoyo-dev/ 2>/dev/null && echo "YOYO_DEV_EXISTS" || echo "YOYO_DEV_NOT_EXISTS"
 
-# Check if memory database exists
-ls -la .yoyo-ai/memory/memory.db 2>/dev/null && echo "MEMORY_DB_EXISTS" || echo "MEMORY_DB_NOT_EXISTS"
+# Check if memory database exists (new location)
+ls -la .yoyo-dev/memory/memory.db 2>/dev/null && echo "MEMORY_DB_EXISTS" || echo "MEMORY_DB_NOT_EXISTS"
+
+# Check for OLD .yoyo-dev/memory/ directory (needs migration)
+ls -la .yoyo-dev/memory/memory/memory.db 2>/dev/null && echo "OLD_YOYO_AI_EXISTS" || echo "NO_OLD_YOYO_AI"
 
 # Check for deprecated .yoyo/ directory
 ls -la .yoyo/ 2>/dev/null && echo "OLD_YOYO_EXISTS" || echo "NO_OLD_YOYO"
@@ -22,24 +25,52 @@ ls -la .yoyo/ 2>/dev/null && echo "OLD_YOYO_EXISTS" || echo "NO_OLD_YOYO"
 
 ## Step 2: Handle Results
 
-### If `.yoyo/` exists (deprecated):
-Tell user: "Found deprecated `.yoyo/` directory from an old Yoyo version. The current system uses `.yoyo-ai/` for memory."
+### If `.yoyo-dev/` does NOT exist:
+Tell user: "Yoyo Dev framework is not installed. Run `/yoyo-init` first to set up the project."
+Exit without proceeding.
 
-Ask if they want to:
-1. Delete the old directory
-2. Keep it (not recommended)
+### If `.yoyo/` exists (deprecated v1-v3):
+Tell user: "Found deprecated `.yoyo/` directory from Yoyo v1-v3. This should be deleted."
+Ask if they want to delete it.
 
-### If `.yoyo-ai/memory/memory.db` already exists:
+### If `.yoyo-dev/memory/` exists (deprecated v4-v5):
+Tell user: "Found `.yoyo-dev/memory/` directory from Yoyo v4-v5. Memory is now stored in `.yoyo-dev/memory/`."
+
+**Migrate automatically:**
+```bash
+# Create new memory directory
+mkdir -p .yoyo-dev/memory
+mkdir -p .yoyo-dev/skills
+
+# Move memory database if exists
+if [ -f ".yoyo-dev/memory/memory/memory.db" ]; then
+    mv .yoyo-dev/memory/memory/memory.db .yoyo-dev/memory/
+    mv .yoyo-dev/memory/memory/memory.db-wal .yoyo-dev/memory/ 2>/dev/null || true
+    mv .yoyo-dev/memory/memory/memory.db-shm .yoyo-dev/memory/ 2>/dev/null || true
+fi
+
+# Move skills if exist
+if [ -d ".yoyo-dev/memory/.skills" ]; then
+    mv .yoyo-dev/memory/.skills/* .yoyo-dev/skills/ 2>/dev/null || true
+fi
+
+# Remove old directory
+rm -rf .yoyo-dev/memory/
+```
+
+Report: "Migrated memory from `.yoyo-dev/memory/` to `.yoyo-dev/memory/`"
+
+### If `.yoyo-dev/memory/memory.db` already exists:
 Report:
 ```
 ✓ Yoyo AI Memory System is already initialized!
 
-Memory Location: .yoyo-ai/memory/memory.db
+Memory Location: .yoyo-dev/memory/memory.db
 
 To check memory status, use the yoyo TUI or query the database directly.
 ```
 
-### If `.yoyo-ai/` does NOT exist:
+### If memory does NOT exist:
 Proceed to Step 3 to initialize.
 
 ## Step 3: Create Memory System
@@ -48,8 +79,8 @@ Proceed to Step 3 to initialize.
 
 ### 3.1 Create Directory Structure
 ```bash
-mkdir -p .yoyo-ai/memory
-mkdir -p .yoyo-ai/.skills
+mkdir -p .yoyo-dev/memory
+mkdir -p .yoyo-dev/skills
 ```
 
 ### 3.2 Create SQLite Database with Schema
@@ -62,7 +93,7 @@ import sqlite3
 import os
 from datetime import datetime
 
-db_path = '.yoyo-ai/memory/memory.db'
+db_path = '.yoyo-dev/memory/memory.db'
 os.makedirs(os.path.dirname(db_path), exist_ok=True)
 
 conn = sqlite3.connect(db_path)
@@ -147,7 +178,7 @@ import os
 import uuid
 from datetime import datetime
 
-db_path = '.yoyo-ai/memory/memory.db'
+db_path = '.yoyo-dev/memory/memory.db'
 conn = sqlite3.connect(db_path)
 cursor = conn.cursor()
 
@@ -264,12 +295,12 @@ CREATE_INITIAL_MEMORY
 
 ```bash
 # Check database was created
-ls -la .yoyo-ai/memory/
+ls -la .yoyo-dev/memory/
 
 # Query the database to verify
 python3 -c "
 import sqlite3
-conn = sqlite3.connect('.yoyo-ai/memory/memory.db')
+conn = sqlite3.connect('.yoyo-dev/memory/memory.db')
 cursor = conn.cursor()
 
 # Count memory blocks
@@ -294,10 +325,14 @@ Show the user:
 ✓ Yoyo AI Memory System Initialized!
 
 Directory Structure:
-  .yoyo-ai/
+  .yoyo-dev/
   ├── memory/
   │   └── memory.db      # SQLite database
-  └── .skills/           # Skills system (future)
+  ├── skills/            # Skills system
+  ├── instructions/      # AI workflow instructions
+  ├── standards/         # Development standards
+  ├── specs/             # Feature specifications
+  └── ...
 
 Memory Blocks Created:
   • project - Project context and tech stack
@@ -314,10 +349,20 @@ To view memory status, launch the Yoyo TUI:
 
 ## Directory Reference
 
-**IMPORTANT: Don't confuse these directories!**
+**Everything is consolidated in `.yoyo-dev/`:**
 
-| Directory | Purpose | Contents |
-|-----------|---------|----------|
-| `.yoyo-dev/` | Framework | Instructions, standards, specs, product docs |
-| `.yoyo-ai/` | Memory | SQLite database, skills, settings |
-| `.yoyo/` | **DEPRECATED** | Old format - should be deleted |
+| Directory | Purpose |
+|-----------|---------|
+| `.yoyo-dev/memory/` | SQLite database for memory system |
+| `.yoyo-dev/skills/` | Skills system |
+| `.yoyo-dev/instructions/` | AI workflow instructions |
+| `.yoyo-dev/standards/` | Development standards |
+| `.yoyo-dev/specs/` | Feature specifications |
+| `.yoyo-dev/product/` | Product docs (mission, roadmap) |
+
+**Deprecated directories (will be auto-migrated):**
+
+| Directory | Status |
+|-----------|--------|
+| `.yoyo-dev/memory/` | **DEPRECATED v4-v5** - auto-migrated to `.yoyo-dev/memory/` |
+| `.yoyo/` | **DEPRECATED v1-v3** - should be deleted |

@@ -2,7 +2,6 @@
 
 # Yoyo Dev Launcher v6.0
 # Claude Code Native Interface - launches Claude Code directly with GUI
-# Legacy TUI available via --legacy-tui flag
 
 set -euo pipefail
 
@@ -43,7 +42,6 @@ readonly USER_PROJECT_DIR="$(pwd)"
 
 GUI_ENABLED=true
 GUI_PORT=5173
-LEGACY_TUI=false
 
 # ============================================================================
 # Claude Code Detection
@@ -84,57 +82,6 @@ check_gui_status() {
     if [ -f "$gui_script" ]; then
         bash "$gui_script" --status
     fi
-}
-
-# ============================================================================
-# Legacy TUI Functions
-# ============================================================================
-
-check_typescript_tui() {
-    if ! command -v node &> /dev/null; then
-        return 1
-    fi
-
-    if [ ! -f "$YOYO_INSTALL_DIR/src/tui-v4/index.tsx" ]; then
-        return 1
-    fi
-
-    if [ ! -d "$YOYO_INSTALL_DIR/node_modules" ]; then
-        return 1
-    fi
-
-    return 0
-}
-
-launch_legacy_tui() {
-    echo ""
-    ui_warning "Legacy TUI mode (deprecated in v6.0)"
-    echo ""
-    ui_info "Consider using default mode: ${UI_PRIMARY}yoyo${UI_RESET}"
-    echo ""
-
-    if ! check_typescript_tui; then
-        ui_error "TUI requirements not met"
-        exit 1
-    fi
-
-    # Launch GUI if enabled
-    if [ "$GUI_ENABLED" = true ]; then
-        launch_gui_background
-    fi
-
-    local tui_cmd=""
-    if command -v tsx &> /dev/null; then
-        tui_cmd="tsx"
-    elif [ -f "$YOYO_INSTALL_DIR/node_modules/.bin/tsx" ]; then
-        tui_cmd="$YOYO_INSTALL_DIR/node_modules/.bin/tsx"
-    else
-        ui_error "tsx not found"
-        exit 1
-    fi
-
-    cd "$USER_PROJECT_DIR"
-    exec $tui_cmd "$YOYO_INSTALL_DIR/src/tui-v4/index.tsx"
 }
 
 # ============================================================================
@@ -262,9 +209,6 @@ show_help() {
     echo -e "  ${UI_PRIMARY}yoyo --gui-only${UI_RESET}"
     echo -e "    ${UI_DIM}Open browser GUI only (no Claude Code)${UI_RESET}"
     echo ""
-    echo -e "  ${UI_PRIMARY}yoyo --legacy-tui${UI_RESET}"
-    echo -e "    ${UI_DIM}Launch legacy TUI interface (deprecated)${UI_RESET}"
-    echo ""
 
     echo -e "  ${UI_SUCCESS}GUI MANAGEMENT${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
@@ -328,9 +272,6 @@ main() {
                 ui_error "GUI launcher not found"
                 exit 1
             fi
-            ;;
-        --legacy-tui|--tui)
-            launch_legacy_tui
             ;;
         --stop-gui)
             stop_gui

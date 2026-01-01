@@ -20,7 +20,7 @@ Show the complete Yoyo Dev v3.0 command reference with all available commands, f
 
   /yoyo-init
     Initialize Yoyo Dev in current project
-    → Checks for .yoyo-dev/ (framework) and .yoyo-ai/ (memory)
+    → Checks for .yoyo-dev/ (framework) and .yoyo-dev/memory/ (memory)
     → Handles migration from deprecated .yoyo/ directory
     → Guides through proper setup if not initialized
 

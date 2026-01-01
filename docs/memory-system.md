@@ -7,8 +7,8 @@ The Memory System provides persistent, intelligent context management for AI-ass
 ## Overview
 
 The memory system uses a dual-scope architecture:
-- **Project scope** (`.yoyo-ai/memory/`): Project-specific context
-- **Global scope** (`~/.yoyo-ai/memory/`): User preferences across all projects
+- **Project scope** (`.yoyo-dev/memory/`): Project-specific context
+- **Global scope** (`~/.yoyo-dev/memory/`): User preferences across all projects
 
 Project scope takes precedence when loading memory, allowing project-specific overrides.
 
@@ -150,27 +150,6 @@ Session cleared!
 - Memory preserved: 4 blocks (persona, project, user, corrections)
 ```
 
-## TUI Dashboard Integration
-
-The TUI dashboard shows memory status in the Project Overview panel:
-
-```
-Project Overview
-───────────────────────────
-Mission: AI-assisted development framework...
-
-Tech Stack: TypeScript, Python, SQLite
-
-Memory
- 4 blocks (project scope)
- Last updated: 5 min ago
-```
-
-**Status indicators:**
-- `project scope` - Using project-specific memory
-- `global scope` - Using global memory only
-- `disconnected` - No memory database found
-
 ## Programmatic Usage
 
 ### TypeScript API
@@ -181,7 +160,7 @@ import { MemoryService } from 'yoyo-dev/memory';
 // Create service
 const service = new MemoryService({
   projectRoot: process.cwd(),
-  globalPath: '~/.yoyo-ai/memory'
+  globalPath: '~/.yoyo-dev/memory'
 });
 service.initialize();
 
@@ -231,24 +210,6 @@ service.on('memory:error', ({ error, operation }) => {
 });
 ```
 
-### Python Bridge (TUI)
-
-```python
-from lib.yoyo_tui_v3.services.memory_bridge import MemoryBridge
-
-# Create bridge
-bridge = MemoryBridge(project_root=Path.cwd())
-
-# Get status
-status = bridge.get_status()
-print(f"Connected: {status.connected}")
-print(f"Blocks: {status.block_count}")
-print(f"Scope: {status.scope}")
-
-# Include global blocks
-status = bridge.get_status(include_global=True)
-```
-
 ## Database Schema
 
 The memory system uses SQLite with WAL mode for concurrent access.
@@ -295,12 +256,12 @@ CREATE TABLE agents (
 ## File Locations
 
 ```
-~/.yoyo-ai/
+~/.yoyo-dev/
 └── memory/
     └── memory.db          # Global memory database
 
 project/
-└── .yoyo-ai/
+└── .yoyo-dev/
     └── memory/
         └── memory.db      # Project memory database
 ```
@@ -316,15 +277,10 @@ project/
 ## Troubleshooting
 
 ### Memory not loading
-- Verify `.yoyo-ai/memory/` directory exists
+- Verify `.yoyo-dev/memory/` directory exists
 - Check file permissions on `memory.db`
 - Run `/init` to create initial memory
 
 ### Blocks not persisting
 - Ensure service is properly closed (`service.close()`)
 - Check SQLite WAL files (`.db-wal`, `.db-shm`) are writable
-
-### TUI not showing memory status
-- Verify memory database exists
-- Check TUI refresh (press `r`)
-- Look for errors in the error detector panel

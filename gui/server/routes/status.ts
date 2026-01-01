@@ -97,7 +97,7 @@ function getFrameworkStatus(projectRoot: string): FrameworkStatus {
 }
 
 function getMemoryStatus(projectRoot: string): MemoryStatus {
-  const memoryDbPath = join(projectRoot, '.yoyo-ai', 'memory', 'memory.db');
+  const memoryDbPath = join(projectRoot, '.yoyo-dev', 'memory', 'memory.db');
   const initialized = existsSync(memoryDbPath);
 
   let blocksCount = 0;
@@ -121,7 +121,7 @@ function getMemoryStatus(projectRoot: string): MemoryStatus {
 }
 
 function getSkillsStatus(projectRoot: string): SkillsStatus {
-  const skillsDbPath = join(projectRoot, '.yoyo-ai', '.skills', 'skills.db');
+  const skillsDbPath = join(projectRoot, '.yoyo-dev', 'skills', 'skills.db');
   const initialized = existsSync(skillsDbPath);
 
   let skillsCount = 0;

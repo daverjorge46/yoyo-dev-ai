@@ -13,22 +13,24 @@ The Yoyo AI Memory System provides persistent storage for:
 
 ## Directory Structure
 
+**Everything is consolidated in `.yoyo-dev/`:**
+
 ```
 Project Root/
-├── .yoyo-dev/           # Framework (instructions, standards, specs)
-│   ├── instructions/
-│   ├── standards/
-│   ├── product/
-│   └── specs/
-│
-├── .yoyo-ai/            # Memory System
-│   ├── memory/
-│   │   └── memory.db    # SQLite database
-│   └── .skills/
-│       └── skills.db    # Skills tracking (optional)
-│
-└── .yoyo/               # DEPRECATED - delete if found
+└── .yoyo-dev/               # All Yoyo Dev files
+    ├── memory/              # Memory System
+    │   └── memory.db        # SQLite database
+    ├── skills/              # Skills tracking
+    │   └── skills.db        # Skills database (optional)
+    ├── instructions/        # AI workflow instructions
+    ├── standards/           # Development standards
+    ├── product/             # Product docs
+    └── specs/               # Feature specifications
 ```
+
+**Deprecated directories (auto-migrated):**
+- `.yoyo-dev/memory/` - v4-v5 memory location (migrated to `.yoyo-dev/memory/`)
+- `.yoyo/` - v1-v3 format (should be deleted)
 
 ## Database Schema
 
@@ -152,12 +154,12 @@ Tracks schema version for migrations.
 
 The memory system supports two scopes:
 
-### Global Scope (`~/.yoyo-ai/memory/`)
+### Global Scope (`~/.yoyo-dev/memory/`)
 - User preferences that apply to all projects
 - Default persona configuration
 - Cross-project patterns
 
-### Project Scope (`.yoyo-ai/memory/`)
+### Project Scope (`.yoyo-dev/memory/`)
 - Project-specific context
 - Project-specific persona adjustments
 - Project patterns and conventions
@@ -174,7 +176,7 @@ Use this Python script to initialize the memory system:
 Initialize Yoyo AI Memory System
 
 Creates:
-- .yoyo-ai/memory/memory.db - SQLite database with schema
+- .yoyo-dev/memory/memory.db - SQLite database with schema
 - Initial project and persona memory blocks
 """
 
@@ -187,7 +189,7 @@ from datetime import datetime
 def init_memory_database(project_root: str = ".") -> str:
     """Initialize the memory database with schema."""
 
-    db_dir = os.path.join(project_root, ".yoyo-ai", "memory")
+    db_dir = os.path.join(project_root, ".yoyo-dev", "memory")
     os.makedirs(db_dir, exist_ok=True)
 
     db_path = os.path.join(db_dir, "memory.db")
@@ -411,10 +413,10 @@ After initialization, verify with:
 
 ```bash
 # Check directory structure
-ls -la .yoyo-ai/memory/
+ls -la .yoyo-dev/memory/
 
 # Query database
-sqlite3 .yoyo-ai/memory/memory.db "SELECT type, scope, json_extract(content, '$.name') FROM memory_blocks"
+sqlite3 .yoyo-dev/memory/memory.db "SELECT type, scope, json_extract(content, '$.name') FROM memory_blocks"
 ```
 
 Expected output:
@@ -423,14 +425,12 @@ project|project|your-project-name
 persona|project|Yoyo
 ```
 
-## Integration with TUI
+## Integration with Claude Code
 
-The Yoyo TUI (`yoyo` command) reads from the memory database to display:
-- Project context in the overview panel
-- Memory status in the status bar
-- Skill statistics (if skills system is enabled)
-
-The TUI uses a Python bridge (`MemoryBridge`) to read the SQLite database created by the TypeScript memory system.
+The memory system integrates with Claude Code via:
+- Custom status line showing memory status
+- `/status` command displays memory block count
+- `/yoyo-ai-memory` command initializes the memory system
 
 ## Troubleshooting
 
@@ -442,7 +442,20 @@ The database uses WAL mode which should prevent most locking issues. If you see 
 ### "No such table: memory_blocks"
 The database wasn't initialized properly. Run the initialization script again.
 
-### Memory not showing in TUI
-1. Check the database exists: `ls .yoyo-ai/memory/memory.db`
-2. Check the schema: `sqlite3 .yoyo-ai/memory/memory.db ".schema"`
-3. Check for data: `sqlite3 .yoyo-ai/memory/memory.db "SELECT COUNT(*) FROM memory_blocks"`
+### Memory not showing in status
+1. Check the database exists: `ls .yoyo-dev/memory/memory.db`
+2. Check the schema: `sqlite3 .yoyo-dev/memory/memory.db ".schema"`
+3. Check for data: `sqlite3 .yoyo-dev/memory/memory.db "SELECT COUNT(*) FROM memory_blocks"`
+
+## Migration from v4-v5
+
+If you have an existing `.yoyo-dev/memory/` directory, it will be automatically migrated:
+
+```bash
+# Manual migration if needed
+mkdir -p .yoyo-dev/memory
+mkdir -p .yoyo-dev/skills
+mv .yoyo-dev/memory/memory/memory.db .yoyo-dev/memory/
+mv .yoyo-dev/memory/.skills/* .yoyo-dev/skills/ 2>/dev/null || true
+rm -rf .yoyo-dev/memory/
+```

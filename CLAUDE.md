@@ -35,7 +35,6 @@ Yoyo Dev v6.0 launches Claude Code directly with native customization:
 2. **`yoyo-gui`** - Launch browser GUI standalone
 3. **`yoyo-update`** - Update Yoyo Dev to latest version
 4. **`install.sh`** - Install/setup Yoyo Dev
-5. **`yoyo --legacy-tui`** - Launch deprecated TUI interface
 
 ```bash
 # Update to latest (overwrites framework files by default)
@@ -67,9 +66,6 @@ yoyo --gui-only
 # Stop background GUI server
 yoyo --stop-gui
 
-# Launch legacy TUI interface (deprecated)
-yoyo --legacy-tui
-
 # Launch browser GUI standalone
 yoyo-gui
 ```
@@ -94,10 +90,6 @@ yoyo-gui
 - `--gui-only` - Open browser GUI only (no Claude Code)
 - `--stop-gui` - Stop background GUI server
 - `--gui-status` - Check if GUI server is running
-- `--legacy-tui` - Launch deprecated TUI interface
-
-**Legacy TUI (deprecated):**
-The TUI interface from v5.0 is still available via `yoyo --legacy-tui` but is deprecated due to reliability issues. It will be removed in a future version.
 
 ## Multi-Agent Orchestration (v5.0)
 
@@ -347,17 +339,7 @@ duckduckgo        docker/mcp-duckduckgo    latest
 filesystem        docker/mcp-filesystem    latest
 ```
 
-**Method 2: Use Yoyo TUI**
-
-```bash
-# Launch TUI dashboard
-yoyo --no-split
-
-# Check MCP status in the dashboard
-# Shows "Docker MCP Gateway: X servers"
-```
-
-**Method 3: Check project .mcp.json**
+**Method 2: Check project .mcp.json**
 
 ```bash
 # View project MCP configuration
@@ -531,8 +513,8 @@ Each MCP server container runs with:
 The memory system provides persistent context management using a dual-scope architecture:
 
 **Scopes:**
-- **Project** (`.yoyo-ai/memory/`): Project-specific context, stored locally
-- **Global** (`~/.yoyo-ai/memory/`): User preferences across all projects
+- **Project** (`.yoyo-dev/memory/`): Project-specific context, stored locally
+- **Global** (`~/.yoyo-dev/memory/`): User preferences across all projects
 
 **Block Types:**
 - `persona` - AI assistant personality and capabilities
@@ -553,19 +535,15 @@ The memory system provides persistent context management using a dual-scope arch
 /clear
 ```
 
-**TUI Integration:**
-The TUI dashboard displays memory status in the Project Overview panel, showing block count, scope, and last updated time.
-
 **Detailed Documentation:** See `docs/memory-system.md` for full API documentation.
 
 ## Architecture
 
 ### Directory Structure
 
-**Two Primary Directories:**
+**Primary Directory:**
 
-- **`.yoyo-dev/`** - Framework files (instructions, standards, specs, fixes, product)
-- **`.yoyo-ai/`** - Memory system (SQLite database for persistent context)
+- **`.yoyo-dev/`** - All Yoyo Dev files (instructions, standards, specs, fixes, product, memory)
 
 **Complete Structure:**
 
@@ -582,6 +560,8 @@ The TUI dashboard displays memory status in the Project Overview panel, showing 
 ├── fixes/                # Bug fix documentation
 ├── recaps/               # Development recaps
 ├── patterns/             # Saved patterns library
+├── memory/               # Memory system (SQLite database)
+│   └── memory.db
 ├── instructions/core/    # AI workflow instructions
 │   ├── yoyo-ai-orchestration.md  # v5.0 orchestrator
 │   ├── execute-tasks.md
@@ -590,14 +570,10 @@ The TUI dashboard displays memory status in the Project Overview panel, showing 
 ├── standards/            # Development standards
 ├── setup/                # Installation scripts
 │   ├── install.sh        # Primary installer
-│   ├── yoyo.sh           # TUI launcher
+│   ├── yoyo.sh           # Claude Code launcher
 │   ├── yoyo-gui.sh       # GUI launcher
 │   └── yoyo-update.sh    # Update script
 └── config.yml            # Configuration
-
-.yoyo-ai/                 # Memory system (v4.0+)
-└── memory/
-    └── memory.db         # SQLite database for memory blocks
 
 .claude/                  # Claude Code integration
 ├── commands/             # Slash commands
@@ -616,7 +592,6 @@ workflows/                # Reusable workflow components
 ├── specification/
 └── implementation/
 
-lib/yoyo_tui_v3/          # TUI v3 (Python + Textual)
 src/memory/               # Memory system (TypeScript)
 ```
 
@@ -755,42 +730,6 @@ Use when you need:
 
 **90% of use cases:** Use `/execute-tasks` (default)
 **10% power users:** Use `/orchestrate-tasks`
-
-## Split View Configuration
-
-Split view mode integrates Claude Code CLI and Yoyo TUI in a single terminal window.
-
-**Configuration (`.yoyo-dev/config.yml`):**
-```yaml
-split_view:
-  enabled: true                    # Master toggle for split view mode
-  ratio: 0.4                       # Split ratio (0.0-1.0): 0.4 = 40% left, 60% right
-  active_pane: claude              # Starting focus: "claude" or "tui"
-
-  border_style:
-    active: bright_cyan            # Active pane border color
-    inactive: dim_white            # Inactive pane border color
-
-  shortcuts:
-    switch_focus: ctrl+b+arrow     # Switch pane focus (Ctrl+B →)
-    resize_left: ctrl+b+<          # Make left pane larger (Ctrl+B <)
-    resize_right: ctrl+b+>         # Make right pane larger (Ctrl+B >)
-
-  claude:
-    command: claude                # Command to launch Claude Code
-    auto_cwd: true                 # Auto-attach to current directory
-    fallback_delay: 3              # Seconds to wait before TUI-only fallback
-```
-
-**Keyboard Shortcuts:**
-- `Ctrl+B →` - Switch focus between Claude and TUI panes
-- `Ctrl+B <` - Make left pane larger
-- `Ctrl+B >` - Make right pane larger
-
-**Requirements:**
-- Linux terminal with Unicode support (GNOME Terminal, Konsole, Alacritty, Kitty, Terminator)
-- Minimum terminal size: 120x30
-- Claude Code CLI installed (optional, graceful fallback if missing)
 
 ## Parallel Execution
 

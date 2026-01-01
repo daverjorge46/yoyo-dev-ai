@@ -106,8 +106,8 @@ export const DEFAULT_CONFIG: CLIConfig = {
   defaultModel: 'claude-sonnet',
   memory: {
     enabled: true,
-    projectPath: '.yoyo-ai/memory',
-    globalPath: '~/.yoyo-ai/memory',
+    projectPath: '.yoyo-dev/memory',
+    globalPath: '~/.yoyo-dev/memory',
   },
   ui: {
     colors: true,

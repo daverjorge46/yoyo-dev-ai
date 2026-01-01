@@ -8,10 +8,9 @@ This guide explains the directory structure of Yoyo Dev, the purpose of each dir
 
 ## Overview
 
-Yoyo Dev uses two primary directory prefixes:
+Yoyo Dev uses a unified directory:
 
-- **`.yoyo-dev/`** - Framework files (instructions, standards, specs, fixes, product docs)
-- **`.yoyo-ai/`** - Memory system (SQLite database for persistent context)
+- **`.yoyo-dev/`** - All framework files (instructions, standards, specs, fixes, product docs, memory)
 
 ---
 
@@ -137,55 +136,18 @@ These files **ARE overwritten** during updates (use `--no-overwrite` to preserve
 
 ---
 
-## Memory Directory: `.yoyo-ai/`
+## Memory System
 
-Contains memory system files for persistent context management.
+Memory is now consolidated within `.yoyo-dev/`:
 
-### Complete Structure
+### Project Memory
 
 ```
-.yoyo-ai/
+.yoyo-dev/
 └── memory/
     ├── memory.db               # SQLite database (project scope)
     ├── memory.db-wal           # Write-Ahead Log (SQLite)
     └── memory.db-shm           # Shared memory (SQLite)
-```
-
-### Database Schema
-
-**Tables:**
-
-```sql
--- Memory blocks (persona, project, user, corrections)
-CREATE TABLE memory_blocks (
-    id TEXT PRIMARY KEY,
-    type TEXT NOT NULL,        -- persona, project, user, corrections
-    scope TEXT NOT NULL,       -- global, project
-    content TEXT NOT NULL,     -- JSON content
-    version INTEGER DEFAULT 1,
-    created_at TEXT NOT NULL,
-    updated_at TEXT NOT NULL
-);
-
--- Conversations (for future use)
-CREATE TABLE conversations (
-    id TEXT PRIMARY KEY,
-    agent_id TEXT NOT NULL,
-    role TEXT NOT NULL,
-    content TEXT NOT NULL,
-    metadata TEXT,
-    timestamp TEXT NOT NULL
-);
-
--- Agents (for future use)
-CREATE TABLE agents (
-    id TEXT PRIMARY KEY,
-    name TEXT,
-    type TEXT,
-    config TEXT,
-    created_at TEXT NOT NULL,
-    last_used TEXT NOT NULL
-);
 ```
 
 ### Global Memory
@@ -193,14 +155,14 @@ CREATE TABLE agents (
 User-wide memory stored in home directory:
 
 ```
-~/.yoyo-ai/
+~/.yoyo-dev/
 └── memory/
     └── memory.db               # SQLite database (global scope)
 ```
 
 **Loading Priority:**
-1. Project scope (`.yoyo-ai/memory/`)
-2. Merge with global scope (`~/.yoyo-ai/memory/`)
+1. Project scope (`.yoyo-dev/memory/`)
+2. Merge with global scope (`~/.yoyo-dev/memory/`)
 3. Project overrides global
 
 ---
@@ -367,7 +329,7 @@ When referencing files in documentation, use these prefixes:
 ### Memory Files
 
 ```
-@.yoyo-ai/memory/memory.db
+@.yoyo-dev/memory/memory.db
 ```
 
 ### Benefits
@@ -467,8 +429,8 @@ When referencing files in documentation, use these prefixes:
 
 ### Memory Blocks
 
-**Location (Project):** `.yoyo-ai/memory/memory.db`
-**Location (Global):** `~/.yoyo-ai/memory/memory.db`
+**Location (Project):** `.yoyo-dev/memory/memory.db`
+**Location (Global):** `~/.yoyo-dev/memory/memory.db`
 
 **Block Types:**
 - Persona blocks - AI assistant configuration
@@ -489,7 +451,7 @@ Yoyo Dev uses dotfile directories to keep project root clean:
 ```
 your-project/
 ├── .yoyo-dev/          # Hidden: Framework files
-├── .yoyo-ai/           # Hidden: Memory system
+├── .yoyo-dev/memory/   # Hidden: Memory system
 ├── .claude/            # Hidden: Claude Code config
 ├── .mcp.json           # Hidden: MCP configuration
 ├── src/                # Visible: Your source code
@@ -522,7 +484,7 @@ rm -rf .yoyo-dev/fixes/
 rm -rf .yoyo-dev/recaps/
 
 # Delete project memory (keeps global)
-rm -rf .yoyo-ai/
+rm -rf .yoyo-dev/memory/
 
 # Delete MCP config (will be regenerated)
 rm -f .mcp.json
@@ -540,7 +502,7 @@ These should never be deleted:
 .yoyo-dev/config.yml
 
 # Global memory (user preferences)
-~/.yoyo-ai/
+~/.yoyo-dev/
 ```
 
 ---
@@ -555,7 +517,7 @@ These should never be deleted:
 # .claude/
 
 # Yoyo Dev - Memory (usually ignore)
-.yoyo-ai/
+.yoyo-dev/memory/
 
 # Yoyo Dev - MCP config (commit for team)
 # .mcp.json
@@ -567,7 +529,7 @@ These should never be deleted:
 
 **Recommendation:**
 - **Commit** `.yoyo-dev/` (specs, fixes, product docs useful for team)
-- **Ignore** `.yoyo-ai/` (project-specific memory, not needed in repo)
+- **Ignore** `.yoyo-dev/memory/` (project-specific memory, not needed in repo)
 - **Commit** `.mcp.json` (MCP config useful for team)
 
 ---

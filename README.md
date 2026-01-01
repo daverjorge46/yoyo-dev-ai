@@ -368,11 +368,9 @@ your-project/
 │       ├── frontend-engineer.md # NEW v5.0
 │       └── document-writer.md  # NEW v5.0
 │
-├── .yoyo-ai/                   # Memory system (v4.0+)
-│   └── memory/
-│       └── memory.db           # SQLite memory store
-│
 └── .mcp.json                   # MCP server configuration
+
+# Memory is now in .yoyo-dev/memory/ (consolidated in v6.0)
 ```
 
 ---

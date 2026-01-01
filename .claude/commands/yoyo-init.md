@@ -13,25 +13,48 @@ Run these checks:
 # Check if .yoyo-dev already exists
 ls -la .yoyo-dev/ 2>/dev/null && echo "YOYO_DEV_EXISTS" || echo "YOYO_DEV_NOT_EXISTS"
 
-# Check if .yoyo-ai memory system exists
-ls -la .yoyo-ai/memory/memory.db 2>/dev/null && echo "MEMORY_EXISTS" || echo "MEMORY_NOT_EXISTS"
+# Check if memory system exists (new location in .yoyo-dev/)
+ls -la .yoyo-dev/memory/memory.db 2>/dev/null && echo "MEMORY_EXISTS" || echo "MEMORY_NOT_EXISTS"
+
+# Check for OLD .yoyo-dev/memory/ directory (needs migration)
+ls -la .yoyo-dev/memory/memory/memory.db 2>/dev/null && echo "OLD_YOYO_AI_EXISTS" || echo "NO_OLD_YOYO_AI"
 
 # Check for deprecated .yoyo/ directory
 ls -la .yoyo/ 2>/dev/null && echo "OLD_YOYO_EXISTS" || echo "NO_OLD_YOYO"
 ```
 
-## Step 2: Handle Deprecated Directory
+## Step 2: Handle Deprecated Directories
 
-**If `.yoyo/` exists:**
-Tell user: "Found deprecated `.yoyo/` directory from an old Yoyo version."
+**If `.yoyo/` exists (v1-v3):**
+Tell user: "Found deprecated `.yoyo/` directory from Yoyo v1-v3. This should be deleted."
+Ask if they want to delete it.
 
-The current Yoyo Dev uses:
-- `.yoyo-dev/` for framework files (instructions, standards, specs)
-- `.yoyo-ai/` for memory system (SQLite database)
+**If `.yoyo-dev/memory/` exists (v4-v5):**
+Tell user: "Found `.yoyo-dev/memory/` directory from Yoyo v4-v5. Memory is now stored in `.yoyo-dev/memory/`."
 
-Ask if they want to:
-1. Delete the old `.yoyo/` directory
-2. Keep it (not recommended - may cause confusion)
+**Migrate automatically:**
+```bash
+# Create new memory directory
+mkdir -p .yoyo-dev/memory
+mkdir -p .yoyo-dev/skills
+
+# Move memory database if exists
+if [ -f ".yoyo-dev/memory/memory/memory.db" ]; then
+    mv .yoyo-dev/memory/memory/memory.db .yoyo-dev/memory/
+    mv .yoyo-dev/memory/memory/memory.db-wal .yoyo-dev/memory/ 2>/dev/null || true
+    mv .yoyo-dev/memory/memory/memory.db-shm .yoyo-dev/memory/ 2>/dev/null || true
+fi
+
+# Move skills if exist
+if [ -d ".yoyo-dev/memory/.skills" ]; then
+    mv .yoyo-dev/memory/.skills/* .yoyo-dev/skills/ 2>/dev/null || true
+fi
+
+# Remove old directory
+rm -rf .yoyo-dev/memory/
+```
+
+Report: "Migrated memory from `.yoyo-dev/memory/` to `.yoyo-dev/memory/`"
 
 ## Step 3: Handle Different States
 
@@ -54,8 +77,8 @@ ls .yoyo-dev/product/mission.md 2>/dev/null && echo "MISSION_EXISTS" || echo "NO
 # Count specs
 ls -d .yoyo-dev/specs/*/ 2>/dev/null | wc -l || echo "0"
 
-# Check memory
-ls .yoyo-ai/memory/memory.db 2>/dev/null && echo "MEMORY_OK" || echo "NO_MEMORY"
+# Check memory (new location)
+ls .yoyo-dev/memory/memory.db 2>/dev/null && echo "MEMORY_OK" || echo "NO_MEMORY"
 ```
 
 Show status report:
@@ -66,9 +89,7 @@ Yoyo Dev Status
 Framework (.yoyo-dev/):
   Product docs: [Found/Not found]
   Specifications: [N] specs
-
-Memory System (.yoyo-ai/):
-  Status: [Initialized/Not initialized]
+  Memory: [Initialized/Not initialized]
 
 Available Commands:
   /plan-product    - Set up product mission and roadmap
@@ -94,11 +115,23 @@ The memory system provides:
 
 ## Directory Reference
 
-| Directory | Purpose | Contents |
-|-----------|---------|----------|
-| `.yoyo-dev/` | Framework | Instructions, standards, specs, product docs |
-| `.yoyo-ai/` | Memory | SQLite database (`memory.db`), skills |
-| `.yoyo/` | **DEPRECATED** | Old format - should be deleted |
+**Everything is consolidated in `.yoyo-dev/`:**
+
+| Directory | Purpose |
+|-----------|---------|
+| `.yoyo-dev/memory/` | SQLite database for memory system |
+| `.yoyo-dev/skills/` | Skills system |
+| `.yoyo-dev/instructions/` | AI workflow instructions |
+| `.yoyo-dev/standards/` | Development standards |
+| `.yoyo-dev/specs/` | Feature specifications |
+| `.yoyo-dev/product/` | Product docs (mission, roadmap) |
+
+**Deprecated directories (will be auto-migrated):**
+
+| Directory | Status |
+|-----------|--------|
+| `.yoyo-dev/memory/` | **DEPRECATED v4-v5** - auto-migrated to `.yoyo-dev/memory/` |
+| `.yoyo/` | **DEPRECATED v1-v3** - should be deleted |
 
 ## Quick Setup Commands
 
@@ -111,12 +144,12 @@ The memory system provides:
 
 **Check status:**
 ```bash
-# Framework
+# Full status
 ls -la .yoyo-dev/
 
-# Memory
-ls -la .yoyo-ai/memory/
+# Memory status
+ls -la .yoyo-dev/memory/
 
 # Full tree
-tree -L 2 .yoyo-dev .yoyo-ai 2>/dev/null || find .yoyo-dev .yoyo-ai -maxdepth 2 -type f 2>/dev/null
+tree -L 2 .yoyo-dev 2>/dev/null || find .yoyo-dev -maxdepth 2 -type d 2>/dev/null
 ```
