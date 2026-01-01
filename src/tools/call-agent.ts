@@ -1,8 +1,41 @@
 /**
  * call_agent Tool
  *
- * Enables agent-to-agent communication for task delegation.
- * Creates isolated sessions with tool restrictions and timeout handling.
+ * @deprecated As of v5.1, use the Task tool with subagent_type instead.
+ *
+ * This tool was designed for Claude Code SDK integration which is not yet
+ * available. Use instruction-based orchestration with the Task tool instead.
+ *
+ * Migration Guide:
+ * ----------------
+ * BEFORE (call_agent - DEPRECATED):
+ * ```typescript
+ * await callAgent({
+ *   agent: "arthas-oracle",
+ *   prompt: "Debug this failure..."
+ * })
+ * ```
+ *
+ * AFTER (Task tool - RECOMMENDED):
+ * ```typescript
+ * Task({
+ *   subagent_type: "general-purpose",
+ *   description: "Debug failure",
+ *   prompt: `You are Arthas-Oracle, the strategic advisor.
+ *     Debug this failure...
+ *     Prefix all output with [arthas-oracle]`
+ * })
+ * ```
+ *
+ * Available agents and their prefixes:
+ * - yoyo-ai [yoyo-ai] - Primary orchestrator
+ * - arthas-oracle [arthas-oracle] - Strategic advisor, failure analysis
+ * - alma-librarian [alma-librarian] - External research, documentation
+ * - alvaro-explore [alvaro-explore] - Codebase search, pattern matching
+ * - dave-engineer [dave-engineer] - UI/UX, frontend development
+ * - angeles-writer [angeles-writer] - Technical documentation
+ *
+ * See: .yoyo-dev/instructions/core/yoyo-ai-orchestration.md for full details.
  */
 
 import type {
@@ -17,9 +50,11 @@ import { validateAgent } from "../agents/validator.js";
 /**
  * Call another agent with a specific task
  *
+ * @deprecated Use Task tool with subagent_type instead. See module JSDoc for migration guide.
+ *
  * @param options - Agent call options
  * @returns Agent call result with response and metadata
- * @throws Error if agent not found, invalid config, or execution fails
+ * @throws Error - Always throws as Claude Code SDK is not available
  */
 export async function callAgent(
   options: CallAgentOptions
@@ -119,29 +154,42 @@ async function executeAgentSession(_params: {
   modelUsed?: string;
   usedFallback?: boolean;
 }> {
-  // TODO: Integrate with Claude Code SDK
-  // This is a placeholder implementation showing the expected interface
+  // DEPRECATED: Claude Code SDK is not available
   //
-  // const session = await claudeCode.createSession({
-  //   systemPrompt: params.agent.systemPrompt,
-  //   model: params.model || params.agent.model,
-  //   temperature: params.agent.temperature,
-  //   tools: params.agent.resolvedTools,
-  //   timeout: params.timeout
+  // Use the Task tool with instruction-based orchestration instead:
+  //
+  // Task({
+  //   subagent_type: "general-purpose",
+  //   description: "Agent task description",
+  //   prompt: `You are [Agent Name]...
+  //     Your task: ${params.prompt}
+  //     Prefix all output with [agent-name]`
   // })
   //
-  // const response = await session.execute(params.prompt)
-  //
-  // return {
-  //   response: response.content,
-  //   tokenUsage: response.usage,
-  //   toolsUsed: response.toolCalls.map(tc => tc.name),
-  //   modelUsed: response.model,
-  //   usedFallback: response.model !== params.agent.model
-  // }
+  // See .yoyo-dev/instructions/core/yoyo-ai-orchestration.md for details.
+
+  console.warn(
+    "\x1b[33m[DEPRECATED] call_agent tool is deprecated.\x1b[0m\n" +
+    "Use the Task tool with subagent_type instead.\n" +
+    "See: .yoyo-dev/instructions/core/yoyo-ai-orchestration.md\n" +
+    "\n" +
+    "Example migration:\n" +
+    "  Task({\n" +
+    "    subagent_type: \"general-purpose\",\n" +
+    "    description: \"Agent task\",\n" +
+    "    prompt: `You are Arthas-Oracle...\\n" +
+    "      Prefix all output with [arthas-oracle]`\n" +
+    "  })"
+  );
 
   throw new Error(
-    "Claude Code SDK integration not yet implemented. This is a Phase 2 task placeholder."
+    "[DEPRECATED] call_agent tool is deprecated as of v5.1.\n\n" +
+    "Claude Code SDK integration is not available.\n" +
+    "Use the Task tool with instruction-based orchestration instead.\n\n" +
+    "Migration:\n" +
+    "  BEFORE: callAgent({ agent: 'arthas-oracle', prompt: '...' })\n" +
+    "  AFTER:  Task({ subagent_type: 'general-purpose', prompt: 'You are Arthas-Oracle...' })\n\n" +
+    "See: .yoyo-dev/instructions/core/yoyo-ai-orchestration.md"
   );
 }
 
@@ -183,6 +231,8 @@ function isAgentError(error: unknown): error is AgentError {
 /**
  * Call agent with automatic retry on rate limit
  *
+ * @deprecated Use Task tool with subagent_type instead. See module JSDoc for migration guide.
+ *
  * @param options - Agent call options
  * @param maxRetries - Maximum retry attempts (default: 1)
  * @param retryDelay - Delay between retries in ms (default: 2000)
@@ -223,6 +273,8 @@ export async function callAgentWithRetry(
 /**
  * Call multiple agents in parallel
  *
+ * @deprecated Use multiple Task tool calls in a single message instead.
+ *
  * @param calls - Array of agent call options
  * @returns Array of agent call results
  */
@@ -234,6 +286,8 @@ export async function callAgentsParallel(
 
 /**
  * Call agents sequentially (for dependent operations)
+ *
+ * @deprecated Use sequential Task tool calls instead.
  *
  * @param calls - Array of agent call options
  * @returns Array of agent call results
