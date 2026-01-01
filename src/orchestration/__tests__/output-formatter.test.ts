@@ -245,6 +245,177 @@ describe('OutputFormatter', () => {
     });
   });
 
+  describe('formatRoutingContext', () => {
+    it('should format routing context with intent announcement and agent instructions', () => {
+      const classification = {
+        intent: 'codebase' as const,
+        confidence: 0.85,
+        primaryAgent: 'alvaro-explore' as const,
+        backgroundAgent: null,
+        matchedKeywords: ['find', 'where'],
+        shouldOrchestrate: true,
+      };
+
+      const routing = {
+        shouldDelegate: true,
+        delegationType: 'blocking' as const,
+        primaryAgent: 'alvaro-explore' as const,
+        backgroundAgent: null,
+        agentPrompt: null,
+        backgroundPrompt: null,
+      };
+
+      const result = formatter.formatRoutingContext(classification, routing);
+
+      expect(result).toContain('[yoyo-ai]');
+      expect(result).toContain('Intent: codebase');
+      expect(result).toContain('0.85');
+      expect(result).toContain('alvaro-explore');
+      expect(result).toContain('ORCHESTRATION CONTEXT:');
+    });
+
+    it('should include agent-specific instructions', () => {
+      const classification = {
+        intent: 'frontend' as const,
+        confidence: 0.9,
+        primaryAgent: 'dave-engineer' as const,
+        backgroundAgent: null,
+        matchedKeywords: ['style', 'button'],
+        shouldOrchestrate: true,
+      };
+
+      const routing = {
+        shouldDelegate: true,
+        delegationType: 'blocking' as const,
+        primaryAgent: 'dave-engineer' as const,
+        backgroundAgent: null,
+        agentPrompt: null,
+        backgroundPrompt: null,
+      };
+
+      const result = formatter.formatRoutingContext(classification, routing);
+
+      expect(result).toContain('dave-engineer');
+      expect(result).toContain('UI');
+    });
+
+    it('should request agent prefix in response when showPrefixes is true', () => {
+      const classification = {
+        intent: 'research' as const,
+        confidence: 0.75,
+        primaryAgent: 'alma-librarian' as const,
+        backgroundAgent: null,
+        matchedKeywords: ['docs'],
+        shouldOrchestrate: true,
+      };
+
+      const routing = {
+        shouldDelegate: true,
+        delegationType: 'blocking' as const,
+        primaryAgent: 'alma-librarian' as const,
+        backgroundAgent: null,
+        agentPrompt: null,
+        backgroundPrompt: null,
+      };
+
+      const result = formatter.formatRoutingContext(classification, routing);
+
+      expect(result).toContain('[alma-librarian]');
+      expect(result).toContain('Prefix');
+    });
+
+    it('should not include prefix instruction when showPrefixes is false', () => {
+      const noPrefixFormatter = new OutputFormatter({ showPrefixes: false });
+
+      const classification = {
+        intent: 'debug' as const,
+        confidence: 0.8,
+        primaryAgent: 'alvaro-explore' as const,
+        backgroundAgent: null,
+        matchedKeywords: ['error'],
+        shouldOrchestrate: true,
+      };
+
+      const routing = {
+        shouldDelegate: true,
+        delegationType: 'blocking' as const,
+        primaryAgent: 'alvaro-explore' as const,
+        backgroundAgent: null,
+        agentPrompt: null,
+        backgroundPrompt: null,
+      };
+
+      const result = noPrefixFormatter.formatRoutingContext(classification, routing);
+
+      expect(result).toContain('ORCHESTRATION CONTEXT:');
+      expect(result).not.toContain('Prefix');
+    });
+
+    it('should end with delimiter for clean separation', () => {
+      const classification = {
+        intent: 'general' as const,
+        confidence: 0.5,
+        primaryAgent: 'yoyo-ai' as const,
+        backgroundAgent: null,
+        matchedKeywords: [],
+        shouldOrchestrate: true,
+      };
+
+      const routing = {
+        shouldDelegate: false,
+        delegationType: 'none' as const,
+        primaryAgent: 'yoyo-ai' as const,
+        backgroundAgent: null,
+        agentPrompt: null,
+        backgroundPrompt: null,
+      };
+
+      const result = formatter.formatRoutingContext(classification, routing);
+
+      expect(result).toMatch(/---\s*$/);
+    });
+
+    it('should handle all agent types with appropriate instructions', () => {
+      const agents: Array<{ agent: AgentName; keywords: string[] }> = [
+        { agent: 'yoyo-ai', keywords: ['orchestrat', 'coordinat'] },
+        { agent: 'arthas-oracle', keywords: ['strateg', 'architect'] },
+        { agent: 'alma-librarian', keywords: ['research', 'document'] },
+        { agent: 'alvaro-explore', keywords: ['search', 'codebase'] },
+        { agent: 'dave-engineer', keywords: ['UI', 'frontend'] },
+        { agent: 'angeles-writer', keywords: ['document', 'writ'] },
+      ];
+
+      for (const { agent, keywords } of agents) {
+        const classification = {
+          intent: 'general' as const,
+          confidence: 0.8,
+          primaryAgent: agent,
+          backgroundAgent: null,
+          matchedKeywords: [],
+          shouldOrchestrate: true,
+        };
+
+        const routing = {
+          shouldDelegate: true,
+          delegationType: 'blocking' as const,
+          primaryAgent: agent,
+          backgroundAgent: null,
+          agentPrompt: null,
+          backgroundPrompt: null,
+        };
+
+        const result = formatter.formatRoutingContext(classification, routing);
+
+        expect(result).toContain(agent);
+        // At least one keyword should appear in the instructions
+        const hasKeyword = keywords.some((kw) =>
+          result.toLowerCase().includes(kw.toLowerCase())
+        );
+        expect(hasKeyword).toBe(true);
+      }
+    });
+  });
+
   describe('edge cases', () => {
     it('should handle empty message', () => {
       const result = formatter.format('yoyo-ai', '');

@@ -4,7 +4,12 @@
  * @description Formats agent output with prefixes for visibility
  */
 
-import { AgentName, FormatterConfig } from './types';
+import {
+  AgentName,
+  FormatterConfig,
+  IntentClassification,
+  RoutingDecision,
+} from './types';
 
 // ANSI color codes for terminal output
 const ANSI_COLORS: Record<AgentName, string> = {
@@ -17,6 +22,22 @@ const ANSI_COLORS: Record<AgentName, string> = {
 };
 
 const ANSI_RESET = '\x1b[0m';
+
+// Agent-specific instructions for context injection
+const AGENT_INSTRUCTIONS: Record<AgentName, string> = {
+  'yoyo-ai':
+    'You are the primary orchestrator. Coordinate work, delegate to specialized agents when appropriate, and ensure task completion.',
+  'arthas-oracle':
+    'You are a strategic advisor specializing in architecture decisions and debugging complex issues. Provide structured analysis with Essential, Expanded, and Edge Cases sections.',
+  'alma-librarian':
+    'You are a research specialist. Search external documentation, GitHub repos, and web resources. Return comprehensive findings with sources.',
+  'alvaro-explore':
+    'You are a codebase search specialist. Use Glob, Grep, and Read tools to find patterns, implementations, and code locations. Focus on internal codebase exploration.',
+  'dave-engineer':
+    'You are a frontend/UI specialist. Focus on components, styling, accessibility, and user experience. Use Tailwind CSS and React best practices.',
+  'angeles-writer':
+    'You are a documentation writer. Create clear, well-structured technical documentation, guides, and explanations.',
+};
 
 export class OutputFormatter {
   private config: FormatterConfig;
@@ -200,6 +221,54 @@ export class OutputFormatter {
    */
   stripPrefix(message: string): string {
     return message.replace(/^\[[\w-]+\]\s*/, '');
+  }
+
+  /**
+   * Format routing context for hook injection
+   * This outputs text that Claude will see BEFORE the user's message
+   * @param classification - The intent classification result
+   * @param routing - The routing decision
+   * @returns Formatted context string for injection
+   */
+  formatRoutingContext(
+    classification: IntentClassification,
+    routing: RoutingDecision
+  ): string {
+    const lines: string[] = [];
+    const agent = routing.primaryAgent ?? 'yoyo-ai';
+
+    // Announcement lines (with prefixes if enabled)
+    if (this.config.showPrefixes) {
+      const prefix = this.buildPrefix('yoyo-ai');
+      lines.push(
+        `${prefix} Intent: ${classification.intent} (confidence: ${classification.confidence.toFixed(2)})`
+      );
+      lines.push(`${prefix} Routing to ${agent} agent`);
+      lines.push('');
+    }
+
+    // Context block for Claude
+    lines.push('ORCHESTRATION CONTEXT:');
+    lines.push(`You are now operating as the ${agent} agent.`);
+    lines.push(AGENT_INSTRUCTIONS[agent] ?? AGENT_INSTRUCTIONS['yoyo-ai']);
+
+    // Request prefix in response if enabled
+    if (this.config.showPrefixes) {
+      lines.push(`Prefix your first response line with [${agent}].`);
+    }
+
+    // Delimiter for clean separation from user message
+    lines.push('---');
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Get agent instructions for a specific agent
+   * @param agent - The agent name
+   */
+  getAgentInstructions(agent: AgentName): string {
+    return AGENT_INSTRUCTIONS[agent] ?? AGENT_INSTRUCTIONS['yoyo-ai'];
   }
 
   /**

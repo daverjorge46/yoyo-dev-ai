@@ -369,6 +369,7 @@ mkdir -p "$INSTALL_DIR/archive/patterns"
 if [ "$CLAUDE_CODE" = true ]; then
     mkdir -p ".claude/commands"
     mkdir -p ".claude/agents"
+    mkdir -p ".claude/hooks"
 fi
 
 ui_success "Directories created"
@@ -384,7 +385,22 @@ if [ "$IS_FROM_BASE" = true ]; then
     cp -r "$BASE_YOYO_DEV/standards/"* "$INSTALL_DIR/standards/"
 
     if [ "$CLAUDE_CODE" = true ]; then
-        cp -r "$BASE_YOYO_DEV/.claude/"* ".claude/" 2>/dev/null || true
+        # Copy commands, agents, skills, templates
+        cp -r "$BASE_YOYO_DEV/.claude/commands/"* ".claude/commands/" 2>/dev/null || true
+        cp -r "$BASE_YOYO_DEV/.claude/agents/"* ".claude/agents/" 2>/dev/null || true
+        cp -r "$BASE_YOYO_DEV/.claude/skills/"* ".claude/skills/" 2>/dev/null || mkdir -p ".claude/skills"
+        cp -r "$BASE_YOYO_DEV/.claude/templates/"* ".claude/templates/" 2>/dev/null || mkdir -p ".claude/templates"
+
+        # Copy orchestration hook bundle
+        if [ -f "$BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs" ]; then
+            cp "$BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs" ".claude/hooks/"
+            ui_info "Orchestration hook installed"
+        fi
+
+        # Copy settings.json with hook configuration (if not exists)
+        if [ ! -f ".claude/settings.json" ] && [ -f "$BASE_YOYO_DEV/.claude/settings.json" ]; then
+            cp "$BASE_YOYO_DEV/.claude/settings.json" ".claude/"
+        fi
     fi
 else
     # Download from GitHub

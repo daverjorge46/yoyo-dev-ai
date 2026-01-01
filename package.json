@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc",
     "build:clean": "rm -rf dist && tsc",
+    "build:hook": "esbuild src/hooks/orchestrate-entry.ts --bundle --platform=node --target=node18 --format=cjs --outfile=.claude/hooks/orchestrate.cjs",
     "dev": "tsc --watch",
     "test": "vitest",
     "test:coverage": "vitest --coverage",
@@ -62,6 +63,7 @@
     "@types/uuid": "^10.0.0",
     "@types/ws": "^8.18.1",
     "@vitest/coverage-v8": "^2.1.9",
+    "esbuild": "^0.24.2",
     "ink-testing-library": "^4.0.0",
     "shadcn": "^3.5.1",
     "tsx": "^4.21.0",

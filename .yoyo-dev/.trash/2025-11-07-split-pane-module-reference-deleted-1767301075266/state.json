@@ -1,0 +1,23 @@
+{
+  "fix_name": "split-pane-module-reference",
+  "fix_created": "2025-11-07",
+  "issue_type": "bug",
+  "priority": "high",
+  "tasks_created": "2025-11-07",
+  "execution_started": "2025-11-07",
+  "execution_completed": "2025-11-07",
+  "current_phase": "completed",
+  "completed_tasks": [
+    "Task 1: Write Tests for Bug Reproduction",
+    "Task 2: Fix Module Reference in Split View Manager",
+    "Task 3: Add Integration Tests",
+    "Task 4: Manual Verification and Cleanup"
+  ],
+  "active_task": null,
+  "pr_url": "https://github.com/daverjorge46/yoyo-dev-ai/commit/d46b88a",
+  "affected_files": [
+    "lib/yoyo_tui_v3/split_view/manager.py",
+    "tests/test_split_view/test_manager/test_pane_module_reference.py",
+    "tests/test_split_view/test_manager/test_pane_commands.py"
+  ]
+}
