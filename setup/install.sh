@@ -360,6 +360,11 @@ mkdir -p "$INSTALL_DIR/specs"
 mkdir -p "$INSTALL_DIR/fixes"
 mkdir -p "$INSTALL_DIR/recaps"
 mkdir -p "$INSTALL_DIR/memory"
+mkdir -p "$INSTALL_DIR/cleanup"
+mkdir -p "$INSTALL_DIR/archive/specs"
+mkdir -p "$INSTALL_DIR/archive/fixes"
+mkdir -p "$INSTALL_DIR/archive/recaps"
+mkdir -p "$INSTALL_DIR/archive/patterns"
 
 if [ "$CLAUDE_CODE" = true ]; then
     mkdir -p ".claude/commands"

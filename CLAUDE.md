@@ -605,6 +605,14 @@ Each MCP server container runs with:
 - `/design-fix` - Fix design violations
 - `/design-component` - Create UI components with design enforcement
 
+**Maintenance:**
+- `/yoyo-cleanup` - Professional project cleanup with safety validations (deprecated code, docs, files)
+- `/yoyo-cleanup --scan` - Analyze only, no changes (default)
+- `/yoyo-cleanup --preview` - Show exact planned changes
+- `/yoyo-cleanup --execute` - Apply changes with confirmations
+- `/yoyo-cleanup --docs` - Documentation cleanup only
+- `/yoyo-cleanup --code` - Code cleanup only
+
 **Memory System:**
 - `/init` - Scan codebase and initialize memory with project context
 - `/remember` - Store user preferences or project knowledge

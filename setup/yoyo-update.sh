@@ -521,7 +521,19 @@ else
         show_progress "Creating .yoyo-dev/skills/"
         mkdir -p .yoyo-dev/skills
     fi
-    show_progress "Memory directories OK"
+    # Ensure cleanup and archive directories exist (v6.1+)
+    if [ ! -d ".yoyo-dev/cleanup" ]; then
+        show_progress "Creating .yoyo-dev/cleanup/"
+        mkdir -p .yoyo-dev/cleanup
+    fi
+    if [ ! -d ".yoyo-dev/archive" ]; then
+        show_progress "Creating .yoyo-dev/archive/"
+        mkdir -p .yoyo-dev/archive/specs
+        mkdir -p .yoyo-dev/archive/fixes
+        mkdir -p .yoyo-dev/archive/recaps
+        mkdir -p .yoyo-dev/archive/patterns
+    fi
+    show_progress "All directories OK"
     echo ""
 fi
 
