@@ -37,11 +37,12 @@ fi
 # Configuration
 # ============================================================================
 
-readonly VERSION="6.0.0"
+readonly VERSION="6.1.0"
 readonly USER_PROJECT_DIR="$(pwd)"
 
 GUI_ENABLED=true
 GUI_PORT=5173
+ORCHESTRATION_ENABLED=true
 
 # ============================================================================
 # Claude Code Detection
@@ -170,10 +171,22 @@ launch_claude_code() {
     echo ""
     echo -e "  ${UI_DIM}Commands:${UI_RESET} /status /specs /tasks /fixes"
     echo -e "  ${UI_DIM}Help:${UI_RESET}     /yoyo-help"
+
+    # Show orchestration status
+    if [ "$ORCHESTRATION_ENABLED" = true ]; then
+        echo -e "  ${UI_DIM}Orchestration:${UI_RESET} ${UI_SUCCESS}Global Mode (v6.1)${UI_RESET}"
+    else
+        echo -e "  ${UI_DIM}Orchestration:${UI_RESET} ${UI_YELLOW}Disabled${UI_RESET}"
+    fi
     echo ""
 
     # Change to project directory
     cd "$USER_PROJECT_DIR"
+
+    # Set orchestration environment variable
+    if [ "$ORCHESTRATION_ENABLED" = false ]; then
+        export YOYO_ORCHESTRATION=false
+    fi
 
     # Launch Claude Code
     exec claude
@@ -208,6 +221,21 @@ show_help() {
     echo ""
     echo -e "  ${UI_PRIMARY}yoyo --gui-only${UI_RESET}"
     echo -e "    ${UI_DIM}Open browser GUI only (no Claude Code)${UI_RESET}"
+    echo ""
+
+    echo -e "  ${UI_SUCCESS}ORCHESTRATION${UI_RESET}"
+    echo -e "  ─────────────────────────────────────────────────────────────────"
+    echo ""
+    echo -e "  ${UI_DIM}Global orchestration mode is enabled by default (v6.1+).${UI_RESET}"
+    echo -e "  ${UI_DIM}All user messages are classified and routed to agents.${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}yoyo --no-orchestration${UI_RESET}"
+    echo -e "    ${UI_DIM}Disable global orchestration for this session${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_DIM}Other disable methods:${UI_RESET}"
+    echo -e "    ${UI_DIM}• Set YOYO_ORCHESTRATION=false in environment${UI_RESET}"
+    echo -e "    ${UI_DIM}• Set orchestration.enabled: false in config.yml${UI_RESET}"
+    echo -e "    ${UI_DIM}• Prefix message with \"directly:\" for one-time bypass${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_SUCCESS}GUI MANAGEMENT${UI_RESET}"
@@ -262,6 +290,10 @@ main() {
             ;;
         --no-gui)
             GUI_ENABLED=false
+            launch_claude_code
+            ;;
+        --no-orchestration)
+            ORCHESTRATION_ENABLED=false
             launch_claude_code
             ;;
         --gui-only)

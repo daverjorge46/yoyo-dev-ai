@@ -200,6 +200,108 @@ Each agent has restricted tool access for safety:
 - `.yoyo-dev/instructions/core/yoyo-ai-orchestration.md` - Complete orchestrator workflow
 - `docs/multi-agent-orchestration.md` - User-facing guide
 
+## Global Orchestration Mode (v6.1+)
+
+**In v6.1, orchestration is the default for ALL interactions** - not just specific commands like `/execute-tasks`. After running `yoyo`, every user message is automatically classified and routed to specialized agents.
+
+### How It Works
+
+1. **Every user message is classified** into intent categories:
+   - **Research** → External docs, GitHub, web search → Alma-Librarian (background)
+   - **Codebase** → Find patterns, files, implementations → Alvaro-Explore (blocking)
+   - **Frontend** → UI/UX, styling, components → Dave-Engineer (auto-delegate)
+   - **Debug** → Error analysis, bug fixing → Alvaro-Explore + Oracle escalation
+   - **Documentation** → README, guides, explanations → Angeles-Writer
+   - **Planning** → Architecture, feature design → Yoyo-AI + research
+   - **Implementation** → Building, coding → Yoyo-AI + codebase context
+   - **General** → No specific delegation (below confidence threshold)
+
+2. **Automatic agent delegation** based on intent:
+   - Classification takes <10ms (keyword matching, no ML)
+   - Confidence threshold: 0.6 (configurable)
+   - Background tasks run in parallel without blocking
+
+3. **All orchestrated output is prefixed** with agent name for visibility:
+   ```
+   [yoyo-ai] Analyzing your request...
+   [yoyo-ai] Intent: Research (85% confidence)
+   [yoyo-ai] Delegating to alma-librarian...
+   [alma-librarian] Searching documentation...
+   [yoyo-ai] Here's what I found: ...
+   ```
+
+### Agent Prefixes
+
+| Agent | Prefix | Role |
+|-------|--------|------|
+| Yoyo-AI | `[yoyo-ai]` | Primary orchestrator |
+| Arthas-Oracle | `[arthas-oracle]` | Strategic advisor, failure analysis |
+| Alma-Librarian | `[alma-librarian]` | External research (background) |
+| Alvaro-Explore | `[alvaro-explore]` | Codebase search |
+| Dave-Engineer | `[dave-engineer]` | Frontend/UI development |
+| Angeles-Writer | `[angeles-writer]` | Documentation |
+
+### Disabling Orchestration
+
+**Per-session (command flag):**
+```bash
+yoyo --no-orchestration
+```
+
+**Per-project (.yoyo-dev/config.yml):**
+```yaml
+orchestration:
+  enabled: false
+```
+
+**Per-environment:**
+```bash
+export YOYO_ORCHESTRATION=false
+```
+
+**Per-request (prefix):**
+```
+directly: What is the difference between let and const?
+```
+
+### When Orchestration is Skipped
+
+- Slash commands (`/execute-tasks`, `/research`, etc.) - explicit override
+- `directly:` prefixed requests - user bypass
+- Confidence score < 0.6 - ambiguous intent
+- Orchestration disabled in config
+
+### Configuration
+
+Full control via `.yoyo-dev/config.yml`:
+
+```yaml
+orchestration:
+  enabled: true           # Master toggle
+  global_mode: true       # Apply to ALL interactions
+  show_prefixes: true     # Show [agent-name] prefixes
+  confidence_threshold: 0.6
+
+  routing:
+    frontend_delegation:
+      enabled: true
+      agent: dave-engineer
+
+    research_delegation:
+      enabled: true
+      agent: alma-librarian
+      background: true    # Non-blocking
+
+    codebase_delegation:
+      enabled: true
+      agent: alvaro-explore
+
+    failure_escalation:
+      enabled: true
+      agent: arthas-oracle
+      after_failures: 3
+```
+
 ## MCP Server Installation
 
 Yoyo Dev uses Docker MCP Gateway to provide containerized MCP servers via Docker Desktop's MCP Toolkit.

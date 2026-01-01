@@ -1,6 +1,69 @@
 # Yoyo Dev Configuration
 
-yoyo_dev_version: 5.0.0
+yoyo_dev_version: 6.1.0
+
+# =============================================================================
+# GLOBAL ORCHESTRATION MODE (v6.1+)
+# =============================================================================
+# When enabled, Yoyo-AI automatically classifies every user message and
+# delegates to specialized agents based on intent. This makes the multi-agent
+# system the default behavior for ALL interactions.
+#
+# Disable methods:
+# 1. Set enabled: false below
+# 2. Use: yoyo --no-orchestration
+# 3. Set env: YOYO_ORCHESTRATION=false
+# 4. Per-request: "directly: your message"
+# =============================================================================
+
+orchestration:
+  # Master toggle for global orchestration mode
+  enabled: true
+
+  # Apply orchestration to ALL user messages (not just specific commands)
+  global_mode: true
+
+  # Show [agent-name] prefix in output for visibility
+  show_prefixes: true
+
+  # Minimum confidence to trigger orchestration (0.0 - 1.0)
+  # Lower = more orchestration, Higher = more selective
+  confidence_threshold: 0.6
+
+  # Intent classification settings
+  intent_classification:
+    enabled: true
+    max_latency_ms: 10  # Target: <10ms for keyword matching
+
+  # Agent routing configuration
+  routing:
+    # Frontend work (styling, UI, components) → Dave-Engineer
+    frontend_delegation:
+      enabled: true
+      agent: dave-engineer
+
+    # External research (docs, GitHub, web) → Alma-Librarian
+    research_delegation:
+      enabled: true
+      agent: alma-librarian
+      background: true  # Non-blocking, runs in parallel
+
+    # Codebase search (find files, patterns) → Alvaro-Explore
+    codebase_delegation:
+      enabled: true
+      agent: alvaro-explore
+
+    # Failure escalation → Arthas-Oracle
+    failure_escalation:
+      enabled: true
+      agent: arthas-oracle
+      after_failures: 3  # Escalate after 3 consecutive failures
+
+  # Background task settings
+  background_tasks:
+    enabled: true
+    max_concurrent: 3
+    notification_on_complete: true
 
 agents:
   claude_code:
