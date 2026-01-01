@@ -27,7 +27,7 @@ source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
 # Configuration
 # ============================================================================
 
-VERSION="5.0.0"
+VERSION="6.0.0"
 NO_BASE=false
 OVERWRITE_INSTRUCTIONS=false
 OVERWRITE_STANDARDS=false
@@ -37,6 +37,11 @@ PROJECT_TYPE=""
 AUTO_INSTALL_MCP=true
 ENABLE_TUI_V4=false  # Ask user during installation
 INTERACTIVE=true
+
+# Tech Stack Configuration
+TECH_STACK_FRAMEWORK=""
+TECH_STACK_DATABASE=""
+TECH_STACK_STYLING=""
 
 # ============================================================================
 # Parse Arguments
@@ -231,6 +236,78 @@ if [ "$INTERACTIVE" = true ]; then
         fi
     fi
 
+    # Tech Stack Selection
+    echo ""
+    echo -e "${UI_BOLD}What is your project's tech stack?${UI_RESET}"
+    echo ""
+
+    # Framework
+    echo -e "  ${UI_DIM}Framework:${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}1.${UI_RESET} React + TypeScript (recommended)"
+    echo -e "    ${UI_PRIMARY}2.${UI_RESET} Next.js"
+    echo -e "    ${UI_PRIMARY}3.${UI_RESET} Vue.js"
+    echo -e "    ${UI_PRIMARY}4.${UI_RESET} Node.js + Express"
+    echo -e "    ${UI_PRIMARY}5.${UI_RESET} Python + FastAPI"
+    echo -e "    ${UI_PRIMARY}6.${UI_RESET} Other/Skip"
+    echo ""
+    echo -n "  Choice [1]: "
+    read -r fw_choice
+    fw_choice=${fw_choice:-1}
+
+    case $fw_choice in
+        1) TECH_STACK_FRAMEWORK="react-typescript" ;;
+        2) TECH_STACK_FRAMEWORK="nextjs" ;;
+        3) TECH_STACK_FRAMEWORK="vuejs" ;;
+        4) TECH_STACK_FRAMEWORK="nodejs-express" ;;
+        5) TECH_STACK_FRAMEWORK="python-fastapi" ;;
+        *) TECH_STACK_FRAMEWORK="other" ;;
+    esac
+
+    # Database
+    echo ""
+    echo -e "  ${UI_DIM}Database:${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}1.${UI_RESET} None"
+    echo -e "    ${UI_PRIMARY}2.${UI_RESET} Convex (serverless)"
+    echo -e "    ${UI_PRIMARY}3.${UI_RESET} PostgreSQL"
+    echo -e "    ${UI_PRIMARY}4.${UI_RESET} MongoDB"
+    echo -e "    ${UI_PRIMARY}5.${UI_RESET} SQLite"
+    echo -e "    ${UI_PRIMARY}6.${UI_RESET} Supabase"
+    echo ""
+    echo -n "  Choice [1]: "
+    read -r db_choice
+    db_choice=${db_choice:-1}
+
+    case $db_choice in
+        1) TECH_STACK_DATABASE="none" ;;
+        2) TECH_STACK_DATABASE="convex" ;;
+        3) TECH_STACK_DATABASE="postgresql" ;;
+        4) TECH_STACK_DATABASE="mongodb" ;;
+        5) TECH_STACK_DATABASE="sqlite" ;;
+        6) TECH_STACK_DATABASE="supabase" ;;
+        *) TECH_STACK_DATABASE="none" ;;
+    esac
+
+    # Styling
+    echo ""
+    echo -e "  ${UI_DIM}Styling:${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}1.${UI_RESET} Tailwind CSS (recommended)"
+    echo -e "    ${UI_PRIMARY}2.${UI_RESET} CSS Modules"
+    echo -e "    ${UI_PRIMARY}3.${UI_RESET} Styled Components"
+    echo -e "    ${UI_PRIMARY}4.${UI_RESET} Plain CSS"
+    echo -e "    ${UI_PRIMARY}5.${UI_RESET} Other/Skip"
+    echo ""
+    echo -n "  Choice [1]: "
+    read -r style_choice
+    style_choice=${style_choice:-1}
+
+    case $style_choice in
+        1) TECH_STACK_STYLING="tailwindcss" ;;
+        2) TECH_STACK_STYLING="css-modules" ;;
+        3) TECH_STACK_STYLING="styled-components" ;;
+        4) TECH_STACK_STYLING="plain-css" ;;
+        *) TECH_STACK_STYLING="other" ;;
+    esac
+
     echo ""
 fi
 
@@ -261,6 +338,17 @@ if [ "$AUTO_INSTALL_MCP" = true ]; then
     summary_items+=("MCP Servers: Auto-install")
 else
     summary_items+=("MCP Servers: Skip")
+fi
+
+# Add tech stack to summary
+if [ -n "$TECH_STACK_FRAMEWORK" ] && [ "$TECH_STACK_FRAMEWORK" != "other" ]; then
+    summary_items+=("Framework: $TECH_STACK_FRAMEWORK")
+fi
+if [ -n "$TECH_STACK_DATABASE" ] && [ "$TECH_STACK_DATABASE" != "none" ]; then
+    summary_items+=("Database: $TECH_STACK_DATABASE")
+fi
+if [ -n "$TECH_STACK_STYLING" ] && [ "$TECH_STACK_STYLING" != "other" ]; then
+    summary_items+=("Styling: $TECH_STACK_STYLING")
 fi
 
 for item in "${summary_items[@]}"; do
@@ -299,6 +387,7 @@ mkdir -p "$INSTALL_DIR/product"
 mkdir -p "$INSTALL_DIR/specs"
 mkdir -p "$INSTALL_DIR/fixes"
 mkdir -p "$INSTALL_DIR/recaps"
+mkdir -p "$INSTALL_DIR/memory"
 
 if [ "$CLAUDE_CODE" = true ]; then
     mkdir -p ".claude/commands"
@@ -342,6 +431,12 @@ agents:
     enabled: $CLAUDE_CODE
   cursor:
     enabled: $CURSOR
+
+# Project Tech Stack
+tech_stack:
+  framework: "${TECH_STACK_FRAMEWORK:-other}"
+  database: "${TECH_STACK_DATABASE:-none}"
+  styling: "${TECH_STACK_STYLING:-other}"
 
 # TUI Configuration
 tui:
@@ -418,9 +513,9 @@ if ! grep -q ".yoyo-dev/product/" ".gitignore" 2>/dev/null; then
 .yoyo-dev/specs/
 .yoyo-dev/fixes/
 .yoyo-dev/recaps/
+.yoyo-dev/memory/
 .yoyo-dev/.tui-session.json
 .yoyo-dev/tui-errors.log
-.yoyo-ai/
 EOF
 fi
 
@@ -435,6 +530,7 @@ touch "$INSTALL_DIR/product/.gitkeep"
 touch "$INSTALL_DIR/specs/.gitkeep"
 touch "$INSTALL_DIR/fixes/.gitkeep"
 touch "$INSTALL_DIR/recaps/.gitkeep"
+touch "$INSTALL_DIR/memory/.gitkeep"
 
 ui_success "Placeholders created"
 echo ""

@@ -52,7 +52,7 @@ source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
 # Configuration
 # ============================================================================
 
-VERSION="5.0.0"
+VERSION="6.0.0"
 OVERWRITE_INSTRUCTIONS=true
 OVERWRITE_STANDARDS=true
 OVERWRITE_COMMANDS=true
@@ -152,14 +152,42 @@ ui_box_header "UPDATE YOYO DEV" 70 "$UI_PRIMARY"
 CURRENT_DIR=$(pwd)
 PROJECT_NAME=$(basename "$CURRENT_DIR")
 
-# Validation
+# Validation - check if Yoyo Dev is installed
 if [ ! -d "./.yoyo-dev" ]; then
-    ui_error "Yoyo Dev is not installed in this project"
+    ui_warning "Yoyo Dev is not installed in this project"
     echo ""
-    echo "  Run the installation script first:"
-    echo "  ${UI_PRIMARY}~/.yoyo-dev/setup/project.sh --claude-code${UI_RESET}"
+    echo "  Would you like to install Yoyo Dev instead?"
     echo ""
-    exit 1
+    echo -e "    ${UI_PRIMARY}1.${UI_RESET} Install Yoyo Dev (recommended)"
+    echo -e "    ${UI_PRIMARY}2.${UI_RESET} Exit"
+    echo ""
+    echo -n "  Choice [1]: "
+    read -r install_choice
+    install_choice="${install_choice:-1}"
+
+    if [ "$install_choice" = "1" ]; then
+        echo ""
+        ui_info "Starting installation..."
+        echo ""
+
+        # Use the BASE installation at ~/yoyo-dev/
+        install_script="$HOME/yoyo-dev/setup/install.sh"
+
+        if [ -f "$install_script" ]; then
+            exec bash "$install_script" --claude-code
+        else
+            ui_error "Installation script not found at: $install_script"
+            echo ""
+            echo "  Please ensure Yoyo Dev BASE is installed at ~/yoyo-dev/"
+            echo ""
+            exit 1
+        fi
+    else
+        echo ""
+        ui_info "Update cancelled"
+        echo ""
+        exit 0
+    fi
 fi
 
 # Check for deprecated .yoyo/ directory
@@ -168,8 +196,7 @@ if [ -d "./.yoyo" ]; then
     echo ""
     echo "  The .yoyo/ directory is from an old version."
     echo "  Current Yoyo Dev uses:"
-    echo "    • .yoyo-dev/ for framework files"
-    echo "    • .yoyo-ai/ for memory system"
+    echo "    • .yoyo-dev/ for framework files and memory"
     echo ""
     echo "  Run ${UI_PRIMARY}/yoyo-init${UI_RESET} in Claude Code to migrate."
     echo ""

@@ -1,10 +1,11 @@
 #!/bin/bash
 
-# Yoyo Dev v4.0 - Global Command Installation
+# Yoyo Dev v6.0 - Global Command Installation
 # Installs all Yoyo Dev commands globally:
-#   - yoyo        : TUI dashboard + Claude split view
-#   - yoyo-update : Update Yoyo Dev installation
-#   - yoyo-gui    : Browser-based GUI dashboard
+#   - yoyo         : Claude Code + Browser GUI (default)
+#   - yoyo-update  : Update Yoyo Dev installation
+#   - yoyo-gui     : Browser-based GUI dashboard
+#   - yoyo-install : Install Yoyo Dev in a project
 
 set -euo pipefail
 
@@ -18,7 +19,7 @@ readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 # Version
-readonly VERSION="5.0.0"
+readonly VERSION="6.0.0"
 
 echo ""
 echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════╗${RESET}"
@@ -31,9 +32,10 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Define commands to install
 declare -A COMMANDS=(
-    ["yoyo"]="yoyo-global-launcher.sh"
+    ["yoyo"]="yoyo.sh"
     ["yoyo-update"]="yoyo-update.sh"
-    ["yoyo-gui"]="yoyo-gui-global-launcher.sh"
+    ["yoyo-gui"]="yoyo-gui.sh"
+    ["yoyo-install"]="install.sh"
 )
 
 # Determine installation directory
@@ -158,7 +160,7 @@ fi
 echo -e "${BOLD}Testing commands:${RESET}"
 echo ""
 
-for cmd in yoyo yoyo-update yoyo-gui; do
+for cmd in yoyo yoyo-update yoyo-gui yoyo-install; do
     if command -v $cmd &> /dev/null; then
         echo -e "  ${GREEN}✓${RESET} ${CYAN}$cmd${RESET} is available"
     else
@@ -171,16 +173,17 @@ echo "────────────────────────�
 echo ""
 echo -e "${BOLD}Available Commands:${RESET}"
 echo ""
-echo -e "  ${GREEN}yoyo${RESET}              Launch TUI + Claude + GUI (default)"
-echo -e "  ${GREEN}yoyo --no-gui${RESET}     Launch TUI + Claude without GUI"
-echo -e "  ${GREEN}yoyo --no-split${RESET}   Launch TUI only (no Claude, no GUI)"
+echo -e "  ${GREEN}yoyo${RESET}              Launch Claude Code + Browser GUI (default)"
+echo -e "  ${GREEN}yoyo --no-gui${RESET}     Launch Claude Code without browser GUI"
 echo -e "  ${GREEN}yoyo --stop-gui${RESET}   Stop background GUI server"
 echo -e "  ${GREEN}yoyo --help${RESET}       Show command reference"
+echo ""
+echo -e "  ${GREEN}yoyo-install${RESET}      Install Yoyo Dev in current project"
 echo ""
 echo -e "  ${GREEN}yoyo-gui${RESET}          Launch browser-based GUI standalone"
 echo -e "  ${GREEN}yoyo-gui --dev${RESET}    Development mode with hot reload"
 echo ""
-echo -e "  ${GREEN}yoyo-update${RESET}       Update Yoyo Dev installation"
+echo -e "  ${GREEN}yoyo-update${RESET}       Update Yoyo Dev in current project"
 echo ""
 echo -e "${DIM}Yoyo Dev v${VERSION} - \"Powerful when you need it. Invisible when you don't.\"${RESET}"
 echo ""

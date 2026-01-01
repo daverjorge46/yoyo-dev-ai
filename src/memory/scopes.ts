@@ -2,8 +2,8 @@
  * Memory Scopes - Dual Scope Architecture
  *
  * Manages two memory scopes:
- * - Global (~/.yoyo-ai/memory/): User preferences, stored per-user
- * - Project (.yoyo-ai/memory/): Project-specific context, stored per-project
+ * - Global (~/yoyo-dev/memory/): User preferences, stored per-user
+ * - Project (.yoyo-dev/memory/): Project-specific context, stored per-project
  *
  * Project scope overrides global scope when blocks of the same type exist.
  */
@@ -23,9 +23,14 @@ import {
 // =============================================================================
 
 /**
- * Name of the yoyo-ai configuration directory.
+ * Name of the yoyo-dev configuration directory.
  */
-const YOYO_DIR = '.yoyo-ai';
+const YOYO_DIR = '.yoyo-dev';
+
+/**
+ * Name of the global yoyo-dev directory (without dot prefix for home).
+ */
+const YOYO_GLOBAL_DIR = 'yoyo-dev';
 
 /**
  * Name of the memory subdirectory.
@@ -41,7 +46,7 @@ const DB_FILE = 'memory.db';
  * Project root markers - files/directories that indicate a project root.
  */
 const PROJECT_MARKERS = [
-  '.yoyo-ai',
+  '.yoyo-dev',
   '.git',
   'package.json',
   'Cargo.toml',
@@ -58,17 +63,17 @@ const PROJECT_MARKERS = [
 
 /**
  * Get the global memory directory path.
- * Located at ~/.yoyo-ai/memory/
+ * Located at ~/yoyo-dev/memory/
  *
  * @returns Absolute path to global memory directory
  */
 export function getGlobalMemoryPath(): string {
-  return join(homedir(), YOYO_DIR, MEMORY_DIR);
+  return join(homedir(), YOYO_GLOBAL_DIR, MEMORY_DIR);
 }
 
 /**
  * Get the project memory directory path.
- * Located at {projectRoot}/.yoyo-ai/memory/
+ * Located at {projectRoot}/.yoyo-dev/memory/
  *
  * @param projectRoot - Project root directory (defaults to cwd)
  * @returns Absolute path to project memory directory

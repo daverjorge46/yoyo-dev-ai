@@ -147,9 +147,44 @@ launch_claude_code() {
         echo ""
         ui_warning "Yoyo Dev not detected in this directory"
         echo ""
-        ui_info "Run: ${UI_PRIMARY}~/.yoyo-dev/setup/project.sh --claude-code${UI_RESET}"
+        echo -e "  Would you like to install Yoyo Dev in this project?"
         echo ""
-        exit 1
+        echo -e "    ${UI_PRIMARY}1.${UI_RESET} Install Yoyo Dev (recommended)"
+        echo -e "    ${UI_PRIMARY}2.${UI_RESET} Exit"
+        echo ""
+        echo -n "  Choice [1]: "
+        read -r install_choice
+        install_choice="${install_choice:-1}"
+
+        if [ "$install_choice" = "1" ]; then
+            echo ""
+            ui_info "Starting installation..."
+            echo ""
+
+            # Use the BASE installation at ~/yoyo-dev/
+            local install_script="$HOME/yoyo-dev/setup/install.sh"
+
+            if [ -f "$install_script" ]; then
+                exec bash "$install_script" --claude-code
+            else
+                ui_error "Installation script not found at: $install_script"
+                echo ""
+                echo "  Please ensure Yoyo Dev BASE is installed at ~/yoyo-dev/"
+                echo ""
+                echo "  To install BASE:"
+                echo "    ${UI_PRIMARY}git clone https://github.com/user/yoyo-dev-ai.git ~/yoyo-dev${UI_RESET}"
+                echo ""
+                exit 1
+            fi
+        else
+            echo ""
+            ui_info "Installation cancelled"
+            echo ""
+            echo "  To install manually:"
+            echo "    ${UI_PRIMARY}~/yoyo-dev/setup/install.sh --claude-code${UI_RESET}"
+            echo ""
+            exit 0
+        fi
     fi
 
     # Check Claude Code is installed
