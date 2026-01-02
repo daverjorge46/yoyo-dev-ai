@@ -288,8 +288,7 @@ function QuickActions() {
 
   const actions = [
     { label: 'View Specs', icon: FileText, href: '/specs' },
-    { label: 'View Tasks', icon: CheckSquare, href: '/tasks' },
-    { label: 'Task Board', icon: Activity, href: '/tasks/kanban' },
+    { label: 'Task Board', icon: CheckSquare, href: '/tasks' },
     { label: 'Roadmap', icon: GitBranch, href: '/roadmap' },
   ];
 
@@ -384,7 +383,7 @@ export default function Dashboard() {
           value={`${summary?.progress ?? 0}%`}
           subvalue="Overall completion"
           icon={Activity}
-          href="/tasks/kanban"
+          href="/tasks"
           color={summary?.progress === 100 ? 'green' : 'purple'}
         />
       </div>
