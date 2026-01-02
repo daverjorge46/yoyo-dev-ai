@@ -1,5 +1,6 @@
 ---
 name: alma-librarian
+description: External research specialist for documentation, GitHub repositories, web content, and best practices from the broader development community
 ---
 
 # Alma-Librarian - External Research Specialist

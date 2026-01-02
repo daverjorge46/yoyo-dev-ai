@@ -1,5 +1,6 @@
 ---
 name: arthas-oracle
+description: Strategic advisor for architecture decisions, failure analysis, and debugging complex problems when other approaches fail
 ---
 
 # Arthas-Oracle - Strategic Advisor

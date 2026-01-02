@@ -1,5 +1,6 @@
 ---
 name: angeles-writer
+description: Technical writing specialist for creating clear, comprehensive documentation including READMEs, API docs, user guides, and specifications
 ---
 
 # Angeles-Writer - Technical Writing Specialist

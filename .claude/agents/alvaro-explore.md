@@ -1,5 +1,6 @@
 ---
 name: alvaro-explore
+description: Codebase search specialist for finding patterns, locating files, and analyzing code structure within the local codebase
 ---
 
 # Alvaro-Explore - Codebase Search Specialist
