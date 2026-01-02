@@ -107,6 +107,8 @@ interface UseKanbanReturn {
   isLoadingMore: boolean;
   /** Whether there are more specs to load */
   hasMore: boolean;
+  /** Total number of specs (for pagination display) */
+  totalSpecs: number;
   /** Load more specs */
   loadMore: () => Promise<void>;
   /** Error state */
@@ -258,6 +260,7 @@ export function useKanban(options: UseKanbanOptions = {}): UseKanbanReturn {
   const [hasMore, setHasMore] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentOffset, setCurrentOffset] = useState(0);
+  const [totalSpecs, setTotalSpecs] = useState(0);
 
   // Fetch tasks (initial load)
   const {
@@ -276,6 +279,7 @@ export function useKanban(options: UseKanbanOptions = {}): UseKanbanReturn {
       setLoadedSpecs(data.specs);
       setHasMore(data.pagination?.hasMore ?? false);
       setCurrentOffset(data.specs.length);
+      setTotalSpecs(data.pagination?.total ?? data.specs.length);
     }
   }, [data]);
 
@@ -446,6 +450,7 @@ export function useKanban(options: UseKanbanOptions = {}): UseKanbanReturn {
     isLoading,
     isLoadingMore,
     hasMore,
+    totalSpecs,
     loadMore,
     error: error as Error | null,
     moveTask,

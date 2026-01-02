@@ -16,7 +16,7 @@ import { useEffect, useCallback } from 'react';
 import { KanbanBoard, TaskDetailPanel } from '../components/kanban';
 import { useKanban, type ColumnId } from '../hooks/useKanban';
 import { usePanelLayoutContext } from '../components/layout';
-import { Filter, LayoutGrid, Keyboard, Terminal } from 'lucide-react';
+import { Filter, LayoutGrid, Keyboard, Terminal, Loader2, ChevronDown } from 'lucide-react';
 
 // =============================================================================
 // Component
@@ -29,6 +29,10 @@ export default function TasksKanban() {
     specFilter,
     setSpecFilter,
     isLoading,
+    isLoadingMore,
+    hasMore,
+    totalSpecs,
+    loadMore,
     error,
     moveTask,
     selectedTask,
@@ -250,13 +254,58 @@ export default function TasksKanban() {
         focusedTaskId={focusedTaskId}
       />
 
+      {/* Load More Button */}
+      {!isLoading && hasMore && (
+        <div className="flex justify-center pt-4">
+          <button
+            onClick={loadMore}
+            disabled={isLoadingMore}
+            className="
+              inline-flex items-center gap-2 px-4 py-2
+              text-sm font-medium
+              text-gray-700 dark:text-terminal-text
+              bg-white dark:bg-terminal-bg-secondary
+              border border-gray-300 dark:border-terminal-border
+              rounded-md
+              hover:bg-gray-50 dark:hover:bg-terminal-bg-hover
+              focus:outline-none focus:ring-2 focus:ring-brand dark:focus:ring-terminal-orange
+              disabled:opacity-50 disabled:cursor-not-allowed
+              transition-colors
+            "
+            aria-label={isLoadingMore ? 'Loading more specs' : 'Load more specs'}
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" data-testid="load-more-spinner" />
+                Loading...
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                Load More
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
       {/* Summary Footer */}
       {!isLoading && (
-        <div className="flex items-center justify-between text-sm pt-3 border-t border-gray-200 dark:border-terminal-border">
-          <span className="text-gray-500 dark:text-terminal-text-muted">
-            <span className="font-medium text-gray-700 dark:text-terminal-text">{totalTasks}</span> total tasks
+        <div className="flex items-center justify-between text-sm pt-3 border-t border-gray-200 dark:border-terminal-border" data-testid="kanban-footer">
+          <span className="text-gray-500 dark:text-terminal-text-muted" data-testid="spec-count">
+            {hasMore ? (
+              <>
+                Showing <span className="font-medium text-gray-700 dark:text-terminal-text">{specs.length}</span> of{' '}
+                <span className="font-medium text-gray-700 dark:text-terminal-text">{totalSpecs}</span> specs
+              </>
+            ) : (
+              <>
+                <span className="font-medium text-gray-700 dark:text-terminal-text">{specs.length}</span> specs
+              </>
+            )}
           </span>
           <span className="text-gray-500 dark:text-terminal-text-muted">
+            <span className="font-medium text-gray-700 dark:text-terminal-text">{totalTasks}</span> tasks •{' '}
             <span className="font-medium text-terminal-green">{completedTasks}</span> completed
           </span>
         </div>
