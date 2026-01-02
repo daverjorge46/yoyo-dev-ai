@@ -8,26 +8,13 @@ import { Hono } from 'hono';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import type { Variables } from '../types.js';
+import { parseTasksFile, type TaskGroup } from '../lib/tasks-parser.js';
 
 export const tasksRoutes = new Hono<{ Variables: Variables }>();
 
 // =============================================================================
 // Types
 // =============================================================================
-
-interface TaskGroup {
-  id: string;
-  title: string;
-  tasks: Task[];
-  completed: boolean;
-}
-
-interface Task {
-  id: string;
-  title: string;
-  status: 'pending' | 'in_progress' | 'completed';
-  subtasks?: string[];
-}
 
 interface ParsedTasks {
   specId: string;
@@ -38,71 +25,6 @@ interface ParsedTasks {
 }
 
 type ColumnId = 'backlog' | 'in_progress' | 'review' | 'completed';
-
-// =============================================================================
-// Helpers
-// =============================================================================
-
-function parseTasksFile(content: string): TaskGroup[] {
-  const groups: TaskGroup[] = [];
-  let currentGroup: TaskGroup | null = null;
-  let currentTask: Task | null = null;
-
-  const lines = content.split('\n');
-
-  for (const line of lines) {
-    // Task group header: ## 1. Group Title
-    const groupMatch = line.match(/^##\s+(\d+)\.\s+(.+)$/);
-    if (groupMatch) {
-      if (currentGroup) {
-        groups.push(currentGroup);
-      }
-      currentGroup = {
-        id: groupMatch[1],
-        title: groupMatch[2].trim(),
-        tasks: [],
-        completed: false,
-      };
-      currentTask = null;
-      continue;
-    }
-
-    // Task item: - [ ] or - [x]
-    const taskMatch = line.match(/^-\s+\[([ xX])\]\s+(.+)$/);
-    if (taskMatch && currentGroup) {
-      const isCompleted = taskMatch[1].toLowerCase() === 'x';
-      currentTask = {
-        id: `${currentGroup.id}.${currentGroup.tasks.length + 1}`,
-        title: taskMatch[2].trim(),
-        status: isCompleted ? 'completed' : 'pending',
-        subtasks: [],
-      };
-      currentGroup.tasks.push(currentTask);
-      continue;
-    }
-
-    // Subtask: starts with spaces and has checkbox
-    const subtaskMatch = line.match(/^\s+-\s+\[([ xX])\]\s+(.+)$/);
-    if (subtaskMatch && currentTask) {
-      currentTask.subtasks = currentTask.subtasks || [];
-      currentTask.subtasks.push(subtaskMatch[2].trim());
-      continue;
-    }
-  }
-
-  // Don't forget the last group
-  if (currentGroup) {
-    groups.push(currentGroup);
-  }
-
-  // Mark groups as completed if all tasks are completed
-  for (const group of groups) {
-    group.completed = group.tasks.length > 0 &&
-      group.tasks.every(t => t.status === 'completed');
-  }
-
-  return groups;
-}
 
 function getAllTasks(projectRoot: string): ParsedTasks[] {
   const specsPath = join(projectRoot, '.yoyo-dev', 'specs');
