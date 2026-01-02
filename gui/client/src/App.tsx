@@ -11,7 +11,6 @@ import { useQuery } from '@tanstack/react-query';
 import Dashboard from './pages/Dashboard';
 import Specs from './pages/Specs';
 import Fixes from './pages/Fixes';
-import Tasks from './pages/Tasks';
 import TasksKanban from './pages/TasksKanban';
 import Roadmap from './pages/Roadmap';
 import Memory from './pages/Memory';
@@ -127,8 +126,7 @@ function MainContent({ isLoading, status, wsStatus, onReconnect }: MainContentPr
             <Route path="/" element={<Dashboard />} />
             <Route path="/specs" element={<Specs />} />
             <Route path="/fixes" element={<Fixes />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/tasks/kanban" element={<TasksKanban />} />
+            <Route path="/tasks" element={<TasksKanban />} />
             <Route path="/roadmap" element={<Roadmap />} />
             <Route path="/chat" element={<Chat />} />
             <Route path="/memory" element={<Memory />} />

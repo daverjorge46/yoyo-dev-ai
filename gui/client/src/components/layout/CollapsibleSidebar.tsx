@@ -16,7 +16,7 @@ import {
   LayoutDashboard,
   FileText,
   Wrench,
-  CheckSquare,
+  LayoutGrid,
   Map,
   Brain,
   Zap,
@@ -70,7 +70,7 @@ const navItems: NavItem[] = [
   {
     path: '/tasks',
     label: 'Tasks',
-    icon: <CheckSquare className="h-5 w-5" />,
+    icon: <LayoutGrid className="h-5 w-5" />,
   },
   {
     path: '/roadmap',

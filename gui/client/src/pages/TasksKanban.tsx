@@ -16,8 +16,7 @@ import { useEffect, useCallback } from 'react';
 import { KanbanBoard, TaskDetailPanel } from '../components/kanban';
 import { useKanban, type ColumnId } from '../hooks/useKanban';
 import { usePanelLayoutContext } from '../components/layout';
-import { Filter, LayoutGrid, ArrowLeft, Keyboard, Terminal } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Filter, LayoutGrid, Keyboard, Terminal } from 'lucide-react';
 
 // =============================================================================
 // Component
@@ -176,21 +175,12 @@ export default function TasksKanban() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-3">
-            <Link
-              to="/tasks"
-              className="terminal-btn-ghost p-1.5"
-              title="Back to Task List"
-            >
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-            <h1 className="text-2xl font-semibold text-gray-900 dark:text-terminal-text flex items-center gap-2">
-              <LayoutGrid className="h-6 w-6 text-brand dark:text-terminal-yellow" />
-              Task Board
-            </h1>
-          </div>
-          <p className="mt-1 text-sm text-gray-500 dark:text-terminal-text-muted ml-10">
-            Drag tasks between columns to update status
+          <h1 className="text-2xl font-semibold text-gray-900 dark:text-terminal-text flex items-center gap-2">
+            <LayoutGrid className="h-6 w-6 text-brand dark:text-terminal-orange" />
+            Tasks
+          </h1>
+          <p className="mt-1 text-sm text-gray-500 dark:text-terminal-text-muted">
+            Drag tasks between columns • Click to view details
           </p>
         </div>
 
