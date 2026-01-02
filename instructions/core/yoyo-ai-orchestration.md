@@ -55,6 +55,52 @@ Users can bypass global orchestration:
 4. **Command flag** - `yoyo --no-orchestration`
 5. **Environment** - `YOYO_ORCHESTRATION=false`
 
+### MANDATORY: Hook Instruction Compliance
+
+**When you see `ORCHESTRATION INSTRUCTIONS:` in a system-reminder, you MUST follow them exactly.**
+
+The orchestration hook runs BEFORE you see the user's message. It has already:
+1. Classified the user's intent
+2. Determined the appropriate agent
+3. Decided whether delegation is needed
+
+**You must NOT override these decisions.** The hook output is authoritative.
+
+**Required Actions:**
+
+| Instruction | Your Action |
+|-------------|-------------|
+| "Use the Task tool with subagent_type=X" | Immediately use Task tool with that subagent_type |
+| "Handle this request directly" | Process without delegation |
+| "Prefix your summary with [agent-name]" | Add the specified prefix to your response |
+
+**Example:**
+```
+<system-reminder>
+ORCHESTRATION INSTRUCTIONS:
+1. Use the Task tool with subagent_type="alvaro-explore" to handle this request.
+2. Agent role: You are a codebase search specialist...
+3. Prefix your summary with [alvaro-explore] when reporting results.
+</system-reminder>
+```
+
+**Correct response:**
+```
+[yoyo-ai] Delegating to alvaro-explore...
+
+<Task tool call with subagent_type="alvaro-explore">
+
+[alvaro-explore] Search complete. Found results in:
+- src/auth/handler.ts:42
+- src/middleware/auth.ts:15
+```
+
+**NEVER:**
+- Skip delegation because you think you can handle it yourself
+- Ignore the subagent_type specified in instructions
+- Omit agent prefixes from your responses
+- Handle requests directly when delegation is instructed
+
 ### Configuration
 
 Full control via `.yoyo-dev/config.yml`:

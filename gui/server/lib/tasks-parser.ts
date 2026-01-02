@@ -9,11 +9,15 @@
 // Types
 // =============================================================================
 
+export type ColumnId = 'backlog' | 'in_progress' | 'review' | 'completed';
+
 export interface Task {
   id: string;
   title: string;
   status: 'pending' | 'in_progress' | 'completed';
   subtasks?: string[];
+  /** Kanban column position (set externally from kanban-state.json) */
+  column?: ColumnId;
 }
 
 export interface TaskGroup {

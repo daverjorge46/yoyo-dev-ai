@@ -8,7 +8,8 @@ import { Hono } from 'hono';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import type { Variables } from '../types.js';
-import { parseTasksFile, type TaskGroup } from '../lib/tasks-parser.js';
+import { parseTasksFile, type TaskGroup, type ColumnId } from '../lib/tasks-parser.js';
+import { readKanbanState, updateTaskColumn, getTaskColumn } from '../lib/kanban-state.js';
 
 export const tasksRoutes = new Hono<{ Variables: Variables }>();
 
@@ -23,8 +24,6 @@ interface ParsedTasks {
   totalTasks: number;
   completedTasks: number;
 }
-
-type ColumnId = 'backlog' | 'in_progress' | 'review' | 'completed';
 
 function getAllTasks(projectRoot: string): ParsedTasks[] {
   const specsPath = join(projectRoot, '.yoyo-dev', 'specs');
@@ -42,13 +41,24 @@ function getAllTasks(projectRoot: string): ParsedTasks[] {
       .reverse();
 
     for (const dirName of dirs) {
-      const tasksPath = join(specsPath, dirName, 'tasks.md');
+      const specDir = join(specsPath, dirName);
+      const tasksPath = join(specDir, 'tasks.md');
       if (!existsSync(tasksPath)) {
         continue;
       }
 
       const content = readFileSync(tasksPath, 'utf-8');
       const groups = parseTasksFile(content);
+
+      // Load kanban state for this spec
+      const kanbanState = readKanbanState(specDir);
+
+      // Merge kanban column state into tasks
+      for (const group of groups) {
+        for (const task of group.tasks) {
+          task.column = getTaskColumn(kanbanState, task.id, task.status);
+        }
+      }
 
       // Extract spec name from dir
       const nameMatch = dirName.match(/^\d{4}-\d{2}-\d{2}-(.+)$/);
@@ -92,22 +102,48 @@ function columnToStatus(column: ColumnId): 'pending' | 'completed' {
 // Routes
 // =============================================================================
 
-// GET /api/tasks - List all tasks across specs
+// Pagination constants
+const DEFAULT_LIMIT = 10;
+const MAX_LIMIT = 100;
+
+// GET /api/tasks - List all tasks across specs (with pagination)
 tasksRoutes.get('/', (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
   const allTasks = getAllTasks(projectRoot);
 
+  // Parse pagination params
+  const limitParam = parseInt(c.req.query('limit') || '', 10);
+  const offsetParam = parseInt(c.req.query('offset') || '', 10);
+
+  // Validate and apply defaults
+  const limit = Math.min(
+    Math.max(isNaN(limitParam) || limitParam <= 0 ? DEFAULT_LIMIT : limitParam, 1),
+    MAX_LIMIT
+  );
+  const offset = Math.max(isNaN(offsetParam) || offsetParam < 0 ? 0 : offsetParam, 0);
+
+  // Calculate summary from ALL specs (before pagination)
   const totalSpecs = allTasks.length;
   const totalTasks = allTasks.reduce((sum, t) => sum + t.totalTasks, 0);
   const completedTasks = allTasks.reduce((sum, t) => sum + t.completedTasks, 0);
 
+  // Apply pagination
+  const paginatedSpecs = allTasks.slice(offset, offset + limit);
+  const hasMore = offset + limit < totalSpecs;
+
   return c.json({
-    specs: allTasks,
+    specs: paginatedSpecs,
     summary: {
       totalSpecs,
       totalTasks,
       completedTasks,
       progress: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0,
+    },
+    pagination: {
+      offset,
+      limit,
+      total: totalSpecs,
+      hasMore,
     },
   });
 });
@@ -155,7 +191,8 @@ tasksRoutes.patch('/:specId/:groupId/:taskId/column', async (c) => {
     return c.json({ error: 'Invalid column. Must be one of: backlog, in_progress, review, completed' }, 400);
   }
 
-  const tasksPath = join(projectRoot, '.yoyo-dev', 'specs', specId, 'tasks.md');
+  const specDir = join(projectRoot, '.yoyo-dev', 'specs', specId);
+  const tasksPath = join(specDir, 'tasks.md');
   if (!existsSync(tasksPath)) {
     return c.json({ error: 'Tasks not found' }, 404);
   }
@@ -202,6 +239,10 @@ tasksRoutes.patch('/:specId/:groupId/:taskId/column', async (c) => {
 
   content = lines.join('\n');
   writeFileSync(tasksPath, content, 'utf-8');
+
+  // Persist column position to kanban-state.json
+  const taskFullId = `${groupId}.${taskId}`;
+  updateTaskColumn(specDir, taskFullId, body.column);
 
   return c.json({
     success: true,

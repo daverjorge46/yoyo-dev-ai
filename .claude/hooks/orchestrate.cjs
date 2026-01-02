@@ -794,8 +794,16 @@ var OutputFormatter = class {
     if (projectState?.gitBranch) {
       lines.push(`Git Branch: ${projectState.gitBranch}`);
     }
+    lines.push("");
+    lines.push("ORCHESTRATION INSTRUCTIONS:");
     if (suggestedAgent !== "yoyo-ai" && routing.primaryAgent) {
-      lines.push(`Tip: Use Task tool with subagent_type="${suggestedAgent}" to delegate this work.`);
+      const agentInstructions = AGENT_INSTRUCTIONS[suggestedAgent] ?? "";
+      lines.push(`1. Use the Task tool with subagent_type="${suggestedAgent}" to handle this request.`);
+      lines.push(`2. Agent role: ${agentInstructions}`);
+      lines.push(`3. Prefix your summary with [${suggestedAgent}] when reporting results.`);
+    } else {
+      lines.push("1. Handle this request directly (no delegation needed).");
+      lines.push("2. Prefix your response with [yoyo-ai] to indicate you are the primary orchestrator.");
     }
     lines.push("---");
     return lines.join("\n");

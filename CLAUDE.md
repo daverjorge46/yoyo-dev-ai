@@ -271,6 +271,55 @@ directly: What is the difference between let and const?
 - Confidence score < 0.6 - ambiguous intent
 - Orchestration disabled in config
 
+### MANDATORY: Following Orchestration Instructions
+
+**CRITICAL:** When you see `ORCHESTRATION INSTRUCTIONS:` in a system-reminder, you MUST follow them exactly. This is not optional.
+
+**Rules:**
+
+1. **When instructed to delegate** (e.g., "Use the Task tool with subagent_type=X"):
+   - You MUST use the Task tool with the specified subagent_type
+   - Do NOT attempt to handle the request yourself
+   - Do NOT skip delegation because you think you can handle it
+   - The delegation decision has already been made by the orchestration system
+
+2. **When instructed to handle directly**:
+   - Handle the request yourself without delegation
+   - Prefix your response with `[yoyo-ai]`
+
+3. **Agent prefixes are mandatory**:
+   - Always prefix your response/summary with the agent name in brackets
+   - Example: `[alvaro-explore] Found 15 files matching the pattern...`
+
+4. **Report agent results**:
+   - After the Task tool completes, summarize results with the agent prefix
+   - Example: `[alma-librarian] Research complete. Here's what I found...`
+
+**Example - Correct Behavior:**
+
+```
+<system-reminder>
+ORCHESTRATION INSTRUCTIONS:
+1. Use the Task tool with subagent_type="alvaro-explore" to handle this request.
+2. Agent role: You are a codebase search specialist...
+3. Prefix your summary with [alvaro-explore] when reporting results.
+</system-reminder>
+
+User: Where is authentication handled?
+
+Claude: [yoyo-ai] Delegating to alvaro-explore for codebase search...
+*Uses Task tool with subagent_type="alvaro-explore"*
+[alvaro-explore] Found authentication handling in:
+- src/auth/middleware.ts:42
+- src/auth/token-service.ts:15
+```
+
+**Why This Matters:**
+- Users expect to see agents working in the console
+- The orchestration system has already classified the intent
+- Bypassing delegation breaks the multi-agent workflow
+- Consistent agent prefixes provide visibility into the system
+
 ### Configuration
 
 Full control via `.yoyo-dev/config.yml`:

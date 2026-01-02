@@ -271,9 +271,20 @@ export class OutputFormatter {
       lines.push(`Git Branch: ${projectState.gitBranch}`);
     }
 
-    // Suggest using Task tool for delegation (informational)
+    // Add orchestration instructions (imperative, not suggestions)
+    lines.push('');
+    lines.push('ORCHESTRATION INSTRUCTIONS:');
+
     if (suggestedAgent !== 'yoyo-ai' && routing.primaryAgent) {
-      lines.push(`Tip: Use Task tool with subagent_type="${suggestedAgent}" to delegate this work.`);
+      // Delegation required - tell Claude to use Task tool
+      const agentInstructions = AGENT_INSTRUCTIONS[suggestedAgent] ?? '';
+      lines.push(`1. Use the Task tool with subagent_type="${suggestedAgent}" to handle this request.`);
+      lines.push(`2. Agent role: ${agentInstructions}`);
+      lines.push(`3. Prefix your summary with [${suggestedAgent}] when reporting results.`);
+    } else {
+      // No delegation - Claude handles directly
+      lines.push('1. Handle this request directly (no delegation needed).');
+      lines.push('2. Prefix your response with [yoyo-ai] to indicate you are the primary orchestrator.');
     }
 
     // Delimiter for clean separation from user message
