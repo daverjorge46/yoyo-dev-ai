@@ -2,10 +2,10 @@
  * useKanban Hook
  *
  * State management for the Kanban board including task movement,
- * filtering, and real-time updates via WebSocket.
+ * filtering, pagination, and real-time updates via WebSocket.
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 // =============================================================================
@@ -69,6 +69,13 @@ interface ParsedTasks {
   completedTasks: number;
 }
 
+interface PaginationInfo {
+  offset: number;
+  limit: number;
+  total: number;
+  hasMore: boolean;
+}
+
 interface TasksResponse {
   specs: ParsedTasks[];
   summary: {
@@ -77,6 +84,7 @@ interface TasksResponse {
     completedTasks: number;
     progress: number;
   };
+  pagination?: PaginationInfo;
 }
 
 interface UseKanbanOptions {
@@ -93,8 +101,14 @@ interface UseKanbanReturn {
   specFilter: string;
   /** Set spec filter */
   setSpecFilter: (specId: string) => void;
-  /** Loading state */
+  /** Loading state (initial load) */
   isLoading: boolean;
+  /** Loading more state */
+  isLoadingMore: boolean;
+  /** Whether there are more specs to load */
+  hasMore: boolean;
+  /** Load more specs */
+  loadMore: () => Promise<void>;
   /** Error state */
   error: Error | null;
   /** Move task to a different column */
@@ -121,8 +135,9 @@ interface UseKanbanReturn {
 // API Functions
 // =============================================================================
 
-async function fetchTasks(): Promise<TasksResponse> {
-  const res = await fetch('/api/tasks');
+async function fetchTasks(offset?: number): Promise<TasksResponse> {
+  const url = offset ? `/api/tasks?offset=${offset}` : '/api/tasks';
+  const res = await fetch(url);
   if (!res.ok) throw new Error('Failed to fetch tasks');
   return res.json();
 }
@@ -157,13 +172,15 @@ const COLUMN_DEFINITIONS: Array<{ id: ColumnId; title: string; color: KanbanColu
 // =============================================================================
 
 /**
- * Map task status to Kanban column.
- * Tasks without explicit column assignment are mapped based on status.
+ * Get task column from API data.
+ * Uses column from API if present, falls back to status-based mapping.
  */
-function statusToColumn(status: string, explicitColumn?: ColumnId): ColumnId {
-  if (explicitColumn) return explicitColumn;
+function getTaskColumn(task: { status: string; column?: ColumnId }): ColumnId {
+  // Use column from API (set by kanban-state.json)
+  if (task.column) return task.column;
 
-  switch (status) {
+  // Fallback for backwards compatibility
+  switch (task.status) {
     case 'completed':
       return 'completed';
     case 'in_progress':
@@ -200,7 +217,7 @@ function transformToKanbanTasks(
           specName: spec.specName,
           title: task.title,
           status: task.status,
-          column: statusToColumn(task.status, task.column),
+          column: getTaskColumn(task),
           subtasks,
           subtaskCount: subtasks.length,
           completedSubtasks,
@@ -236,34 +253,64 @@ export function useKanban(options: UseKanbanOptions = {}): UseKanbanReturn {
   const [selectedTask, setSelectedTask] = useState<KanbanTask | null>(null);
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
 
-  // Fetch tasks
+  // Pagination state
+  const [loadedSpecs, setLoadedSpecs] = useState<ParsedTasks[]>([]);
+  const [hasMore, setHasMore] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentOffset, setCurrentOffset] = useState(0);
+
+  // Fetch tasks (initial load)
   const {
     data,
     isLoading,
     error,
   } = useQuery({
     queryKey: ['tasks'],
-    queryFn: fetchTasks,
+    queryFn: () => fetchTasks(),
     refetchInterval: 3000,
   });
 
+  // Update loaded specs when initial data changes
+  useEffect(() => {
+    if (data?.specs) {
+      setLoadedSpecs(data.specs);
+      setHasMore(data.pagination?.hasMore ?? false);
+      setCurrentOffset(data.specs.length);
+    }
+  }, [data]);
+
+  // Load more function
+  const loadMore = useCallback(async () => {
+    if (!hasMore || isLoadingMore) return;
+
+    setIsLoadingMore(true);
+    try {
+      const moreData = await fetchTasks(currentOffset);
+
+      setLoadedSpecs(prev => [...prev, ...moreData.specs]);
+      setHasMore(moreData.pagination?.hasMore ?? false);
+      setCurrentOffset(prev => prev + moreData.specs.length);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [hasMore, isLoadingMore, currentOffset]);
+
   // Transform data into columns
   const columns = useMemo(() => {
-    if (!data?.specs) {
+    if (loadedSpecs.length === 0) {
       return COLUMN_DEFINITIONS.map(def => ({ ...def, tasks: [] }));
     }
-    const tasks = transformToKanbanTasks(data.specs, specFilter);
+    const tasks = transformToKanbanTasks(loadedSpecs, specFilter);
     return organizeTasksIntoColumns(tasks);
-  }, [data?.specs, specFilter]);
+  }, [loadedSpecs, specFilter]);
 
   // Available specs for filter dropdown
   const specs = useMemo(() => {
-    if (!data?.specs) return [];
-    return data.specs.map(spec => ({
+    return loadedSpecs.map(spec => ({
       id: spec.specId,
       name: spec.specName,
     }));
-  }, [data?.specs]);
+  }, [loadedSpecs]);
 
   // All tasks flattened for navigation
   const allTasks = useMemo(() => {
@@ -397,6 +444,9 @@ export function useKanban(options: UseKanbanOptions = {}): UseKanbanReturn {
     specFilter,
     setSpecFilter,
     isLoading,
+    isLoadingMore,
+    hasMore,
+    loadMore,
     error: error as Error | null,
     moveTask,
     selectedTask,
