@@ -5,7 +5,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { Server, CheckCircle, XCircle, AlertTriangle, Circle } from 'lucide-react';
+import { Server, AlertTriangle, Circle } from 'lucide-react';
 
 interface MCPServer {
   name: string;

@@ -212,8 +212,6 @@ export function TaskDetailPanel({
     );
   }
 
-  const currentColumn = COLUMN_OPTIONS.find((col) => col.id === task.column);
-
   return (
     <div
       ref={panelRef}

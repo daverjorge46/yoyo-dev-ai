@@ -11,7 +11,6 @@ import {
   ArrowUp,
   ArrowDown,
   AlertCircle,
-  CheckCircle,
   Circle,
 } from 'lucide-react';
 
