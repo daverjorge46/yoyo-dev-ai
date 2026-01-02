@@ -1,0 +1,19 @@
+{
+  "fix_name": "installation-path-confusion",
+  "fix_created": "2025-10-29",
+  "issue_type": "configuration-error",
+  "priority": "high",
+  "tasks_created": null,
+  "execution_started": null,
+  "execution_completed": null,
+  "current_phase": "analysis",
+  "completed_tasks": [],
+  "active_task": null,
+  "pr_url": null,
+  "affected_files": [
+    "/usr/local/bin/yoyo",
+    "/usr/local/bin/yoyo-update",
+    "setup/project.sh",
+    "setup/yoyo-update.sh"
+  ]
+}

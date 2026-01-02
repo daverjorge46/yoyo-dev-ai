@@ -1,0 +1,21 @@
+{
+  "fix_name": "tui-realtime-status",
+  "fix_created": "2025-10-31",
+  "issue_type": "bug",
+  "priority": "high",
+  "tasks_created": "2025-10-31",
+  "execution_started": "2025-10-31",
+  "execution_completed": "2025-10-31",
+  "current_phase": "completed",
+  "completed_tasks": [1, 2, 3, 4, 5],
+  "active_task": null,
+  "pr_url": "https://github.com/daverjorge46/yoyo-dev-ai/commit/ec7a9c1",
+  "affected_files": [
+    "lib/yoyo_tui_v3/services/data_manager.py",
+    "lib/yoyo_tui_v3/app.py",
+    "lib/yoyo_tui_v3/services/command_suggester.py",
+    "tests/test_tui/test_datamanager_integration.py",
+    "tests/test_tui/test_command_palette_integration.py",
+    "tests/test_tui/test_command_suggester_activework.py"
+  ]
+}

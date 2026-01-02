@@ -1,0 +1,14 @@
+{
+  "spec_name": "mcp-installation-fixes",
+  "spec_created": "2025-11-12",
+  "tasks_created": "2025-11-12",
+  "execution_started": null,
+  "execution_completed": null,
+  "current_phase": "abandoned",
+  "completed_tasks": [],
+  "active_task": null,
+  "pr_url": null,
+  "key_files_modified": [],
+  "abandoned_at": "2026-01-01",
+  "abandoned_reason": "Superseded by docker-mcp-migration spec"
+}

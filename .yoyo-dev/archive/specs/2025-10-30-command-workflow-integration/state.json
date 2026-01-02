@@ -1,0 +1,15 @@
+{
+  "spec_name": "command-workflow-integration",
+  "spec_created": "2025-10-30",
+  "spec_approved": "2025-10-30",
+  "tasks_created": "2025-10-31",
+  "execution_started": "2025-10-30",
+  "execution_completed": null,
+  "current_phase": "abandoned",
+  "roadmap_item": "System Integration",
+  "pr_url": null,
+  "phase1_completed": "2025-10-30",
+  "notes": "Comprehensive 9-task breakdown created. Task 1 (TUI fixes) already completed. Ready for Task 2 (Workflow Reference System) execution.",
+  "abandoned_at": "2026-01-01",
+  "abandoned_reason": "Workflow reference system implemented in v5.0 multi-agent orchestration"
+}

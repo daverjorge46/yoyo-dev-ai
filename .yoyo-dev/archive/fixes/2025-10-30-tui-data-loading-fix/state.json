@@ -1,0 +1,41 @@
+{
+  "fix_name": "tui-data-loading-fix",
+  "fix_created": "2025-10-30",
+  "issue_type": "bug",
+  "priority": "high",
+  "tasks_created": "2025-10-30",
+  "execution_started": "2025-10-30",
+  "execution_completed": "2025-10-30",
+  "current_phase": "completed",
+  "completed_tasks": [
+    "Task 1",
+    "Task 2",
+    "Task 3",
+    "Task 4",
+    "Task 5"
+  ],
+  "active_task": null,
+  "pr_url": null,
+  "recap_created": "2025-10-30",
+  "affected_files": [
+    "lib/yoyo_tui_v3/services/data_manager.py",
+    "lib/yoyo_tui_v3/models.py",
+    "lib/yoyo_tui_v3/widgets/active_work_panel.py",
+    "lib/yoyo_tui_v3/widgets/history_panel.py",
+    "lib/yoyo_tui_v3/widgets/keyboard_shortcuts.py",
+    "lib/yoyo_tui_v3/screens/main_dashboard.py",
+    "tests/test_tui/test_data_manager_active_work.py",
+    "tests/test_tui/test_data_manager_history.py",
+    "tests/test_tui/test_keyboard_shortcuts.py",
+    "tests/test_tui/test_dashboard_integration.py"
+  ],
+  "commits": [
+    "9675d65",
+    "f6cba95",
+    "2737bfa",
+    "96c8ee3"
+  ],
+  "tests_created": 78,
+  "tests_passing": 78,
+  "bugs_fixed": 3
+}

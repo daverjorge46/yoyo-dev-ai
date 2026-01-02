@@ -1,0 +1,17 @@
+{
+  "fix_name": "command-palette-init-error",
+  "fix_created": "2025-10-30",
+  "issue_type": "bug",
+  "priority": "critical",
+  "tasks_created": "2025-10-30",
+  "execution_started": "2025-10-30",
+  "execution_completed": "2025-10-30",
+  "current_phase": "completed",
+  "completed_tasks": [1, 2, 3, 4],
+  "active_task": null,
+  "pr_url": null,
+  "affected_files": [
+    "lib/yoyo_tui_v3/widgets/command_palette.py",
+    "tests/test_tui/test_command_palette_init.py"
+  ]
+}

@@ -1,0 +1,20 @@
+{
+  "fix_name": "yoyo-update-symlink-fix",
+  "fix_created": "2025-10-30",
+  "issue_type": "bug",
+  "severity": "high",
+  "priority": "critical",
+  "tasks_created": "2025-10-30",
+  "execution_started": "2025-10-30",
+  "execution_completed": "2025-10-30",
+  "current_phase": "completed",
+  "completed_tasks": [1, 2, 3],
+  "active_task": null,
+  "pr_url": "https://github.com/daverjorge46/yoyo-dev-ai/commit/f0a0136",
+  "affected_files": [
+    "setup/yoyo-update.sh"
+  ],
+  "test_files": [
+    "tests/test_yoyo_update_symlink.sh"
+  ]
+}

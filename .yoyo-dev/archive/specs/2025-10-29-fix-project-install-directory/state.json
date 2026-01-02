@@ -1,0 +1,22 @@
+{
+  "spec_name": "fix-project-install-directory",
+  "spec_created": "2025-10-29",
+  "tasks_created": "2025-10-29",
+  "execution_started": "2025-10-29",
+  "execution_completed": "2025-10-29",
+  "current_phase": "completed",
+  "completed_tasks": [1, 2, 3, 4],
+  "active_task": null,
+  "pr_url": "https://github.com/daverjorge46/yoyo-dev-ai/commit/40a026a",
+  "commit_sha": "40a026a",
+  "pushed_to_main": true,
+  "key_files_modified": [
+    "setup/project.sh",
+    "setup/yoyo-update.sh",
+    "tests/test_project_install_directory.sh",
+    "tests/test_update_directory.sh",
+    "tests/test_base_installation_isolation.sh",
+    "tests/test_integration_installation.sh",
+    ".yoyo-dev/specs/2025-10-29-fix-project-install-directory/CHANGELOG.md"
+  ]
+}
