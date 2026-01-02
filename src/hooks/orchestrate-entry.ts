@@ -18,6 +18,9 @@ import { IntentClassifier } from '../orchestration/intent-classifier';
 import { OrchestrationRouter } from '../orchestration/router';
 import { OutputFormatter } from '../orchestration/output-formatter';
 import { ConfigLoader } from '../orchestration/config-loader';
+import { execSync } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
 /**
  * Claude Code hook input format
@@ -54,6 +57,56 @@ async function readStdin(): Promise<string> {
       reject(err);
     });
   });
+}
+
+/**
+ * Get project state for context enrichment
+ */
+function getProjectState(cwd: string): { activeSpec?: string; currentTask?: string; gitBranch?: string } {
+  const state: { activeSpec?: string; currentTask?: string; gitBranch?: string } = {};
+
+  try {
+    // Get git branch
+    const branch = execSync('git rev-parse --abbrev-ref HEAD', {
+      cwd,
+      encoding: 'utf-8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    if (branch) {
+      state.gitBranch = branch;
+    }
+  } catch {
+    // Ignore git errors
+  }
+
+  try {
+    // Find most recent spec with state.json
+    const specsDir = path.join(cwd, '.yoyo-dev', 'specs');
+    if (fs.existsSync(specsDir)) {
+      const specs = fs.readdirSync(specsDir)
+        .filter((d) => fs.statSync(path.join(specsDir, d)).isDirectory())
+        .sort()
+        .reverse();
+
+      for (const specDir of specs) {
+        const stateFile = path.join(specsDir, specDir, 'state.json');
+        if (fs.existsSync(stateFile)) {
+          const stateData = JSON.parse(fs.readFileSync(stateFile, 'utf-8'));
+          if (stateData.current_phase !== 'completed') {
+            state.activeSpec = stateData.spec_name || specDir;
+            if (stateData.active_task) {
+              state.currentTask = stateData.active_task;
+            }
+            break;
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore state loading errors
+  }
+
+  return state;
 }
 
 /**
@@ -122,8 +175,11 @@ async function main(): Promise<void> {
   // Route to appropriate agent
   const routing = router.route(classification, input.prompt);
 
-  // Format output context
-  const context = formatter.formatRoutingContext(classification, routing);
+  // Get project state for context enrichment
+  const projectState = getProjectState(input.cwd);
+
+  // Format output context (context enrichment only, not agent switching)
+  const context = formatter.formatRoutingContext(classification, routing, projectState);
 
   // Output context to stdout (will be injected before user's message)
   process.stdout.write(context);

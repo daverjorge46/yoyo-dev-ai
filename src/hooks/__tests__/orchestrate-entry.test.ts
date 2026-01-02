@@ -30,7 +30,7 @@ describe('Orchestrate Entry Point Components', () => {
 
       // Step 3: Format
       const context = formatter.formatRoutingContext(classification, routing);
-      expect(context).toContain('ORCHESTRATION CONTEXT:');
+      expect(context).toContain('PROJECT CONTEXT:');
       expect(context).toContain('alvaro-explore');
       expect(context).toMatch(/---\s*$/);
     });
@@ -51,7 +51,7 @@ describe('Orchestrate Entry Point Components', () => {
 
       const context = formatter.formatRoutingContext(classification, routing);
       expect(context).toContain('dave-engineer');
-      expect(context).toContain('UI');
+      expect(context).toContain('subagent_type="dave-engineer"');
     });
 
     it('should bypass orchestration for slash commands', () => {
@@ -162,8 +162,8 @@ describe('Orchestrate Entry Point Components', () => {
       // Must end with delimiter for clean separation from user message
       expect(output).toMatch(/---\s*$/);
 
-      // Should contain orchestration context header
-      expect(output).toContain('ORCHESTRATION CONTEXT:');
+      // Should contain project context header
+      expect(output).toContain('PROJECT CONTEXT:');
 
       // Should contain agent name
       expect(output).toContain('alvaro-explore');
@@ -195,7 +195,7 @@ describe('Orchestrate Entry Point Components', () => {
       expect(output).not.toContain('[yoyo-ai]');
 
       // Should still contain the context block
-      expect(output).toContain('ORCHESTRATION CONTEXT:');
+      expect(output).toContain('PROJECT CONTEXT:');
     });
   });
 

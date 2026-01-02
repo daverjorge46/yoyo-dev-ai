@@ -271,10 +271,10 @@ describe('OutputFormatter', () => {
       expect(result).toContain('Intent: codebase');
       expect(result).toContain('0.85');
       expect(result).toContain('alvaro-explore');
-      expect(result).toContain('ORCHESTRATION CONTEXT:');
+      expect(result).toContain('PROJECT CONTEXT:');
     });
 
-    it('should include agent-specific instructions', () => {
+    it('should include delegation suggestion for non-yoyo-ai agents', () => {
       const classification = {
         intent: 'frontend' as const,
         confidence: 0.9,
@@ -296,10 +296,10 @@ describe('OutputFormatter', () => {
       const result = formatter.formatRoutingContext(classification, routing);
 
       expect(result).toContain('dave-engineer');
-      expect(result).toContain('UI');
+      expect(result).toContain('subagent_type="dave-engineer"');
     });
 
-    it('should request agent prefix in response when showPrefixes is true', () => {
+    it('should include Task tool tip when delegating', () => {
       const classification = {
         intent: 'research' as const,
         confidence: 0.75,
@@ -320,8 +320,8 @@ describe('OutputFormatter', () => {
 
       const result = formatter.formatRoutingContext(classification, routing);
 
-      expect(result).toContain('[alma-librarian]');
-      expect(result).toContain('Prefix');
+      expect(result).toContain('alma-librarian');
+      expect(result).toContain('Task tool');
     });
 
     it('should not include prefix instruction when showPrefixes is false', () => {
@@ -347,8 +347,8 @@ describe('OutputFormatter', () => {
 
       const result = noPrefixFormatter.formatRoutingContext(classification, routing);
 
-      expect(result).toContain('ORCHESTRATION CONTEXT:');
-      expect(result).not.toContain('Prefix');
+      expect(result).toContain('PROJECT CONTEXT:');
+      expect(result).not.toContain('[yoyo-ai]'); // No prefixes when disabled
     });
 
     it('should end with delimiter for clean separation', () => {
@@ -375,17 +375,17 @@ describe('OutputFormatter', () => {
       expect(result).toMatch(/---\s*$/);
     });
 
-    it('should handle all agent types with appropriate instructions', () => {
-      const agents: Array<{ agent: AgentName; keywords: string[] }> = [
-        { agent: 'yoyo-ai', keywords: ['orchestrat', 'coordinat'] },
-        { agent: 'arthas-oracle', keywords: ['strateg', 'architect'] },
-        { agent: 'alma-librarian', keywords: ['research', 'document'] },
-        { agent: 'alvaro-explore', keywords: ['search', 'codebase'] },
-        { agent: 'dave-engineer', keywords: ['UI', 'frontend'] },
-        { agent: 'angeles-writer', keywords: ['document', 'writ'] },
+    it('should handle all agent types with delegation suggestion', () => {
+      const agents: AgentName[] = [
+        'yoyo-ai',
+        'arthas-oracle',
+        'alma-librarian',
+        'alvaro-explore',
+        'dave-engineer',
+        'angeles-writer',
       ];
 
-      for (const { agent, keywords } of agents) {
+      for (const agent of agents) {
         const classification = {
           intent: 'general' as const,
           confidence: 0.8,
@@ -406,12 +406,13 @@ describe('OutputFormatter', () => {
 
         const result = formatter.formatRoutingContext(classification, routing);
 
+        // Agent name should appear in the result (in delegation tip or prefix)
         expect(result).toContain(agent);
-        // At least one keyword should appear in the instructions
-        const hasKeyword = keywords.some((kw) =>
-          result.toLowerCase().includes(kw.toLowerCase())
-        );
-        expect(hasKeyword).toBe(true);
+
+        // For non-yoyo-ai agents, should include Task tool delegation tip
+        if (agent !== 'yoyo-ai') {
+          expect(result).toContain(`subagent_type="${agent}"`);
+        }
       }
     });
   });

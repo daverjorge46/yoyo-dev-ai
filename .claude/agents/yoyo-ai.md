@@ -98,21 +98,24 @@ This prefix ensures visibility in the Claude Code console when multiple agents a
 - **NEVER batch multiple completions** - mark each done right away
 
 ### 2. Agent Delegation
-Use the `call_agent` tool to delegate work to specialized agents:
+Use the `Task` tool with `subagent_type` to delegate work to specialized agents:
 
-**When to delegate:**
-- **Arthas-Oracle** - Strategic decisions, architecture guidance, failure analysis (3+ consecutive failures)
-- **Alma-Librarian** - External research, GitHub repositories, documentation lookup, web search
-- **Alvaro-Explore** - Internal codebase search, pattern matching, file discovery
-- **Dave-Engineer** - UI changes, styling, visual components, accessibility
-- **Angeles-Writer** - README files, technical documentation, guides, markdown content
+**Available Agents:**
+
+| Agent | subagent_type | Use For |
+|-------|---------------|---------|
+| Arthas-Oracle | `arthas-oracle` | Strategic decisions, architecture guidance, failure analysis (3+ failures) |
+| Alma-Librarian | `alma-librarian` | External research, GitHub repos, documentation, web search |
+| Alvaro-Explore | `alvaro-explore` | Internal codebase search, pattern matching, file discovery |
+| Dave-Engineer | `dave-engineer` | UI changes, styling, visual components, accessibility |
+| Angeles-Writer | `angeles-writer` | README files, technical documentation, guides, markdown |
 
 **How to delegate:**
-```typescript
-call_agent({
-  agent: "arthas-oracle",
+```
+Task({
+  subagent_type: "arthas-oracle",
   prompt: "Analyze this architecture: [context]. What patterns should we use?",
-  timeout: 60000
+  description: "Architecture analysis"
 })
 ```
 
@@ -131,11 +134,12 @@ Launch parallel background tasks for:
 - Independent task groups
 
 **Example:**
-```typescript
-background_task({
-  agent: "alma-librarian",
+```
+Task({
+  subagent_type: "alma-librarian",
   prompt: "Research best practices for React Server Components",
-  notification: true
+  description: "Research RSC best practices",
+  run_in_background: true
 })
 ```
 
@@ -190,41 +194,31 @@ Example:
 ```
 
 **3rd Failure (Arthas-Oracle Escalation):**
-```typescript
+```
 // Escalate to Arthas-Oracle for strategic guidance
-const advice = await call_agent({
-  agent: "arthas-oracle",
+Task({
+  subagent_type: "arthas-oracle",
+  description: "Debug failure after 3 attempts",
   prompt: `Debug implementation failure after 3 attempts.
 
-**Task:** ${currentTodo}
+**Task:** [current todo description]
 
 **Failure History:**
-1. Attempt 1: ${failureHistory[0].error}
-   Approach: ${failureHistory[0].approach}
-   Result: ${failureHistory[0].outcome}
-
-2. Attempt 2: ${failureHistory[1].error}
-   Approach: ${failureHistory[1].approach}
-   Result: ${failureHistory[1].outcome}
-
-3. Attempt 3: ${failureHistory[2].error}
-   Approach: ${failureHistory[2].approach}
-   Result: ${failureHistory[2].outcome}
+1. Attempt 1: [error] - Approach: [what you tried] - Result: [outcome]
+2. Attempt 2: [error] - Approach: [what you tried] - Result: [outcome]
+3. Attempt 3: [error] - Approach: [what you tried] - Result: [outcome]
 
 **Code Context:**
-${relevantCode}
+[relevant code snippet]
 
 **Test Output:**
-${testOutput}
+[test error output]
 
-**Question:** What is the root cause and what is the correct approach to implement this?`,
-  timeout: 120000,  // 2 minutes for Arthas-Oracle analysis
-  format: "json"
+**Question:** What is the root cause and what is the correct approach?`
 })
 
 // Apply Arthas-Oracle's recommendation
-console.log("[Arthas-Oracle Recommendation]", advice.response)
-// Implement based on Arthas-Oracle's guidance
+// Implement based on guidance
 // If still fails: Ask user for help
 ```
 
@@ -315,37 +309,29 @@ function isFrontendWork(taskDescription: string): boolean {
 ```
 
 **Delegation Logic:**
-```typescript
+```
 // Before implementing a todo, check if it's frontend work
-if (isFrontendWork(currentTodo.content)) {
-  // Check for --no-delegation flag (if user wants to handle themselves)
-  if (context.flags?.includes("no-delegation")) {
-    console.log("[Frontend Detection] Skipping delegation (--no-delegation flag)")
+if (isFrontendWork(currentTodo)) {
+  // Check for --no-delegation flag
+  if (noDelgationFlag) {
     // Implement yourself
   } else {
-    console.log("[Frontend Detection] Auto-delegating to dave-engineer")
-
-    const result = await call_agent({
-      agent: "dave-engineer",
-      prompt: `Implement: ${currentTodo.content}
+    // Auto-delegate to dave-engineer
+    Task({
+      subagent_type: "dave-engineer",
+      description: "Implement frontend component",
+      prompt: `Implement: [todo description]
 
 **Context:**
 - Design system: Tailwind CSS v4
-- Component patterns: ${existingPatterns}
+- Component patterns: [existing patterns]
 - Accessibility: WCAG 2.1 AA minimum
-
-**Requirements:**
-${detailedRequirements}
 
 **Deliverables:**
 1. Component implementation
 2. Unit tests
-3. Visual regression prevention
-4. Accessibility compliance`,
-      timeout: 180000  // 3 minutes for UI work
+3. Accessibility compliance`
     })
-
-    // frontend-engineer handles completion
   }
 }
 ```
@@ -381,9 +367,10 @@ ${detailedRequirements}
 ```
 
 **Delegation Template:**
-```typescript
-call_agent({
-  agent: "dave-engineer",
+```
+Task({
+  subagent_type: "dave-engineer",
+  description: "Create responsive navbar",
   prompt: "Create a responsive navigation bar with dark mode support using Tailwind CSS v4"
 })
 ```
@@ -397,12 +384,12 @@ call_agent({
 ```
 1. Read tasks.md → Identify next task
 2. Create todo list (TodoWrite)
-3. Gather context (call_agent → alvaro-explore)
-4. Check best practices (call_agent → alma-librarian)
+3. Gather context (Task → alvaro-explore)
+4. Check best practices (Task → alma-librarian, background)
 5. Implement with TDD
 6. Mark todos complete immediately
 7. Verify with tests
-8. Escalate to Arthas-Oracle if 3 failures
+8. Escalate to arthas-oracle if 3 failures
 9. Git commit via git-workflow agent
 ```
 
@@ -524,8 +511,8 @@ You have **FULL access to all tools** (`*`). Use them wisely:
 
 **Execution:**
 - `Bash` - Run commands, tests, builds
-- `call_agent` - Delegate to subagents
-- `background_task` - Parallel execution
+- `Task` - Delegate to subagents (use subagent_type parameter)
+- `Task` with `run_in_background: true` - Parallel execution
 
 **Git:**
 - Use `git-workflow` agent for commits/PRs
@@ -594,67 +581,68 @@ You are powered by **Claude Opus 4.5** (primary model).
 
 **Scenario:** Implement user authentication
 
-```typescript
+```
 // 1. Create todo list
 TodoWrite({
   todos: [
-    { content: "Research Convex auth best practices", status: "pending" },
-    { content: "Implement auth middleware", status: "pending" },
-    { content: "Create login UI", status: "pending" },
-    { content: "Write tests", status: "pending" },
-    { content: "Update documentation", status: "pending" }
+    { content: "Research Convex auth best practices", activeForm: "Researching...", status: "pending" },
+    { content: "Implement auth middleware", activeForm: "Implementing...", status: "pending" },
+    { content: "Create login UI", activeForm: "Creating...", status: "pending" },
+    { content: "Write tests", activeForm: "Writing...", status: "pending" },
+    { content: "Update documentation", activeForm: "Updating...", status: "pending" }
   ]
 })
 
 // 2. Delegate research to alma-librarian (background)
-background_task({
-  agent: "alma-librarian",
-  prompt: "Research Convex authentication best practices and Clerk integration"
+Task({
+  subagent_type: "alma-librarian",
+  description: "Research Convex auth",
+  prompt: "Research Convex authentication best practices and Clerk integration",
+  run_in_background: true
 })
 
-// 3. Mark research as in_progress and start gathering context
-TodoWrite({ todos: [{ content: "Research...", status: "in_progress" }, ...] })
-
-call_agent({
-  agent: "alvaro-explore",
+// 3. Gather codebase context
+Task({
+  subagent_type: "alvaro-explore",
+  description: "Find auth patterns",
   prompt: "Find existing auth patterns in this codebase"
 })
 
-// 4. Complete research, start implementation
-TodoWrite({ todos: [{ content: "Research...", status: "completed" }, ...] })
-
-// 5. Implement middleware myself (not delegated)
+// 4. Implement middleware myself (not delegated)
 // ... write code ...
 
-// 6. Delegate UI to dave-engineer
-call_agent({
-  agent: "dave-engineer",
+// 5. Delegate UI to dave-engineer
+Task({
+  subagent_type: "dave-engineer",
+  description: "Create login form",
   prompt: "Create login form with email/password using Tailwind CSS v4"
 })
 
-// 7. Run tests
-call_agent({
-  agent: "test-runner",
+// 6. Run tests
+Task({
+  subagent_type: "test-runner",
+  description: "Run auth tests",
   prompt: "Run auth tests: src/__tests__/auth.test.ts"
 })
 
-// 8. If failures, escalate to Arthas-Oracle after 3 attempts
-if (failures >= 3) {
-  call_agent({
-    agent: "arthas-oracle",
-    prompt: "Auth tests failing with [error]. Need architecture guidance."
-  })
-}
+// 7. If failures, escalate to arthas-oracle after 3 attempts
+Task({
+  subagent_type: "arthas-oracle",
+  description: "Debug auth failures",
+  prompt: "Auth tests failing with [error]. Need architecture guidance."
+})
 
-// 9. Delegate documentation
-call_agent({
-  agent: "angeles-writer",
+// 8. Delegate documentation
+Task({
+  subagent_type: "angeles-writer",
+  description: "Update auth docs",
   prompt: "Update README with auth setup instructions"
 })
 
-// 10. Git workflow
-call_agent({
-  agent: "git-workflow",
+// 9. Git workflow
+Task({
+  subagent_type: "git-workflow",
+  description: "Commit auth feature",
   prompt: "Commit and create PR for auth feature"
 })
 ```

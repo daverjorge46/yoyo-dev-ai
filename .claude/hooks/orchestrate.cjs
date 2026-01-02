@@ -762,26 +762,40 @@ var OutputFormatter = class {
   /**
    * Format routing context for hook injection
    * This outputs text that Claude will see BEFORE the user's message
+   *
+   * NOTE: This provides CONTEXT ENRICHMENT ONLY - not agent switching.
+   * Claude Code's Task tool with subagent_type is the proper way to delegate.
+   *
    * @param classification - The intent classification result
    * @param routing - The routing decision
+   * @param projectState - Optional project state (active spec, current task)
    * @returns Formatted context string for injection
    */
-  formatRoutingContext(classification, routing) {
+  formatRoutingContext(classification, routing, projectState) {
     const lines = [];
-    const agent = routing.primaryAgent ?? "yoyo-ai";
+    const suggestedAgent = routing.primaryAgent ?? "yoyo-ai";
     if (this.config.showPrefixes) {
       const prefix = this.buildPrefix("yoyo-ai");
       lines.push(
         `${prefix} Intent: ${classification.intent} (confidence: ${classification.confidence.toFixed(2)})`
       );
-      lines.push(`${prefix} Routing to ${agent} agent`);
+      if (suggestedAgent !== "yoyo-ai") {
+        lines.push(`${prefix} Suggested delegation: ${suggestedAgent}`);
+      }
       lines.push("");
     }
-    lines.push("ORCHESTRATION CONTEXT:");
-    lines.push(`You are now operating as the ${agent} agent.`);
-    lines.push(AGENT_INSTRUCTIONS[agent] ?? AGENT_INSTRUCTIONS["yoyo-ai"]);
-    if (this.config.showPrefixes) {
-      lines.push(`Prefix your first response line with [${agent}].`);
+    lines.push("PROJECT CONTEXT:");
+    if (projectState?.activeSpec) {
+      lines.push(`Active Spec: ${projectState.activeSpec}`);
+    }
+    if (projectState?.currentTask) {
+      lines.push(`Current Task: ${projectState.currentTask}`);
+    }
+    if (projectState?.gitBranch) {
+      lines.push(`Git Branch: ${projectState.gitBranch}`);
+    }
+    if (suggestedAgent !== "yoyo-ai" && routing.primaryAgent) {
+      lines.push(`Tip: Use Task tool with subagent_type="${suggestedAgent}" to delegate this work.`);
     }
     lines.push("---");
     return lines.join("\n");
@@ -1005,6 +1019,9 @@ var ConfigLoader = class {
 };
 
 // src/hooks/orchestrate-entry.ts
+var import_child_process = require("child_process");
+var fs2 = __toESM(require("fs"), 1);
+var path2 = __toESM(require("path"), 1);
 async function readStdin() {
   return new Promise((resolve, reject) => {
     const chunks = [];
@@ -1023,6 +1040,41 @@ async function readStdin() {
       reject(err);
     });
   });
+}
+function getProjectState(cwd) {
+  const state = {};
+  try {
+    const branch = (0, import_child_process.execSync)("git rev-parse --abbrev-ref HEAD", {
+      cwd,
+      encoding: "utf-8",
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trim();
+    if (branch) {
+      state.gitBranch = branch;
+    }
+  } catch {
+  }
+  try {
+    const specsDir = path2.join(cwd, ".yoyo-dev", "specs");
+    if (fs2.existsSync(specsDir)) {
+      const specs = fs2.readdirSync(specsDir).filter((d) => fs2.statSync(path2.join(specsDir, d)).isDirectory()).sort().reverse();
+      for (const specDir of specs) {
+        const stateFile = path2.join(specsDir, specDir, "state.json");
+        if (fs2.existsSync(stateFile)) {
+          const stateData = JSON.parse(fs2.readFileSync(stateFile, "utf-8"));
+          if (stateData.current_phase !== "completed") {
+            state.activeSpec = stateData.spec_name || specDir;
+            if (stateData.active_task) {
+              state.currentTask = stateData.active_task;
+            }
+            break;
+          }
+        }
+      }
+    }
+  } catch {
+  }
+  return state;
 }
 function parseInput(raw) {
   const parsed = JSON.parse(raw);
@@ -1061,7 +1113,8 @@ async function main() {
     process.exit(0);
   }
   const routing = router.route(classification, input.prompt);
-  const context = formatter.formatRoutingContext(classification, routing);
+  const projectState = getProjectState(input.cwd);
+  const context = formatter.formatRoutingContext(classification, routing, projectState);
   process.stdout.write(context);
   process.exit(0);
 }

@@ -226,35 +226,54 @@ export class OutputFormatter {
   /**
    * Format routing context for hook injection
    * This outputs text that Claude will see BEFORE the user's message
+   *
+   * NOTE: This provides CONTEXT ENRICHMENT ONLY - not agent switching.
+   * Claude Code's Task tool with subagent_type is the proper way to delegate.
+   *
    * @param classification - The intent classification result
    * @param routing - The routing decision
+   * @param projectState - Optional project state (active spec, current task)
    * @returns Formatted context string for injection
    */
   formatRoutingContext(
     classification: IntentClassification,
-    routing: RoutingDecision
+    routing: RoutingDecision,
+    projectState?: { activeSpec?: string; currentTask?: string; gitBranch?: string }
   ): string {
     const lines: string[] = [];
-    const agent = routing.primaryAgent ?? 'yoyo-ai';
+    const suggestedAgent = routing.primaryAgent ?? 'yoyo-ai';
 
-    // Announcement lines (with prefixes if enabled)
+    // Intent announcement (for visibility)
     if (this.config.showPrefixes) {
       const prefix = this.buildPrefix('yoyo-ai');
       lines.push(
         `${prefix} Intent: ${classification.intent} (confidence: ${classification.confidence.toFixed(2)})`
       );
-      lines.push(`${prefix} Routing to ${agent} agent`);
+
+      // Suggest delegation instead of claiming to switch
+      if (suggestedAgent !== 'yoyo-ai') {
+        lines.push(`${prefix} Suggested delegation: ${suggestedAgent}`);
+      }
       lines.push('');
     }
 
-    // Context block for Claude
-    lines.push('ORCHESTRATION CONTEXT:');
-    lines.push(`You are now operating as the ${agent} agent.`);
-    lines.push(AGENT_INSTRUCTIONS[agent] ?? AGENT_INSTRUCTIONS['yoyo-ai']);
+    // Project context block (informational only)
+    lines.push('PROJECT CONTEXT:');
 
-    // Request prefix in response if enabled
-    if (this.config.showPrefixes) {
-      lines.push(`Prefix your first response line with [${agent}].`);
+    // Add project state if available
+    if (projectState?.activeSpec) {
+      lines.push(`Active Spec: ${projectState.activeSpec}`);
+    }
+    if (projectState?.currentTask) {
+      lines.push(`Current Task: ${projectState.currentTask}`);
+    }
+    if (projectState?.gitBranch) {
+      lines.push(`Git Branch: ${projectState.gitBranch}`);
+    }
+
+    // Suggest using Task tool for delegation (informational)
+    if (suggestedAgent !== 'yoyo-ai' && routing.primaryAgent) {
+      lines.push(`Tip: Use Task tool with subagent_type="${suggestedAgent}" to delegate this work.`);
     }
 
     // Delimiter for clean separation from user message
