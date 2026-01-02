@@ -56,6 +56,32 @@ check_claude_code() {
 }
 
 # ============================================================================
+# Network Detection
+# ============================================================================
+
+get_network_ip() {
+    # Try multiple methods to get the primary network IP
+    local ip=""
+
+    # Method 1: ip route (most reliable on Linux)
+    if command -v ip &> /dev/null; then
+        ip=$(ip route get 1 2>/dev/null | awk '{print $7; exit}')
+    fi
+
+    # Method 2: hostname -I (fallback)
+    if [ -z "$ip" ] && command -v hostname &> /dev/null; then
+        ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    fi
+
+    # Method 3: ifconfig (macOS/older systems)
+    if [ -z "$ip" ] && command -v ifconfig &> /dev/null; then
+        ip=$(ifconfig 2>/dev/null | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | awk '{print $2}' | head -1)
+    fi
+
+    echo "$ip"
+}
+
+# ============================================================================
 # GUI Functions
 # ============================================================================
 
@@ -67,7 +93,8 @@ launch_gui_background() {
     fi
 
     # Launch GUI in background with dev mode
-    bash "$gui_script" --dev --background --no-open 2>/dev/null &
+    # Pass explicit project root to avoid picking up gui/.yoyo-dev
+    bash "$gui_script" --dev --background --no-open --project-root "$USER_PROJECT_DIR" 2>/dev/null &
     return 0
 }
 
@@ -160,7 +187,12 @@ launch_claude_code() {
         echo -e "  ${UI_DIM}GUI:${UI_RESET}      Starting on port $GUI_PORT..."
         if launch_gui_background; then
             sleep 1
+            local network_ip
+            network_ip=$(get_network_ip)
             echo -e "  ${UI_DIM}GUI:${UI_RESET}      ${UI_SUCCESS}http://localhost:$GUI_PORT${UI_RESET}"
+            if [ -n "$network_ip" ]; then
+                echo -e "  ${UI_DIM}Network:${UI_RESET}  ${UI_SUCCESS}http://${network_ip}:$GUI_PORT${UI_RESET}"
+            fi
         else
             echo -e "  ${UI_DIM}GUI:${UI_RESET}      ${UI_YELLOW}Not available${UI_RESET}"
         fi

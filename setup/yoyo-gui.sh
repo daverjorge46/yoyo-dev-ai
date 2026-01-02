@@ -45,10 +45,37 @@ DEV_PORT=5173  # Vite dev server port
 DEV_MODE=false
 OPEN_BROWSER=true
 BACKGROUND_MODE=false
+PROJECT_ROOT=""  # Explicit project root (when passed from yoyo.sh)
 
 # PID file for background mode
 get_pid_file() {
     echo "/tmp/yoyo-gui-$(echo "$USER_PROJECT_DIR" | md5sum | cut -d' ' -f1).pid"
+}
+
+# ============================================================================
+# Network Detection
+# ============================================================================
+
+get_network_ip() {
+    # Try multiple methods to get the primary network IP
+    local ip=""
+
+    # Method 1: ip route (most reliable on Linux)
+    if command -v ip &> /dev/null; then
+        ip=$(ip route get 1 2>/dev/null | awk '{print $7; exit}')
+    fi
+
+    # Method 2: hostname -I (fallback)
+    if [ -z "$ip" ] && command -v hostname &> /dev/null; then
+        ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    fi
+
+    # Method 3: ifconfig (macOS/older systems)
+    if [ -z "$ip" ] && command -v ifconfig &> /dev/null; then
+        ip=$(ifconfig 2>/dev/null | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | awk '{print $2}' | head -1)
+    fi
+
+    echo "$ip"
 }
 
 # ============================================================================
@@ -132,6 +159,10 @@ parse_args() {
             --status)
                 show_gui_status
                 exit 0
+                ;;
+            --project-root)
+                PROJECT_ROOT="$2"
+                shift 2
                 ;;
             *)
                 echo -e "${RED}Unknown option: $1${RESET}"
@@ -302,14 +333,22 @@ show_gui_status() {
     if is_gui_running; then
         local pid
         pid=$(cat "$pid_file" 2>/dev/null)
+        local network_ip
+        network_ip=$(get_network_ip)
         echo ""
         echo -e "${GREEN}✅ GUI server is running${RESET}"
         echo "   PID: $pid"
         # Check if dev mode is likely running by checking for Vite process
         if pgrep -f "vite" > /dev/null 2>&1; then
-            echo "   URL: http://localhost:$DEV_PORT (dev mode)"
+            echo -e "   Local:   ${CYAN}http://localhost:$DEV_PORT${RESET} (dev mode)"
+            if [ -n "$network_ip" ]; then
+                echo -e "   Network: ${CYAN}http://${network_ip}:$DEV_PORT${RESET}"
+            fi
         else
-            echo "   URL: http://localhost:$PORT"
+            echo -e "   Local:   ${CYAN}http://localhost:$PORT${RESET}"
+            if [ -n "$network_ip" ]; then
+                echo -e "   Network: ${CYAN}http://${network_ip}:$PORT${RESET}"
+            fi
         fi
         echo ""
     else
@@ -369,6 +408,9 @@ launch_background() {
     # Create log file
     local log_file="/tmp/yoyo-gui.log"
 
+    local network_ip
+    network_ip=$(get_network_ip)
+
     if [ "$DEV_MODE" = true ]; then
         # Dev mode: run npm run dev in background
         # This starts both Vite (5173) and API server concurrently
@@ -380,7 +422,11 @@ launch_background() {
         sleep 3
 
         if is_gui_running; then
-            echo -e "${GREEN}GUI (dev mode) started${RESET} at ${CYAN}http://localhost:$DEV_PORT${RESET}"
+            echo -e "${GREEN}GUI (dev mode) started${RESET}"
+            echo -e "   Local:   ${CYAN}http://localhost:$DEV_PORT${RESET}"
+            if [ -n "$network_ip" ]; then
+                echo -e "   Network: ${CYAN}http://${network_ip}:$DEV_PORT${RESET}"
+            fi
 
             # Open browser if requested
             if [ "$OPEN_BROWSER" = true ]; then
@@ -404,7 +450,11 @@ launch_background() {
         sleep 2
 
         if is_gui_running; then
-            echo -e "${GREEN}GUI started${RESET} at ${CYAN}http://localhost:$PORT${RESET}"
+            echo -e "${GREEN}GUI started${RESET}"
+            echo -e "   Local:   ${CYAN}http://localhost:$PORT${RESET}"
+            if [ -n "$network_ip" ]; then
+                echo -e "   Network: ${CYAN}http://${network_ip}:$PORT${RESET}"
+            fi
 
             # Open browser if requested
             if [ "$OPEN_BROWSER" = true ]; then
@@ -447,12 +497,17 @@ find_project_root() {
 launch_dev() {
     local project_root="$1"
     local DEV_CLIENT_PORT=5173  # Vite dev server port
+    local network_ip
+    network_ip=$(get_network_ip)
 
     echo ""
     echo -e "${BOLD}${CYAN}Yoyo Dev GUI - Development Mode${RESET}"
     echo ""
-    echo -e "  ${GREEN}Project:${RESET} $project_root"
+    echo -e "  ${GREEN}Project:${RESET}  $project_root"
     echo -e "  ${GREEN}Frontend:${RESET} http://localhost:${DEV_CLIENT_PORT}"
+    if [ -n "$network_ip" ]; then
+        echo -e "  ${GREEN}Network:${RESET}  http://${network_ip}:${DEV_CLIENT_PORT}"
+    fi
     echo -e "  ${GREEN}API:${RESET}      http://localhost:${PORT}"
     echo -e "  ${GREEN}Mode:${RESET}     Development (hot reload)"
     echo ""
@@ -511,11 +566,17 @@ launch_production() {
         esac
     fi
 
+    local network_ip
+    network_ip=$(get_network_ip)
+
     echo ""
     echo -e "${BOLD}${CYAN}Yoyo Dev GUI${RESET}"
     echo ""
     echo -e "  ${GREEN}Project:${RESET} $project_root"
     echo -e "  ${GREEN}Server:${RESET}  http://localhost:$PORT"
+    if [ -n "$network_ip" ]; then
+        echo -e "  ${GREEN}Network:${RESET} http://${network_ip}:$PORT"
+    fi
     echo -e "  ${GREEN}API:${RESET}     http://localhost:$PORT/api"
     echo ""
     echo -e "  ${DIM}Press Ctrl+C to stop${RESET}"
@@ -582,9 +643,12 @@ main() {
         exit 1
     fi
 
-    # Find project root
+    # Find project root (use explicit if provided, otherwise detect)
     local project_root
-    if ! project_root=$(find_project_root); then
+    if [ -n "$PROJECT_ROOT" ]; then
+        # Explicit project root provided (from yoyo.sh)
+        project_root="$PROJECT_ROOT"
+    elif ! project_root=$(find_project_root); then
         echo ""
         echo -e "${YELLOW}WARNING: Not in a Yoyo Dev project${RESET}"
         echo ""
