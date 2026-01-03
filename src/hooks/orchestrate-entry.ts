@@ -178,6 +178,20 @@ async function main(): Promise<void> {
   // Get project state for context enrichment
   const projectState = getProjectState(input.cwd);
 
+  // If delegating to an agent, output the visual agent panel first
+  if (routing.primaryAgent && routing.primaryAgent !== 'yoyo-ai') {
+    // Import agent name type correctly
+    const agentName = routing.primaryAgent as import('../orchestration/types').AgentName;
+
+    // Truncate prompt for task display (max 50 chars)
+    const taskDisplay = input.prompt.length > 50
+      ? input.prompt.substring(0, 47) + '...'
+      : input.prompt;
+
+    const agentPanel = formatter.formatAgentPanel(agentName, taskDisplay);
+    process.stdout.write(agentPanel + '\n');
+  }
+
   // Format output context (context enrichment only, not agent switching)
   const context = formatter.formatRoutingContext(classification, routing, projectState);
 

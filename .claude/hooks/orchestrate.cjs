@@ -606,6 +606,41 @@ var ANSI_COLORS = {
   // White
 };
 var ANSI_RESET = "\x1B[0m";
+var ANSI_BOLD = "\x1B[1m";
+var YOYO_YELLOW_DIM = "\x1B[38;2;168;122;27m";
+var BG_ELEVATED = "\x1B[48;2;33;38;45m";
+var SUBTEXT1 = "\x1B[38;2;186;194;222m";
+var OVERLAY0 = "\x1B[38;2;108;112;134m";
+var TEXT_COLOR = "\x1B[38;2;205;214;244m";
+var YOYO_YELLOW = "\x1B[38;2;210;153;34m";
+var BOX_DBL_TL = "\u2554";
+var BOX_DBL_TR = "\u2557";
+var BOX_DBL_BL = "\u255A";
+var BOX_DBL_BR = "\u255D";
+var BOX_DBL_H = "\u2550";
+var BOX_DBL_V = "\u2551";
+var AGENT_ICONS = {
+  "yoyo-ai": "\u{1F916}",
+  // Robot
+  "arthas-oracle": "\u{1F52E}",
+  // Crystal ball
+  "alma-librarian": "\u{1F4DA}",
+  // Books
+  "alvaro-explore": "\u{1F50D}",
+  // Magnifying glass
+  "dave-engineer": "\u{1F3A8}",
+  // Art palette
+  "angeles-writer": "\u270D\uFE0F"
+  // Writing hand
+};
+var AGENT_DESCRIPTIONS = {
+  "yoyo-ai": "Primary orchestrator",
+  "arthas-oracle": "Strategic advisor and debugger",
+  "alma-librarian": "External research specialist",
+  "alvaro-explore": "Codebase search specialist",
+  "dave-engineer": "UI/UX development specialist",
+  "angeles-writer": "Technical documentation writer"
+};
 var AGENT_INSTRUCTIONS = {
   "yoyo-ai": "You are the primary orchestrator. Coordinate work, delegate to specialized agents when appropriate, and ensure task completion.",
   "arthas-oracle": "You are a strategic advisor specializing in architecture decisions and debugging complex issues. Provide structured analysis with Essential, Expanded, and Edge Cases sections.",
@@ -758,6 +793,81 @@ var OutputFormatter = class {
    */
   stripPrefix(message) {
     return message.replace(/^\[[\w-]+\]\s*/, "");
+  }
+  /**
+   * Format a visually distinct agent activity panel
+   * Creates a boxed panel showing agent name (uppercase with underline),
+   * agent description, and current task.
+   *
+   * Panel layout:
+   * ╔═══════════════════════════════════════════════════════════════════════╗
+   * ║  🔍 ALVARO-EXPLORE                                                    ║
+   * ║  ─────────────────                                                    ║
+   * ║  Codebase search specialist                                           ║
+   * ║  Task: "theme configuration files"                                    ║
+   * ╚═══════════════════════════════════════════════════════════════════════╝
+   *
+   * @param agentName - The agent to display
+   * @param taskDescription - Optional task/query description
+   * @param width - Panel width (default: 71)
+   * @returns Formatted ANSI string for terminal display
+   */
+  formatAgentPanel(agentName, taskDescription, width = 71) {
+    const agentColor = this.config.colors[agentName] ?? "";
+    const agentIcon = AGENT_ICONS[agentName] ?? "\u25C9";
+    const agentDesc = AGENT_DESCRIPTIONS[agentName] ?? "Specialized agent";
+    const agentUpper = agentName.toUpperCase();
+    const contentWidth = width - 4;
+    const underline = "\u2500".repeat(agentUpper.length);
+    const lines = [];
+    const padLine = (content, visibleLen) => {
+      const padding = " ".repeat(Math.max(0, contentWidth - visibleLen));
+      return `${YOYO_YELLOW_DIM}${BOX_DBL_V}${ANSI_RESET}${BG_ELEVATED}${content}${padding}${ANSI_RESET}${YOYO_YELLOW_DIM}${BOX_DBL_V}${ANSI_RESET}`;
+    };
+    lines.push("");
+    lines.push(
+      `${YOYO_YELLOW_DIM}${BOX_DBL_TL}${BOX_DBL_H.repeat(width)}${BOX_DBL_TR}${ANSI_RESET}`
+    );
+    const nameContent = `  ${agentIcon} ${agentColor}${ANSI_BOLD}${agentUpper}${ANSI_RESET}${BG_ELEVATED}`;
+    const nameVisibleLen = 2 + 2 + agentUpper.length;
+    lines.push(padLine(nameContent, nameVisibleLen));
+    const underlineContent = `  ${OVERLAY0}${underline}${ANSI_RESET}${BG_ELEVATED}`;
+    const underlineVisibleLen = 2 + underline.length;
+    lines.push(padLine(underlineContent, underlineVisibleLen));
+    const descContent = `  ${SUBTEXT1}${agentDesc}${ANSI_RESET}${BG_ELEVATED}`;
+    const descVisibleLen = 2 + agentDesc.length;
+    lines.push(padLine(descContent, descVisibleLen));
+    if (taskDescription) {
+      const maxTaskLen = contentWidth - 12;
+      let taskDisplay = taskDescription;
+      if (taskDescription.length > maxTaskLen) {
+        taskDisplay = taskDescription.substring(0, maxTaskLen - 3) + "...";
+      }
+      const taskContent = `  ${TEXT_COLOR}Task: ${YOYO_YELLOW}"${taskDisplay}"${ANSI_RESET}${BG_ELEVATED}`;
+      const taskVisibleLen = 8 + taskDisplay.length;
+      lines.push(padLine(taskContent, taskVisibleLen));
+    }
+    lines.push(
+      `${YOYO_YELLOW_DIM}${BOX_DBL_BL}${BOX_DBL_H.repeat(width)}${BOX_DBL_BR}${ANSI_RESET}`
+    );
+    lines.push("");
+    return lines.join("\n");
+  }
+  /**
+   * Get agent icon for a specific agent
+   * @param agent - The agent name
+   * @returns Emoji icon for the agent
+   */
+  getAgentIcon(agent) {
+    return AGENT_ICONS[agent] ?? "\u25C9";
+  }
+  /**
+   * Get agent description for a specific agent
+   * @param agent - The agent name
+   * @returns Short description of the agent's role
+   */
+  getAgentDescription(agent) {
+    return AGENT_DESCRIPTIONS[agent] ?? "Specialized agent";
   }
   /**
    * Format routing context for hook injection
@@ -1122,6 +1232,12 @@ async function main() {
   }
   const routing = router.route(classification, input.prompt);
   const projectState = getProjectState(input.cwd);
+  if (routing.primaryAgent && routing.primaryAgent !== "yoyo-ai") {
+    const agentName = routing.primaryAgent;
+    const taskDisplay = input.prompt.length > 50 ? input.prompt.substring(0, 47) + "..." : input.prompt;
+    const agentPanel = formatter.formatAgentPanel(agentName, taskDisplay);
+    process.stdout.write(agentPanel + "\n");
+  }
   const context = formatter.formatRoutingContext(classification, routing, projectState);
   process.stdout.write(context);
   process.exit(0);

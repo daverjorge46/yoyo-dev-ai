@@ -276,7 +276,7 @@ function SectionRenderer({ section, isExpanded }: SectionRendererProps) {
 export default function Help() {
   const location = useLocation();
   const navigate = useNavigate();
-  const contentRef = useRef<HTMLDivElement>(null);
+  const mainRef = useRef<HTMLElement>(null);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -358,7 +358,7 @@ export default function Help() {
 
   // Scroll spy effect
   useEffect(() => {
-    if (!contentRef.current || !helpData?.sections) return;
+    if (!mainRef.current || !helpData?.sections) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -372,7 +372,7 @@ export default function Help() {
           }
         }
       },
-      { rootMargin: '-100px 0px -80% 0px' }
+      { root: mainRef.current, rootMargin: '-100px 0px -80% 0px' }
     );
 
     // Observe all section elements
@@ -416,10 +416,10 @@ export default function Help() {
   const isSearching = debouncedQuery.length >= 2;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full">
+    <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-8rem)]">
       {/* Sidebar TOC - Desktop only */}
-      <aside className="hidden lg:block w-64 flex-shrink-0">
-        <div className="sticky top-6 space-y-6">
+      <aside className="hidden lg:block w-64 flex-shrink-0 overflow-y-auto">
+        <div className="space-y-6">
           {/* Stats */}
           {stats && (
             <div className="grid grid-cols-3 gap-2 text-center">
@@ -439,7 +439,7 @@ export default function Help() {
           )}
 
           {/* Table of Contents */}
-          <div className="bg-terminal-bg-secondary rounded-lg p-4 border border-terminal-border max-h-[calc(100vh-280px)] overflow-y-auto">
+          <div className="bg-terminal-bg-secondary rounded-lg p-4 border border-terminal-border">
             <TableOfContents
               sections={sections}
               activeSection={activeSection}
@@ -463,7 +463,7 @@ export default function Help() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0">
+      <main ref={mainRef} className="flex-1 min-w-0 overflow-y-auto">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -498,7 +498,7 @@ export default function Help() {
         </details>
 
         {/* Content Area */}
-        <div ref={contentRef} className="space-y-6">
+        <div className="space-y-6">
           {isSearching ? (
             <SearchResults
               results={searchResults?.results || []}
