@@ -75,8 +75,9 @@ get_mcp() {
         # Check if docker is running first
         if docker info &>/dev/null; then
             # Try to get MCP server list (docker mcp requires MCP Toolkit enabled)
-            count=$(docker mcp server ls 2>/dev/null | grep -cE '^[a-z]' 2>/dev/null || echo "")
-            if [[ -n "$count" && "$count" -gt 0 ]]; then
+            # Note: grep -c returns exit 1 when count is 0, so use || assignment
+            count=$(docker mcp server ls 2>/dev/null | grep -cE '^[a-z]' 2>/dev/null) || count=0
+            if [[ "$count" -gt 0 ]]; then
                 echo "$count"
                 return
             fi
@@ -85,7 +86,8 @@ get_mcp() {
 
     # Method 2: Check .mcp.json for configured servers
     if [[ -f ".mcp.json" ]]; then
-        count=$(grep -cE '"[^"]+"\s*:\s*\{' .mcp.json 2>/dev/null || echo "0")
+        # Note: grep -c returns exit 1 when count is 0, so use || assignment
+        count=$(grep -cE '"[^"]+"\s*:\s*\{' .mcp.json 2>/dev/null) || count=0
         # Subtract 1 for the outer mcpServers object if present
         if grep -qE '"mcpServers"' .mcp.json 2>/dev/null; then
             count=$((count > 0 ? count - 1 : 0))
@@ -97,7 +99,8 @@ get_mcp() {
     # Method 3: Check claude_desktop_config.json
     local claude_config="$HOME/.config/claude/claude_desktop_config.json"
     if [[ -f "$claude_config" ]]; then
-        count=$(grep -cE '"[^"]+"\s*:\s*\{.*"command"' "$claude_config" 2>/dev/null || echo "0")
+        # Note: grep -c returns exit 1 when count is 0, so use || assignment
+        count=$(grep -cE '"[^"]+"\s*:\s*\{.*"command"' "$claude_config" 2>/dev/null) || count=0
         echo "$count"
         return
     fi

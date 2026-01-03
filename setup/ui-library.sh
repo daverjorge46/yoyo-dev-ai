@@ -747,11 +747,14 @@ _dashboard_count_tasks() {
     local uncompleted=0
 
     # Count completed tasks: - [x] or - [X]
-    completed=$(grep -cE '^\s*-\s*\[x\]' "$tasks_file" 2>/dev/null || echo 0)
-    completed=$((completed + $(grep -cE '^\s*-\s*\[X\]' "$tasks_file" 2>/dev/null || echo 0)))
+    # Note: grep -c returns exit code 1 when count is 0, so use || assignment
+    local count_lower count_upper
+    count_lower=$(grep -cE '^\s*-\s*\[x\]' "$tasks_file" 2>/dev/null) || count_lower=0
+    count_upper=$(grep -cE '^\s*-\s*\[X\]' "$tasks_file" 2>/dev/null) || count_upper=0
+    completed=$((count_lower + count_upper))
 
     # Count uncompleted tasks: - [ ]
-    uncompleted=$(grep -cE '^\s*-\s*\[\s*\]' "$tasks_file" 2>/dev/null || echo 0)
+    uncompleted=$(grep -cE '^\s*-\s*\[\s*\]' "$tasks_file" 2>/dev/null) || uncompleted=0
 
     local total=$((completed + uncompleted))
     echo "$completed $total"
