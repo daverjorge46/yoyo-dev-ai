@@ -122,28 +122,29 @@ async function getMemoryStatus(projectRoot: string): Promise<MemoryStatus> {
   };
 }
 
-async function getSkillsStatus(projectRoot: string): Promise<SkillsStatus> {
-  const skillsDbPath = join(projectRoot, '.yoyo-dev', 'skills', 'skills.db');
-  const initialized = existsSync(skillsDbPath);
+function getSkillsStatus(projectRoot: string): SkillsStatus {
+  // Skills are stored as markdown files in .claude/skills/ directory
+  const skillsDir = join(projectRoot, '.claude', 'skills');
+  const hasSkillsDir = existsSync(skillsDir);
 
   let skillsCount = 0;
-  if (initialized) {
+  if (hasSkillsDir) {
     try {
-      const db = await openDatabase(skillsDbPath);
-      if (db) {
-        const row = queryOne<{ count: number }>(db, 'SELECT COUNT(*) as count FROM skill_tracking');
-        skillsCount = row?.count || 0;
-        db.close();
-      }
+      const files = readdirSync(skillsDir)
+        .filter(f => f.endsWith('.md') && f !== 'README.md' && !f.startsWith('optimization-report'));
+      skillsCount = files.length;
     } catch {
       // Ignore
     }
   }
 
+  // initialized = true if we have at least one skill file
+  const initialized = skillsCount > 0;
+
   return {
     initialized,
     skillsCount,
-    databasePath: initialized ? skillsDbPath : null,
+    databasePath: null, // No database, skills are markdown files
   };
 }
 
@@ -160,7 +161,7 @@ statusRoutes.get('/', async (c) => {
     path: projectRoot,
     framework: getFrameworkStatus(projectRoot),
     memory: await getMemoryStatus(projectRoot),
-    skills: await getSkillsStatus(projectRoot),
+    skills: getSkillsStatus(projectRoot),
   };
 
   return c.json(status);
@@ -179,7 +180,7 @@ statusRoutes.get('/memory', async (c) => {
 });
 
 // GET /api/status/skills - Skills status only
-statusRoutes.get('/skills', async (c) => {
+statusRoutes.get('/skills', (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
-  return c.json(await getSkillsStatus(projectRoot));
+  return c.json(getSkillsStatus(projectRoot));
 });

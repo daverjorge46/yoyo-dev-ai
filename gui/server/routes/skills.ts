@@ -35,13 +35,6 @@ interface SkillStats {
   lastUsed: string | null;
 }
 
-interface AggregateStats {
-  totalSkills: number;
-  totalUsage: number;
-  averageSuccessRate: number;
-  topSkills: SkillStats[];
-  recentSkills: SkillStats[];
-}
 
 // =============================================================================
 // Helpers
@@ -254,86 +247,70 @@ skillsRoutes.get('/', async (c) => {
 });
 
 // GET /api/skills/stats - Get aggregate statistics
+// Returns stats in format expected by SkillsSummaryCard component
 skillsRoutes.get('/stats', async (c) => {
   const projectRoot = c.get('projectRoot') || process.cwd();
 
+  // Always get skills from markdown files first
+  const fileSkills = getSkillsFromFiles(projectRoot);
+
+  // Try to merge with database stats if available
   const dbPath = getSkillsDbPath(projectRoot);
   const db = await openDatabase(dbPath);
+  let hasDatabase = false;
 
-  if (!db) {
-    return c.json({
-      initialized: false,
-      stats: null,
-      message: 'Skills database not initialized',
-    });
+  if (db) {
+    hasDatabase = true;
+    try {
+      const rows = queryAll<{
+        skill_id: string;
+        total_usage: number;
+        success_rate: number;
+        last_used: string | null;
+      }>(db, `
+        SELECT skill_id, total_usage, success_rate, last_used
+        FROM skill_tracking
+      `);
+
+      const statsMap = new Map(rows.map(r => [r.skill_id, r]));
+
+      // Merge database stats into file skills
+      for (const skill of fileSkills) {
+        const dbStat = statsMap.get(skill.id);
+        if (dbStat) {
+          skill.usageCount = dbStat.total_usage;
+          skill.successRate = dbStat.success_rate;
+        }
+      }
+      db.close();
+    } catch {
+      db.close();
+    }
   }
 
-  try {
-    // Get all stats
-    const rows = queryAll<{
-      skill_id: string;
-      name: string;
-      total_usage: number;
-      success_count: number;
-      failure_count: number;
-      success_rate: number;
-      last_used: string | null;
-    }>(db, `
-      SELECT
-        skill_id,
-        name,
-        total_usage,
-        success_count,
-        failure_count,
-        success_rate,
-        last_used
-      FROM skill_tracking
-    `);
+  // Convert to format expected by SkillsSummaryCard
+  const skills = fileSkills.map(s => ({
+    id: s.id,
+    name: s.name,
+    totalUsage: s.usageCount,
+    successRate: s.successRate,
+    lastUsed: null as string | null,
+  }));
 
-    const allStats: SkillStats[] = rows.map(row => ({
-      skillId: row.skill_id,
-      name: row.name,
-      totalUsage: row.total_usage,
-      successCount: row.success_count,
-      failureCount: row.failure_count,
-      successRate: row.success_rate,
-      lastUsed: row.last_used,
-    }));
+  // Calculate aggregates
+  const totalUsage = skills.reduce((sum, s) => sum + s.totalUsage, 0);
+  const avgSuccessRate = skills.length > 0
+    ? skills.reduce((sum, s) => sum + s.successRate, 0) / skills.length
+    : 0;
 
-    // Calculate aggregates
-    const totalSkills = allStats.length;
-    const totalUsage = allStats.reduce((sum, s) => sum + s.totalUsage, 0);
-    const averageSuccessRate = totalSkills > 0
-      ? allStats.reduce((sum, s) => sum + s.successRate, 0) / totalSkills
-      : 0;
-
-    // Top skills by usage
-    const topSkills = [...allStats]
-      .sort((a, b) => b.totalUsage - a.totalUsage)
-      .slice(0, 5);
-
-    // Recent skills
-    const recentSkills = [...allStats]
-      .filter(s => s.lastUsed)
-      .sort((a, b) => (b.lastUsed || '').localeCompare(a.lastUsed || ''))
-      .slice(0, 5);
-
-    db.close();
-
-    return c.json({
-      initialized: true,
-      stats: {
-        totalSkills,
-        totalUsage,
-        averageSuccessRate,
-        topSkills,
-        recentSkills,
-      } as AggregateStats,
-    });
-  } catch (error) {
-    db.close();
-    return c.json({ error: 'Failed to get statistics' }, 500);
-  }
+  return c.json({
+    initialized: skills.length > 0,
+    skills,
+    count: skills.length,
+    totalUsage,
+    avgSuccessRate,
+    hasDatabase,
+  });
 });
 
 // GET /api/skills/:id - Get skill details

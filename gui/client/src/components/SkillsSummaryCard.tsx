@@ -25,7 +25,14 @@ interface SkillsData {
 async function fetchSkillsStats(): Promise<SkillsData> {
   const res = await fetch('/api/skills/stats');
   if (!res.ok) throw new Error('Failed to fetch skills stats');
-  return res.json();
+  const data = await res.json();
+
+  // Handle legacy response format (initialized: false, stats: null)
+  if (!data.skills && data.initialized === false) {
+    return { skills: [], count: 0, totalUsage: 0, avgSuccessRate: 0 };
+  }
+
+  return data;
 }
 
 function SuccessBadge({ rate }: { rate: number }) {
@@ -110,11 +117,11 @@ export function SkillsSummaryCard() {
         </div>
       </div>
 
-      {/* Top Skills */}
+      {/* Skills List */}
       {topSkills.length > 0 ? (
         <div className="space-y-1.5">
           <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-            Top Skills
+            {stats?.totalUsage ? 'Top Skills' : 'Available Skills'}
           </h4>
           {topSkills.map((skill, index) => (
             <div
