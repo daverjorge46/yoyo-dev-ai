@@ -37,12 +37,21 @@ fi
 # Configuration
 # ============================================================================
 
-readonly VERSION="6.1.0"
+readonly VERSION="6.2.0"
 readonly USER_PROJECT_DIR="$(pwd)"
 
 GUI_ENABLED=true
 GUI_PORT=5173
 ORCHESTRATION_ENABLED=true
+
+# Ralph Autonomous Development Configuration
+RALPH_MODE=false
+RALPH_MONITOR=false
+RALPH_CALLS=100
+RALPH_TIMEOUT=30
+RALPH_VERBOSE=false
+RALPH_COMMAND=""
+RALPH_ARGS=""
 
 # ============================================================================
 # Claude Code Detection
@@ -110,6 +119,138 @@ check_gui_status() {
     if [ -f "$gui_script" ]; then
         bash "$gui_script" --status
     fi
+}
+
+# ============================================================================
+# Ralph Functions
+# ============================================================================
+
+check_ralph_installed() {
+    local detect_script="$SCRIPT_DIR/ralph-detect.sh"
+    if [ -f "$detect_script" ]; then
+        if bash "$detect_script" --quiet; then
+            return 0
+        fi
+    fi
+    # Fallback direct check
+    if command -v ralph &> /dev/null; then
+        return 0
+    fi
+    return 1
+}
+
+install_ralph_prompt() {
+    echo ""
+    ui_warning "Ralph not installed"
+    echo ""
+    echo "  Ralph is required for autonomous development mode."
+    echo "  It provides rate limiting, circuit breakers, and exit detection."
+    echo ""
+    echo -e "  ${UI_PRIMARY}1.${UI_RESET} Install Ralph now (recommended)"
+    echo -e "  ${UI_PRIMARY}2.${UI_RESET} Exit and install manually"
+    echo ""
+    echo -n "  Choice [1]: "
+    read -r install_choice
+    install_choice="${install_choice:-1}"
+
+    if [ "$install_choice" = "1" ]; then
+        local setup_script="$SCRIPT_DIR/ralph-setup.sh"
+        if [ -f "$setup_script" ]; then
+            bash "$setup_script" --yes
+            return $?
+        else
+            ui_error "Ralph setup script not found"
+            return 1
+        fi
+    else
+        echo ""
+        echo "  To install manually:"
+        echo -e "    ${UI_PRIMARY}git clone https://github.com/frankbria/ralph-claude-code.git${UI_RESET}"
+        echo -e "    ${UI_PRIMARY}cd ralph-claude-code && ./install.sh${UI_RESET}"
+        echo ""
+        return 1
+    fi
+}
+
+generate_ralph_prompt() {
+    local command="$1"
+    local args="$2"
+
+    local generator="$SCRIPT_DIR/ralph-prompt-generator.sh"
+    if [ -f "$generator" ]; then
+        bash "$generator" --command "$command" --args "$args"
+    else
+        ui_error "PROMPT.md generator not found"
+        return 1
+    fi
+}
+
+run_ralph_loop() {
+    local ralph_args=()
+
+    # Add rate limit
+    ralph_args+=("--calls" "$RALPH_CALLS")
+
+    # Add timeout
+    ralph_args+=("--timeout" "$RALPH_TIMEOUT")
+
+    # Add monitor flag
+    if [ "$RALPH_MONITOR" = true ]; then
+        ralph_args+=("--monitor")
+    fi
+
+    # Add verbose flag
+    if [ "$RALPH_VERBOSE" = true ]; then
+        ralph_args+=("--verbose")
+    fi
+
+    echo ""
+    ui_info "Starting Ralph autonomous loop..."
+    echo -e "  ${UI_DIM}Rate limit:${UI_RESET} $RALPH_CALLS calls/hour"
+    echo -e "  ${UI_DIM}Timeout:${UI_RESET} $RALPH_TIMEOUT minutes/loop"
+    echo -e "  ${UI_DIM}Monitor:${UI_RESET} $RALPH_MONITOR"
+    echo ""
+
+    # Run Ralph
+    ralph "${ralph_args[@]}"
+}
+
+launch_ralph_mode() {
+    # Check Ralph is installed
+    if ! check_ralph_installed; then
+        if ! install_ralph_prompt; then
+            exit 1
+        fi
+        # Re-check after installation
+        if ! check_ralph_installed; then
+            ui_error "Ralph installation failed"
+            exit 1
+        fi
+    fi
+
+    # Generate PROMPT.md for the command
+    if ! generate_ralph_prompt "$RALPH_COMMAND" "$RALPH_ARGS"; then
+        ui_error "Failed to generate PROMPT.md"
+        exit 1
+    fi
+
+    # Show launch banner
+    echo ""
+    echo -e "${UI_PRIMARY}╭──────────────────────────────────────────────────────────────────╮${UI_RESET}"
+    echo -e "${UI_PRIMARY}│${UI_RESET}               ${UI_SUCCESS}YOYO DEV - RALPH MODE${UI_RESET}                         ${UI_PRIMARY}│${UI_RESET}"
+    echo -e "${UI_PRIMARY}│${UI_RESET}          ${UI_DIM}Autonomous Development Enabled${UI_RESET}                      ${UI_PRIMARY}│${UI_RESET}"
+    echo -e "${UI_PRIMARY}╰──────────────────────────────────────────────────────────────────╯${UI_RESET}"
+    echo ""
+
+    echo -e "  ${UI_DIM}Project:${UI_RESET}  $(basename "$USER_PROJECT_DIR")"
+    echo -e "  ${UI_DIM}Command:${UI_RESET}  $RALPH_COMMAND"
+    echo -e "  ${UI_DIM}Mode:${UI_RESET}     Autonomous (Ralph)"
+
+    # Change to project directory
+    cd "$USER_PROJECT_DIR"
+
+    # Run Ralph loop
+    run_ralph_loop
 }
 
 # ============================================================================
@@ -302,6 +443,23 @@ show_help() {
     echo -e "  ${UI_PRIMARY}yoyo --help${UI_RESET}      ${UI_DIM}Show this help${UI_RESET}"
     echo ""
 
+    echo -e "  ${UI_SUCCESS}RALPH (Autonomous Mode)${UI_RESET}"
+    echo -e "  ─────────────────────────────────────────────────────────────────"
+    echo ""
+    echo -e "  ${UI_PRIMARY}yoyo --ralph <command>${UI_RESET}"
+    echo -e "    ${UI_DIM}Run command in autonomous mode with Ralph${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_DIM}Example:${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}yoyo --ralph execute-tasks${UI_RESET}         ${UI_DIM}Auto-execute all tasks${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}yoyo --ralph create-spec \"auth\"${UI_RESET}   ${UI_DIM}Auto-create spec${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_DIM}Ralph Options:${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}--ralph-calls N${UI_RESET}      ${UI_DIM}API calls/hour (default: 100)${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}--ralph-timeout N${UI_RESET}    ${UI_DIM}Minutes/loop (default: 30)${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}--ralph-monitor${UI_RESET}      ${UI_DIM}Enable tmux dashboard${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}--ralph-verbose${UI_RESET}      ${UI_DIM}Detailed output${UI_RESET}"
+    echo ""
+
     echo -e "  ${UI_DIM}Documentation: https://github.com/daverjorge46/yoyo-dev-ai${UI_RESET}"
     echo ""
 }
@@ -311,49 +469,98 @@ show_help() {
 # ============================================================================
 
 main() {
-    local mode="${1:-launch}"
+    # Parse all arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --help|-h)
+                show_help
+                exit 0
+                ;;
+            --version|-v)
+                show_version
+                exit 0
+                ;;
+            --no-gui)
+                GUI_ENABLED=false
+                shift
+                ;;
+            --no-orchestration)
+                ORCHESTRATION_ENABLED=false
+                shift
+                ;;
+            --gui-only)
+                local gui_script="$SCRIPT_DIR/yoyo-gui.sh"
+                if [ -f "$gui_script" ]; then
+                    bash "$gui_script" --dev
+                else
+                    ui_error "GUI launcher not found"
+                    exit 1
+                fi
+                exit 0
+                ;;
+            --stop-gui)
+                stop_gui
+                exit 0
+                ;;
+            --gui-status)
+                check_gui_status
+                exit 0
+                ;;
+            --ralph)
+                RALPH_MODE=true
+                # Next argument is the command
+                if [ -n "${2:-}" ] && [[ ! "$2" =~ ^-- ]]; then
+                    RALPH_COMMAND="$2"
+                    shift
+                else
+                    ui_error "--ralph requires a command (execute-tasks, create-spec, create-fix, create-new)"
+                    exit 1
+                fi
+                shift
+                ;;
+            --ralph-calls)
+                RALPH_CALLS="${2:-100}"
+                shift 2
+                ;;
+            --ralph-timeout)
+                RALPH_TIMEOUT="${2:-30}"
+                shift 2
+                ;;
+            --ralph-monitor)
+                RALPH_MONITOR=true
+                shift
+                ;;
+            --ralph-verbose)
+                RALPH_VERBOSE=true
+                shift
+                ;;
+            launch|"")
+                shift
+                ;;
+            *)
+                # Collect remaining args as RALPH_ARGS if in ralph mode
+                if [ "$RALPH_MODE" = true ]; then
+                    RALPH_ARGS="$RALPH_ARGS $1"
+                    shift
+                else
+                    ui_error "Unknown option: $1"
+                    echo ""
+                    echo "  Use ${UI_PRIMARY}yoyo --help${UI_RESET} for available options"
+                    exit 1
+                fi
+                ;;
+        esac
+    done
 
-    case "$mode" in
-        --help|-h)
-            show_help
-            ;;
-        --version|-v)
-            show_version
-            ;;
-        --no-gui)
-            GUI_ENABLED=false
-            launch_claude_code
-            ;;
-        --no-orchestration)
-            ORCHESTRATION_ENABLED=false
-            launch_claude_code
-            ;;
-        --gui-only)
-            local gui_script="$SCRIPT_DIR/yoyo-gui.sh"
-            if [ -f "$gui_script" ]; then
-                bash "$gui_script" --dev
-            else
-                ui_error "GUI launcher not found"
-                exit 1
-            fi
-            ;;
-        --stop-gui)
-            stop_gui
-            ;;
-        --gui-status)
-            check_gui_status
-            ;;
-        launch|"")
-            # Default: Launch Claude Code with GUI
-            launch_claude_code
-            ;;
-        *)
-            ui_error "Unknown option: $mode"
-            echo ""
-            echo "  Use ${UI_PRIMARY}yoyo --help${UI_RESET} for available options"
-            exit 1
-            ;;
-    esac
+    # Trim RALPH_ARGS
+    RALPH_ARGS="${RALPH_ARGS# }"
+
+    # Execute based on mode
+    if [ "$RALPH_MODE" = true ]; then
+        launch_ralph_mode
+    else
+        launch_claude_code
+    fi
 }
 
 main "$@"

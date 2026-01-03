@@ -587,6 +587,116 @@ The memory system provides persistent context management using a dual-scope arch
 
 **Detailed Documentation:** See `docs/memory-system.md` for full API documentation.
 
+## Ralph Autonomous Development (v6.2+)
+
+Ralph integration enables **continuous autonomous development cycles** where Claude Code iteratively improves your project until completion, with built-in safeguards against infinite loops and API overuse.
+
+### Quick Start
+
+```bash
+# Autonomous task execution
+yoyo --ralph execute-tasks
+
+# Autonomous spec creation
+yoyo --ralph create-spec "Add user authentication"
+
+# Autonomous bug fixing
+yoyo --ralph create-fix "Login button not working"
+
+# With monitoring dashboard (requires tmux)
+yoyo --ralph execute-tasks --ralph-monitor
+
+# Custom rate limits
+yoyo --ralph execute-tasks --ralph-calls 50 --ralph-timeout 60
+```
+
+### How It Works
+
+1. **PROMPT.md Generation**: Yoyo Dev generates command-specific instructions for Ralph
+2. **Autonomous Loop**: Ralph executes Claude Code repeatedly until completion
+3. **Rate Limiting**: Default 100 API calls/hour prevents runaway costs
+4. **Circuit Breaker**: Stops after 3 consecutive loops without progress
+5. **Exit Detection**: Recognizes completion keywords and task status
+
+### Supported Commands
+
+| Command | Ralph Behavior |
+|---------|---------------|
+| `execute-tasks` | Executes all tasks until spec is complete |
+| `create-spec` | Iteratively refines spec until approved |
+| `create-fix` | Investigates and fixes bug autonomously |
+| `create-new` | Full spec → tasks → implementation cycle |
+
+### Ralph Options
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--ralph-calls N` | 100 | API calls per hour limit |
+| `--ralph-timeout N` | 30 | Minutes per loop timeout |
+| `--ralph-monitor` | false | Enable tmux monitoring dashboard |
+| `--ralph-verbose` | false | Detailed progress output |
+
+### Safety Mechanisms
+
+**Rate Limiting:**
+- Default: 100 API calls/hour
+- Countdown timer when limit reached
+- Prevents unexpected API costs
+
+**Circuit Breaker:**
+- Opens after 3 stalled loops (no progress)
+- Opens after 5 consecutive error loops
+- Prevents infinite execution
+
+**Exit Detection:**
+- Monitors for "done" signals
+- Tracks task completion percentage
+- Detects test-only loops
+
+### Configuration
+
+```yaml
+# .yoyo-dev/config.yml
+ralph:
+  enabled: true
+  rate_limit: 100
+  timeout: 30
+  circuit_breaker:
+    stall_threshold: 3
+    error_threshold: 5
+  exit_detection:
+    test_only_loops: 3
+    done_signals: 2
+  monitoring:
+    tmux_enabled: true
+```
+
+### Ralph Commands
+
+- `/ralph-status` - Show current autonomous execution status
+- `/ralph-stop` - Gracefully stop autonomous execution
+- `/ralph-config` - View/edit Ralph configuration
+
+### Installation
+
+Ralph is auto-installed on first use of `--ralph` flag. Manual installation:
+
+```bash
+# Using Yoyo Dev installer
+~/.yoyo-dev/setup/ralph-setup.sh
+
+# Or directly from GitHub
+git clone https://github.com/frankbria/ralph-claude-code.git
+cd ralph-claude-code && ./install.sh
+```
+
+### Requirements
+
+- Ralph v0.9.0+ (auto-installed)
+- Claude Code CLI
+- Bash 4.0+
+- tmux (optional, for monitoring)
+
 ## Architecture
 
 ### Directory Structure
