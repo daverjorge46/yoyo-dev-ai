@@ -22,6 +22,43 @@ const ANSI_COLORS: Record<AgentName, string> = {
 };
 
 const ANSI_RESET = '\x1b[0m';
+const ANSI_BOLD = '\x1b[1m';
+
+// Yoyo brand colors (matching ui-library.sh)
+const YOYO_YELLOW_DIM = '\x1b[38;2;168;122;27m'; // Dimmed yellow for borders
+const BG_ELEVATED = '\x1b[48;2;33;38;45m'; // Elevated background (#21262d)
+const SUBTEXT1 = '\x1b[38;2;186;194;222m'; // Subtext color
+const OVERLAY0 = '\x1b[38;2;108;112;134m'; // Overlay for underlines
+const TEXT_COLOR = '\x1b[38;2;205;214;244m'; // Main text color
+const YOYO_YELLOW = '\x1b[38;2;210;153;34m'; // Yoyo brand yellow
+
+// Box drawing characters (double-line)
+const BOX_DBL_TL = '\u2554'; // Top-left corner
+const BOX_DBL_TR = '\u2557'; // Top-right corner
+const BOX_DBL_BL = '\u255A'; // Bottom-left corner
+const BOX_DBL_BR = '\u255D'; // Bottom-right corner
+const BOX_DBL_H = '\u2550'; // Horizontal line
+const BOX_DBL_V = '\u2551'; // Vertical line
+
+// Agent-specific icons (emojis)
+const AGENT_ICONS: Record<AgentName, string> = {
+  'yoyo-ai': '\uD83E\uDD16', // Robot
+  'arthas-oracle': '\uD83D\uDD2E', // Crystal ball
+  'alma-librarian': '\uD83D\uDCDA', // Books
+  'alvaro-explore': '\uD83D\uDD0D', // Magnifying glass
+  'dave-engineer': '\uD83C\uDFA8', // Art palette
+  'angeles-writer': '\u270D\uFE0F', // Writing hand
+};
+
+// Agent descriptions (for panel display)
+const AGENT_DESCRIPTIONS: Record<AgentName, string> = {
+  'yoyo-ai': 'Primary orchestrator',
+  'arthas-oracle': 'Strategic advisor and debugger',
+  'alma-librarian': 'External research specialist',
+  'alvaro-explore': 'Codebase search specialist',
+  'dave-engineer': 'UI/UX development specialist',
+  'angeles-writer': 'Technical documentation writer',
+};
 
 // Agent-specific instructions for context injection
 const AGENT_INSTRUCTIONS: Record<AgentName, string> = {
@@ -195,7 +232,7 @@ export class OutputFormatter {
    */
   formatSuccess(agent: AgentName, message: string): string {
     const prefix = this.buildPrefix(agent);
-    return `${prefix} ✓ ${message}`;
+    return `${prefix} \u2713 ${message}`;
   }
 
   /**
@@ -221,6 +258,110 @@ export class OutputFormatter {
    */
   stripPrefix(message: string): string {
     return message.replace(/^\[[\w-]+\]\s*/, '');
+  }
+
+  /**
+   * Format a visually distinct agent activity panel
+   * Creates a boxed panel showing agent name (uppercase with underline),
+   * agent description, and current task.
+   *
+   * Panel layout:
+   * ╔═══════════════════════════════════════════════════════════════════════╗
+   * ║  🔍 ALVARO-EXPLORE                                                    ║
+   * ║  ─────────────────                                                    ║
+   * ║  Codebase search specialist                                           ║
+   * ║  Task: "theme configuration files"                                    ║
+   * ╚═══════════════════════════════════════════════════════════════════════╝
+   *
+   * @param agentName - The agent to display
+   * @param taskDescription - Optional task/query description
+   * @param width - Panel width (default: 71)
+   * @returns Formatted ANSI string for terminal display
+   */
+  formatAgentPanel(
+    agentName: AgentName,
+    taskDescription?: string,
+    width: number = 71
+  ): string {
+    const agentColor = this.config.colors[agentName] ?? '';
+    const agentIcon = AGENT_ICONS[agentName] ?? '\u25C9'; // Default circle
+    const agentDesc = AGENT_DESCRIPTIONS[agentName] ?? 'Specialized agent';
+    const agentUpper = agentName.toUpperCase();
+
+    // Calculate content width (width minus borders and padding)
+    const contentWidth = width - 4;
+
+    // Create underline matching agent name length
+    const underline = '\u2500'.repeat(agentUpper.length);
+
+    const lines: string[] = [];
+
+    // Helper to create a padded line with background
+    const padLine = (content: string, visibleLen: number): string => {
+      const padding = ' '.repeat(Math.max(0, contentWidth - visibleLen));
+      return `${YOYO_YELLOW_DIM}${BOX_DBL_V}${ANSI_RESET}${BG_ELEVATED}${content}${padding}${ANSI_RESET}${YOYO_YELLOW_DIM}${BOX_DBL_V}${ANSI_RESET}`;
+    };
+
+    // Top border
+    lines.push('');
+    lines.push(
+      `${YOYO_YELLOW_DIM}${BOX_DBL_TL}${BOX_DBL_H.repeat(width)}${BOX_DBL_TR}${ANSI_RESET}`
+    );
+
+    // Agent name line: "  🔍 ALVARO-EXPLORE"
+    const nameContent = `  ${agentIcon} ${agentColor}${ANSI_BOLD}${agentUpper}${ANSI_RESET}${BG_ELEVATED}`;
+    const nameVisibleLen = 2 + 2 + agentUpper.length; // "  " + icon + " " + name
+    lines.push(padLine(nameContent, nameVisibleLen));
+
+    // Underline line: "  ─────────────────"
+    const underlineContent = `  ${OVERLAY0}${underline}${ANSI_RESET}${BG_ELEVATED}`;
+    const underlineVisibleLen = 2 + underline.length;
+    lines.push(padLine(underlineContent, underlineVisibleLen));
+
+    // Agent description line
+    const descContent = `  ${SUBTEXT1}${agentDesc}${ANSI_RESET}${BG_ELEVATED}`;
+    const descVisibleLen = 2 + agentDesc.length;
+    lines.push(padLine(descContent, descVisibleLen));
+
+    // Task description if provided
+    if (taskDescription) {
+      // Truncate if too long
+      const maxTaskLen = contentWidth - 12; // "  Task: " + quotes
+      let taskDisplay = taskDescription;
+      if (taskDescription.length > maxTaskLen) {
+        taskDisplay = taskDescription.substring(0, maxTaskLen - 3) + '...';
+      }
+
+      const taskContent = `  ${TEXT_COLOR}Task: ${YOYO_YELLOW}"${taskDisplay}"${ANSI_RESET}${BG_ELEVATED}`;
+      const taskVisibleLen = 8 + taskDisplay.length; // "  Task: " + quotes + content
+      lines.push(padLine(taskContent, taskVisibleLen));
+    }
+
+    // Bottom border
+    lines.push(
+      `${YOYO_YELLOW_DIM}${BOX_DBL_BL}${BOX_DBL_H.repeat(width)}${BOX_DBL_BR}${ANSI_RESET}`
+    );
+    lines.push('');
+
+    return lines.join('\n');
+  }
+
+  /**
+   * Get agent icon for a specific agent
+   * @param agent - The agent name
+   * @returns Emoji icon for the agent
+   */
+  getAgentIcon(agent: AgentName): string {
+    return AGENT_ICONS[agent] ?? '\u25C9';
+  }
+
+  /**
+   * Get agent description for a specific agent
+   * @param agent - The agent name
+   * @returns Short description of the agent's role
+   */
+  getAgentDescription(agent: AgentName): string {
+    return AGENT_DESCRIPTIONS[agent] ?? 'Specialized agent';
   }
 
   /**

@@ -26,6 +26,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Terminal,
+  Bot,
+  HelpCircle,
 } from 'lucide-react';
 
 // =============================================================================
@@ -101,6 +103,16 @@ const navItems: NavItem[] = [
     path: '/patterns',
     label: 'Patterns',
     icon: <Layers className="h-5 w-5" />,
+  },
+  {
+    path: '/agents',
+    label: 'Agents',
+    icon: <Bot className="h-5 w-5" />,
+  },
+  {
+    path: '/help',
+    label: 'Help',
+    icon: <HelpCircle className="h-5 w-5" />,
   },
 ];
 

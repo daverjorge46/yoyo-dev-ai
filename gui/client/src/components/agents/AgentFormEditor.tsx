@@ -6,7 +6,7 @@
 
 import { useState, useEffect } from 'react';
 import { X, Save, Eye, EyeOff } from 'lucide-react';
-import type { Agent, AgentFormState, AgentFormErrors, AGENT_MODELS, DEFAULT_AGENT_VALUES } from '../../../../shared/types/agent';
+import type { Agent, AgentFormState, AgentFormErrors } from '../../../../shared/types/agent';
 import { MarkdownPreview } from '../MarkdownPreview';
 
 interface AgentFormEditorProps {

@@ -5,7 +5,7 @@
  */
 
 import { useState } from 'react';
-import { X, Upload, FileText, AlertCircle, Check } from 'lucide-react';
+import { X, Upload, AlertCircle, Check } from 'lucide-react';
 import { FileDropzone } from '../common/FileDropzone';
 
 interface ParsedAgent {

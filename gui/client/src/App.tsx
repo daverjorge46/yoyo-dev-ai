@@ -18,6 +18,8 @@ import Skills from './pages/Skills';
 import Recaps from './pages/Recaps';
 import Patterns from './pages/Patterns';
 import Chat from './pages/Chat';
+import Agents from './pages/Agents';
+import Help from './pages/Help';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { ThemeToggle, useTheme } from './components/ThemeToggle';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -133,6 +135,8 @@ function MainContent({ isLoading, status, wsStatus, onReconnect }: MainContentPr
             <Route path="/skills" element={<Skills />} />
             <Route path="/recaps" element={<Recaps />} />
             <Route path="/patterns" element={<Patterns />} />
+            <Route path="/agents" element={<Agents />} />
+            <Route path="/help" element={<Help />} />
           </Routes>
         </ErrorBoundary>
       </div>

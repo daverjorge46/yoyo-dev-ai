@@ -31,6 +31,14 @@ else
     ui_error() { echo -e "${UI_ERROR}✗${UI_RESET} $1"; }
     ui_info() { echo -e "${UI_PRIMARY}ℹ${UI_RESET} $1"; }
     ui_warning() { echo -e "${UI_YELLOW}⚠${UI_RESET} $1"; }
+    # Fallback banner function
+    ui_yoyo_banner() {
+        echo ""
+        echo -e "${UI_YELLOW}YOYO AI${UI_RESET} v${1:-6.2.0}"
+        echo ""
+    }
+    # Fallback dashboard function
+    ui_project_dashboard() { :; }
 fi
 
 # ============================================================================
@@ -43,6 +51,7 @@ readonly USER_PROJECT_DIR="$(pwd)"
 GUI_ENABLED=true
 GUI_PORT=5173
 ORCHESTRATION_ENABLED=true
+BANNER_ENABLED=true
 
 # Ralph Autonomous Development Configuration
 RALPH_MODE=false
@@ -52,6 +61,15 @@ RALPH_TIMEOUT=30
 RALPH_VERBOSE=false
 RALPH_COMMAND=""
 RALPH_ARGS=""
+
+# ============================================================================
+# Utility Functions
+# ============================================================================
+
+# Check if output is going to a terminal (not piped/redirected)
+is_interactive_terminal() {
+    [ -t 1 ] && [ -t 2 ]
+}
 
 # ============================================================================
 # Claude Code Detection
@@ -254,80 +272,6 @@ launch_ralph_mode() {
 }
 
 # ============================================================================
-# Project Summary
-# ============================================================================
-
-show_project_summary() {
-    # Only show summary if .yoyo-dev exists
-    if [ ! -d "./.yoyo-dev" ]; then
-        return
-    fi
-
-    local specs_count=0
-    local fixes_count=0
-    local active_spec=""
-    local active_spec_tasks=""
-    local task_completed=0
-    local task_total=0
-
-    # Count specs
-    if [ -d ".yoyo-dev/specs" ]; then
-        specs_count=$(find .yoyo-dev/specs -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l)
-
-        # Get most recent (active) spec
-        local latest_spec_dir
-        latest_spec_dir=$(ls -1d .yoyo-dev/specs/*/ 2>/dev/null | sort -r | head -1)
-        if [ -n "$latest_spec_dir" ]; then
-            active_spec=$(basename "$latest_spec_dir" | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-//')
-
-            # Count tasks in active spec
-            if [ -f "${latest_spec_dir}tasks.md" ]; then
-                task_total=$(grep -cE '^\s*-\s*\[[x ]\]' "${latest_spec_dir}tasks.md" 2>/dev/null || echo 0)
-                task_completed=$(grep -cE '^\s*-\s*\[x\]' "${latest_spec_dir}tasks.md" 2>/dev/null || echo 0)
-            fi
-        fi
-    fi
-
-    # Count fixes
-    if [ -d ".yoyo-dev/fixes" ]; then
-        fixes_count=$(find .yoyo-dev/fixes -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l)
-    fi
-
-    # Display summary box
-    echo -e "  ${UI_ACCENT}${BOX_TL}${BOX_H}${BOX_H} Project Status ${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${UI_RESET}"
-    echo ""
-
-    # Show specs count with icon
-    if [ "$specs_count" -gt 0 ]; then
-        echo -e "  ${UI_INFO}📋${UI_RESET} Specs: ${UI_SUCCESS}${specs_count}${UI_RESET}"
-    else
-        echo -e "  ${UI_INFO}📋${UI_RESET} Specs: ${UI_DIM}none${UI_RESET}"
-    fi
-
-    # Show active spec with task progress
-    if [ -n "$active_spec" ]; then
-        echo -e "  ${UI_INFO}🎯${UI_RESET} Active: ${UI_PRIMARY}${active_spec}${UI_RESET}"
-        if [ "$task_total" -gt 0 ]; then
-            local percent=$((task_completed * 100 / task_total))
-            local progress_color="${UI_WARNING}"
-            if [ "$percent" -ge 80 ]; then
-                progress_color="${UI_SUCCESS}"
-            elif [ "$percent" -ge 50 ]; then
-                progress_color="${UI_INFO}"
-            fi
-            echo -e "  ${UI_INFO}📝${UI_RESET} Tasks: ${progress_color}${task_completed}/${task_total}${UI_RESET} ${UI_DIM}(${percent}%)${UI_RESET}"
-        fi
-    fi
-
-    # Show fixes count
-    if [ "$fixes_count" -gt 0 ]; then
-        echo -e "  ${UI_INFO}🔧${UI_RESET} Fixes: ${UI_WARNING}${fixes_count}${UI_RESET}"
-    fi
-
-    echo ""
-}
-
-# ============================================================================
 # Claude Code Native Launch
 # ============================================================================
 
@@ -387,11 +331,15 @@ launch_claude_code() {
         exit 1
     fi
 
-    # Show ASCII art banner
-    ui_banner "$VERSION"
+    # Show branded ASCII art banner (if enabled and terminal is interactive)
+    if [ "$BANNER_ENABLED" = true ] && is_interactive_terminal; then
+        ui_yoyo_banner "v${VERSION}"
 
-    # Show project summary
-    show_project_summary
+        # Show project dashboard
+        if [ -d "./.yoyo-dev" ]; then
+            ui_project_dashboard ".yoyo-dev"
+        fi
+    fi
 
     echo -e "  ${UI_DIM}Project:${UI_RESET}  $(basename "$USER_PROJECT_DIR")"
     echo -e "  ${UI_DIM}Mode:${UI_RESET}     Claude Code Native"
@@ -415,7 +363,7 @@ launch_claude_code() {
     fi
 
     echo ""
-    echo -e "  ${UI_DIM}Commands:${UI_RESET} /status /specs /tasks /fixes"
+    echo -e "  ${UI_DIM}Commands:${UI_RESET} /yoyo-status /specs /tasks /fixes"
     echo -e "  ${UI_DIM}Help:${UI_RESET}     /yoyo-help"
 
     # Show orchestration status
@@ -450,6 +398,13 @@ show_version() {
 }
 
 show_help() {
+    # Use the branded help panel if available
+    if type ui_help_panel &>/dev/null; then
+        ui_help_panel
+        return
+    fi
+
+    # Fallback help display
     echo ""
     echo -e "${UI_PRIMARY}╭──────────────────────────────────────────────────────────────────╮${UI_RESET}"
     echo -e "${UI_PRIMARY}│${UI_RESET}                    ${UI_SUCCESS}YOYO DEV HELP${UI_RESET}                              ${UI_PRIMARY}│${UI_RESET}"
@@ -467,6 +422,9 @@ show_help() {
     echo ""
     echo -e "  ${UI_PRIMARY}yoyo --gui-only${UI_RESET}"
     echo -e "    ${UI_DIM}Open browser GUI only (no Claude Code)${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}yoyo --no-banner${UI_RESET}"
+    echo -e "    ${UI_DIM}Skip branded banner (for CI/scripts)${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_SUCCESS}ORCHESTRATION${UI_RESET}"
@@ -497,7 +455,7 @@ show_help() {
     echo -e "  ${UI_SUCCESS}CLAUDE CODE COMMANDS${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
     echo ""
-    echo -e "  ${UI_PRIMARY}/status${UI_RESET}          ${UI_DIM}Project dashboard${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}/yoyo-status${UI_RESET}     ${UI_DIM}Project dashboard${UI_RESET}"
     echo -e "  ${UI_PRIMARY}/specs${UI_RESET}           ${UI_DIM}List all specifications${UI_RESET}"
     echo -e "  ${UI_PRIMARY}/spec <n>${UI_RESET}        ${UI_DIM}View spec details${UI_RESET}"
     echo -e "  ${UI_PRIMARY}/tasks${UI_RESET}           ${UI_DIM}Show current tasks${UI_RESET}"
@@ -559,6 +517,10 @@ main() {
                 ;;
             --no-orchestration)
                 ORCHESTRATION_ENABLED=false
+                shift
+                ;;
+            --no-banner)
+                BANNER_ENABLED=false
                 shift
                 ;;
             --gui-only)

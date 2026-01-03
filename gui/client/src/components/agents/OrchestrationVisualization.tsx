@@ -33,7 +33,7 @@ export function OrchestrationVisualization({
   className = '',
   defaultOpen = true,
 }: OrchestrationVisualizationProps) {
-  const { data, isLoading, error, refetch } = useQuery<OrchestrationFlowResponse>({
+  const { data, isLoading, error } = useQuery<OrchestrationFlowResponse>({
     queryKey: ['orchestration-flow'],
     queryFn: async () => {
       const res = await fetch('/api/orchestration/flow');
