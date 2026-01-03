@@ -2,7 +2,7 @@
 
 ## Context
 
-Critical review approaches for Yoyo Dev projects when you need extra scrutiny. These modes are **opt-in only** and used via the `/review` command or `--review` flag on `/execute-tasks`.
+Critical review approaches for Yoyo Dev projects when you need extra scrutiny. These modes are **opt-in only** and used via the `/yoyo-review` command or `--review` flag on `/execute-tasks`.
 
 **When to use review modes:**
 - Project has accumulated technical debt
@@ -37,7 +37,7 @@ Critical review approaches for Yoyo Dev projects when you need extra scrutiny. T
 
 **Example prompts:**
 ```
-/review --devil "Review the authentication flow"
+/yoyo-review --devil "Review the authentication flow"
 /execute-tasks --review=devil
 ```
 
@@ -214,9 +214,9 @@ Critical review approaches for Yoyo Dev projects when you need extra scrutiny. T
 ### Review Existing Code
 
 ```bash
-/review --devil "Review the payment processing flow"
-/review --security "Audit the authentication system"
-/review --performance "Analyze the dashboard query performance"
+/yoyo-review --devil "Review the payment processing flow"
+/yoyo-review --security "Audit the authentication system"
+/yoyo-review --performance "Analyze the dashboard query performance"
 ```
 
 ### Execute Tasks with Review Mode
@@ -230,7 +230,7 @@ Critical review approaches for Yoyo Dev projects when you need extra scrutiny. T
 ### Combine Multiple Modes
 
 ```bash
-/review --security --performance "Review the API endpoints"
+/yoyo-review --security --performance "Review the API endpoints"
 ```
 
 ---
@@ -283,7 +283,7 @@ Review modes work alongside Yoyo Dev personas:
 
 ```bash
 # 1. Pre-mortem analysis
-/review --premortem "Authentication system redesign"
+/yoyo-review --premortem "Authentication system redesign"
 
 # 2. Create spec with findings
 /create-new
@@ -292,14 +292,14 @@ Review modes work alongside Yoyo Dev personas:
 /execute-tasks --review=devil
 
 # 4. Security audit before PR
-/review --security "Review authentication implementation"
+/yoyo-review --security "Review authentication implementation"
 ```
 
 ### Workflow 2: Performance Crisis
 
 ```bash
 # 1. Identify bottleneck
-/review --performance "Dashboard loading slowly"
+/yoyo-review --performance "Dashboard loading slowly"
 
 # 2. Create fix with analysis
 /create-fix
@@ -312,7 +312,7 @@ Review modes work alongside Yoyo Dev personas:
 
 ```bash
 # 1. Devil's advocate on failed feature
-/review --devil "Why did the payment flow fail?"
+/yoyo-review --devil "Why did the payment flow fail?"
 
 # 2. Create fix with root cause
 /create-fix

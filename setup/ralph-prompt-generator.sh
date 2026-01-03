@@ -165,7 +165,7 @@ Load the following files for context:
 Use these Claude Code commands:
 - \`/execute-tasks\` - Execute current task group
 - \`/tasks\` - View task progress
-- \`/status\` - Check overall status
+- \`/yoyo-status\` - Check overall status
 
 ## Progress Tracking
 

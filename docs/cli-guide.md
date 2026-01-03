@@ -98,7 +98,7 @@ Within the interactive UI, use slash commands:
 | Command | Description |
 |---------|-------------|
 | `/help` | Show available commands and keyboard shortcuts |
-| `/status` | Display current model, mode, and memory status |
+| `/yoyo-status` | Display current model, mode, and memory status |
 | `/config` | View or modify settings |
 | `/config show` | Show all current settings |
 | `/config get <key>` | Get a specific setting value |
@@ -110,7 +110,7 @@ Within the interactive UI, use slash commands:
 
 ```
 /help
-/status
+/yoyo-status
 /config show
 /config model gpt-4
 /clear

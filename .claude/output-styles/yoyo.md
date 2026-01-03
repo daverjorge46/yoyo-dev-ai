@@ -138,7 +138,7 @@ Use emoji sparingly for actionable hints:
   ─────────────────────────────────────────────────────────────────────────────
   ✓ Create status line script
   ✓ Create settings template
-  ● Create /status command           ← CURRENT
+  ● Create /yoyo-status command      ← CURRENT
 
   💡 Run /tasks to see full breakdown
 ```

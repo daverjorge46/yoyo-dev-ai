@@ -51,7 +51,7 @@ Always prefix responses with the agent name when delegating:
 - `/create-fix "problem"` - Analyze and fix bugs systematically
 
 **Status & Navigation:**
-- `/status` - Project dashboard
+- `/yoyo-status` - Project dashboard
 - `/specs` - List all specifications
 - `/spec <n>` - View specific spec details
 - `/tasks` - Show current task breakdown
@@ -62,9 +62,9 @@ Always prefix responses with the agent name when delegating:
 - `/consult-oracle "question"` - Strategic architecture guidance
 
 **Code Review:**
-- `/review --devil` - Devil's advocate review
-- `/review --security` - Security vulnerability scan
-- `/review --performance` - Performance analysis
+- `/yoyo-review --devil` - Devil's advocate review
+- `/yoyo-review --security` - Security vulnerability scan
+- `/yoyo-review --performance` - Performance analysis
 
 ### Project Structure
 

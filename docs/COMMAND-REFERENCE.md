@@ -412,18 +412,18 @@ Complete reference for all Yoyo Dev commands.
 
 ## Code Review
 
-### `/review`
+### `/yoyo-review`
 
 **Purpose:** Critical code review with different modes
 
 **Usage:**
 ```bash
-/review --devil "scope"       # Devil's advocate
-/review --security "scope"    # Security audit
-/review --performance "scope" # Performance analysis
-/review --production "scope"  # Production readiness
-/review --premortem "scope"   # Pre-mortem analysis
-/review --quality "scope"     # Code quality review
+/yoyo-review --devil "scope"       # Devil's advocate
+/yoyo-review --security "scope"    # Security audit
+/yoyo-review --performance "scope" # Performance analysis
+/yoyo-review --production "scope"  # Production readiness
+/yoyo-review --premortem "scope"   # Pre-mortem analysis
+/yoyo-review --quality "scope"     # Code quality review
 ```
 
 **Modes:**

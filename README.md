@@ -248,9 +248,9 @@ Open PR link → Review code → Merge
 /orchestrate-tasks
 
 # Code review modes
-/review --devil "Authentication flow"
-/review --security "Payment processing"
-/review --performance "Dashboard rendering"
+/yoyo-review --devil "Authentication flow"
+/yoyo-review --security "Payment processing"
+/yoyo-review --performance "Dashboard rendering"
 
 # Containerization
 /containerize-application --node --multi-stage
@@ -489,7 +489,7 @@ parallel_execution:
 
 # Advanced
 /orchestrate-tasks                 # Manual orchestration
-/review --devil "scope"            # Devil's advocate review
+/yoyo-review --devil "scope"       # Devil's advocate review
 /improve-skills                    # Optimize agent skills
 
 # TUI

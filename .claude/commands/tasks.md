@@ -61,7 +61,7 @@ $ARGUMENTS optionally contains a spec name to filter.
 
   ## Phase 2: Custom Slash Commands
 
-  ● 3. Create /status command                    ← CURRENT
+  ● 3. Create /yoyo-status command               ← CURRENT
       └─ ○ 3.1 Create command markdown file
       └─ ○ 3.2 Implement project info section
       └─ ○ 3.3 Implement active spec section

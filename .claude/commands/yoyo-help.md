@@ -121,7 +121,7 @@ Show the complete Yoyo Dev v6.2 command reference with all available commands, f
 🔍 CODE REVIEW (Optional)
 ─────────────────────────────────────────────────────────────────────
 
-  /review [scope] [--devil] [--security] [--performance] [--production]
+  /yoyo-review [scope] [--devil] [--security] [--performance] [--production]
     Critical code review with specialized modes
 
     Modes:
@@ -133,9 +133,9 @@ Show the complete Yoyo Dev v6.2 command reference with all available commands, f
       --quality      Code quality, maintainability
 
     Examples:
-      /review "authentication flow" --security
-      /review --devil --performance
-      /review "API endpoints" --production
+      /yoyo-review "authentication flow" --security
+      /yoyo-review --devil --performance
+      /yoyo-review "API endpoints" --production
 
 📊 TUI DASHBOARD (v3.0)
 ─────────────────────────────────────────────────────────────────────
@@ -187,7 +187,7 @@ Show the complete Yoyo Dev v6.2 command reference with all available commands, f
     /design-component "User profile card"
 
   Code Review Before Shipping:
-    /review "payment processing" --security --production
+    /yoyo-review "payment processing" --security --production
 
 🆕 NEW IN V3.0
 ─────────────────────────────────────────────────────────────────────
@@ -231,7 +231,7 @@ Show the complete Yoyo Dev v6.2 command reference with all available commands, f
   • Launch yoyo command for beautiful TUI dashboard
   • Use --parallel for independent tasks (2-3x speedup)
   • Interactive mode is default (pause after each subtask)
-  • Use /review modes strategically, not by default
+  • Use /yoyo-review modes strategically, not by default
   • Press ? in TUI for keyboard shortcuts
 
 ────────────────────────────────────────────────────────────────────

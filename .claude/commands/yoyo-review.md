@@ -9,7 +9,7 @@ Perform critical code review using specialized review modes (devil's advocate, s
 ## Command
 
 ```bash
-/review [--mode] "what to review"
+/yoyo-review [--mode] "what to review"
 ```
 
 ## Review Modes
@@ -25,27 +25,27 @@ Perform critical code review using specialized review modes (devil's advocate, s
 
 ```bash
 # Devil's advocate review
-/review --devil "Review the authentication flow"
+/yoyo-review --devil "Review the authentication flow"
 
 # Security audit
-/review --security "Audit the payment processing system"
+/yoyo-review --security "Audit the payment processing system"
 
 # Performance analysis
-/review --performance "Analyze dashboard query performance"
+/yoyo-review --performance "Analyze dashboard query performance"
 
 # Pre-implementation analysis
-/review --premortem "Review the user-profile spec before building"
+/yoyo-review --premortem "Review the user-profile spec before building"
 
 # Multiple modes
-/review --security --performance "Review all API endpoints"
+/yoyo-review --security --performance "Review all API endpoints"
 
 # Full project review
-/review --devil "Review entire project for edge cases"
+/yoyo-review --devil "Review entire project for edge cases"
 ```
 
 ## When to Use
 
-✅ **Use review modes when:**
+Use review modes when:
 - Projects have accumulated technical debt
 - Bugs keep reappearing in the same area
 - Before building complex/risky features
@@ -54,35 +54,35 @@ Perform critical code review using specialized review modes (devil's advocate, s
 - Before production deployment
 - Something feels wrong but you can't pinpoint it
 
-❌ **Don't use for:**
-- Normal feature development (use `/create-new` → `/execute-tasks`)
+Don't use for:
+- Normal feature development (use `/create-new` -> `/execute-tasks`)
 - Simple bug fixes (use `/create-fix`)
 - Routine tasks
 
 ## Workflow Integration
 
-### Review → Fix Workflow
+### Review -> Fix Workflow
 
 ```bash
-/review --devil → Identifies critical issues
-  ↓
-/create-fix → Creates fix tasks
-  ↓
-/execute-tasks → Implements fixes
+/yoyo-review --devil -> Identifies critical issues
+  |
+/create-fix -> Creates fix tasks
+  |
+/execute-tasks -> Implements fixes
 ```
 
 ### Pre-Implementation Review
 
 ```bash
-/create-spec → Creates specification
-  ↓
-/review --premortem → Analyzes spec for failure modes
-  ↓
+/create-spec -> Creates specification
+  |
+/yoyo-review --premortem -> Analyzes spec for failure modes
+  |
 Update spec based on findings
-  ↓
-/create-tasks → Create implementation tasks
-  ↓
-/execute-tasks → Build with insights from review
+  |
+/create-tasks -> Create implementation tasks
+  |
+/execute-tasks -> Build with insights from review
 ```
 
 ## Output

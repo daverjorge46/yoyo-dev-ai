@@ -320,18 +320,18 @@ Create UI components with enforced design consistency
 
 ## 🔍 Code Review (Optional)
 
-### `/review`
+### `/yoyo-review`
 Critical code review with specialized modes
 
 **Usage:**
 ```bash
-/review [scope]                         # General review
-/review [scope] --devil                 # Devil's advocate mode
-/review [scope] --security              # Security review
-/review [scope] --performance           # Performance review
-/review [scope] --production            # Production readiness
-/review [scope] --premortem             # Pre-mortem analysis
-/review [scope] --quality               # Code quality review
+/yoyo-review [scope]                    # General review
+/yoyo-review [scope] --devil            # Devil's advocate mode
+/yoyo-review [scope] --security         # Security review
+/yoyo-review [scope] --performance      # Performance review
+/yoyo-review [scope] --production       # Production readiness
+/yoyo-review [scope] --premortem        # Pre-mortem analysis
+/yoyo-review [scope] --quality          # Code quality review
 ```
 
 **Flags:**
@@ -344,7 +344,7 @@ Critical code review with specialized modes
 
 **Multiple modes:**
 ```bash
-/review auth-flow --security --performance
+/yoyo-review auth-flow --security --performance
 ```
 
 **Output:**
@@ -500,7 +500,7 @@ When using `yoyo` (default), you get Claude Code + TUI side-by-side:
 ### Example 5: Critical Feature with Review
 ```bash
 /create-new "Payment processing"
-/review payment-flow --security --production
+/yoyo-review payment-flow --security --production
 /execute-tasks --sequential
 ```
 

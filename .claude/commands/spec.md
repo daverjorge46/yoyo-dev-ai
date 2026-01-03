@@ -55,7 +55,7 @@ $ARGUMENTS contains the spec identifier (number or name).
   Phase 1: Foundation
     ✓ Task 1: Create status line script
     ✓ Task 2: Create Claude Code settings template
-    ● Task 3: Create /status command
+    ● Task 3: Create /yoyo-status command
     ○ Task 4: Create /specs command
 
   Phase 2: Commands

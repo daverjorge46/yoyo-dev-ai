@@ -99,7 +99,7 @@ Professional project maintenance command with safety validations. Clean deprecat
 
 ### With Review Command
 ```bash
-/review --quality → Identifies issues
+/yoyo-review --quality → Identifies issues
   ↓
 /yoyo-cleanup --preview → Shows what can be cleaned
   ↓

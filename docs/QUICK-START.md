@@ -439,9 +439,9 @@ yoyo
 
 ```bash
 # Critical review modes
-/review --devil "Authentication flow"
-/review --security "Payment processing"
-/review --performance "Dashboard rendering"
+/yoyo-review --devil "Authentication flow"
+/yoyo-review --security "Payment processing"
+/yoyo-review --performance "Dashboard rendering"
 ```
 
 ---

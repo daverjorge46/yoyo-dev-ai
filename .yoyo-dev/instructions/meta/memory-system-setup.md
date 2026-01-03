@@ -429,7 +429,7 @@ persona|project|Yoyo
 
 The memory system integrates with Claude Code via:
 - Custom status line showing memory status
-- `/status` command displays memory block count
+- `/yoyo-status` command displays memory block count
 - `/yoyo-ai-memory` command initializes the memory system
 
 ## Troubleshooting

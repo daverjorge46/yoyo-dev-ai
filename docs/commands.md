@@ -620,19 +620,19 @@ Manual multi-agent orchestration for complex features.
 
 ---
 
-### `/review`
+### `/yoyo-review`
 
 Critical code review with specialized review modes.
 
 **Usage:**
 ```bash
-/review "Scope description"
+/yoyo-review "Scope description"
 
 # With review modes
-/review --devil "Authentication flow"
-/review --security "Payment processing"
-/review --performance "Dashboard rendering"
-/review --production "API endpoints"
+/yoyo-review --devil "Authentication flow"
+/yoyo-review --security "Payment processing"
+/yoyo-review --performance "Dashboard rendering"
+/yoyo-review --production "API endpoints"
 ```
 
 **Flags:**
@@ -687,10 +687,10 @@ Available across multiple commands:
 
 | Flag | Commands | Description |
 |------|----------|-------------|
-| `--devil` | `/review`, `/execute-tasks` | Apply devil's advocate review |
-| `--security` | `/review`, `/execute-tasks` | Apply security review |
-| `--performance` | `/review`, `/execute-tasks` | Apply performance review |
-| `--production` | `/review`, `/execute-tasks` | Apply production review |
+| `--devil` | `/yoyo-review`, `/execute-tasks` | Apply devil's advocate review |
+| `--security` | `/yoyo-review`, `/execute-tasks` | Apply security review |
+| `--performance` | `/yoyo-review`, `/execute-tasks` | Apply performance review |
+| `--production` | `/yoyo-review`, `/execute-tasks` | Apply production review |
 
 ### Execution Flags
 

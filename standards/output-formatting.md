@@ -634,7 +634,7 @@ Task: ████████████░░░░  75%  (3/4)
 - Test results with pass/fail
 - Completion summary with PR link
 
-### `/review` Output
+### `/yoyo-review` Output
 - Header: Review mode
 - Findings table by severity
 - Critical issues highlighted

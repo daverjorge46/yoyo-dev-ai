@@ -386,28 +386,28 @@ Ask if user wants to create fix tasks for identified issues.
 ### Basic Review
 
 ```bash
-/review --devil "Review the authentication flow"
-/review --security "Audit the payment processing"
-/review --performance "Analyze dashboard performance"
+/yoyo-review --devil "Review the authentication flow"
+/yoyo-review --security "Audit the payment processing"
+/yoyo-review --performance "Analyze dashboard performance"
 ```
 
 ### Multiple Modes
 
 ```bash
-/review --security --performance "Review API endpoints"
+/yoyo-review --security --performance "Review API endpoints"
 ```
 
 ### Full Project Review
 
 ```bash
-/review --devil "Review entire project for edge cases"
+/yoyo-review --devil "Review entire project for edge cases"
 ```
 
 ### Pre-Implementation Review
 
 ```bash
 # After /create-spec but before /execute-tasks
-/review --premortem "Review the spec for user-profile feature"
+/yoyo-review --premortem "Review the spec for user-profile feature"
 ```
 
 ## Integration with Other Commands
@@ -415,7 +415,7 @@ Ask if user wants to create fix tasks for identified issues.
 ### With /create-fix
 
 ```bash
-/review --devil → Identifies issues
+/yoyo-review --devil → Identifies issues
   ↓
 /create-fix → Creates fix for critical issues
 ```
@@ -424,7 +424,7 @@ Ask if user wants to create fix tasks for identified issues.
 
 ```bash
 # Review existing code before fixing
-/review --performance "Dashboard component"
+/yoyo-review --performance "Dashboard component"
   ↓
 /create-fix → Create performance fix
   ↓
@@ -434,11 +434,11 @@ Ask if user wants to create fix tasks for identified issues.
 ### Before Production
 
 ```bash
-/review --production "Review before release"
+/yoyo-review --production "Review before release"
   ↓
 Fix critical issues
   ↓
-/review --security "Final security audit"
+/yoyo-review --security "Final security audit"
 ```
 
 ## Review Mode Selection Guide
