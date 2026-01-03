@@ -1,6 +1,6 @@
 # Command Reference
 
-> Complete slash command reference for Yoyo Dev v5.0
+> Complete slash command reference for Yoyo Dev v6.2
 
 This document provides a comprehensive reference for all available slash commands.
 
@@ -728,6 +728,6 @@ Available for `/design-fix`:
 
 ---
 
-**Version:** 5.0.0
-**Last Updated:** 2025-12-29
+**Version:** 6.2.0
+**Last Updated:** 2026-01-03
 **Status:** Production Ready

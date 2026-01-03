@@ -164,7 +164,7 @@ export function AgentLogStream({
               {formatTimestamp(log.timestamp)}
             </span>
             <span
-              className={`px-1 py-0.5 rounded text-[10px] uppercase font-semibold shrink-0 ${levelBadgeColors[log.level]} text-white`}
+              className={`px-1 py-0.5 rounded text-xs uppercase font-semibold shrink-0 ${levelBadgeColors[log.level]} text-white`}
             >
               {log.level.slice(0, 3)}
             </span>

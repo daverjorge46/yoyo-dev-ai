@@ -1,4 +1,4 @@
-# Yoyo Dev v3.1 - Command Reference
+# Yoyo Dev v6.2 - Command Reference
 
 **Quick access:** Run `/yoyo-help` in Claude Code or `yoyo --help` in terminal
 
@@ -409,64 +409,34 @@ Generate Docker configuration for applications
 ---
 
 ### `yoyo`
-Launch Yoyo Dev TUI dashboard
+Launch Yoyo Dev with Claude Code + Browser GUI
 
 **Usage:**
 ```bash
-yoyo                    # Launch split view (Claude + TUI)
-yoyo --no-split         # Launch TUI only
-yoyo --split-ratio 0.5  # Custom split ratio
-yoyo --focus tui        # Start with TUI focused
+yoyo                    # Launch Claude Code + Browser GUI
+yoyo --no-gui           # Claude Code only (no browser GUI)
+yoyo --stop-gui         # Stop background GUI server
 yoyo --help             # Show help
 yoyo --version          # Show version
 ```
 
 **Flags:**
-- `--no-split` - Launch TUI only (no Claude pane)
-- `--split-ratio RATIO` - Custom split ratio (0.0-1.0)
-- `--focus PANE` - Start with focus on "claude" or "tui"
+- `--no-gui` - Launch Claude Code only (no browser GUI)
+- `--stop-gui` - Stop background GUI server
 - `--help` - Show command reference
 - `--version` - Show Yoyo Dev version
 
-**Split View Keyboard Shortcuts:**
-- `Ctrl+B` + Arrow keys - Switch pane focus
-- `Ctrl+B` + `<` - Make left pane larger
-- `Ctrl+B` + `>` - Make right pane larger
-
 ---
 
-## TUI Dashboard
+## Browser GUI Dashboard
 
 ### Features
 
-The TUI dashboard provides:
-- Real-time task/spec tracking
-- Context-aware command suggestions
-- Proactive error detection
-- MCP server health monitoring
-
-### Keyboard Shortcuts
-
-```
-?     Help              r     Refresh
-/     Commands          g     Git menu
-t     Focus tasks       s     Focus specs
-h     Focus history     q     Quit
-```
-
-### Split View Mode
-
-When using `yoyo` (default), you get Claude Code + TUI side-by-side:
-
-```
-+------------------+-------------------------+
-| Claude Code CLI  |  Yoyo TUI Dashboard     |
-| (40% width)      |  (60% width)            |
-|                  |                         |
-| Interactive AI   |  Task tracking          |
-| assistant        |  Progress monitoring    |
-+------------------+-------------------------+
-```
+The browser GUI dashboard (http://localhost:5173) provides:
+- Visual task tracking
+- Spec browser
+- Command palette
+- Real-time updates via WebSocket
 
 ---
 
@@ -568,4 +538,4 @@ When using `yoyo` (default), you get Claude Code + TUI side-by-side:
 
 ---
 
-**Yoyo Dev v3.1** - "Powerful when you need it. Invisible when you don't."
+**Yoyo Dev v6.2** - "Powerful when you need it. Invisible when you don't."

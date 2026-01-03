@@ -98,32 +98,23 @@ function StatCard({
   value,
   subtext,
   icon,
-  color = 'indigo',
 }: {
   label: string;
   value: string | number;
   subtext?: string;
   icon?: JSX.Element;
-  color?: 'indigo' | 'green' | 'blue' | 'purple';
 }) {
-  const colorClasses = {
-    indigo: 'bg-indigo-50 dark:bg-indigo-900/20 border-indigo-200 dark:border-indigo-800',
-    green: 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800',
-    blue: 'bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800',
-    purple: 'bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800',
-  };
-
   return (
-    <div className={`rounded-lg border p-4 ${colorClasses[color]}`}>
+    <div className="terminal-card p-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
-        {icon && <div className="text-gray-400">{icon}</div>}
+        <p className="terminal-stat-label">{label}</p>
+        {icon && <div className="text-gray-400 dark:text-terminal-text-muted">{icon}</div>}
       </div>
-      <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+      <p className="terminal-stat mt-1">
         {value}
       </p>
       {subtext && (
-        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+        <p className="text-xs text-gray-400 dark:text-terminal-text-muted mt-1">
           {subtext}
         </p>
       )}
@@ -137,15 +128,15 @@ function StatCard({
 
 function SuccessRateBadge({ rate }: { rate: number }) {
   const percent = Math.round(rate * 100);
-  const colorClass =
+  const badgeClass =
     percent >= 80
-      ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400'
+      ? 'terminal-badge-success'
       : percent >= 50
-      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400'
-      : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
+      ? 'terminal-badge-warning'
+      : 'terminal-badge-error';
 
   return (
-    <span className={`text-xs font-medium px-2 py-0.5 rounded ${colorClass}`}>
+    <span className={badgeClass}>
       {percent}%
     </span>
   );
@@ -187,27 +178,27 @@ function UsageChart({ skills }: { skills: SkillStats[] }) {
                 <SuccessRateBadge rate={skill.successRate} />
               </div>
             </div>
-            <div className="h-4 bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-4 bg-gray-200 dark:bg-terminal-elevated rounded-full overflow-hidden">
               <div
                 className="h-full rounded-full transition-all duration-500 relative"
                 style={{
                   width: `${widthPercent}%`,
                   background: `linear-gradient(90deg,
-                    rgb(34, 197, 94) ${successPercent}%,
-                    rgb(239, 68, 68) ${successPercent}%)`,
+                    #3fb950 ${successPercent}%,
+                    #f85149 ${successPercent}%)`,
                 }}
               />
             </div>
           </div>
         );
       })}
-      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-gray-400 mt-4">
+      <div className="flex items-center gap-4 text-xs text-gray-500 dark:text-terminal-text-muted mt-4">
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-green-500 rounded" />
+          <div className="w-3 h-3 bg-success dark:bg-terminal-green rounded" />
           <span>Success</span>
         </div>
         <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-red-500 rounded" />
+          <div className="w-3 h-3 bg-error dark:bg-terminal-red rounded" />
           <span>Failure</span>
         </div>
       </div>
@@ -268,18 +259,18 @@ function SkillCard({
   return (
     <button
       onClick={onSelect}
-      className={`w-full text-left p-4 rounded-lg border transition-all ${
+      className={`w-full text-left p-4 rounded transition-all ${
         selected
-          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:border-gray-300 dark:hover:border-gray-600'
+          ? 'bg-brand/10 border border-brand dark:bg-brand/20'
+          : 'terminal-card-hover'
       }`}
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
-          <h3 className="font-medium text-gray-900 dark:text-white truncate">
+          <h3 className="font-medium text-gray-900 dark:text-terminal-text truncate">
             {skill.name}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 font-mono truncate">
+          <p className="text-sm text-gray-500 dark:text-terminal-text-secondary font-mono truncate">
             {skill.id}
           </p>
         </div>
@@ -291,20 +282,20 @@ function SkillCard({
           {skill.tags.slice(0, 3).map((tag) => (
             <span
               key={tag}
-              className="text-xs px-2 py-0.5 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded"
+              className="terminal-code"
             >
               {tag}
             </span>
           ))}
           {skill.tags.length > 3 && (
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-gray-400 dark:text-terminal-text-muted">
               +{skill.tags.length - 3}
             </span>
           )}
         </div>
       )}
 
-      <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
+      <div className="mt-2 flex items-center justify-between text-xs text-gray-500 dark:text-terminal-text-secondary">
         <span>{skill.usageCount} uses</span>
         {skill.triggers.length > 0 && (
           <span>{skill.triggers.length} trigger{skill.triggers.length !== 1 ? 's' : ''}</span>
@@ -378,7 +369,7 @@ function SkillDetailView({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-brand" />
       </div>
     );
   }
@@ -412,7 +403,7 @@ function SkillDetailView({
             <>
               <button
                 onClick={handleEdit}
-                className="p-2 text-gray-500 hover:text-indigo-600 dark:text-gray-400 dark:hover:text-indigo-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 text-gray-500 hover:text-brand dark:text-terminal-text-secondary dark:hover:text-brand hover:bg-gray-100 dark:hover:bg-terminal-elevated rounded-lg transition-colors"
                 title="Edit skill"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -436,7 +427,7 @@ function SkillDetailView({
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md mx-4">
+          <div className="terminal-card shadow-lg p-6 max-w-md mx-4">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
               Delete Skill
             </h3>
@@ -472,7 +463,7 @@ function SkillDetailView({
             {skill.tags.map((tag) => (
               <span
                 key={tag}
-                className="px-3 py-1 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-full text-sm"
+                className="px-3 py-1 bg-brand/10 dark:bg-brand/20 text-brand-dark dark:text-brand-light rounded-full text-sm"
               >
                 {tag}
               </span>
@@ -549,7 +540,7 @@ function SkillDetailView({
           {!isEditing && contentWithoutFrontmatter.length > 500 && (
             <button
               onClick={() => setShowFullContent(!showFullContent)}
-              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+              className="text-xs text-brand dark:text-brand-light hover:underline"
             >
               {showFullContent ? 'Show less' : 'Show full content'}
             </button>
@@ -561,7 +552,7 @@ function SkillDetailView({
             <textarea
               value={editedContent}
               onChange={(e) => setEditedContent(e.target.value)}
-              className="w-full h-96 p-4 font-mono text-sm bg-gray-50 dark:bg-gray-700/50 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-y"
+              className="terminal-input h-96 resize-y"
               placeholder="Enter skill content in markdown..."
             />
             <div className="flex justify-end gap-3">
@@ -574,7 +565,7 @@ function SkillDetailView({
               <button
                 onClick={handleSave}
                 disabled={updateMutation.isPending}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                className="terminal-btn-primary flex items-center gap-2"
               >
                 {updateMutation.isPending ? (
                   <>
@@ -661,7 +652,7 @@ export default function Skills() {
   if (skillsLoading || statsLoading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600" />
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand" />
       </div>
     );
   }
@@ -691,7 +682,6 @@ export default function Skills() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             }
-            color="indigo"
           />
           <StatCard
             label="Total Usage"
@@ -701,7 +691,6 @@ export default function Skills() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
               </svg>
             }
-            color="blue"
           />
           <StatCard
             label="Avg Success Rate"
@@ -711,7 +700,6 @@ export default function Skills() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             }
-            color="green"
           />
           <StatCard
             label="Active Skills"
@@ -722,7 +710,6 @@ export default function Skills() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
               </svg>
             }
-            color="purple"
           />
         </div>
       )}
@@ -730,24 +717,20 @@ export default function Skills() {
       {/* Analytics Dashboard */}
       {stats && stats.topSkills.length > 0 && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Top Skills by Usage
-            </h3>
+          <div className="terminal-card p-6">
+            <h3 className="terminal-header">Top Skills by Usage</h3>
             <UsageChart skills={stats.topSkills} />
           </div>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-              Recent Activity
-            </h3>
+          <div className="terminal-card p-6">
+            <h3 className="terminal-header">Recent Activity</h3>
             <RecentActivity skills={stats.recentSkills} />
           </div>
         </div>
       )}
 
       {skills.length === 0 ? (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
-          <div className="text-gray-400 mb-4">
+        <div className="terminal-card p-8 text-center">
+          <div className="text-gray-400 dark:text-terminal-text-muted mb-4">
             <svg
               className="h-12 w-12 mx-auto"
               fill="none"
@@ -762,10 +745,10 @@ export default function Skills() {
               />
             </svg>
           </div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-terminal-text mb-2">
             No Skills Yet
           </h3>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-gray-500 dark:text-terminal-text-secondary">
             Skills are learned automatically as you work. Complete tasks to
             start building your skill library.
           </p>
@@ -788,14 +771,14 @@ export default function Skills() {
                 placeholder="Search skills..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                className="terminal-input pl-10"
               />
             </div>
             {allTags.length > 0 && (
               <select
                 value={tagFilter || ''}
                 onChange={(e) => setTagFilter(e.target.value || null)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500"
+                className="terminal-input"
               >
                 <option value="">All tags</option>
                 {allTags.map((tag) => (
@@ -826,7 +809,7 @@ export default function Skills() {
 
             {/* Detail view */}
             <div className="lg:col-span-2">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 sticky top-6">
+              <div className="terminal-card p-6 sticky top-6">
                 {selectedSkill ? (
                   <SkillDetailView
                     skillId={selectedSkill}

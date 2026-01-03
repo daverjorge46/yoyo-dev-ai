@@ -1,6 +1,6 @@
 # Quick Start Guide
 
-> Get started with Yoyo Dev v5.0 in 5 minutes
+> Get started with Yoyo Dev v6.2 in 5 minutes
 
 This guide walks you through your first feature using Yoyo Dev's multi-agent orchestration system.
 
@@ -28,10 +28,10 @@ yoyo --version
 
 ## First-Time Setup (5 minutes)
 
-### Step 1: Launch Dashboard
+### Step 1: Launch Yoyo Dev
 
 ```bash
-# Launch TUI + Claude + GUI (default)
+# Launch Claude Code + Browser GUI (default)
 yoyo
 
 # Or without GUI
@@ -39,18 +39,12 @@ yoyo --no-gui
 ```
 
 You should see:
-- **Left pane**: Claude Code CLI
-- **Right pane**: TUI dashboard
-- **Browser** (if GUI enabled): http://localhost:3456
-
-**Keyboard shortcuts:**
-- `Ctrl+B →` - Switch focus between panes
-- `?` - Help menu (in TUI)
-- `q` - Quit TUI
+- **Terminal**: Claude Code CLI
+- **Browser** (if GUI enabled): http://localhost:5173
 
 ### Step 2: Initialize Project Memory
 
-In Claude Code pane, run:
+In Claude Code, run:
 
 ```bash
 /init
@@ -144,8 +138,6 @@ Open the spec in your editor:
 ```bash
 # View spec
 cat .yoyo-dev/specs/$(ls -t .yoyo-dev/specs | head -1)/spec.md
-
-# Or in TUI, press 's' to focus specs panel
 ```
 
 **Review checklist:**
@@ -173,13 +165,13 @@ cat .yoyo-dev/specs/$(ls -t .yoyo-dev/specs | head -1)/spec.md
 **Phase 1: Codebase Assessment**
 - Reads spec-lite.md, tasks.md
 - Analyzes complexity (simple/medium/complex)
-- Detects if frontend work → auto-delegate
-- Checks if research needed → fires librarian (background)
+- Detects if frontend work -> auto-delegate
+- Checks if research needed -> fires librarian (background)
 
 **Phase 2A: Research (Parallel)**
 ```
 [Background Task] librarian: "Research Clerk authentication best practices"
-→ Continue to Phase 2B immediately
+-> Continue to Phase 2B immediately
 ```
 
 **Phase 2B: Implementation (Todo-Driven)**
@@ -193,18 +185,18 @@ Todos created:
 5. Add tests
 
 [in_progress] 1. Install Clerk SDK
-→ npm install @clerk/clerk-react
-→ Tests pass
-→ Mark complete
-✓ Completed
+-> npm install @clerk/clerk-react
+-> Tests pass
+-> Mark complete
+Done
 
 [in_progress] 2. Configure Clerk provider
-→ Create src/providers/AuthProvider.tsx
-→ Detect: frontend keywords (component, provider)
-→ Auto-delegate to frontend-engineer
-→ frontend-engineer implements + tests
-→ Mark complete
-✓ Completed
+-> Create src/providers/AuthProvider.tsx
+-> Detect: frontend keywords (component, provider)
+-> Auto-delegate to frontend-engineer
+-> frontend-engineer implements + tests
+-> Mark complete
+Done
 
 ... continues for remaining tasks ...
 ```
@@ -213,40 +205,40 @@ Todos created:
 
 ```
 [in_progress] 4. Protect API endpoints
-→ Attempt 1: Add middleware
-→ Test fails: "Token verification failed"
-→ Attempt 2: Fix token extraction
-→ Test fails: "Invalid signature"
-→ Attempt 3: Escalating to Oracle...
+-> Attempt 1: Add middleware
+-> Test fails: "Token verification failed"
+-> Attempt 2: Fix token extraction
+-> Test fails: "Invalid signature"
+-> Attempt 3: Escalating to Oracle...
 
 [Oracle consulted]
 Root cause: Clock skew issue
 Recommendation: Add clock skew tolerance to JWT verification
 
-→ Apply recommendation
-→ Test passes
-✓ Completed
+-> Apply recommendation
+-> Test passes
+Done
 ```
 
 **Phase 3: Verification & Completion**
 
 ```
 Running all tests...
-✓ All tests passing
+All tests passing
 
 Quality Gates:
-✓ Functionality - Works as specified
-✓ Type Safety - No TypeScript errors
-✓ Testing - 85% coverage
-✓ Accessibility - WCAG AA compliant
-✓ Performance - No bottlenecks
-✓ Security - No vulnerabilities
+- Functionality - Works as specified
+- Type Safety - No TypeScript errors
+- Testing - 85% coverage
+- Accessibility - WCAG AA compliant
+- Performance - No bottlenecks
+- Security - No vulnerabilities
 
 Git workflow:
-✓ Staged changes
-✓ Created commit: "feat: add Clerk authentication"
-✓ Pushed to origin
-✓ Created PR #123
+- Staged changes
+- Created commit: "feat: add Clerk authentication"
+- Pushed to origin
+- Created PR #123
 
 Recap created: .yoyo-dev/recaps/2025-12-29-user-authentication.md
 ```
@@ -291,18 +283,13 @@ Fire research tasks that run in parallel:
 You can continue working immediately.
 Research results will be delivered as notification.
 
-→ Continue with other tasks
-→ Results ready in ~30-60 seconds
+-> Continue with other tasks
+-> Results ready in ~30-60 seconds
 ```
 
 **Retrieve results:**
 
-Results are automatically injected when needed, or you can check:
-
-```bash
-# Results appear as notification in Claude
-# Or check background task status in TUI
-```
+Results are automatically injected when needed, or you can check via the GUI dashboard.
 
 ### Strategic Guidance
 
@@ -391,7 +378,7 @@ Initialize design system for UI-heavy projects:
 ### Daily Development
 
 ```bash
-# 1. Launch dashboard
+# 1. Launch Yoyo Dev
 yoyo
 
 # 2. Create feature
@@ -446,51 +433,9 @@ yoyo
 
 ---
 
-## TUI Dashboard Guide
+## Browser GUI Dashboard
 
-### Navigation
-
-| Key | Action |
-|-----|--------|
-| `?` | Show help |
-| `/` | Command palette |
-| `t` | Focus tasks panel |
-| `s` | Focus specs panel |
-| `h` | Focus history panel |
-| `g` | Git menu |
-| `r` | Refresh |
-| `q` | Quit |
-
-### Panels
-
-**Project Overview**
-- Mission statement
-- Tech stack
-- Memory status
-
-**Active Tasks**
-- Current task list
-- Progress tracking
-- Real-time updates
-
-**Specs Browser**
-- Recent specs
-- Spec details
-- Quick navigation
-
-**Command History**
-- Recent slash commands
-- Execution status
-- Quick re-run
-
-**Error Detector**
-- Real-time error monitoring
-- Stack trace analysis
-- Quick fixes
-
-### GUI Dashboard
-
-Access at http://localhost:3456 for:
+Access at http://localhost:5173 for:
 - Visual task tracking
 - Spec browser
 - Command palette
@@ -510,7 +455,7 @@ Access at http://localhost:3456 for:
 1. **Let Yoyo-AI orchestrate** - Use `/execute-tasks` (default)
 2. **Research early** - Fire `/research` at start
 3. **Trust delegation** - Frontend work auto-delegated
-4. **Watch todos** - Track progress in TUI
+4. **Track progress** - Monitor via browser GUI
 5. **Consult Oracle** - For complex architecture decisions
 
 ### Memory System
@@ -518,7 +463,7 @@ Access at http://localhost:3456 for:
 1. **Initialize first** - Run `/init` for new projects
 2. **Store preferences** - Use `/remember` often
 3. **Clear sessions** - Use `/clear` between tasks
-4. **Check memory** - View in TUI Project Overview
+4. **Check memory** - View in GUI Project Overview
 
 ### Git Workflow
 
@@ -552,9 +497,8 @@ Access at http://localhost:3456 for:
 # Check Claude Code is running
 which claude
 
-# Restart split view
-yoyo --no-split  # TUI only
-yoyo              # Restart with Claude
+# Restart
+yoyo
 ```
 
 ### Tasks not executing
@@ -579,6 +523,6 @@ docker mcp server ls
 
 ---
 
-**Version:** 5.0.0
-**Last Updated:** 2025-12-29
+**Version:** 6.2.0
+**Last Updated:** 2026-01-03
 **Status:** Production Ready

@@ -136,8 +136,8 @@ export function MarkdownEditor({
             padding: '0 16px',
           },
           '.cm-gutters': {
-            backgroundColor: '#1e1e1e',
-            borderRight: '1px solid #333',
+            backgroundColor: '#171717', // terminal.darkGray
+            borderRight: '1px solid #3f3f46', // terminal.border
           },
         }),
       ],
@@ -178,7 +178,7 @@ export function MarkdownEditor({
   return (
     <div
       ref={editorRef}
-      className={`h-full overflow-hidden bg-[#1e1e1e] ${className}`}
+      className={`h-full overflow-hidden bg-terminal-card ${className}`}
     />
   );
 }

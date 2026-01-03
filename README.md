@@ -1,4 +1,4 @@
-# Yoyo Dev v5.0 - AI-Assisted Development Framework
+# Yoyo Dev v6.2 - AI-Assisted Development Framework
 
 **"Powerful when you need it. Invisible when you don't."**
 
@@ -6,7 +6,7 @@ Multi-agent orchestration system for AI-assisted software development with Claud
 
 ---
 
-## 🎯 What's New in v5.0
+## What's New in v6.x
 
 ### Multi-Agent Orchestration System
 
@@ -25,41 +25,34 @@ Multi-agent orchestration system for AI-assisted software development with Claud
 - **Document Writer** - Technical documentation specialist
 - **Implementer** - TDD-based code implementation
 
-**New Commands**
+**Key Commands**
 - `/research <topic>` - Background research with librarian agent
 - `/consult-oracle <question>` - Strategic guidance from Oracle
-- `/execute-tasks --orchestrator yoyo-ai` - Multi-agent task execution (default)
+- `/execute-tasks` - Multi-agent task execution (default)
 
 **Intelligent Features**
-- 🤖 Auto-detect frontend work → delegate to frontend-engineer
-- 🔄 Parallel research while you continue working
-- 📊 Todo-driven workflow with immediate completion tracking
-- 🚨 3-failure escalation to Oracle for debugging
-- ⚡ 60% faster feature creation with parallel execution
+- Auto-detect frontend work and delegate to frontend-engineer
+- Parallel research while you continue working
+- Todo-driven workflow with immediate completion tracking
+- 3-failure escalation to Oracle for debugging
+- 60% faster feature creation with parallel execution
 
-### Previous Features (v3.1-v4.0)
+### Browser GUI Dashboard
 
-**Split View Mode**
-- Integrated Claude Code CLI + TUI dashboard
-- 40/60 split ratio (configurable)
-- Independent pane operation
-
-**Performance & Design**
-- 97% faster startup (9ms vs 300ms)
-- WCAG AA accessibility compliance
-- Professional design system
-- Smart caching
+- Real-time dashboard at `http://localhost:5173`
+- WebSocket updates for live progress tracking
+- Spec and task management interface
+- Launch with `yoyo` or `yoyo-gui` standalone
 
 ---
 
-## 📦 Installation
+## Installation
 
 ### Prerequisites
 
 - **Docker Desktop 4.32+** with MCP Toolkit enabled
 - **Claude Code CLI** installed and configured
 - **Node.js 22 LTS**
-- **Python 3.10+**
 
 ### Quick Install
 
@@ -87,36 +80,23 @@ docker mcp server ls
 # Launch Yoyo Dev
 yoyo
 
-# Should show TUI + Claude + GUI
+# Should launch Claude Code + Browser GUI
 ```
 
-📖 **Full Installation Guide:** [docs/INSTALLATION.md](docs/INSTALLATION.md)
+**Full Installation Guide:** [docs/INSTALLATION.md](docs/INSTALLATION.md)
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
-### Launch Dashboard
-
-**v5.0 Default Mode** (TUI + Claude + GUI):
+### Launch Yoyo Dev
 
 ```bash
-# Launch all three interfaces
+# Launch Claude Code + Browser GUI
 yoyo
 
-# Left pane: Claude Code CLI
-# Right pane: TUI dashboard
-# Browser: GUI at http://localhost:3456
-```
-
-**Other Launch Modes:**
-
-```bash
 # Without GUI
 yoyo --no-gui
-
-# TUI only (no Claude, no GUI)
-yoyo --no-split
 
 # Stop GUI server
 yoyo --stop-gui
@@ -157,14 +137,14 @@ Yoyo-AI automatically:
 
 **5. Review & Merge**
 ```
-Open PR link → Review code → Merge
+Open PR link -> Review code -> Merge
 ```
 
-📖 **Full Tutorial:** [docs/QUICK-START.md](docs/QUICK-START.md)
+**Full Tutorial:** [docs/QUICK-START.md](docs/QUICK-START.md)
 
 ---
 
-## 📚 Core Workflows
+## Core Workflows
 
 ### Product Setup
 
@@ -176,7 +156,7 @@ Open PR link → Review code → Merge
 /analyze-product
 ```
 
-### Feature Development (v5.0)
+### Feature Development
 
 ```bash
 # Create feature with Yoyo-AI orchestration (default)
@@ -196,19 +176,19 @@ Open PR link → Review code → Merge
 /execute-tasks --no-delegation
 ```
 
-### Research & Strategic Guidance (v5.0)
+### Research & Strategic Guidance
 
 ```bash
 # Background research (runs in parallel)
 /research "Convex authentication best practices"
-# → Librarian agent searches docs, GitHub, web
-# → Results delivered as notification
-# → Continue working immediately
+# -> Librarian agent searches docs, GitHub, web
+# -> Results delivered as notification
+# -> Continue working immediately
 
 # Strategic architecture guidance
 /consult-oracle "Should we use microservices or monolith for MVP?"
-# → Oracle provides: Essential | Expanded | Edge Cases
-# → Synchronous response with structured advice
+# -> Oracle provides: Essential | Expanded | Edge Cases
+# -> Synchronous response with structured advice
 ```
 
 ### Bug Fixes
@@ -216,13 +196,13 @@ Open PR link → Review code → Merge
 ```bash
 # Systematic fix with Yoyo-AI
 /create-fix "Login button returns 401 error"
-# → Explore agent finds related code (background)
-# → Oracle analyzes root cause if complex
-# → Creates TDD-based fix tasks
+# -> Explore agent finds related code (background)
+# -> Oracle analyzes root cause if complex
+# -> Creates TDD-based fix tasks
 
 # Execute fix
 /execute-tasks
-# → Auto-escalates to Oracle after 3 failures
+# -> Auto-escalates to Oracle after 3 failures
 ```
 
 ### Design System
@@ -258,7 +238,7 @@ Open PR link → Review code → Merge
 
 ---
 
-## 🤖 Multi-Agent System (v5.0)
+## Multi-Agent System
 
 ### Yoyo-AI Orchestrator
 
@@ -270,8 +250,8 @@ Open PR link → Review code → Merge
 
 **Phase 1: Codebase Assessment**
 - Analyzes complexity (simple/medium/complex)
-- Detects frontend keywords → auto-delegate
-- Checks for research needs → background librarian
+- Detects frontend keywords and auto-delegates
+- Checks for research needs and fires background librarian
 
 **Phase 2A: Research & Exploration (Parallel)**
 - Fires background tasks for research
@@ -306,33 +286,33 @@ Open PR link → Review code → Merge
 **Automatic Frontend Delegation:**
 ```
 Task: "Update button styling to match design system"
-→ Yoyo-AI detects: "style", "button" keywords
-→ Auto-delegates to frontend-engineer
-→ Frontend-engineer: implements + tests + a11y check
+-> Yoyo-AI detects: "style", "button" keywords
+-> Auto-delegates to frontend-engineer
+-> Frontend-engineer: implements + tests + a11y check
 ```
 
 **Background Research:**
 ```
 Task: "Add Convex authentication"
-→ Yoyo-AI fires: background_task(agent="librarian", prompt="Research Convex auth...")
-→ Continue working on other subtasks
-→ Retrieve results when needed
+-> Yoyo-AI fires: background_task(agent="librarian", prompt="Research Convex auth...")
+-> Continue working on other subtasks
+-> Retrieve results when needed
 ```
 
 **Oracle Escalation:**
 ```
-Attempt 1: Test fails → Retry with improved approach
-Attempt 2: Test fails → Try completely different approach
-Attempt 3: Test fails → call_agent(agent="oracle", prompt="Debug failure...")
-→ Oracle analyzes root cause
-→ Apply Oracle's recommendation
+Attempt 1: Test fails -> Retry with improved approach
+Attempt 2: Test fails -> Try completely different approach
+Attempt 3: Test fails -> call_agent(agent="oracle", prompt="Debug failure...")
+-> Oracle analyzes root cause
+-> Apply Oracle's recommendation
 ```
 
-📖 **Full Documentation:** See [Multi-Agent System Guide](docs/features/multi-agent-system.md)
+**Full Documentation:** See [Multi-Agent System Guide](docs/features/multi-agent-system.md)
 
 ---
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 your-project/
@@ -349,7 +329,7 @@ your-project/
 │   ├── recaps/                 # Development recaps
 │   ├── patterns/               # Saved patterns library
 │   ├── instructions/core/      # AI workflow instructions
-│   │   ├── yoyo-ai-orchestration.md  # NEW v5.0
+│   │   ├── yoyo-ai-orchestration.md
 │   │   ├── execute-tasks.md
 │   │   ├── create-new.md
 │   │   └── ...
@@ -358,16 +338,16 @@ your-project/
 │
 ├── .claude/                    # Claude Code integration
 │   ├── commands/               # Slash commands
-│   │   ├── research.md         # NEW v5.0
-│   │   ├── consult-oracle.md   # NEW v5.0
+│   │   ├── research.md
+│   │   ├── consult-oracle.md
 │   │   └── ...
 │   └── agents/                 # Agent configurations
-│       ├── yoyo-ai.md          # NEW v5.0
-│       ├── oracle.md           # NEW v5.0
-│       ├── librarian.md        # NEW v5.0
-│       ├── explore.md          # NEW v5.0
-│       ├── frontend-engineer.md # NEW v5.0
-│       └── document-writer.md  # NEW v5.0
+│       ├── yoyo-ai.md
+│       ├── oracle.md
+│       ├── librarian.md
+│       ├── explore.md
+│       ├── frontend-engineer.md
+│       └── document-writer.md
 │
 └── .mcp.json                   # MCP server configuration
 
@@ -376,14 +356,14 @@ your-project/
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### Yoyo-AI Orchestrator
 
 Edit `.yoyo-dev/config.yml`:
 
 ```yaml
-# v5.0 Multi-Agent Configuration
+# Multi-Agent Configuration
 agents:
   default_model: anthropic/claude-opus-4-5
 
@@ -433,18 +413,6 @@ workflows:
       cooldown: 3000           # milliseconds
 ```
 
-### Split View
-
-```yaml
-split_view:
-  enabled: true
-  ratio: 0.4
-  active_pane: claude
-  border_style:
-    active: bright_cyan
-    inactive: dim_white
-```
-
 ### Parallel Execution
 
 ```yaml
@@ -455,11 +423,11 @@ parallel_execution:
   ask_confirmation: true
 ```
 
-📖 **Full Config Reference:** See [Configuration Guide](docs/configuration.md)
+**Full Config Reference:** See [Configuration Guide](docs/configuration.md)
 
 ---
 
-## 🎯 Quick Reference
+## Quick Reference
 
 ### Essential Commands
 
@@ -468,13 +436,13 @@ parallel_execution:
 /plan-product                      # New product mission & roadmap
 /analyze-product                   # Existing product setup
 
-# Development (v5.0 with Yoyo-AI)
+# Development
 /create-new "feature"              # Feature creation
 /create-fix "problem"              # Bug fix workflow
 /execute-tasks                     # Multi-agent execution (default)
 /execute-tasks --orchestrator legacy  # v4.0 workflow
 
-# Research & Guidance (v5.0)
+# Research & Guidance
 /research "topic"                  # Background research
 /consult-oracle "question"         # Strategic guidance
 
@@ -492,55 +460,29 @@ parallel_execution:
 /yoyo-review --devil "scope"       # Devil's advocate review
 /improve-skills                    # Optimize agent skills
 
-# TUI
-yoyo                              # Launch split view
+# Launch
+yoyo                              # Launch Claude Code + GUI
 yoyo --no-gui                     # Without browser GUI
-yoyo --no-split                   # TUI only
-```
-
-### Keyboard Shortcuts (TUI)
-
-```
-?     Help              r     Refresh
-/     Commands          g     Git menu
-t     Focus tasks       s     Focus specs
-h     Focus history     q     Quit
-```
-
-### Split View Shortcuts
-
-```
-Ctrl+B →    Switch focus
-Ctrl+B <    Resize left larger
-Ctrl+B >    Resize right larger
 ```
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ```bash
-# Run all tests
-pytest tests/ -v
+# Run TypeScript tests
+npm test
 
-# Test categories
-pytest tests/widgets/ -v       # UI components (209 tests)
-pytest tests/screens/ -v       # Screens (82 tests)
-pytest tests/services/ -v      # Services (80 tests)
-pytest tests/integration/ -v   # Integration tests
+# Run with coverage
+npm run test:coverage
 
-# With coverage
-pytest tests/ --cov=lib/yoyo_tui_v3 --cov-report=html
-
-# Test TypeScript (memory, skills, agents)
-cd src && npm test
+# Integration tests
+npm run test:integration
 ```
-
-**Test Results:** 414+ tests passing (94.5% pass rate)
 
 ---
 
-## 🔄 Updating
+## Updating
 
 ```bash
 # Update to latest version
@@ -558,7 +500,7 @@ bash .yoyo-dev/setup/yoyo-update.sh --skip-mcp-check
 
 ---
 
-## 📖 Documentation
+## Documentation
 
 ### Getting Started
 
@@ -570,7 +512,7 @@ bash .yoyo-dev/setup/yoyo-update.sh --skip-mcp-check
 ### Core Features
 
 - **[Command Reference](docs/commands.md)** - Complete slash command reference
-- **[Multi-Agent Orchestration](docs/multi-agent-orchestration.md)** - v5.0 agent system
+- **[Multi-Agent Orchestration](docs/multi-agent-orchestration.md)** - Agent system
 - **[GUI Dashboard](docs/gui-dashboard.md)** - Browser-based dashboard
 - **[Memory System](docs/memory-system.md)** - Persistent context management
 
@@ -589,15 +531,15 @@ bash .yoyo-dev/setup/yoyo-update.sh --skip-mcp-check
 
 ---
 
-## 🏆 Best Practices
+## Best Practices
 
-### v5.0 Workflow
+### Workflow
 
 1. **Let Yoyo-AI orchestrate** - Use `/execute-tasks` (default orchestrator)
 2. **Research early** - Fire `/research` at start, results ready when needed
 3. **Consult Oracle** - Use `/consult-oracle` for architecture decisions
 4. **Trust delegation** - Frontend work auto-delegated to specialist
-5. **Watch todos** - Track progress in real-time via TUI
+5. **Track progress** - Monitor todos via browser GUI
 
 ### Code Quality
 
@@ -609,29 +551,14 @@ bash .yoyo-dev/setup/yoyo-update.sh --skip-mcp-check
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Quick Fixes
-
-**TUI won't launch:**
-```bash
-pip3 install --user textual watchdog pyyaml
-python3 -c "from yoyo_tui_v3.app import create_app; create_app()"
-```
 
 **Global command not found:**
 ```bash
 bash .yoyo-dev/setup/install-global-command.sh
 echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
-```
-
-**Split view issues:**
-```bash
-# Check Claude installed
-which claude
-
-# Use TUI-only mode
-yoyo --no-split
 ```
 
 **MCP servers not working:**
@@ -646,22 +573,32 @@ docker mcp server ls
 docker mcp client connect claude-code
 ```
 
-📖 **Full Troubleshooting:** See [Troubleshooting Guide](docs/installation/troubleshooting.md)
+**GUI not starting:**
+```bash
+# Check if port is in use
+lsof -i :5173
+
+# Kill orphaned process
+pkill -f "vite"
+
+# Restart
+yoyo
+```
+
+**Full Troubleshooting:** See [Troubleshooting Guide](docs/installation/troubleshooting.md)
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 ```bash
 # Clone & setup
 git clone https://github.com/daverjorge46/yoyo-dev-ai.git
 cd yoyo-dev-ai
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
+npm install
 
 # Run tests
-pytest tests/ -v
+npm test
 
 # Submit PR
 # 1. Create feature branch
@@ -672,22 +609,22 @@ pytest tests/ -v
 
 ---
 
-## 📝 License
+## License
 
 MIT License - See LICENSE file for details
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 Built with:
 - [Claude Code](https://claude.com/claude-code) - AI-assisted development
-- [Textual](https://textual.textualize.io/) - TUI framework
-- [Rich](https://rich.readthedocs.io/) - Terminal formatting
+- [React](https://react.dev/) - Browser GUI framework
+- [Vite](https://vitejs.dev/) - Build tooling
 
 ---
 
-## 📬 Support
+## Support
 
 - **Issues**: https://github.com/daverjorge46/yoyo-dev-ai/issues
 - **Discussions**: https://github.com/daverjorge46/yoyo-dev-ai/discussions

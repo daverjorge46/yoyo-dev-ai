@@ -51,8 +51,6 @@ yoyo-dev/                         # Framework root (this repository)
 │   ├── memory/                   # Memory system
 │   └── ...
 ├── gui/                          # Browser GUI (React + Vite)
-├── lib/                          # Python libraries
-│   └── yoyo_tui_v3/              # TUI dashboard (Textual)
 └── tests/                        # Test suites
 ```
 
@@ -63,7 +61,6 @@ yoyo-dev/                         # Framework root (this repository)
 | CLI Launcher | Bash | `yoyo`, `yoyo-gui`, `yoyo-update` commands |
 | Orchestration | TypeScript | Intent classification, agent routing |
 | Browser GUI | React + Vite | Dashboard on port 5173 |
-| TUI Dashboard | Python/Textual | Terminal UI (legacy, preserved) |
 | Memory System | SQLite + JSON | Persistent context storage |
 
 ## Global Orchestration Mode
@@ -158,11 +155,6 @@ Use Task tool with appropriate `subagent_type` parameter.
 - Zod for runtime validation
 - ESM modules
 
-**Python (lib/):**
-- Python 3.11+
-- Type hints required
-- Textual for TUI
-
 **Shell Scripts (setup/):**
 - Bash 4.0+
 - Use `ui-library.sh` for consistent output
@@ -173,9 +165,6 @@ Use Task tool with appropriate `subagent_type` parameter.
 ```bash
 # TypeScript tests
 npm test
-
-# Python TUI tests
-pytest tests/ -v
 
 # Shell script syntax
 bash -n setup/*.sh

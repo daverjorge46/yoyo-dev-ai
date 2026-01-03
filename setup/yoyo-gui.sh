@@ -111,9 +111,8 @@ show_help() {
     echo -e "  ${MAGENTA}*${RESET} REST API for integrations"
     echo ""
     echo -e "${BOLD}Related Commands:${RESET}"
-    echo -e "  ${GREEN}yoyo${RESET}             Launch TUI + Claude + GUI (dev mode on port 5173)"
-    echo -e "  ${GREEN}yoyo --no-gui${RESET}    Launch TUI + Claude without GUI"
-    echo -e "  ${GREEN}yoyo --no-split${RESET}  Launch TUI only"
+    echo -e "  ${GREEN}yoyo${RESET}             Launch Claude Code + GUI (dev mode on port 5173)"
+    echo -e "  ${GREEN}yoyo --no-gui${RESET}    Launch Claude Code without GUI"
     echo -e "  ${GREEN}yoyo-update${RESET}      Update Yoyo Dev installation"
     echo ""
 }

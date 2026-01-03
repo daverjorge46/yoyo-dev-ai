@@ -19,7 +19,7 @@ Complete reference for all Yoyo Dev commands.
 8. [Code Review](#code-review)
 9. [Memory System](#memory-system)
 10. [Advanced](#advanced)
-11. [TUI Commands](#tui-commands)
+11. [Launch Commands](#launch-commands)
 
 ---
 
@@ -563,37 +563,22 @@ Complete reference for all Yoyo Dev commands.
 
 ---
 
-## TUI Commands
+## Launch Commands
 
-**Launch Commands:**
+**Terminal Commands:**
 ```bash
-yoyo                    # Full experience (TUI + Claude + GUI)
-yoyo --no-gui           # TUI + Claude (no browser GUI)
-yoyo --no-split         # TUI only
-yoyo --split-ratio 0.5  # Custom split (50/50)
-yoyo --focus tui        # Start with TUI focused
+yoyo                    # Launch Claude Code + Browser GUI
+yoyo --no-gui           # Claude Code only (no browser GUI)
 yoyo --stop-gui         # Stop background GUI server
 yoyo-gui                # Launch browser GUI standalone
 ```
 
-**Keyboard Shortcuts (TUI):**
-```
-?     Help and shortcuts
-/     Command search
-r     Refresh all panels
-g     Git menu
-t     Focus active work panel
-s     Focus specs/commands panel
-h     Focus history panel
-q     Quit TUI
-```
-
-**Split View Shortcuts:**
-```
-Ctrl+B →    Switch focus between panes
-Ctrl+B <    Make left pane larger
-Ctrl+B >    Make right pane larger
-```
+**Browser GUI:**
+Access at http://localhost:5173 for:
+- Visual task tracking
+- Spec browser
+- Command palette
+- Real-time updates via WebSocket
 
 ---
 
@@ -663,6 +648,6 @@ Commands follow standard exit codes:
 
 ---
 
-**Version:** 5.0.0
-**Last Updated:** 2025-12-29
+**Version:** 6.2.0
+**Last Updated:** 2026-01-03
 **Full Docs:** [README.md](../README.md) | [CLAUDE.md](../CLAUDE.md)

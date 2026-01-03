@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Yoyo Dev Project Installation Script v2
-# Beautiful, intuitive installation with TUI v4 support
+# Beautiful, intuitive installation with Claude Code integration
 
 set -e  # Exit on error
 
