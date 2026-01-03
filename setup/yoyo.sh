@@ -254,6 +254,80 @@ launch_ralph_mode() {
 }
 
 # ============================================================================
+# Project Summary
+# ============================================================================
+
+show_project_summary() {
+    # Only show summary if .yoyo-dev exists
+    if [ ! -d "./.yoyo-dev" ]; then
+        return
+    fi
+
+    local specs_count=0
+    local fixes_count=0
+    local active_spec=""
+    local active_spec_tasks=""
+    local task_completed=0
+    local task_total=0
+
+    # Count specs
+    if [ -d ".yoyo-dev/specs" ]; then
+        specs_count=$(find .yoyo-dev/specs -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l)
+
+        # Get most recent (active) spec
+        local latest_spec_dir
+        latest_spec_dir=$(ls -1d .yoyo-dev/specs/*/ 2>/dev/null | sort -r | head -1)
+        if [ -n "$latest_spec_dir" ]; then
+            active_spec=$(basename "$latest_spec_dir" | sed 's/^[0-9]\{4\}-[0-9]\{2\}-[0-9]\{2\}-//')
+
+            # Count tasks in active spec
+            if [ -f "${latest_spec_dir}tasks.md" ]; then
+                task_total=$(grep -cE '^\s*-\s*\[[x ]\]' "${latest_spec_dir}tasks.md" 2>/dev/null || echo 0)
+                task_completed=$(grep -cE '^\s*-\s*\[x\]' "${latest_spec_dir}tasks.md" 2>/dev/null || echo 0)
+            fi
+        fi
+    fi
+
+    # Count fixes
+    if [ -d ".yoyo-dev/fixes" ]; then
+        fixes_count=$(find .yoyo-dev/fixes -maxdepth 1 -mindepth 1 -type d 2>/dev/null | wc -l)
+    fi
+
+    # Display summary box
+    echo -e "  ${UI_ACCENT}${BOX_TL}${BOX_H}${BOX_H} Project Status ${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${BOX_H}${UI_RESET}"
+    echo ""
+
+    # Show specs count with icon
+    if [ "$specs_count" -gt 0 ]; then
+        echo -e "  ${UI_INFO}📋${UI_RESET} Specs: ${UI_SUCCESS}${specs_count}${UI_RESET}"
+    else
+        echo -e "  ${UI_INFO}📋${UI_RESET} Specs: ${UI_DIM}none${UI_RESET}"
+    fi
+
+    # Show active spec with task progress
+    if [ -n "$active_spec" ]; then
+        echo -e "  ${UI_INFO}🎯${UI_RESET} Active: ${UI_PRIMARY}${active_spec}${UI_RESET}"
+        if [ "$task_total" -gt 0 ]; then
+            local percent=$((task_completed * 100 / task_total))
+            local progress_color="${UI_WARNING}"
+            if [ "$percent" -ge 80 ]; then
+                progress_color="${UI_SUCCESS}"
+            elif [ "$percent" -ge 50 ]; then
+                progress_color="${UI_INFO}"
+            fi
+            echo -e "  ${UI_INFO}📝${UI_RESET} Tasks: ${progress_color}${task_completed}/${task_total}${UI_RESET} ${UI_DIM}(${percent}%)${UI_RESET}"
+        fi
+    fi
+
+    # Show fixes count
+    if [ "$fixes_count" -gt 0 ]; then
+        echo -e "  ${UI_INFO}🔧${UI_RESET} Fixes: ${UI_WARNING}${fixes_count}${UI_RESET}"
+    fi
+
+    echo ""
+}
+
+# ============================================================================
 # Claude Code Native Launch
 # ============================================================================
 
@@ -313,12 +387,11 @@ launch_claude_code() {
         exit 1
     fi
 
-    # Show launch banner
-    echo ""
-    echo -e "${UI_PRIMARY}╭──────────────────────────────────────────────────────────────────╮${UI_RESET}"
-    echo -e "${UI_PRIMARY}│${UI_RESET}                      ${UI_SUCCESS}YOYO DEV v${VERSION}${UI_RESET}                          ${UI_PRIMARY}│${UI_RESET}"
-    echo -e "${UI_PRIMARY}╰──────────────────────────────────────────────────────────────────╯${UI_RESET}"
-    echo ""
+    # Show ASCII art banner
+    ui_banner "$VERSION"
+
+    # Show project summary
+    show_project_summary
 
     echo -e "  ${UI_DIM}Project:${UI_RESET}  $(basename "$USER_PROJECT_DIR")"
     echo -e "  ${UI_DIM}Mode:${UI_RESET}     Claude Code Native"

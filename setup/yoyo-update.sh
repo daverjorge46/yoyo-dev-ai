@@ -58,6 +58,7 @@ OVERWRITE_STANDARDS=true
 OVERWRITE_COMMANDS=true
 OVERWRITE_AGENTS=true
 OVERWRITE_HOOKS=true
+REGENERATE_CLAUDE_MD=false
 VERBOSE=false
 SKIP_MCP_CHECK=false
 
@@ -104,6 +105,10 @@ while [[ $# -gt 0 ]]; do
             SKIP_MCP_CHECK=true
             shift
             ;;
+        --regenerate-claude)
+            REGENERATE_CLAUDE_MD=true
+            shift
+            ;;
         -v|--verbose)
             VERBOSE=true
             shift
@@ -128,6 +133,7 @@ Options:
   ${UI_PRIMARY}--no-overwrite-hooks${UI_RESET}           Keep existing orchestration hooks
   ${UI_PRIMARY}--no-overwrite${UI_RESET}                 Keep all existing framework files
   ${UI_PRIMARY}--skip-mcp-check${UI_RESET}               Skip MCP server verification
+  ${UI_PRIMARY}--regenerate-claude${UI_RESET}            Regenerate project CLAUDE.md from template
   ${UI_PRIMARY}-v, --verbose${UI_RESET}                  Show detailed update information
   ${UI_PRIMARY}-h, --help${UI_RESET}                     Show this help message
 
@@ -268,7 +274,11 @@ else
 fi
 
 update_items+=("Config → Merge with new options")
-update_items+=("User Data → ${UI_BOLD}Protected${UI_RESET} (specs, fixes, recaps)")
+update_items+=("User Data → ${UI_BOLD}Protected${UI_RESET} (specs, fixes, recaps, CLAUDE.md)")
+
+if [ "$REGENERATE_CLAUDE_MD" = true ]; then
+    update_items+=("CLAUDE.md → Regenerate from template")
+fi
 
 if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
     update_items+=("Memory Migration → .yoyo-ai/ → .yoyo-dev/memory/")
@@ -336,7 +346,7 @@ track_rsync_changes() {
     CHANGED_FILES+=("$dest ($count files)")
 }
 
-TOTAL_STEPS=11
+TOTAL_STEPS=12
 CURRENT_STEP=0
 
 # Get base installation path
@@ -536,7 +546,54 @@ else
     echo ""
 fi
 
-# Step 8: Merge config
+# Step 8: Regenerate CLAUDE.md (optional, only if --regenerate-claude flag set)
+if [ "$REGENERATE_CLAUDE_MD" = true ]; then
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Regenerating project CLAUDE.md..."
+
+    TEMPLATE_FILE="$BASE_YOYO_DEV/setup/templates/PROJECT-CLAUDE.md"
+    OUTPUT_FILE="./CLAUDE.md"
+
+    if [ -f "$TEMPLATE_FILE" ]; then
+        # Backup existing CLAUDE.md if present
+        if [ -f "$OUTPUT_FILE" ]; then
+            cp "$OUTPUT_FILE" "${OUTPUT_FILE}.backup"
+            show_progress "Existing CLAUDE.md backed up to CLAUDE.md.backup"
+            track_file_change "CLAUDE.md.backup" "created"
+        fi
+
+        # Read tech stack from config.yml if available
+        TECH_STACK_FRAMEWORK=$(grep 'framework:' .yoyo-dev/config.yml 2>/dev/null | head -1 | cut -d: -f2 | tr -d ' "' || echo "not specified")
+        TECH_STACK_DATABASE=$(grep 'database:' .yoyo-dev/config.yml 2>/dev/null | head -1 | cut -d: -f2 | tr -d ' "' || echo "none")
+        TECH_STACK_STYLING=$(grep 'styling:' .yoyo-dev/config.yml 2>/dev/null | head -1 | cut -d: -f2 | tr -d ' "' || echo "not specified")
+
+        # Generate CLAUDE.md from template with variable substitution
+        show_progress "Applying template with project settings"
+        sed -e "s/{{VERSION}}/$VERSION/g" \
+            -e "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
+            -e "s/{{TECH_STACK_FRAMEWORK}}/${TECH_STACK_FRAMEWORK:-not specified}/g" \
+            -e "s/{{TECH_STACK_DATABASE}}/${TECH_STACK_DATABASE:-none}/g" \
+            -e "s/{{TECH_STACK_STYLING}}/${TECH_STACK_STYLING:-not specified}/g" \
+            "$TEMPLATE_FILE" > "$OUTPUT_FILE"
+
+        track_file_change "CLAUDE.md"
+        ui_success "Project CLAUDE.md regenerated"
+    else
+        ui_warning "Template not found at $TEMPLATE_FILE"
+    fi
+    echo ""
+else
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "CLAUDE.md check..."
+    if [ -f "./CLAUDE.md" ]; then
+        show_progress "CLAUDE.md exists and is protected"
+    else
+        show_progress "No CLAUDE.md found (use --regenerate-claude to create)"
+    fi
+    echo ""
+fi
+
+# Step 9: Merge config
 ((CURRENT_STEP++))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Merging configuration..."
 track_file_change ".yoyo-dev/config.yml"

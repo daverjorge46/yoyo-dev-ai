@@ -35,6 +35,7 @@ CLAUDE_CODE=false
 CURSOR=false
 PROJECT_TYPE=""
 AUTO_INSTALL_MCP=true
+GENERATE_CLAUDE_MD=true
 INTERACTIVE=true
 
 # Tech Stack Configuration
@@ -76,6 +77,10 @@ while [[ $# -gt 0 ]]; do
             AUTO_INSTALL_MCP=false
             shift
             ;;
+        --no-claude-md)
+            GENERATE_CLAUDE_MD=false
+            shift
+            ;;
         --non-interactive)
             INTERACTIVE=false
             shift
@@ -95,6 +100,7 @@ Options:
   ${UI_PRIMARY}--cursor${UI_RESET}                    Add Cursor support
   ${UI_PRIMARY}--project-type=TYPE${UI_RESET}         Use specific project type
   ${UI_PRIMARY}--no-auto-mcp${UI_RESET}               Skip automatic MCP server installation
+  ${UI_PRIMARY}--no-claude-md${UI_RESET}              Skip project CLAUDE.md generation
   ${UI_PRIMARY}--non-interactive${UI_RESET}           Run without prompts (use defaults)
   ${UI_PRIMARY}-h, --help${UI_RESET}                  Show this help message
 
@@ -344,7 +350,7 @@ echo ""
 # Installation Steps
 # ============================================================================
 
-TOTAL_STEPS=8
+TOTAL_STEPS=9
 CURRENT_STEP=0
 
 # Step 1: Create directories
@@ -436,7 +442,45 @@ EOF
 ui_success "Configuration created"
 echo ""
 
-# Step 4: Install MCP servers
+# Step 4: Generate project CLAUDE.md
+if [ "$GENERATE_CLAUDE_MD" = true ]; then
+    ((++CURRENT_STEP))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Generating project CLAUDE.md..."
+
+    TEMPLATE_FILE="$BASE_YOYO_DEV/setup/templates/PROJECT-CLAUDE.md"
+    OUTPUT_FILE="./CLAUDE.md"
+
+    if [ "$IS_FROM_BASE" = true ] && [ -f "$TEMPLATE_FILE" ]; then
+        # Backup existing CLAUDE.md if present
+        if [ -f "$OUTPUT_FILE" ]; then
+            cp "$OUTPUT_FILE" "${OUTPUT_FILE}.backup"
+            ui_info "Existing CLAUDE.md backed up to CLAUDE.md.backup"
+        fi
+
+        # Generate CLAUDE.md from template with variable substitution
+        sed -e "s/{{VERSION}}/$VERSION/g" \
+            -e "s/{{PROJECT_NAME}}/$PROJECT_NAME/g" \
+            -e "s/{{TECH_STACK_FRAMEWORK}}/${TECH_STACK_FRAMEWORK:-not specified}/g" \
+            -e "s/{{TECH_STACK_DATABASE}}/${TECH_STACK_DATABASE:-none}/g" \
+            -e "s/{{TECH_STACK_STYLING}}/${TECH_STACK_STYLING:-not specified}/g" \
+            "$TEMPLATE_FILE" > "$OUTPUT_FILE"
+
+        ui_success "Project CLAUDE.md generated"
+    else
+        if [ "$IS_FROM_BASE" = false ]; then
+            ui_warning "CLAUDE.md generation requires base installation"
+        else
+            ui_warning "Template not found at $TEMPLATE_FILE, skipping CLAUDE.md generation"
+        fi
+    fi
+    echo ""
+else
+    ((++CURRENT_STEP))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping CLAUDE.md generation..."
+    echo ""
+fi
+
+# Step 5: Install MCP servers
 if [ "$AUTO_INSTALL_MCP" = true ]; then
     ((++CURRENT_STEP))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Installing MCP servers..."
@@ -453,7 +497,7 @@ else
     echo ""
 fi
 
-# Step 6: Create .gitignore entries
+# Step 6: Update .gitignore
 ((++CURRENT_STEP))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Updating .gitignore..."
 

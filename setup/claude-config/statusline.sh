@@ -40,23 +40,26 @@ get_spec() {
 
 # Get task progress from most recent spec
 get_tasks() {
-    local tasks_file completed total
+    local tasks_file total_items completed_items
     if [[ -d ".yoyo-dev/specs" ]]; then
         tasks_file=$(ls -1t .yoyo-dev/specs/*/tasks.md 2>/dev/null | head -1)
         if [[ -n "$tasks_file" && -f "$tasks_file" ]]; then
-            # Count main tasks (### Task N: headers)
-            total=$(grep -cE '^###\s+Task\s+[0-9]+:' "$tasks_file" 2>/dev/null) || total=0
+            # Count checkbox items (the most reliable indicator)
+            # Total items: count all checkbox patterns - [ ] or - [x]
+            total_items=$(grep -cE '^\s*-\s*\[[x ]\]' "$tasks_file" 2>/dev/null) || total_items=0
 
-            # Count completed tasks (checked boxes in acceptance criteria)
-            completed=$(grep -cE '^\s*-\s*\[x\]' "$tasks_file" 2>/dev/null) || completed=0
+            # Completed items: count checked boxes [x]
+            completed_items=$(grep -cE '^\s*-\s*\[x\]' "$tasks_file" 2>/dev/null) || completed_items=0
 
-            # If no completed checkboxes, check for completion markers
-            if [[ "$completed" == "0" ]]; then
-                # Look for tasks marked with checkmarks or (completed)
-                completed=$(grep -cE '^###\s+Task.*✓|^###\s+Task.*\(completed\)' "$tasks_file" 2>/dev/null) || completed=0
+            # If no checkboxes found, try counting main task headers
+            if [[ "$total_items" == "0" ]]; then
+                # Format 1: ### N. Title or ### Task N:
+                total_items=$(grep -cE '^###\s+[0-9]+\.|^###\s+Task\s+[0-9]+' "$tasks_file" 2>/dev/null) || total_items=0
+                # Look for completion markers in headers
+                completed_items=$(grep -cE '^###.*✓|^###.*\(completed\)|^###.*\[DONE\]' "$tasks_file" 2>/dev/null) || completed_items=0
             fi
 
-            echo "${completed}/${total}"
+            echo "${completed_items}/${total_items}"
             return
         fi
     fi
@@ -66,19 +69,47 @@ get_tasks() {
 # Get MCP server count
 get_mcp() {
     local count
+
+    # Method 1: Try Docker MCP (requires Docker Desktop with MCP Toolkit)
     if command -v docker &>/dev/null; then
-        # Count lines that look like server entries (start with lowercase letter)
-        count=$(docker mcp server ls 2>/dev/null | grep -cE '^[a-z]' || echo "0")
-        echo "$count"
-    else
-        echo "0"
+        # Check if docker is running first
+        if docker info &>/dev/null; then
+            # Try to get MCP server list (docker mcp requires MCP Toolkit enabled)
+            count=$(docker mcp server ls 2>/dev/null | grep -cE '^[a-z]' 2>/dev/null || echo "")
+            if [[ -n "$count" && "$count" -gt 0 ]]; then
+                echo "$count"
+                return
+            fi
+        fi
     fi
+
+    # Method 2: Check .mcp.json for configured servers
+    if [[ -f ".mcp.json" ]]; then
+        count=$(grep -cE '"[^"]+"\s*:\s*\{' .mcp.json 2>/dev/null || echo "0")
+        # Subtract 1 for the outer mcpServers object if present
+        if grep -qE '"mcpServers"' .mcp.json 2>/dev/null; then
+            count=$((count > 0 ? count - 1 : 0))
+        fi
+        echo "$count"
+        return
+    fi
+
+    # Method 3: Check claude_desktop_config.json
+    local claude_config="$HOME/.config/claude/claude_desktop_config.json"
+    if [[ -f "$claude_config" ]]; then
+        count=$(grep -cE '"[^"]+"\s*:\s*\{.*"command"' "$claude_config" 2>/dev/null || echo "0")
+        echo "$count"
+        return
+    fi
+
+    echo "0"
 }
 
 # Get memory block count
 get_memory() {
     local count db_path
-    db_path=".yoyo-ai/memory/memory.db"
+    # Correct path: .yoyo-dev/memory/memory.db (not .yoyo-ai)
+    db_path=".yoyo-dev/memory/memory.db"
     if [[ -f "$db_path" ]] && command -v sqlite3 &>/dev/null; then
         count=$(sqlite3 "$db_path" "SELECT COUNT(*) FROM memory_blocks" 2>/dev/null || echo "0")
         echo "$count"
