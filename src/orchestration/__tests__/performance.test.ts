@@ -1,6 +1,6 @@
 /**
  * Performance Tests for Global Orchestration Mode
- * @version 6.1.0
+ * @version 6.2.0
  * @description Performance benchmarks for intent classification (<10ms target)
  */
 

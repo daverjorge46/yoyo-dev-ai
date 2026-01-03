@@ -1,6 +1,6 @@
 /**
  * Tests for Orchestration Hook Entry Point
- * @version 6.1.0
+ * @version 6.2.0
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';

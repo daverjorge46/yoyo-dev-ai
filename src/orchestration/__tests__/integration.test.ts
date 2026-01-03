@@ -1,6 +1,6 @@
 /**
  * Integration Tests for Global Orchestration Mode
- * @version 6.1.0
+ * @version 6.2.0
  * @description End-to-end tests for the orchestration system components
  */
 

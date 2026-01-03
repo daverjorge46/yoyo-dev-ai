@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Orchestration Hook Entry Point
- * @version 6.1.0
+ * @version 6.2.0
  * @description Claude Code UserPromptSubmit hook for intent classification and routing
  *
  * This script runs before Claude processes user input:

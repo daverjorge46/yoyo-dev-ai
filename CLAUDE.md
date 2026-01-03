@@ -209,7 +209,7 @@ bash -n setup/*.sh
 ### Main Config (`.yoyo-dev/config.yml`)
 
 ```yaml
-yoyo_dev_version: "6.1.0"
+yoyo_dev_version: "6.2.0"
 
 orchestration:
   enabled: true

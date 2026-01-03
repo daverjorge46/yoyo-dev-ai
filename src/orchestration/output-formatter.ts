@@ -1,6 +1,6 @@
 /**
  * Output Formatter for Global Orchestration Mode
- * @version 6.1.0
+ * @version 6.2.0
  * @description Formats agent output with prefixes for visibility
  */
 

@@ -19,7 +19,7 @@ readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 # Version
-readonly VERSION="6.0.0"
+readonly VERSION="6.2.0"
 
 echo ""
 echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════╗${RESET}"

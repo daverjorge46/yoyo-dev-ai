@@ -1,6 +1,6 @@
 /**
  * Global Orchestration Mode
- * @version 6.1.0
+ * @version 6.2.0
  * @module orchestration
  * @description Yoyo Dev global orchestration system for automatic agent delegation
  */

@@ -1,6 +1,6 @@
 /**
  * Global Orchestration Mode Types
- * @version 6.1.0
+ * @version 6.2.0
  * @description Type definitions for the Yoyo Dev global orchestration system
  */
 

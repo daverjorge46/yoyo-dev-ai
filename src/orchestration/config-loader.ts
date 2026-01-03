@@ -1,6 +1,6 @@
 /**
  * Configuration Loader for Global Orchestration Mode
- * @version 6.1.0
+ * @version 6.2.0
  * @description Loads and parses orchestration configuration from config.yml
  */
 

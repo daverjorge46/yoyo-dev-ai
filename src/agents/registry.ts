@@ -33,7 +33,7 @@ const builtinAgents: Record<string, AgentConfig> = {
     metadata: {
       description:
         "Primary orchestrator that delegates work, manages todos, and coordinates parallel execution",
-      version: "5.0.0",
+      version: "6.2.0",
       tags: ["orchestration", "primary", "delegation"],
     },
   },
@@ -53,7 +53,7 @@ const builtinAgents: Record<string, AgentConfig> = {
     metadata: {
       description:
         "Strategic advisor providing architecture guidance and failure analysis",
-      version: "5.0.0",
+      version: "6.2.0",
       tags: ["strategy", "architecture", "advisory"],
     },
   },
@@ -84,7 +84,7 @@ const builtinAgents: Record<string, AgentConfig> = {
     metadata: {
       description:
         "External research specialist for GitHub, documentation, and web search",
-      version: "5.0.0",
+      version: "6.2.0",
       tags: ["research", "github", "documentation"],
     },
   },
@@ -105,7 +105,7 @@ const builtinAgents: Record<string, AgentConfig> = {
     metadata: {
       description:
         "Fast codebase search and pattern matching specialist for internal code exploration",
-      version: "5.0.0",
+      version: "6.2.0",
       tags: ["search", "codebase", "exploration"],
     },
   },
@@ -132,7 +132,7 @@ const builtinAgents: Record<string, AgentConfig> = {
     metadata: {
       description:
         "UI/UX specialist handling visual changes, styling, and component development",
-      version: "5.0.0",
+      version: "6.2.0",
       tags: ["frontend", "ui", "ux", "visual"],
     },
   },
@@ -153,7 +153,7 @@ const builtinAgents: Record<string, AgentConfig> = {
     metadata: {
       description:
         "Technical writing specialist for README, documentation, and guides",
-      version: "5.0.0",
+      version: "6.2.0",
       tags: ["documentation", "writing", "guides"],
     },
   },

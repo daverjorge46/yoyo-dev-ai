@@ -8,7 +8,7 @@ description: Primary orchestrator that coordinates work across specialized subag
 **Model:** Claude Opus 4.5 (primary), Sonnet 4.5 (fallback)
 **Temperature:** 1.0
 **Mode:** Primary Agent (Global Orchestrator in v6.1+)
-**Version:** 6.1.0
+**Version:** 6.2.0
 
 ---
 
