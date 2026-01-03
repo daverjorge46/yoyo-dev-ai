@@ -481,7 +481,7 @@ yoyo --help
 - **Command Reference:** `.yoyo-dev/COMMAND-REFERENCE.md`
 - **Migration Guide:** `.yoyo-dev/MIGRATION-GUIDE-v2.0.md`
 - **Interactive Patterns:** `.yoyo-dev/standards/interactive-execution.md`
-- **Main Docs:** `.yoyo-dev/CLAUDE.md`
+- **Main Docs:** `CLAUDE.md` (project root)
 
 ---
 

@@ -561,7 +561,7 @@ When using `yoyo` (default), you get Claude Code + TUI side-by-side:
 
 ## 🔗 Quick Links
 
-- **Documentation:** `.yoyo-dev/CLAUDE.md`
+- **Documentation:** `CLAUDE.md` (project root)
 - **Standards:** `.yoyo-dev/standards/`
 - **Instructions:** `.yoyo-dev/instructions/core/`
 - **GitHub:** [Yoyo Dev Repository](https://github.com/daverjorge46/yoyo-dev-ai)

@@ -8,11 +8,11 @@ Display comprehensive help for all Yoyo Dev commands and flags.
 
 ## Instructions
 
-Show the complete Yoyo Dev v3.0 command reference with all available commands, flags, and usage examples.
+Show the complete Yoyo Dev v6.2 command reference with all available commands, flags, and usage examples.
 
 ```
 ╔════════════════════════════════════════════════════════════════════╗
-║                  YOYO DEV v3.0 - COMMAND REFERENCE                 ║
+║                  YOYO DEV v6.2 - COMMAND REFERENCE                 ║
 ╚════════════════════════════════════════════════════════════════════╝
 
 🎯 PRODUCT SETUP
@@ -214,8 +214,8 @@ Show the complete Yoyo Dev v3.0 command reference with all available commands, f
 ─────────────────────────────────────────────────────────────────────
 
   Full Documentation:
+    CLAUDE.md                            Project context & architecture
     .yoyo-dev/COMMAND-REFERENCE.md       Complete reference
-    .yoyo-dev/CLAUDE.md                  Project context & architecture
     ~/.yoyo-dev/standards/               Development standards
     .yoyo-dev/instructions/              Workflow instructions
 
@@ -236,7 +236,7 @@ Show the complete Yoyo Dev v3.0 command reference with all available commands, f
 
 ────────────────────────────────────────────────────────────────────
 
-Yoyo Dev v3.0 - "Powerful when you need it. Invisible when you don't."
+Yoyo Dev v6.2 - "Powerful when you need it. Invisible when you don't."
 ```
 
 Display this complete reference and exit.

@@ -1,1045 +1,285 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code when working on the **Yoyo Dev framework** itself.
+
+> **Note:** This is the BASE installation documentation. Project-specific CLAUDE.md files are generated during `install.sh` and contain project-tailored instructions.
 
 ## Repository Overview
 
-**Yoyo Dev** is a development workflow framework that provides structured instructions, standards, and tools for AI-assisted software development. It supports both Claude Code and Cursor IDE integration.
-
-The system guides AI agents through product planning, specification creation, task management, and code execution workflows using a persona-driven development approach.
-
-## Installation & Setup
-
-### Installing Yoyo Dev in a Project
-
-```bash
-# From base installation (typical usage)
-~/.yoyo-dev/setup/project.sh --claude-code
-
-# From GitHub (no base installation)
-~/.yoyo-dev/setup/project.sh --no-base --claude-code
-
-# With Cursor support
-~/.yoyo-dev/setup/project.sh --cursor
-```
-
-**Key flags:** `--claude-code`, `--cursor`, `--no-base`, `--project-type=TYPE`, `--overwrite-instructions`, `--overwrite-standards`
-
-### Updating Yoyo Dev
-
-**v6.0 Claude Code Native Interface:**
-
-Yoyo Dev v6.0 launches Claude Code directly with native customization:
-
-1. **`yoyo`** - Launch Claude Code + Browser GUI (default mode)
-2. **`yoyo-gui`** - Launch browser GUI standalone
-3. **`yoyo-update`** - Update Yoyo Dev to latest version
-4. **`install.sh`** - Install/setup Yoyo Dev
-
-```bash
-# Update to latest (overwrites framework files by default)
-yoyo-update
-
-# Preserve customizations
-yoyo-update --no-overwrite
-
-# Skip MCP verification during update
-yoyo-update --skip-mcp-check
-```
-
-**Note:** Product docs (`.yoyo-dev/product/`), specs, fixes, recaps, and patterns are ALWAYS protected during updates.
-
-**MCP Updates:** The update script automatically checks for missing MCPs and prompts to install them. Use `--skip-mcp-check` to bypass MCP verification.
-
-## Quick Start
-
-```bash
-# Launch Claude Code + Browser GUI (default)
-yoyo
-
-# Launch Claude Code without browser GUI
-yoyo --no-gui
-
-# Open browser GUI only
-yoyo --gui-only
-
-# Stop background GUI server
-yoyo --stop-gui
-
-# Launch browser GUI standalone
-yoyo-gui
-```
-
-**Default Mode (v6.0+):**
-- Launches Claude Code directly with Yoyo Dev customizations
-- Browser GUI runs in background on port 5173
-- Access GUI at http://localhost:5173
-- Custom status line shows: git branch, active spec, task progress, MCP count
-- Custom commands: `/status`, `/specs`, `/tasks`, `/fixes`
-
-**Yoyo Dev Commands in Claude Code:**
-- `/status` - Project dashboard with overview, active spec, recent activity
-- `/specs` - List all specifications with status and progress
-- `/spec <n>` - View detailed specification
-- `/tasks` - Show current task breakdown with status indicators
-- `/fixes` - List bug fix records
-- `/fix <n>` - View bug fix analysis
-
-**Command Flags:**
-- `--no-gui` - Launch Claude Code without browser GUI
-- `--gui-only` - Open browser GUI only (no Claude Code)
-- `--stop-gui` - Stop background GUI server
-- `--gui-status` - Check if GUI server is running
-
-## Global Orchestration Mode (v6.1+)
-
-**In v6.1, orchestration is the default for ALL interactions** - not just specific commands like `/execute-tasks`. After running `yoyo`, every user message is automatically classified and routed to specialized agents.
-
-### How It Works
-
-1. **Every user message is classified** into intent categories:
-   - **Research** → External docs, GitHub, web search → Alma-Librarian (background)
-   - **Codebase** → Find patterns, files, implementations → Alvaro-Explore (blocking)
-   - **Frontend** → UI/UX, styling, components → Dave-Engineer (auto-delegate)
-   - **Debug** → Error analysis, bug fixing → Alvaro-Explore + Oracle escalation
-   - **Documentation** → README, guides, explanations → Angeles-Writer
-   - **Planning** → Architecture, feature design → Yoyo-AI + research
-   - **Implementation** → Building, coding → Yoyo-AI + codebase context
-   - **General** → No specific delegation (below confidence threshold)
-
-2. **Automatic agent delegation** based on intent:
-   - Classification takes <10ms (keyword matching, no ML)
-   - Confidence threshold: 0.6 (configurable)
-   - Background tasks run in parallel without blocking
-
-3. **All orchestrated output is prefixed** with agent name for visibility:
-   ```
-   [yoyo-ai] Analyzing your request...
-   [yoyo-ai] Intent: Research (85% confidence)
-   [yoyo-ai] Delegating to alma-librarian...
-   [alma-librarian] Searching documentation...
-   [yoyo-ai] Here's what I found: ...
-   ```
-
-### Agent Prefixes
-
-| Agent | Prefix | Role |
-|-------|--------|------|
-| Yoyo-AI | `[yoyo-ai]` | Primary orchestrator |
-| Arthas-Oracle | `[arthas-oracle]` | Strategic advisor, failure analysis |
-| Alma-Librarian | `[alma-librarian]` | External research (background) |
-| Alvaro-Explore | `[alvaro-explore]` | Codebase search |
-| Dave-Engineer | `[dave-engineer]` | Frontend/UI development |
-| Angeles-Writer | `[angeles-writer]` | Documentation |
-
-### Disabling Orchestration
-
-**Per-session (command flag):**
-```bash
-yoyo --no-orchestration
-```
-
-**Per-project (.yoyo-dev/config.yml):**
-```yaml
-orchestration:
-  enabled: false
-```
-
-**Per-environment:**
-```bash
-export YOYO_ORCHESTRATION=false
-```
-
-**Per-request (prefix):**
-```
-directly: What is the difference between let and const?
-```
-
-### When Orchestration is Skipped
-
-- Slash commands (`/execute-tasks`, `/research`, etc.) - explicit override
-- `directly:` prefixed requests - user bypass
-- Confidence score < 0.6 - ambiguous intent
-- Orchestration disabled in config
-
-### MANDATORY: Following Orchestration Instructions
-
-**CRITICAL:** When you see `ORCHESTRATION INSTRUCTIONS:` in a system-reminder, you MUST follow them exactly. This is not optional.
-
-**Rules:**
-
-1. **When instructed to delegate** (e.g., "Use the Task tool with subagent_type=X"):
-   - You MUST use the Task tool with the specified subagent_type
-   - Do NOT attempt to handle the request yourself
-   - Do NOT skip delegation because you think you can handle it
-   - The delegation decision has already been made by the orchestration system
-
-2. **When instructed to handle directly**:
-   - Handle the request yourself without delegation
-   - Prefix your response with `[yoyo-ai]`
-
-3. **Agent prefixes are mandatory**:
-   - Always prefix your response/summary with the agent name in brackets
-   - Example: `[alvaro-explore] Found 15 files matching the pattern...`
-
-4. **Report agent results**:
-   - After the Task tool completes, summarize results with the agent prefix
-   - Example: `[alma-librarian] Research complete. Here's what I found...`
-
-**Example - Correct Behavior:**
-
-```
-<system-reminder>
-ORCHESTRATION INSTRUCTIONS:
-1. Use the Task tool with subagent_type="alvaro-explore" to handle this request.
-2. Agent role: You are a codebase search specialist...
-3. Prefix your summary with [alvaro-explore] when reporting results.
-</system-reminder>
-
-User: Where is authentication handled?
-
-Claude: [yoyo-ai] Delegating to alvaro-explore for codebase search...
-*Uses Task tool with subagent_type="alvaro-explore"*
-[alvaro-explore] Found authentication handling in:
-- src/auth/middleware.ts:42
-- src/auth/token-service.ts:15
-```
-
-**Why This Matters:**
-- Users expect to see agents working in the console
-- The orchestration system has already classified the intent
-- Bypassing delegation breaks the multi-agent workflow
-- Consistent agent prefixes provide visibility into the system
-
-### Configuration
-
-Full control via `.yoyo-dev/config.yml`:
-
-```yaml
-orchestration:
-  enabled: true           # Master toggle
-  global_mode: true       # Apply to ALL interactions
-  show_prefixes: true     # Show [agent-name] prefixes
-  confidence_threshold: 0.6
-
-  routing:
-    frontend_delegation:
-      enabled: true
-      agent: dave-engineer
-
-    research_delegation:
-      enabled: true
-      agent: alma-librarian
-      background: true    # Non-blocking
-
-    codebase_delegation:
-      enabled: true
-      agent: alvaro-explore
-
-    failure_escalation:
-      enabled: true
-      agent: arthas-oracle
-      after_failures: 3
-```
-
-## MCP Server Installation
-
-Yoyo Dev uses Docker MCP Gateway to provide containerized MCP servers via Docker Desktop's MCP Toolkit.
-
-### Prerequisites
-
-**Required:**
-- Docker Desktop 4.32+ with MCP Toolkit enabled
-- Claude Code CLI installed and configured
-
-**Installing Docker Desktop:**
-```bash
-# Download from: https://www.docker.com/products/docker-desktop/
-
-# Verify installation
-docker --version  # Should be 4.32+
-
-# Verify Docker is running
-docker info
-```
-
-**Enabling MCP Toolkit:**
-1. Open Docker Desktop
-2. Go to Settings → Beta features
-3. Enable "MCP Toolkit"
-4. Restart Docker Desktop
-
-**Installing Claude Code CLI:**
-```bash
-# Download from: https://claude.ai/download
-
-# Verify installation
-claude --version
-```
-
-### Supported MCP Servers
-
-Yoyo Dev enables these containerized MCP servers from the Docker catalog:
-
-1. **playwright** - Browser automation and testing
-   - Purpose: Web automation, E2E testing, screenshots
-   - Container: Isolated browser environment
-
-2. **github-official** - GitHub repository management
-   - Purpose: Repository operations, issues, PRs
-   - Note: Requires OAuth authorization (see below)
-
-3. **duckduckgo** - Web search integration
-   - Purpose: Search the web for information
-   - Container: Isolated search environment
-
-4. **filesystem** - File system access
-   - Purpose: Read/write files in specified directories
-   - Note: Configured with appropriate mount points
-
-### Automatic Installation (Default Behavior)
-
-**MCP servers are installed automatically** during Yoyo Dev setup without user prompts:
-
-```bash
-# During project setup (auto-installs MCPs)
-~/.yoyo-dev/setup/project.sh --claude-code
-```
-
-**To skip automatic MCP installation:**
-```bash
-~/.yoyo-dev/setup/project.sh --claude-code --no-auto-mcp
-```
-
-The installer automatically:
-1. Checks Docker Desktop is installed and running
-2. Verifies MCP Toolkit is enabled
-3. Connects Claude Code as an MCP client
-4. Enables recommended MCP servers (no prompts)
-5. Reports installation results
-
-**Similarly, `yoyo-update` auto-enables missing MCP servers** without prompting. Use `--skip-mcp-check` to skip MCP verification during updates.
-
-### Manual Installation
-
-To manually set up Docker MCP or troubleshoot:
-
-```bash
-# Run Docker MCP setup
-~/.yoyo-dev/setup/docker-mcp-setup.sh
-
-# Skip if Docker not available
-~/.yoyo-dev/setup/docker-mcp-setup.sh --skip-if-no-docker
-
-# Verbose output for debugging
-~/.yoyo-dev/setup/docker-mcp-setup.sh --verbose
-```
-
-**Individual server commands:**
-
-```bash
-# List enabled MCP servers
-docker mcp server ls
-
-# Enable specific servers
-docker mcp server enable playwright
-docker mcp server enable github-official
-docker mcp server enable duckduckgo
-docker mcp server enable filesystem
-
-# Connect Claude Code as client
-docker mcp client connect claude-code
-```
-
-### OAuth Authorization (GitHub Server)
-
-The `github-official` MCP server requires OAuth authorization:
-
-```bash
-# Authorize GitHub access
-docker mcp oauth authorize github-official
-
-# This opens a browser for GitHub OAuth flow
-# Grant access to repositories you want Claude to access
-```
-
-### Verifying MCP Installation
-
-**Method 1: Check Docker MCP server list**
-
-```bash
-# View enabled servers
-docker mcp server ls
-```
-
-Expected output (tabular format):
-```
-NAME              IMAGE                    TAG
-playwright        docker/mcp-playwright    latest
-github-official   docker/mcp-github        latest
-duckduckgo        docker/mcp-duckduckgo    latest
-filesystem        docker/mcp-filesystem    latest
-```
-
-**Method 2: Check project .mcp.json**
-
-```bash
-# View project MCP configuration
-cat .mcp.json
-```
-
-Expected:
-```json
-{
-  "mcpServers": {
-    "MCP_DOCKER": {
-      "command": "docker",
-      "args": ["mcp", "gateway", "run"],
-      "type": "stdio"
-    }
-  }
-}
-```
-
-### Troubleshooting MCP Installation
-
-**Issue: "Docker not found"**
-
-```bash
-# Verify Docker is installed
-docker --version
-
-# If not found, install Docker Desktop
-# Download from: https://www.docker.com/products/docker-desktop/
-```
-
-**Issue: "Docker not running"**
-
-```bash
-# Check Docker daemon status
-docker info
-
-# If error, start Docker Desktop application
-# On Linux: systemctl start docker
-```
-
-**Issue: "MCP Toolkit not enabled"**
-
-```bash
-# Check if MCP commands are available
-docker mcp --help
-
-# If "not a docker command" error:
-# 1. Open Docker Desktop
-# 2. Go to Settings → Beta features
-# 3. Enable "MCP Toolkit"
-# 4. Restart Docker Desktop
-```
-
-**Issue: "Server not starting"**
-
-```bash
-# Check server list
-docker mcp server ls
-
-# Inspect server details
-docker mcp server inspect playwright
-
-# Restart specific server
-docker mcp server disable playwright
-docker mcp server enable playwright
-```
-
-**Issue: "GitHub OAuth failed"**
-
-```bash
-# Re-authorize GitHub
-docker mcp oauth authorize github-official
-
-# Clear existing authorization
-docker mcp oauth revoke github-official
-
-# Then re-authorize
-docker mcp oauth authorize github-official
-```
-
-**Issue: "Claude not connected to MCP Gateway"**
-
-```bash
-# Verify Claude is connected as client
-docker mcp client list
-
-# If claude-code not listed, connect it
-docker mcp client connect claude-code
-
-# Verify .mcp.json exists in project
-cat .mcp.json
-```
-
-**Issue: "Servers running but Claude can't access"**
-
-```bash
-# 1. Verify MCP Gateway is running
-docker mcp gateway status
-
-# 2. Check .mcp.json has correct configuration
-cat .mcp.json | jq '.mcpServers.MCP_DOCKER'
-
-# 3. Restart Claude Code to reload MCP configuration
-```
-
-### MCP Configuration
-
-**Project-level configuration (`.mcp.json`):**
-
-```json
-{
-  "mcpServers": {
-    "MCP_DOCKER": {
-      "command": "docker",
-      "args": ["mcp", "gateway", "run"],
-      "type": "stdio"
-    }
-  }
-}
-```
-
-This single entry routes all MCP requests through Docker MCP Gateway, which manages individual containerized servers.
-
-**Server resource limits:**
-
-Each MCP server container runs with:
-- 1 CPU core
-- 2GB RAM
-- Isolated network namespace
-- Read-only filesystem (except designated volumes)
-
-**IMPORTANT:** Do not manually edit `.mcp.json` unless necessary. Use `docker-mcp-setup.sh` to ensure proper configuration.
-
-## Core Commands
-
-**Product Setup:**
-- `/plan-product` - Set mission & roadmap for new product
-- `/analyze-product` - Set up mission/roadmap for existing product
-
-**Feature Development (v5.0 with Yoyo-AI):**
-- `/create-new` - Create feature with full spec workflow and task generation
-- `/create-spec` - Create detailed specification only
-- `/create-tasks` - Create tasks from specification
-- `/execute-tasks` - Build and ship code with multi-agent orchestration (default)
-- `/execute-tasks --orchestrator legacy` - Use v4.0 single-agent workflow
-- `/execute-tasks --no-delegation` - Disable automatic agent delegation
-
-**Research & Guidance (NEW v5.0):**
-- `/research "topic"` - Background research with librarian agent (parallel execution)
-- `/consult-oracle "question"` - Strategic architecture guidance from Oracle agent
-
-**Bug Fixes:**
-- `/create-fix` - Analyze and fix bugs with systematic problem analysis (auto-escalates to Oracle)
-
-**Advanced:**
-- `/orchestrate-tasks` - Manual multi-agent orchestration for complex features
-- `/review` - Critical code review (modes: `--devil`, `--security`, `--performance`, `--production`)
-- `/design-init` - Initialize design system
-- `/design-audit` - Audit design consistency
-- `/design-fix` - Fix design violations
-- `/design-component` - Create UI components with design enforcement
-
-**Maintenance:**
-- `/yoyo-cleanup` - Professional project cleanup with safety validations (deprecated code, docs, files)
-- `/yoyo-cleanup --scan` - Analyze only, no changes (default)
-- `/yoyo-cleanup --preview` - Show exact planned changes
-- `/yoyo-cleanup --execute` - Apply changes with confirmations
-- `/yoyo-cleanup --docs` - Documentation cleanup only
-- `/yoyo-cleanup --code` - Code cleanup only
-
-**Memory System:**
-- `/init` - Scan codebase and initialize memory with project context
-- `/remember` - Store user preferences or project knowledge
-- `/clear` - Clear conversation history while preserving memory
-
-## Memory System
-
-The memory system provides persistent context management using a dual-scope architecture:
-
-**Scopes:**
-- **Project** (`.yoyo-dev/memory/`): Project-specific context, stored locally
-- **Global** (`~/.yoyo-dev/memory/`): User preferences across all projects
-
-**Block Types:**
-- `persona` - AI assistant personality and capabilities
-- `project` - Project knowledge (tech stack, patterns, structure)
-- `user` - User preferences and interaction patterns
-- `corrections` - Learned corrections from past interactions
-
-**Quick Usage:**
-```bash
-# Initialize memory for a project
-/init
-
-# Store preferences
-/remember I prefer functional programming with TypeScript
-/remember This project uses Convex for the backend
-
-# Clear conversation but keep memory
-/clear
-```
-
-**Detailed Documentation:** See `docs/memory-system.md` for full API documentation.
-
-## Ralph Autonomous Development (v6.2+)
-
-Ralph integration enables **continuous autonomous development cycles** where Claude Code iteratively improves your project until completion, with built-in safeguards against infinite loops and API overuse.
-
-### Quick Start
-
-```bash
-# Autonomous task execution
-yoyo --ralph execute-tasks
-
-# Autonomous spec creation
-yoyo --ralph create-spec "Add user authentication"
-
-# Autonomous bug fixing
-yoyo --ralph create-fix "Login button not working"
-
-# With monitoring dashboard (requires tmux)
-yoyo --ralph execute-tasks --ralph-monitor
-
-# Custom rate limits
-yoyo --ralph execute-tasks --ralph-calls 50 --ralph-timeout 60
-```
-
-### How It Works
-
-1. **PROMPT.md Generation**: Yoyo Dev generates command-specific instructions for Ralph
-2. **Autonomous Loop**: Ralph executes Claude Code repeatedly until completion
-3. **Rate Limiting**: Default 100 API calls/hour prevents runaway costs
-4. **Circuit Breaker**: Stops after 3 consecutive loops without progress
-5. **Exit Detection**: Recognizes completion keywords and task status
-
-### Supported Commands
-
-| Command | Ralph Behavior |
-|---------|---------------|
-| `execute-tasks` | Executes all tasks until spec is complete |
-| `create-spec` | Iteratively refines spec until approved |
-| `create-fix` | Investigates and fixes bug autonomously |
-| `create-new` | Full spec → tasks → implementation cycle |
-
-### Ralph Options
-
-| Flag | Default | Description |
-|------|---------|-------------|
-| `--ralph-calls N` | 100 | API calls per hour limit |
-| `--ralph-timeout N` | 30 | Minutes per loop timeout |
-| `--ralph-monitor` | false | Enable tmux monitoring dashboard |
-| `--ralph-verbose` | false | Detailed progress output |
-
-### Safety Mechanisms
-
-**Rate Limiting:**
-- Default: 100 API calls/hour
-- Countdown timer when limit reached
-- Prevents unexpected API costs
-
-**Circuit Breaker:**
-- Opens after 3 stalled loops (no progress)
-- Opens after 5 consecutive error loops
-- Prevents infinite execution
-
-**Exit Detection:**
-- Monitors for "done" signals
-- Tracks task completion percentage
-- Detects test-only loops
-
-### Configuration
-
-```yaml
-# .yoyo-dev/config.yml
-ralph:
-  enabled: true
-  rate_limit: 100
-  timeout: 30
-  circuit_breaker:
-    stall_threshold: 3
-    error_threshold: 5
-  exit_detection:
-    test_only_loops: 3
-    done_signals: 2
-  monitoring:
-    tmux_enabled: true
-```
-
-### Ralph Commands
-
-- `/ralph-status` - Show current autonomous execution status
-- `/ralph-stop` - Gracefully stop autonomous execution
-- `/ralph-config` - View/edit Ralph configuration
-
-### Installation
-
-Ralph is auto-installed on first use of `--ralph` flag. Manual installation:
-
-```bash
-# Using Yoyo Dev installer
-~/.yoyo-dev/setup/ralph-setup.sh
-
-# Or directly from GitHub
-git clone https://github.com/frankbria/ralph-claude-code.git
-cd ralph-claude-code && ./install.sh
-```
-
-### Requirements
-
-- Ralph v0.9.0+ (auto-installed)
-- Claude Code CLI
-- Bash 4.0+
-- tmux (optional, for monitoring)
-
-## Architecture
+**Yoyo Dev** is an AI-assisted development framework providing:
+- Structured workflows for product planning, specification, and task execution
+- Multi-agent orchestration system with specialized agents
+- Claude Code and Cursor IDE integration
+- Persistent memory and skill learning systems
+
+## Framework Architecture
 
 ### Directory Structure
 
-**Primary Directory:**
-
-- **`.yoyo-dev/`** - All Yoyo Dev files (instructions, standards, specs, fixes, product, memory)
-
-**Complete Structure:**
-
 ```
-.yoyo-dev/
-├── product/              # Product docs (mission, roadmap, tech-stack)
-├── specs/                # Feature specifications
-│   └── YYYY-MM-DD-name/
-│       ├── spec.md
-│       ├── spec-lite.md
-│       ├── tasks.md
-│       ├── state.json
-│       └── sub-specs/
-├── fixes/                # Bug fix documentation
-├── recaps/               # Development recaps
-├── patterns/             # Saved patterns library
-├── memory/               # Memory system (SQLite database)
-│   └── memory.db
-├── instructions/core/    # AI workflow instructions
-│   ├── yoyo-ai-orchestration.md  # v5.0 orchestrator
-│   ├── execute-tasks.md
-│   ├── create-new.md
+yoyo-dev/                         # Framework root (this repository)
+├── CLAUDE.md                     # This file - framework development context
+├── README.md                     # User-facing documentation
+├── setup/                        # Installation and launcher scripts
+│   ├── install.sh                # Project installation
+│   ├── yoyo.sh                   # Claude Code launcher
+│   ├── yoyo-gui.sh               # Browser GUI launcher
+│   ├── yoyo-update.sh            # Update script
+│   └── templates/                # Generated file templates
+│       └── PROJECT-CLAUDE.md     # Template for project CLAUDE.md
+├── instructions/                 # AI workflow instructions
+│   ├── core/                     # Primary workflows
+│   │   ├── create-spec.md
+│   │   ├── create-tasks.md
+│   │   ├── execute-tasks.md
+│   │   └── ...
+│   └── meta/                     # Pre/post flight checks
+├── standards/                    # Development standards
+│   ├── best-practices.md
+│   ├── personas.md
+│   ├── tech-stack.md
+│   └── code-style/
+├── .claude/                      # Claude Code integration
+│   ├── commands/                 # Slash commands (*.md)
+│   ├── agents/                   # Agent definitions
+│   ├── hooks/                    # Orchestration hooks
+│   │   └── orchestrate.cjs       # Intent classification hook
+│   ├── skills/                   # Learned skills
+│   └── settings.json             # Claude Code settings
+├── src/                          # TypeScript source
+│   ├── orchestration/            # Orchestration system
+│   ├── memory/                   # Memory system
 │   └── ...
-├── standards/            # Development standards
-├── setup/                # Installation scripts
-│   ├── install.sh        # Primary installer
-│   ├── yoyo.sh           # Claude Code launcher
-│   ├── yoyo-gui.sh       # GUI launcher
-│   └── yoyo-update.sh    # Update script
-└── config.yml            # Configuration
-
-.claude/                  # Claude Code integration
-├── commands/             # Slash commands
-│   ├── research.md       # v5.0 research command
-│   ├── consult-oracle.md # v5.0 Oracle consultation
-│   └── ...
-└── agents/               # Agent configurations
-    ├── yoyo-ai.md        # v5.0 orchestrator
-    ├── oracle.md         # v5.0 strategic advisor
-    ├── librarian.md      # v5.0 research specialist
-    ├── frontend-engineer.md  # v5.0 UI specialist
-    └── ...
-
-workflows/                # Reusable workflow components
-├── planning/
-├── specification/
-└── implementation/
-
-src/memory/               # Memory system (TypeScript)
+├── gui/                          # Browser GUI (React + Vite)
+├── lib/                          # Python libraries
+│   └── yoyo_tui_v3/              # TUI dashboard (Textual)
+└── tests/                        # Test suites
 ```
 
-**Detailed Guide:** See `docs/directory-structure.md`
+### Key Components
 
-### Key Files
+| Component | Technology | Purpose |
+|-----------|------------|---------|
+| CLI Launcher | Bash | `yoyo`, `yoyo-gui`, `yoyo-update` commands |
+| Orchestration | TypeScript | Intent classification, agent routing |
+| Browser GUI | React + Vite | Dashboard on port 5173 |
+| TUI Dashboard | Python/Textual | Terminal UI (legacy, preserved) |
+| Memory System | SQLite + JSON | Persistent context storage |
 
-**Configuration:**
-- `config.yml` - Main configuration
+## Global Orchestration Mode
 
-**Core Instructions:**
-- `instructions/core/plan-product.md` - Product planning
-- `instructions/core/create-new.md` - Feature creation
-- `instructions/core/create-fix.md` - Bug fix workflow
-- `instructions/core/execute-tasks.md` - Task execution
+**All user interactions are automatically classified and routed to specialized agents.**
 
-**Standards:**
-- `standards/best-practices.md` - Development best practices
-- `standards/personas.md` - Persona definitions
-- `standards/tech-stack.md` - Default tech stack
-- `standards/code-style/` - Language-specific guides
-- `standards/design-system.md` - Design system patterns
-- `standards/output-formatting.md` - Terminal output formatting
+### How It Works
 
-**Key Agents:**
-- `context-fetcher` - Context gathering
-- `file-creator` - File creation
-- `git-workflow` - Git operations
-- `project-manager` - Task tracking
-- `test-runner` - Test execution
-- `implementer` - TDD-based implementation
-- `implementation-verifier` - Quality verification
-- `spec-shaper` - Requirements gathering
-- `tasks-list-creator` - Strategic task breakdown
+1. **Intent Classification** (<10ms, keyword-based):
+   - Research → alma-librarian (background)
+   - Codebase → alvaro-explore (blocking)
+   - Frontend → dave-engineer (auto-delegate)
+   - Debug → arthas-oracle (escalation)
+   - Documentation → angeles-writer
+   - Planning/Implementation → yoyo-ai (primary)
 
-### Workflow Reference System (v1.6.0+)
+2. **Agent Delegation**:
+   - Confidence threshold: 0.6 (configurable)
+   - Below threshold: No delegation, handle directly
+   - Above threshold: Route to specialized agent
 
-Agents reference reusable workflows using `{{workflows/*}}` syntax:
+3. **Output Prefixing**:
+   - All responses prefixed with agent name: `[agent-name]`
+   - Example: `[alvaro-explore] Found 15 matching files...`
 
-```yaml
----
-name: implementer
-tools: [Write, Read, Bash]
----
+### MANDATORY Orchestration Rules
 
-{{workflows/implementation/implement-tasks.md}}
+When you see `ORCHESTRATION INSTRUCTIONS:` in a system-reminder:
 
-## Additional Instructions
-- Always write tests first
-```
+1. **Follow delegation instructions exactly** - Do not handle yourself if told to delegate
+2. **Use specified subagent_type** - The decision is already made
+3. **Always prefix responses** - Use `[agent-name]` format
+4. **Report agent results** - Summarize with agent prefix after Task tool completes
 
-**Benefits:** Reusable, maintainable, composable workflows with cycle detection and caching.
+### Agent Definitions
+
+Located in `.claude/agents/`:
+
+| Agent | File | Role | Temperature |
+|-------|------|------|-------------|
+| yoyo-ai | `yoyo-ai.md` | Primary orchestrator | 1.0 |
+| arthas-oracle | `arthas-oracle.md` | Strategic advisor, debugging | 0.1 |
+| alma-librarian | `alma-librarian.md` | External research | 0.3 |
+| alvaro-explore | `alvaro-explore.md` | Codebase search | 0.5 |
+| dave-engineer | `dave-engineer.md` | Frontend/UI specialist | 0.7 |
+| angeles-writer | `angeles-writer.md` | Documentation | 0.5 |
 
 ## Core Workflows
 
-### `/plan-product` - Product Planning
+### Workflow Instructions
 
-Creates foundational product documentation:
-1. Gather user input (idea, features, users, tech stack)
-2. Create `.yoyo-dev/product/` structure
-3. Generate `mission.md`, `tech-stack.md`, `mission-lite.md`, `roadmap.md`
+Located in `instructions/core/`:
 
-### `/analyze-product` - Existing Product
+| Workflow | File | Purpose |
+|----------|------|---------|
+| `/plan-product` | `plan-product.md` | Create product mission & roadmap |
+| `/analyze-product` | `analyze-product.md` | Analyze existing codebase |
+| `/create-new` | `create-new.md` | Feature with spec + tasks |
+| `/create-spec` | `create-spec.md` | Detailed specification |
+| `/create-tasks` | `create-tasks.md` | Task breakdown from spec |
+| `/execute-tasks` | `execute-tasks.md` | TDD implementation |
+| `/create-fix` | `create-fix.md` | Bug fix workflow |
 
-For existing codebases:
-1. Analyze codebase (structure, tech stack, features)
-2. Gather product context from user
-3. Execute plan-product workflow
-4. Customize with "Phase 0: Already Completed" section
+### Slash Commands
 
-### `/create-new` - Feature Creation
-
-Streamlined workflow:
-1. Feature discovery (roadmap item or user idea)
-2. Context gathering (mission-lite.md, tech-stack.md)
-3. Requirements clarification (numbered questions)
-4. Execute spec creation
-5. User spec review
-6. Execute task creation
-7. Execution readiness
-
-### `/create-fix` - Bug Fixes
-
-Systematic fix workflow:
-1. Problem identification
-2. Code investigation (context-fetcher)
-3. Root cause analysis
-4. Create `.yoyo-dev/fixes/YYYY-MM-DD-fix-name/`
-5. Create analysis document
-6. User solution review
-7. Create TDD-based fix tasks
-8. Execution readiness
-
-### `/execute-tasks` - Task Execution
-
-**Three-phase process (ALL phases required):**
-
-**Phase 1: Pre-Execution**
-1. Task assignment (defaults to next uncompleted)
-2. Context analysis (context-fetcher)
-3. Git status check
-
-**Phase 2: Task Execution Loop**
-For each parent task:
-- Task understanding
-- Technical spec review
-- Best practices review (context-fetcher)
-- Code style review (context-fetcher)
-- TDD implementation
-- Test verification (test-runner)
-- Mark complete in tasks.md
-
-**Phase 3: Post-Execution**
-5. Run all tests (test-runner)
-6. Implementation verification (implementation-verifier: functionality, tests, accessibility, performance, security, docs)
-7. Git workflow (commit, push, PR via git-workflow)
-8. Verify tasks complete (project-manager)
-9. Update roadmap (project-manager, conditional)
-10. Create recap in `.yoyo-dev/recaps/`
-11. Update patterns library (optional)
-12. Finalize state.json
-13. Completion summary with PR link
-14. Notification sound (macOS: `afplay`, Linux: `paplay`)
-
-**Flags:**
-- `--implementation-reports` - Generate detailed per-task-group reports
-- `--devil`, `--security`, `--performance`, `--production` - Apply review modes
-- `--sequential` / `--parallel` - Force execution mode
-
-### `/orchestrate-tasks` - Advanced Orchestration
-
-Use when you need:
-- Different agents for different task groups
-- Specific standards per task group
-- Manual execution order control
-
-**90% of use cases:** Use `/execute-tasks` (default)
-**10% power users:** Use `/orchestrate-tasks`
-
-## Parallel Execution
-
-Yoyo Dev automatically analyzes task dependencies and executes independent tasks concurrently (2-3x faster).
-
-**How it works:**
-1. Extract task metadata (dependencies, files, parallel-safe flag)
-2. Build dependency graph
-3. Create execution plan with groups
-4. Execute groups in parallel where safe
-
-**Configuration (`.yoyo-dev/config.yml`):**
-```yaml
-parallel_execution:
-  enabled: true              # Default: true
-  max_concurrency: 5
-  auto_analyze: true
-  ask_confirmation: true
-```
-
-## Review Modes (Optional)
-
-**Available modes:** `--devil`, `--security`, `--performance`, `--production`, `--premortem`, `--quality`
-
-**Usage:**
-```bash
-/review --devil "Review authentication flow"
-/execute-tasks --security
-```
-
-**Use when:** Technical debt accumulated, recurring bugs, complex features, performance issues, security audits, pre-production.
-
-**Don't use for:** Normal feature development.
-
-## Design System (Optional)
-
-**Commands:**
-- `/design-init` - Initialize design system with tokens, patterns, Tailwind config
-- `/design-audit` - Audit design consistency (tokens, contrast, focus states)
-- `/design-fix` - Fix violations systematically
-- `/design-component` - Create components with strict validation
-
-**Use when:** Starting UI-heavy projects, fixing design inconsistency, building component libraries.
-
-## Important Conventions
-
-### Subagent Usage
-
-When instructions specify `subagent=""` attribute, use Task tool:
-
-```xml
-<step number="2" subagent="context-fetcher" name="context_analysis">
-```
-
-Means: Use Task tool with subagent_type="general-purpose" to run context-fetcher agent.
+Located in `.claude/commands/`:
+- Each `.md` file becomes a `/command` in Claude Code
+- Commands reference instructions via `@.yoyo-dev/instructions/...`
 
 ### Process Flow Execution
 
-- Execute every numbered `<step>` in `<process_flow>` blocks sequentially
+When instructions contain `<process_flow>` blocks:
+- Execute every numbered `<step>` sequentially
 - Execute pre-flight checks before starting
 - Execute post-flight checks after completing
 - Use exact templates from instructions
-- Ask specific questions if clarification needed
 
-### File Organization
+### Subagent Usage
 
-**Product:** `.yoyo-dev/product/`
-- `mission.md` - Full vision
-- `mission-lite.md` - Condensed for AI
-- `tech-stack.md` - Technical architecture
-- `roadmap.md` - Development phases
+When instructions specify `subagent="X"`:
+```xml
+<step number="2" subagent="context-fetcher" name="context_analysis">
+```
+Use Task tool with appropriate `subagent_type` parameter.
 
-**Specs:** `.yoyo-dev/specs/YYYY-MM-DD-feature-name/`
-- `spec.md` - Full requirements
-- `spec-lite.md` - Condensed for AI
-- `tasks.md` - Task breakdown
-- `decisions.md` - Technical decisions
-- `state.json` - Workflow state
-- `sub-specs/technical-spec.md` - Implementation details
-- `sub-specs/database-schema.md` - Schema changes (conditional)
-- `sub-specs/api-spec.md` - API spec (conditional)
+## Development Guidelines
 
-**Fixes:** `.yoyo-dev/fixes/YYYY-MM-DD-fix-name/`
-- `analysis.md` - Problem analysis
-- `solution-lite.md` - Condensed summary
-- `tasks.md` - Fix tasks
-- `state.json` - State tracking
+### Code Conventions
 
-**Recaps:** `.yoyo-dev/recaps/YYYY-MM-DD-feature-name.md`
+**TypeScript (src/):**
+- Strict mode enabled
+- Zod for runtime validation
+- ESM modules
 
-### Git Branch Management
+**Python (lib/):**
+- Python 3.11+
+- Type hints required
+- Textual for TUI
 
-**IMPORTANT:** Yoyo Dev does NOT create or switch branches automatically.
-- All commits made to current active branch
-- Users must manually create/switch branches before workflows
-- git-workflow agent checks and reports current branch status
-- No automatic branch creation in any workflow
+**Shell Scripts (setup/):**
+- Bash 4.0+
+- Use `ui-library.sh` for consistent output
+- Always validate syntax with `bash -n`
 
-## Tech Stack Defaults
+### Testing
 
-- **Frontend:** React 18 + TypeScript
-- **Build:** Vite
-- **Backend:** Convex (serverless)
-- **Auth:** Clerk
-- **Styling:** Tailwind CSS v4
-- **Package Manager:** npm
-- **Node:** 22 LTS
-- **Icons:** Lucide React
-- **CI/CD:** GitHub Actions
+```bash
+# TypeScript tests
+npm test
 
-## Persona-Driven Development
+# Python TUI tests
+pytest tests/ -v
 
-Specialized personas guide development:
-- **Architect** - System design, technical decisions
-- **Frontend** - UX, accessibility, performance
-- **Backend** - Reliability, scalability, API design
-- **Security** - Threat modeling, compliance
-- **Performance** - Optimization, profiling
-- **QA** - Testing, edge cases
-- **Refactorer** - Code quality, maintainability
-- **Analyzer** - Root cause analysis, debugging
-- **Mentor** - Documentation, knowledge transfer
-
-**Applied via:** File type detection, context intelligence, explicit activation.
-
-## Quality Gates
-
-Before feature completion:
-1. Functionality - Works as specified
-2. Type Safety - No TypeScript errors
-3. Testing - Adequate coverage
-4. Accessibility - WCAG compliance
-5. Performance - Meets budgets
-6. Security - No vulnerabilities
-7. Code Quality - Follows style guidelines
-8. Documentation - Adequately documented
-
-## Project Type System
-
-Multiple project types in `config.yml`:
-
-```yaml
-project_types:
-  default:
-    instructions: ~/.yoyo-dev/instructions
-    standards: ~/.yoyo-dev/standards
-  custom_type:
-    instructions: ~/.yoyo-dev/project_types/custom_type/instructions
-    standards: ~/.yoyo-dev/project_types/custom_type/standards
+# Shell script syntax
+bash -n setup/*.sh
 ```
 
-The `default_project_type` setting determines installation configuration.
-- Please remmember that any codebase change you should do it at the yoyo-dev root directory, not at the .yoyo-dev directory, witch it's the project framework installed in the yoyo-dev-ai project.
+### Git Conventions
+
+- Yoyo Dev does NOT create branches automatically
+- All commits made to current active branch
+- Use git-workflow agent for commits
+- Commit message format per repository standards
+
+## File Organization
+
+### Specs (created by workflows)
+
+```
+.yoyo-dev/specs/YYYY-MM-DD-feature-name/
+├── spec.md           # Full requirements
+├── spec-lite.md      # Condensed for AI context
+├── tasks.md          # Task breakdown
+├── state.json        # Workflow state
+├── decisions.md      # Technical decisions
+└── sub-specs/        # Technical details
+    ├── technical-spec.md
+    ├── api-spec.md       # (if needed)
+    └── database-schema.md # (if needed)
+```
+
+### Fixes (created by /create-fix)
+
+```
+.yoyo-dev/fixes/YYYY-MM-DD-fix-name/
+├── analysis.md       # Problem analysis
+├── solution-lite.md  # Condensed summary
+├── tasks.md          # Fix tasks
+└── state.json        # State tracking
+```
+
+## Configuration
+
+### Main Config (`.yoyo-dev/config.yml`)
+
+```yaml
+yoyo_dev_version: "6.1.0"
+
+orchestration:
+  enabled: true
+  global_mode: true
+  confidence_threshold: 0.6
+
+agents:
+  claude_code:
+    enabled: true
+
+tech_stack:
+  framework: "react-typescript"
+  database: "convex"
+  styling: "tailwindcss"
+```
+
+### Claude Settings (`.claude/settings.json`)
+
+Contains hook configuration for orchestration system.
+
+## Important Notes for Framework Development
+
+1. **Changes go in yoyo-dev root** - Not in `.yoyo-dev/` (that's the installed framework)
+
+2. **Test installation scripts** - After modifying `setup/*.sh`, test with:
+   ```bash
+   bash -n setup/install.sh
+   bash -n setup/yoyo-update.sh
+   ```
+
+3. **Template changes** - `setup/templates/PROJECT-CLAUDE.md` affects all new project installations
+
+4. **Hook changes** - `.claude/hooks/orchestrate.cjs` is the bundled orchestration hook
+
+5. **Version updates** - Update VERSION in: `setup/install.sh`, `setup/yoyo-update.sh`, `.yoyo-dev/config.yml`
+
+## Quick Reference
+
+### Installation Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `setup/install.sh` | Install Yoyo Dev in a project |
+| `setup/yoyo-update.sh` | Update existing installation |
+| `setup/yoyo.sh` | Launch Claude Code + GUI |
+| `setup/yoyo-gui.sh` | Launch browser GUI only |
+
+### Key Flags
+
+**install.sh:**
+- `--claude-code` - Enable Claude Code integration
+- `--no-claude-md` - Skip CLAUDE.md generation
+- `--no-auto-mcp` - Skip MCP server setup
+
+**yoyo-update.sh:**
+- `--no-overwrite` - Keep all customizations
+- `--regenerate-claude` - Regenerate project CLAUDE.md
+- `--skip-mcp-check` - Skip MCP verification
+
+---
+
+*For user-facing documentation (installation, MCP setup, troubleshooting), see README.md*

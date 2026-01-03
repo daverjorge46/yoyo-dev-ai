@@ -74,6 +74,7 @@ curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/in
 This automatically:
 - Installs Yoyo Dev framework
 - Sets up Claude Code integration
+- Generates project-specific `CLAUDE.md` with your tech stack context
 - Configures MCP servers (playwright, github-official, duckduckgo, filesystem)
 - Installs global `yoyo` command
 
@@ -694,6 +695,6 @@ Built with:
 
 ---
 
-**Version:** 5.0.0
-**Last Updated:** 2025-12-29
+**Version:** 6.2.0
+**Last Updated:** 2026-01-03
 **Status:** Production Ready
