@@ -59,7 +59,7 @@ readonly GUI_DIR="$YOYO_INSTALL_DIR/gui"
 PORT=3456
 DEV_PORT=5173  # Vite dev server port
 DEV_MODE=false
-OPEN_BROWSER=true
+OPEN_BROWSER=false
 BACKGROUND_MODE=false
 BANNER_ENABLED=true
 PROJECT_ROOT=""  # Explicit project root (when passed from yoyo.sh)
@@ -116,14 +116,14 @@ show_help() {
     echo -e "  ${UI_SUCCESS}yoyo-gui${UI_RESET}                Launch browser-based dashboard (production)"
     echo -e "  ${UI_SUCCESS}yoyo-gui --dev${UI_RESET}          Development mode with hot reload (port 5173)"
     echo -e "  ${UI_SUCCESS}yoyo-gui --port 8080${UI_RESET}    Use custom port (production mode)"
-    echo -e "  ${UI_SUCCESS}yoyo-gui --no-open${UI_RESET}      Don't auto-open browser"
+    echo -e "  ${UI_SUCCESS}yoyo-gui --no-open${UI_RESET}      Don't auto-open browser (default)"
     echo -e "  ${UI_SUCCESS}yoyo-gui --no-banner${UI_RESET}    Skip branded banner (for CI/scripts)"
     echo -e "  ${UI_SUCCESS}yoyo-gui --background${UI_RESET}   Run in background"
     echo ""
     echo -e "${UI_BOLD}Options:${UI_RESET}"
     echo -e "  ${UI_PRIMARY}-d, --dev${UI_RESET}           Development mode with hot reload (port 5173)"
     echo -e "  ${UI_PRIMARY}-p, --port PORT${UI_RESET}     Server port for production mode (default: 3456)"
-    echo -e "  ${UI_PRIMARY}--no-open${UI_RESET}           Don't automatically open browser"
+    echo -e "  ${UI_PRIMARY}--no-open${UI_RESET}           Don't automatically open browser (default)"
     echo -e "  ${UI_PRIMARY}--no-banner${UI_RESET}         Skip branded startup banner"
     echo -e "  ${UI_PRIMARY}--background${UI_RESET}        Run server in background (for yoyo integration)"
     echo -e "  ${UI_PRIMARY}--stop${UI_RESET}              Stop background GUI server"
