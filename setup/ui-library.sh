@@ -1277,6 +1277,95 @@ ui_help_panel() {
     echo ""
 }
 
+# ============================================================================
+# Real-Time Progress Display Functions
+# ============================================================================
+
+# Check if stdout is an interactive terminal (TTY)
+# Returns 0 (true) if interactive, 1 (false) if not (e.g., piped to file)
+# Usage: if ui_is_interactive; then use_cursor_control; fi
+ui_is_interactive() {
+    [ -t 1 ]
+}
+
+# Display real-time progress counter with progress bar (updates in-place)
+# Usage: ui_update_progress "Category" current total [verbose_file] [is_verbose]
+# Example: ui_update_progress "Instructions" 12 45 "core/create-spec.md" "true"
+#
+# Output: "  Updating Instructions [12/45] ████████████░░░░░░░░ 27%"
+#
+# Note: Uses carriage return to update in-place. Call ui_progress_complete() when done.
+ui_update_progress() {
+    local category="$1"
+    local current="$2"
+    local total="$3"
+    local verbose_file="${4:-}"
+    local is_verbose="${5:-false}"
+
+    # Avoid division by zero
+    if [ "$total" -eq 0 ]; then
+        total=1
+    fi
+
+    # Calculate percentage
+    local percent=$((current * 100 / total))
+
+    # Generate progress bar (20 chars wide)
+    local bar
+    bar=$(ui_render_progress_bar "$current" "$total" 20)
+
+    if ui_is_interactive; then
+        # Interactive mode: update in-place using carriage return
+        printf "\r\033[K"  # Return to start of line and clear it
+        printf "  ${UI_INFO}Updating${UI_RESET} ${UI_BOLD}%-12s${UI_RESET} [%d/%d] ${UI_GREEN}%s${UI_RESET} ${UI_BOLD}%3d%%${UI_RESET}" \
+            "$category" "$current" "$total" "$bar" "$percent"
+
+        # If verbose mode and file provided, show on next line then move back up
+        if [ "$is_verbose" = "true" ] && [ -n "$verbose_file" ]; then
+            printf "\n    ${UI_DIM}${ICON_ARROW} %s${UI_RESET}\033[A" "$verbose_file"
+        fi
+    else
+        # Non-interactive mode: simple line output (only show every 10% or on completion)
+        if [ "$current" -eq "$total" ] || [ $((current % (total / 10 + 1))) -eq 0 ]; then
+            printf "  Updating %s [%d/%d] %d%%\n" "$category" "$current" "$total" "$percent"
+        fi
+    fi
+}
+
+# Finalize a progress line with completion checkmark and file count
+# Usage: ui_progress_complete "Category" file_count [error_count]
+# Example: ui_progress_complete "Instructions" 45 0
+#
+# Output: "  ✓ Instructions                                        45 files"
+ui_progress_complete() {
+    local category="$1"
+    local file_count="$2"
+    local error_count="${3:-0}"
+
+    if ui_is_interactive; then
+        printf "\r\033[K"  # Clear the progress line
+    fi
+
+    if [ "$error_count" -gt 0 ]; then
+        printf "  ${UI_SUCCESS}${ICON_SUCCESS}${UI_RESET} ${UI_BOLD}%-12s${UI_RESET} %42s ${UI_WARNING}%d files (%d errors)${UI_RESET}\n" \
+            "$category" "" "$file_count" "$error_count"
+    else
+        printf "  ${UI_SUCCESS}${ICON_SUCCESS}${UI_RESET} ${UI_BOLD}%-12s${UI_RESET} %48s ${UI_DIM}%d files${UI_RESET}\n" \
+            "$category" "" "$file_count"
+    fi
+}
+
+# Display a step header for update progress
+# Usage: ui_update_step step_num total_steps "Message"
+# Example: ui_update_step 3 12 "Updating instructions..."
+ui_update_step() {
+    local step_num="$1"
+    local total_steps="$2"
+    local message="$3"
+
+    printf "\n  ${UI_ACCENT}[%d/%d]${UI_RESET} %s\n" "$step_num" "$total_steps" "$message"
+}
+
 # Export all functions
 export -f supports_truecolor
 export -f ui_line ui_box_header ui_section ui_success ui_error ui_warning ui_info
@@ -1287,3 +1376,4 @@ export -f ui_get_agent_color ui_get_agent_icon ui_get_agent_description ui_agent
 export -f ui_render_progress_bar ui_project_dashboard
 export -f _dashboard_get_active_spec _dashboard_get_active_spec_dir
 export -f _dashboard_count_tasks _dashboard_count_recent_fixes _dashboard_get_git_branch
+export -f ui_is_interactive ui_update_progress ui_progress_complete ui_update_step

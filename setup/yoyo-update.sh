@@ -294,9 +294,7 @@ done
 
 echo ""
 
-# Brief pause so user can see the plan
-echo -e "${UI_INFO}${ICON_INFO}${UI_RESET}  Starting update in 2 seconds..."
-sleep 2
+# Start update immediately (progress is now visible in real-time)
 echo ""
 
 # ============================================================================
@@ -346,23 +344,168 @@ track_rsync_changes() {
     CHANGED_FILES+=("$dest ($count files)")
 }
 
+# ============================================================================
+# Comprehensive Backup Function
+# ============================================================================
+
+# Create a full backup of all framework files before updating
+# Usage: create_comprehensive_backup backup_dir
+# Returns: Number of files backed up
+create_comprehensive_backup() {
+    local backup_dir="$1"
+    local files_backed_up=0
+    local current=0
+    local total=0
+
+    mkdir -p "$backup_dir"
+
+    # First, count total files to backup
+    [ -d ".yoyo-dev/instructions" ] && total=$((total + $(find ".yoyo-dev/instructions" -type f 2>/dev/null | wc -l)))
+    [ -d ".yoyo-dev/standards" ] && total=$((total + $(find ".yoyo-dev/standards" -type f 2>/dev/null | wc -l)))
+    [ -d ".claude/commands" ] && total=$((total + $(find ".claude/commands" -type f 2>/dev/null | wc -l)))
+    [ -d ".claude/agents" ] && total=$((total + $(find ".claude/agents" -type f 2>/dev/null | wc -l)))
+    [ -d ".claude/hooks" ] && total=$((total + $(find ".claude/hooks" -type f 2>/dev/null | wc -l)))
+    [ -f ".yoyo-dev/config.yml" ] && total=$((total + 1))
+
+    # Backup instructions
+    if [ -d ".yoyo-dev/instructions" ]; then
+        while IFS= read -r -d '' file; do
+            ((current++))
+            local rel_path="${file#.yoyo-dev/}"
+            mkdir -p "$backup_dir/$(dirname "$rel_path")"
+            cp "$file" "$backup_dir/$rel_path"
+            ui_update_progress "Backup" "$current" "$total" "$rel_path" "$VERBOSE"
+        done < <(find ".yoyo-dev/instructions" -type f -print0 2>/dev/null)
+        files_backed_up=$((files_backed_up + $(find ".yoyo-dev/instructions" -type f 2>/dev/null | wc -l)))
+    fi
+
+    # Backup standards
+    if [ -d ".yoyo-dev/standards" ]; then
+        while IFS= read -r -d '' file; do
+            ((current++))
+            local rel_path="${file#.yoyo-dev/}"
+            mkdir -p "$backup_dir/$(dirname "$rel_path")"
+            cp "$file" "$backup_dir/$rel_path"
+            ui_update_progress "Backup" "$current" "$total" "$rel_path" "$VERBOSE"
+        done < <(find ".yoyo-dev/standards" -type f -print0 2>/dev/null)
+        files_backed_up=$((files_backed_up + $(find ".yoyo-dev/standards" -type f 2>/dev/null | wc -l)))
+    fi
+
+    # Backup commands
+    if [ -d ".claude/commands" ]; then
+        mkdir -p "$backup_dir/commands"
+        while IFS= read -r -d '' file; do
+            ((current++))
+            local rel_path="${file#.claude/commands/}"
+            cp "$file" "$backup_dir/commands/$rel_path"
+            ui_update_progress "Backup" "$current" "$total" "commands/$rel_path" "$VERBOSE"
+        done < <(find ".claude/commands" -type f -print0 2>/dev/null)
+        files_backed_up=$((files_backed_up + $(find ".claude/commands" -type f 2>/dev/null | wc -l)))
+    fi
+
+    # Backup agents
+    if [ -d ".claude/agents" ]; then
+        mkdir -p "$backup_dir/agents"
+        while IFS= read -r -d '' file; do
+            ((current++))
+            local rel_path="${file#.claude/agents/}"
+            cp "$file" "$backup_dir/agents/$rel_path"
+            ui_update_progress "Backup" "$current" "$total" "agents/$rel_path" "$VERBOSE"
+        done < <(find ".claude/agents" -type f -print0 2>/dev/null)
+        files_backed_up=$((files_backed_up + $(find ".claude/agents" -type f 2>/dev/null | wc -l)))
+    fi
+
+    # Backup hooks
+    if [ -d ".claude/hooks" ]; then
+        mkdir -p "$backup_dir/hooks"
+        while IFS= read -r -d '' file; do
+            ((current++))
+            local rel_path="${file#.claude/hooks/}"
+            cp "$file" "$backup_dir/hooks/$rel_path"
+            ui_update_progress "Backup" "$current" "$total" "hooks/$rel_path" "$VERBOSE"
+        done < <(find ".claude/hooks" -type f -print0 2>/dev/null)
+        files_backed_up=$((files_backed_up + $(find ".claude/hooks" -type f 2>/dev/null | wc -l)))
+    fi
+
+    # Backup config
+    if [ -f ".yoyo-dev/config.yml" ]; then
+        ((current++))
+        cp ".yoyo-dev/config.yml" "$backup_dir/config.yml"
+        ui_update_progress "Backup" "$current" "$total" "config.yml" "$VERBOSE"
+        files_backed_up=$((files_backed_up + 1))
+    fi
+
+    echo "$files_backed_up"
+}
+
+# ============================================================================
+# File Update with Progress Function
+# ============================================================================
+
+# Update files from source to destination with real-time progress display
+# Usage: update_with_progress src_dir dest_dir category
+# Returns: Number of files copied (sets UPDATE_ERRORS for error count)
+UPDATE_ERRORS=0
+
+update_with_progress() {
+    local src_dir="$1"
+    local dest_dir="$2"
+    local category="$3"
+    local files_copied=0
+    local errors=0
+
+    # Get list of files
+    local files=()
+    while IFS= read -r -d '' file; do
+        files+=("$file")
+    done < <(find "$src_dir" -type f -print0 2>/dev/null)
+
+    local total=${#files[@]}
+    local current=0
+
+    # Ensure destination exists
+    mkdir -p "$dest_dir"
+
+    for file in "${files[@]}"; do
+        ((current++))
+        local relative_path="${file#$src_dir/}"
+
+        # Create directory structure and copy file
+        mkdir -p "$(dirname "$dest_dir/$relative_path")"
+        if cp "$file" "$dest_dir/$relative_path" 2>/dev/null; then
+            ((files_copied++))
+        else
+            ((errors++))
+        fi
+
+        # Update progress display
+        ui_update_progress "$category" "$current" "$total" "$relative_path" "$VERBOSE"
+    done
+
+    # Show completion
+    ui_progress_complete "$category" "$files_copied" "$errors"
+
+    UPDATE_ERRORS=$errors
+    echo "$files_copied"
+}
+
 TOTAL_STEPS=12
 CURRENT_STEP=0
 
 # Get base installation path
 BASE_YOYO_DEV="$(dirname "$SCRIPT_DIR")"
 
-# Step 1: Backup current config
+# Step 1: Comprehensive backup of all framework files
 ((CURRENT_STEP++))
-ui_step $CURRENT_STEP $TOTAL_STEPS "Creating backup..."
+ui_step $CURRENT_STEP $TOTAL_STEPS "Creating comprehensive backup..."
 
 BACKUP_DIR=".yoyo-dev/backups/$(date +%Y%m%d_%H%M%S)"
-show_progress "Creating backup directory" "$BACKUP_DIR"
-mkdir -p "$BACKUP_DIR"
-show_progress "Copying config.yml"
-cp .yoyo-dev/config.yml "$BACKUP_DIR/config.yml" 2>/dev/null || true
+show_progress "Backup location" "$BACKUP_DIR"
 
-ui_success "Backup created: $BACKUP_DIR"
+# Create comprehensive backup with progress display
+BACKUP_COUNT=$(create_comprehensive_backup "$BACKUP_DIR")
+ui_progress_complete "Backup" "$BACKUP_COUNT" 0
+
 echo ""
 
 # Step 2: Pull latest from base installation
@@ -406,17 +549,8 @@ if [ "$OVERWRITE_INSTRUCTIONS" = true ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Updating instructions..."
 
-    show_progress "Source" "$BASE_YOYO_DEV/instructions/"
-    show_progress "Destination" ".yoyo-dev/instructions/"
-
-    # Count files being updated
-    FILE_COUNT=$(find "$BASE_YOYO_DEV/instructions/" -type f 2>/dev/null | wc -l)
-    show_progress "Copying $FILE_COUNT files..."
-
-    rsync -a --delete "$BASE_YOYO_DEV/instructions/" ".yoyo-dev/instructions/" 2>&1
+    FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/instructions/" ".yoyo-dev/instructions/" "Instructions")
     track_rsync_changes ".yoyo-dev/instructions/" "$FILE_COUNT"
-
-    ui_success "Instructions updated ($FILE_COUNT files)"
     echo ""
 else
     ((CURRENT_STEP++))
@@ -430,17 +564,8 @@ if [ "$OVERWRITE_STANDARDS" = true ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Updating standards..."
 
-    show_progress "Source" "$BASE_YOYO_DEV/standards/"
-    show_progress "Destination" ".yoyo-dev/standards/"
-
-    # Count files being updated
-    FILE_COUNT=$(find "$BASE_YOYO_DEV/standards/" -type f 2>/dev/null | wc -l)
-    show_progress "Copying $FILE_COUNT files..."
-
-    rsync -a --delete "$BASE_YOYO_DEV/standards/" ".yoyo-dev/standards/" 2>&1
+    FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/standards/" ".yoyo-dev/standards/" "Standards")
     track_rsync_changes ".yoyo-dev/standards/" "$FILE_COUNT"
-
-    ui_success "Standards updated ($FILE_COUNT files)"
     echo ""
 else
     ((CURRENT_STEP++))
@@ -454,17 +579,8 @@ if [ "$OVERWRITE_COMMANDS" = true ] && [ -d ".claude/commands" ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Updating CLI commands..."
 
-    show_progress "Source" "$BASE_YOYO_DEV/.claude/commands/"
-    show_progress "Destination" ".claude/commands/"
-
-    # Count files being updated
-    FILE_COUNT=$(find "$BASE_YOYO_DEV/.claude/commands/" -type f 2>/dev/null | wc -l)
-    show_progress "Copying $FILE_COUNT command files..."
-
-    rsync -a "$BASE_YOYO_DEV/.claude/commands/" ".claude/commands/" 2>&1
+    FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/.claude/commands/" ".claude/commands/" "Commands")
     track_rsync_changes ".claude/commands/" "$FILE_COUNT"
-
-    ui_success "Commands updated ($FILE_COUNT files)"
     echo ""
 else
     ((CURRENT_STEP++))
@@ -482,17 +598,8 @@ if [ "$OVERWRITE_AGENTS" = true ] && [ -d ".claude/agents" ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Updating agents..."
 
-    show_progress "Source" "$BASE_YOYO_DEV/.claude/agents/"
-    show_progress "Destination" ".claude/agents/"
-
-    # Count files being updated
-    FILE_COUNT=$(find "$BASE_YOYO_DEV/.claude/agents/" -type f 2>/dev/null | wc -l)
-    show_progress "Copying $FILE_COUNT agent definitions..."
-
-    rsync -a "$BASE_YOYO_DEV/.claude/agents/" ".claude/agents/" 2>&1
+    FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/.claude/agents/" ".claude/agents/" "Agents")
     track_rsync_changes ".claude/agents/" "$FILE_COUNT"
-
-    ui_success "Agents updated ($FILE_COUNT files)"
     echo ""
 else
     ((CURRENT_STEP++))
