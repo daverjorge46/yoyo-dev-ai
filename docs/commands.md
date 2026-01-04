@@ -12,6 +12,7 @@ This document provides a comprehensive reference for all available slash command
 - [Feature Development](#feature-development)
 - [Research & Guidance](#research--guidance)
 - [Bug Fixes](#bug-fixes)
+- [Status & Navigation](#status--navigation)
 - [Design System](#design-system)
 - [Memory System](#memory-system)
 - [Advanced](#advanced)
@@ -369,6 +370,82 @@ Analyze and fix bugs with systematic problem analysis.
 **See also:**
 - `/execute-tasks` - Execute fix
 - `/consult-oracle` - Strategic debugging
+
+---
+
+## Status & Navigation
+
+### `/yoyo-status`
+
+Display project status dashboard.
+
+**Usage:**
+```bash
+/yoyo-status
+```
+
+**What it does:**
+1. Shows active specification
+2. Displays task progress
+3. Shows recent activity
+4. Reports system status
+
+**When to use:**
+- Quick project overview
+- Checking current work
+- Monitoring progress
+
+---
+
+### `/yoyo-specs`
+
+List all specifications in the project.
+
+**Usage:**
+```bash
+/yoyo-specs
+```
+
+**What it does:**
+1. Scans `.yoyo-dev/specs/` directory
+2. Lists all specs with status and progress
+3. Sorts by date (newest first)
+4. Shows completion percentage
+
+**Output includes:**
+- Spec name and date
+- Current status (pending, in_progress, completed)
+- Progress percentage
+
+**See also:**
+- `/spec` - View specific spec details
+- `/create-spec` - Create new spec
+
+---
+
+### `/yoyo-fixes`
+
+List all bug fix records in the project.
+
+**Usage:**
+```bash
+/yoyo-fixes
+```
+
+**What it does:**
+1. Scans `.yoyo-dev/fixes/` directory
+2. Lists all fixes with status and root cause
+3. Sorts by date (newest first)
+4. Shows completion status
+
+**Output includes:**
+- Fix name and date
+- Current status
+- Root cause summary
+
+**See also:**
+- `/fix` - View specific fix details
+- `/create-fix` - Create new fix
 
 ---
 

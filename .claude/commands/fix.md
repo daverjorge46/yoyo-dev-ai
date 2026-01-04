@@ -10,7 +10,7 @@ View detailed analysis and solution for a specific bug fix.
 ## Usage
 
 ```
-/fix <number>     - View fix by list number (from /fixes)
+/fix <number>     - View fix by list number (from /yoyo-fixes)
 /fix <name>       - View fix by name (partial match supported)
 /fix              - View the most recent fix
 ```
@@ -82,6 +82,6 @@ From analysis.md:
 
 ## Edge Cases
 
-- Fix not found: "Bug fix not found. Run /fixes to see available fixes."
+- Fix not found: "Bug fix not found. Run /yoyo-fixes to see available fixes."
 - No analysis.md: "No analysis document found for this fix."
 - No tasks.md: Show "No tasks defined"

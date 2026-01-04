@@ -10,7 +10,7 @@ View detailed information about a specific Yoyo Dev specification.
 ## Usage
 
 ```
-/spec <number>    - View spec by list number (from /specs)
+/spec <number>    - View spec by list number (from /yoyo-specs)
 /spec <name>      - View spec by name (partial match supported)
 /spec             - View the most recent spec
 ```
@@ -83,6 +83,6 @@ $ARGUMENTS contains the spec identifier (number or name).
 
 ## Edge Cases
 
-- Spec not found: "Specification not found. Run /specs to see available specs."
+- Spec not found: "Specification not found. Run /yoyo-specs to see available specs."
 - No tasks.md: Show "No tasks defined yet"
 - No decisions.md: Omit from file list

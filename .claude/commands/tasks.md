@@ -68,10 +68,10 @@ $ARGUMENTS optionally contains a spec name to filter.
       └─ ○ 3.4 Implement recent activity section
       └─ ○ 3.5 Add professional formatting
 
-  ○ 4. Create /specs command
+  ○ 4. Create /yoyo-specs command
   ○ 5. Create /spec detail command
   ○ 6. Create /tasks command
-  ○ 7. Create /fixes command
+  ○ 7. Create /yoyo-fixes command
   ○ 8. Create /fix detail command
 
   ## Phase 3: Output Style

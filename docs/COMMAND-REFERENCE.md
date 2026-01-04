@@ -13,13 +13,14 @@ Complete reference for all Yoyo Dev commands.
 2. [Feature Development](#feature-development)
 3. [Research & Guidance (v5.0)](#research--guidance-v50)
 4. [Bug Fixes](#bug-fixes)
-5. [Spec Management](#spec-management)
-6. [Task Execution](#task-execution)
-7. [Design System](#design-system)
-8. [Code Review](#code-review)
-9. [Memory System](#memory-system)
-10. [Advanced](#advanced)
-11. [Launch Commands](#launch-commands)
+5. [Status & Navigation](#status--navigation)
+6. [Spec Management](#spec-management)
+7. [Task Execution](#task-execution)
+8. [Design System](#design-system)
+9. [Code Review](#code-review)
+10. [Memory System](#memory-system)
+11. [Advanced](#advanced)
+12. [Launch Commands](#launch-commands)
 
 ---
 
@@ -222,6 +223,62 @@ Complete reference for all Yoyo Dev commands.
 - Complex debugging
 - Test failures
 - Design/layout issues
+
+---
+
+## Status & Navigation
+
+### `/yoyo-status`
+
+**Purpose:** Display project status dashboard
+
+**Usage:**
+```bash
+/yoyo-status
+```
+
+**Shows:**
+- Active specification and progress
+- Recent activity
+- System status (MCP, memory)
+
+**When to use:** Quick project overview
+
+---
+
+### `/yoyo-specs`
+
+**Purpose:** List all specifications in the project
+
+**Usage:**
+```bash
+/yoyo-specs
+```
+
+**Output:**
+- Spec name and date
+- Status (pending, in_progress, completed)
+- Progress percentage
+
+**See also:** `/spec <n>` - View spec details
+
+---
+
+### `/yoyo-fixes`
+
+**Purpose:** List all bug fix records in the project
+
+**Usage:**
+```bash
+/yoyo-fixes
+```
+
+**Output:**
+- Fix name and date
+- Status
+- Root cause summary
+
+**See also:** `/fix <n>` - View fix details
 
 ---
 

@@ -52,10 +52,10 @@ Always prefix responses with the agent name when delegating:
 
 **Status & Navigation:**
 - `/yoyo-status` - Project dashboard
-- `/specs` - List all specifications
+- `/yoyo-specs` - List all specifications
 - `/spec <n>` - View specific spec details
 - `/tasks` - Show current task breakdown
-- `/fixes` - List bug fix records
+- `/yoyo-fixes` - List bug fix records
 
 **Research & Guidance:**
 - `/research "topic"` - Background research (parallel)
