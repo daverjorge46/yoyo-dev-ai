@@ -531,6 +531,10 @@ launch_dev() {
     local network_ip
     network_ip=$(get_network_ip)
 
+    # Kill any existing servers on our ports to prevent EADDRINUSE
+    kill_existing_on_port "$PORT"
+    kill_existing_on_port "$DEV_CLIENT_PORT"
+
     # Show branded banner (if enabled, terminal is interactive, and UI library loaded)
     if [ "$BANNER_ENABLED" = true ] && is_interactive_terminal && [ "$UI_LIBRARY_LOADED" = true ]; then
         ui_yoyo_banner "v${VERSION}"
@@ -568,6 +572,9 @@ launch_dev() {
 
 launch_production() {
     local project_root="$1"
+
+    # Kill any existing server on our port to prevent EADDRINUSE
+    kill_existing_on_port "$PORT"
 
     cd "$GUI_DIR"
 

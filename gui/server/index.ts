@@ -4,7 +4,7 @@
  * Hono-based API server for the browser GUI with WebSocket support.
  */
 
-import { serve } from '@hono/node-server';
+import { createAdaptorServer } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
 import { createNodeWebSocket } from '@hono/node-ws';
 import { Hono } from 'hono';
@@ -191,21 +191,43 @@ export async function startServer(options: ServerOptions = {}) {
   // Start file watcher with the effective project root
   fileWatcher.start({ projectRoot: effectiveProjectRoot, debounceMs: 100 });
 
-  // Create server with WebSocket support
-  // Bind to 0.0.0.0 to allow network access (not just localhost)
-  const server = serve(
-    {
-      fetch: app.fetch,
-      port,
-      hostname: '0.0.0.0',
-    },
-    (info) => {
-      console.log(`  Listening on ${info.address}:${info.port}`);
+  // Create server with WebSocket support (don't start listening yet)
+  const server = createAdaptorServer({
+    fetch: app.fetch,
+    hostname: '0.0.0.0',
+  });
+
+  // Track if we've already handled the error (prevent duplicate output)
+  let errorHandled = false;
+
+  // Handle server errors (especially EADDRINUSE) - must attach BEFORE listen()
+  server.on('error', (err: NodeJS.ErrnoException) => {
+    if (errorHandled) return;
+    errorHandled = true;
+
+    // Stop file watcher to prevent further output
+    fileWatcher.stop();
+
+    if (err.code === 'EADDRINUSE') {
+      console.error(`\n  ERROR: Port ${port} is already in use`);
+      console.error(`\n  To fix this, either:`);
+      console.error(`    1. Stop the existing server: yoyo-gui --stop`);
+      console.error(`    2. Kill the process manually: lsof -ti :${port} | xargs kill`);
+      console.error(`    3. Use a different port: yoyo-gui --port 3457\n`);
+    } else {
+      console.error('\n  Server error:', err.message);
     }
-  );
+    // Use setImmediate to ensure our message is the last thing printed
+    setImmediate(() => process.exit(1));
+  });
 
   // Inject WebSocket handling into the server
   injectWebSocket(server);
+
+  // Now start listening (error handler already attached)
+  server.listen(port, '0.0.0.0', () => {
+    console.log(`  Listening on 0.0.0.0:${port}`);
+  });
 
   // Graceful shutdown
   const shutdown = async () => {

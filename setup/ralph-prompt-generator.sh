@@ -67,6 +67,7 @@ while [[ $# -gt 0 ]]; do
             echo ""
             echo "Commands:"
             echo "  execute-tasks    Generate for task execution"
+            echo "  execute-phase    Generate for roadmap phase execution"
             echo "  create-spec      Generate for spec creation"
             echo "  create-fix       Generate for bug fix workflow"
             echo "  create-new       Generate for complete feature creation"
@@ -317,6 +318,113 @@ After each iteration:
 EOF
 }
 
+generate_execute_phase_prompt() {
+    local phase_args="$1"
+
+    # Parse JSON args
+    local phase_id phase_title phase_goal phase_items
+    phase_id=$(echo "$phase_args" | grep -o '"phaseId":"[^"]*"' | cut -d'"' -f4)
+    phase_title=$(echo "$phase_args" | grep -o '"phaseTitle":"[^"]*"' | cut -d'"' -f4)
+    phase_goal=$(echo "$phase_args" | grep -o '"phaseGoal":"[^"]*"' | cut -d'"' -f4)
+    # Items are passed as a string with newlines
+    phase_items=$(echo "$phase_args" | grep -o '"items":"[^"]*"' | cut -d'"' -f4 | sed 's/\\n/\n/g')
+
+    cat << EOF
+# Yoyo Dev - Autonomous Phase Execution
+
+## Context
+
+You are running in autonomous mode via Ralph. Execute all specifications and tasks for this roadmap phase.
+
+## Phase Information
+
+**Phase ID:** $phase_id
+**Phase Title:** $phase_title
+**Phase Goal:** $phase_goal
+
+## Items to Execute
+
+$phase_items
+
+## Reference Files
+
+Load these for context:
+- Mission: \`.yoyo-dev/product/mission-lite.md\`
+- Tech Stack: \`.yoyo-dev/product/tech-stack.md\`
+- Roadmap: \`.yoyo-dev/product/roadmap.md\`
+
+## Execution Workflow
+
+For each item in the phase:
+
+### Step 1: Check Spec Status
+1. Search \`.yoyo-dev/specs/\` for existing spec matching item title
+2. If spec exists, check for tasks.md
+3. Report status: [HAS_SPEC], [HAS_TASKS], or [NEEDS_CREATION]
+
+### Step 2: Create Missing Specs
+If no spec exists:
+1. Run \`/create-spec\` with item description
+2. Wait for spec creation to complete
+3. Report: [SPEC_CREATED] <spec-path>
+
+### Step 3: Create Missing Tasks
+If spec exists but no tasks.md:
+1. Run \`/create-tasks\` for the spec
+2. Wait for tasks creation to complete
+3. Report: [TASKS_CREATED] <task-count>
+
+### Step 4: Execute Tasks
+For each spec with tasks:
+1. Run \`/execute-tasks\` for the spec
+2. Follow TDD approach
+3. Mark tasks complete as implemented
+4. Report progress: [TASK_COMPLETE] <task-name>
+5. Report progress percentage: [PROGRESS] <percent>%
+
+### Step 5: Verify Completion
+After all tasks for a spec:
+1. Run full test suite
+2. Verify all tests pass
+3. Update state.json
+4. Report: [SPEC_COMPLETE] <spec-name>
+
+## Progress Reporting
+
+Use these markers for machine-readable output:
+- \`[PROGRESS] XX%\` - Overall phase progress
+- \`[TASK_COMPLETE] <task>\` - Individual task completed
+- \`[SPEC_COMPLETE] <spec>\` - Entire spec finished
+- \`[PHASE_STATUS] <status>\` - Phase status update
+
+## Exit Conditions
+
+**SUCCESS - Exit when ALL conditions met:**
+- All items have specs created
+- All specs have tasks created
+- All tasks marked completed
+- All tests passing
+
+When complete, output exactly:
+\`\`\`
+PHASE COMPLETE: $phase_title
+\`\`\`
+
+**FAILURE - Exit on:**
+- 5 consecutive loops without any task completion
+- Tests failing after 3 fix attempts per spec
+- Spec creation blocked (missing dependencies)
+
+## Important Notes
+
+- Execute items in order unless blocked
+- Commit code after each spec completion
+- Do NOT skip items
+- Do NOT mark tasks complete without implementation
+- Report progress after each significant milestone
+EOF
+}
+
 generate_create_new_prompt() {
     local feature_desc="$1"
 
@@ -417,6 +525,9 @@ main() {
                 exit 1
             fi
             generate_execute_tasks_prompt "$spec_path" > "$output_file"
+            ;;
+        execute-phase)
+            generate_execute_phase_prompt "$COMMAND_ARGS" > "$output_file"
             ;;
         create-spec)
             generate_create_spec_prompt "$COMMAND_ARGS" > "$output_file"

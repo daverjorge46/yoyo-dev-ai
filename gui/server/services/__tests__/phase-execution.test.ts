@@ -20,8 +20,6 @@ import {
   PhaseExecutionService,
   getPhaseExecutionService,
   resetPhaseExecutionService,
-  type PhaseExecutionStatus,
-  type ExecutionState,
 } from '../phase-execution.js';
 import { wsManager } from '../websocket.js';
 
@@ -45,17 +43,17 @@ function createMockChildProcess(options: {
   (process as any).pid = 12345;
   (process as any).killed = false;
 
-  process.kill = vi.fn((signal?: string) => {
-    (process as any).killed = true;
+  (process as any).kill = vi.fn((signal?: NodeJS.Signals | number) => {
     if (signal === 'SIGTSTP') {
-      // Pause signal - don't exit
+      // Pause signal - don't mark as killed, don't exit
       return true;
     }
     if (signal === 'SIGCONT') {
-      // Resume signal - don't exit
+      // Resume signal - don't mark as killed, don't exit
       return true;
     }
-    // Default: terminate
+    // SIGTERM or other - mark as killed and exit
+    (process as any).killed = true;
     setTimeout(() => {
       process.emit('exit', options.exitCode ?? 0, null);
     }, 10);
@@ -98,7 +96,11 @@ describe('PhaseExecutionService', () => {
     vi.clearAllMocks();
     resetPhaseExecutionService();
     mockSpawn = vi.fn();
-    service = new PhaseExecutionService(testProjectRoot, { spawn: mockSpawn });
+    // Skip prompt generation in tests to avoid shell script dependency
+    service = new PhaseExecutionService(testProjectRoot, {
+      spawn: mockSpawn,
+      skipPromptGeneration: true,
+    });
   });
 
   afterEach(() => {
@@ -168,23 +170,34 @@ describe('PhaseExecutionService', () => {
       expect(result.specsToExecute).toHaveLength(2);
     });
 
-    it('should generate PROMPT.md via ralph-prompt-generator.sh', async () => {
+    it('should call prompt generator when not skipped', async () => {
       const mockProcess = createMockChildProcess({ stayRunning: true });
       mockSpawn.mockReturnValue(mockProcess);
+      const mockGeneratePrompt = vi.fn().mockResolvedValue(undefined);
 
-      await service.startExecution({
+      // Create service with custom prompt generator
+      const serviceWithPrompt = new PhaseExecutionService(testProjectRoot, {
+        spawn: mockSpawn,
+        generatePrompt: mockGeneratePrompt,
+      });
+
+      await serviceWithPrompt.startExecution({
         phaseId: 'phase-2',
         phaseTitle: 'API Layer',
         phaseGoal: 'Build REST API',
         items: [{ title: 'Endpoints', specExists: false, specPath: null }],
       });
 
-      // First call should be to ralph-prompt-generator.sh
-      expect(mockSpawn).toHaveBeenCalledWith(
-        expect.stringContaining('ralph-prompt-generator.sh'),
-        expect.arrayContaining(['--command', 'execute-phase']),
-        expect.any(Object)
+      // Should have called the prompt generator
+      expect(mockGeneratePrompt).toHaveBeenCalledWith(
+        testProjectRoot,
+        'phase-2',
+        'API Layer',
+        'Build REST API',
+        '- Endpoints'
       );
+
+      serviceWithPrompt.cleanup();
     });
 
     it('should reject if already running', async () => {
@@ -333,7 +346,9 @@ describe('PhaseExecutionService', () => {
       const result = await service.resume();
 
       expect(result.status).toBe('running');
-      expect(mockProcess.kill).toHaveBeenCalledWith('SIGCONT');
+      // kill should have been called twice: SIGTSTP for pause, SIGCONT for resume
+      expect(mockProcess.kill).toHaveBeenNthCalledWith(1, 'SIGTSTP');
+      expect(mockProcess.kill).toHaveBeenNthCalledWith(2, 'SIGCONT');
     });
 
     it('should reject if not paused', async () => {
@@ -530,6 +545,9 @@ describe('PhaseExecutionService', () => {
       expect(status.progress.overall).toBe(45);
       expect(status.progress.currentSpec?.id).toBe('auth');
 
+      // Wait for debounce to flush
+      await new Promise((resolve) => setTimeout(resolve, 600));
+
       expect(wsManager.broadcast).toHaveBeenCalledWith(
         expect.objectContaining({
           type: 'phase:execution:progress',
@@ -583,15 +601,20 @@ describe('PhaseExecutionService', () => {
         items: [],
       });
 
+      // Service adds a "Ralph process started" log automatically
+      const initialLogs = service.getLogs();
+      const initialCount = initialLogs.length;
+
       service.addLog('Starting task execution', 'info');
       service.addLog('Warning: slow operation', 'warn');
       service.addLog('Error occurred', 'error');
 
       const logs = service.getLogs();
-      expect(logs).toHaveLength(3);
-      expect(logs[0].message).toBe('Starting task execution');
-      expect(logs[1].level).toBe('warn');
-      expect(logs[2].level).toBe('error');
+      expect(logs).toHaveLength(initialCount + 3);
+      // Check our added logs (skip the auto-generated one)
+      expect(logs[initialCount].message).toBe('Starting task execution');
+      expect(logs[initialCount + 1].level).toBe('warn');
+      expect(logs[initialCount + 2].level).toBe('error');
     });
 
     it('should broadcast phase:execution:log events', async () => {
@@ -648,14 +671,7 @@ describe('PhaseExecutionService', () => {
 
   describe('Ralph output parsing', () => {
     it('should parse task completion from Ralph output', async () => {
-      const mockProcess = createMockChildProcess({
-        stdout: [
-          'Starting execution...\n',
-          '[TASK_COMPLETE] Task 1.1 - Write tests\n',
-          '[PROGRESS] 25%\n',
-        ],
-        stayRunning: true,
-      });
+      const mockProcess = createMockChildProcess({ stayRunning: true });
       mockSpawn.mockReturnValue(mockProcess);
 
       await service.startExecution({
@@ -665,7 +681,10 @@ describe('PhaseExecutionService', () => {
         items: [],
       });
 
-      // Wait for stdout processing
+      // Manually emit stdout data to simulate Ralph output
+      (mockProcess as any).stdout.emit('data', Buffer.from('[TASK_COMPLETE] Task 1.1 - Write tests\n'));
+
+      // Wait for processing
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       const logs = service.getLogs();
@@ -673,10 +692,7 @@ describe('PhaseExecutionService', () => {
     });
 
     it('should detect phase completion signal', async () => {
-      const mockProcess = createMockChildProcess({
-        stdout: ['PHASE COMPLETE: Test Phase\n'],
-        exitCode: 0,
-      });
+      const mockProcess = createMockChildProcess({ stayRunning: true });
       mockSpawn.mockReturnValue(mockProcess);
 
       await service.startExecution({
@@ -686,7 +702,12 @@ describe('PhaseExecutionService', () => {
         items: [],
       });
 
-      // Wait for completion
+      vi.clearAllMocks();
+
+      // Emit completion signal and exit
+      (mockProcess as any).stdout.emit('data', Buffer.from('PHASE COMPLETE: Test Phase\n'));
+
+      // Wait for processing
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(wsManager.broadcast).toHaveBeenCalledWith(
@@ -697,10 +718,7 @@ describe('PhaseExecutionService', () => {
     });
 
     it('should handle Ralph process failure', async () => {
-      const mockProcess = createMockChildProcess({
-        stderr: 'Fatal error: cannot continue\n',
-        exitCode: 1,
-      });
+      const mockProcess = createMockChildProcess({ stayRunning: true });
       mockSpawn.mockReturnValue(mockProcess);
 
       await service.startExecution({
@@ -710,7 +728,12 @@ describe('PhaseExecutionService', () => {
         items: [],
       });
 
-      // Wait for failure
+      vi.clearAllMocks();
+
+      // Emit exit with error code
+      mockProcess.emit('exit', 1, null);
+
+      // Wait for processing
       await new Promise((resolve) => setTimeout(resolve, 50));
 
       expect(wsManager.broadcast).toHaveBeenCalledWith(
@@ -751,10 +774,7 @@ describe('PhaseExecutionService', () => {
     });
 
     it('should return last execution info when idle', async () => {
-      const mockProcess = createMockChildProcess({
-        stdout: ['PHASE COMPLETE: Test\n'],
-        exitCode: 0,
-      });
+      const mockProcess = createMockChildProcess({ stayRunning: true });
       mockSpawn.mockReturnValue(mockProcess);
 
       await service.startExecution({
@@ -763,6 +783,9 @@ describe('PhaseExecutionService', () => {
         phaseGoal: 'Test',
         items: [],
       });
+
+      // Emit completion signal
+      (mockProcess as any).stdout.emit('data', Buffer.from('PHASE COMPLETE: Test\n'));
 
       // Wait for completion
       await new Promise((resolve) => setTimeout(resolve, 50));
