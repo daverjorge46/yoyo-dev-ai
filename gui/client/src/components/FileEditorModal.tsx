@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback, useEffect } from 'react';
-import { X, Save, RefreshCw, Eye, EyeOff, AlertTriangle, Check } from 'lucide-react';
+import { X, Save, RefreshCw, Eye, EyeOff, AlertTriangle, Check, FileText, Edit2 } from 'lucide-react';
 import { MarkdownEditor } from './MarkdownEditor';
 import { MarkdownPreview } from './MarkdownPreview';
 import { useFileEditor } from '../hooks/useFileEditor';
@@ -21,6 +21,7 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [isViewMode, setIsViewMode] = useState(false);
 
   const {
     content,
@@ -34,7 +35,7 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
     reload,
     discardChanges,
   } = useFileEditor(filePath, {
-    autoSave: true,
+    autoSave: !isViewMode,
     autoSaveDelay: 2000,
     onSaveSuccess: () => {
       setSaveMessage('Saved');
@@ -79,6 +80,32 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
     }
   }, [save]);
 
+  // Handle mode toggle
+  const handleModeToggle = useCallback(async () => {
+    if (isViewMode) {
+      // Switching to Edit mode - no confirmation needed
+      setIsViewMode(false);
+    } else {
+      // Switching to View mode - check for unsaved changes
+      if (hasUnsavedChanges) {
+        const action = window.confirm(
+          'You have unsaved changes. Save before switching to View mode?\n\nClick OK to save, Cancel to discard changes.'
+        );
+        if (action) {
+          try {
+            await save();
+          } catch {
+            // Error handled by onSaveError
+            return;
+          }
+        } else {
+          discardChanges();
+        }
+      }
+      setIsViewMode(true);
+    }
+  }, [isViewMode, hasUnsavedChanges, save, discardChanges]);
+
   // Handle close with unsaved changes check
   const handleClose = useCallback(() => {
     if (hasUnsavedChanges) {
@@ -117,7 +144,8 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
     document.addEventListener('mouseup', handleMouseUp);
   }, [splitRatio]);
 
-  const displayTitle = title || filePath.split('/').pop() || 'Editor';
+  const fileName = title || filePath.split('/').pop() || 'Editor';
+  const displayTitle = isViewMode ? `Viewing: ${fileName}` : fileName;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
@@ -125,13 +153,21 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
           <div className="flex items-center gap-3">
-            <h2 className="text-lg font-semibold text-white">{displayTitle}</h2>
-            {hasUnsavedChanges && (
+            <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+              {isViewMode && <Eye className="h-4 w-4 text-indigo-400" />}
+              {displayTitle}
+            </h2>
+            {isViewMode && (
+              <span className="px-2 py-0.5 text-xs bg-indigo-600 text-white rounded">
+                View Mode
+              </span>
+            )}
+            {!isViewMode && hasUnsavedChanges && (
               <span className="px-2 py-0.5 text-xs bg-yellow-600 text-white rounded">
                 Unsaved
               </span>
             )}
-            {saveMessage && (
+            {!isViewMode && saveMessage && (
               <span
                 className={`px-2 py-0.5 text-xs rounded flex items-center gap-1 ${
                   saveMessage === 'Saved'
@@ -143,7 +179,7 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
                 {saveMessage}
               </span>
             )}
-            {lastSaved && !saveMessage && !hasUnsavedChanges && (
+            {!isViewMode && lastSaved && !saveMessage && !hasUnsavedChanges && (
               <span className="text-xs text-gray-400">
                 Saved {lastSaved.toLocaleTimeString()}
               </span>
@@ -151,34 +187,52 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Toggle Preview */}
+            {/* Toggle Preview (only in Edit mode, or to show/hide raw markdown in View mode) */}
             <button
               onClick={() => setShowPreview(!showPreview)}
               className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors"
-              title={showPreview ? 'Hide Preview' : 'Show Preview'}
+              title={isViewMode
+                ? (showPreview ? 'Show Raw Markdown' : 'Show Preview')
+                : (showPreview ? 'Hide Preview' : 'Show Preview')}
             >
               {showPreview ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
             </button>
 
-            {/* Reload */}
+            {/* Mode Toggle */}
+            <button
+              onClick={handleModeToggle}
+              className={`p-2 rounded transition-colors ${
+                isViewMode
+                  ? 'text-indigo-400 hover:text-indigo-300 hover:bg-gray-700'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-700'
+              }`}
+              title={isViewMode ? 'Switch to Edit Mode' : 'Switch to View Mode'}
+              data-testid="mode-toggle"
+            >
+              {isViewMode ? <Edit2 className="h-4 w-4" /> : <FileText className="h-4 w-4" />}
+            </button>
+
+            {/* Reload - disabled in View mode */}
             <button
               onClick={reload}
-              disabled={isLoading}
-              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors disabled:opacity-50"
-              title="Reload from disk"
+              disabled={isLoading || isViewMode}
+              className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={isViewMode ? 'Reload disabled in View mode' : 'Reload from disk'}
             >
               <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
             </button>
 
-            {/* Save */}
-            <button
-              onClick={handleSave}
-              disabled={isSaving || !hasUnsavedChanges}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 text-white text-sm rounded transition-colors disabled:opacity-50"
-            >
-              <Save className="h-4 w-4" />
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
+            {/* Save - hidden in View mode */}
+            {!isViewMode && (
+              <button
+                onClick={handleSave}
+                disabled={isSaving || !hasUnsavedChanges}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 text-white text-sm rounded transition-colors disabled:opacity-50"
+              >
+                <Save className="h-4 w-4" />
+                {isSaving ? 'Saving...' : 'Save'}
+              </button>
+            )}
 
             {/* Close */}
             <button
@@ -227,7 +281,22 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
               <RefreshCw className="h-6 w-6 animate-spin mr-2" />
               Loading...
             </div>
+          ) : isViewMode ? (
+            // View Mode: Full-width preview (default) or full-width read-only editor
+            <div className="w-full h-full overflow-hidden">
+              {showPreview ? (
+                <MarkdownPreview content={content} />
+              ) : (
+                <MarkdownEditor
+                  value={content}
+                  onChange={() => {}} // No-op in view mode
+                  onSave={() => {}} // No-op in view mode
+                  readOnly={true}
+                />
+              )}
+            </div>
           ) : (
+            // Edit Mode: Split-pane editor + preview
             <>
               {/* Editor Pane */}
               <div
@@ -265,12 +334,16 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
         {/* Footer */}
         <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-t border-gray-700 text-xs text-gray-400">
           <span>{filePath}</span>
-          <div className="flex items-center gap-4">
-            <span>Ctrl+S to save</span>
-            <span>Ctrl+B bold</span>
-            <span>Ctrl+I italic</span>
-            <span>Ctrl+K link</span>
-          </div>
+          {isViewMode ? (
+            <span>Read-only mode • Click Edit button to make changes</span>
+          ) : (
+            <div className="flex items-center gap-4">
+              <span>Ctrl+S to save</span>
+              <span>Ctrl+B bold</span>
+              <span>Ctrl+I italic</span>
+              <span>Ctrl+K link</span>
+            </div>
+          )}
         </div>
       </div>
     </div>
