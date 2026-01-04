@@ -236,7 +236,7 @@ Show the complete Yoyo Dev v6.2 command reference with all available commands, f
 
 ────────────────────────────────────────────────────────────────────
 
-Yoyo Dev v6.2 - "Powerful when you need it. Invisible when you don't."
+Yoyo Dev v6.2 - "Your AI learns. Your AI remembers. Your AI evolves."
 ```
 
 Display this complete reference and exit.

@@ -361,7 +361,7 @@ Gives you:
 
 **Why?** Because control > speed. Users should verify each step.
 
-**Mantra:** "Powerful when you need it. Invisible when you don't."
+**Mantra:** "Your AI learns. Your AI remembers. Your AI evolves."
 
 Interactive mode = Powerful control
 `--all` flag = Invisible automation
