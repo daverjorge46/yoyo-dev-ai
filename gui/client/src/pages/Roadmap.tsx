@@ -21,6 +21,8 @@ import {
   RoadmapTimeline,
   type RoadmapPhaseData,
 } from '../components/roadmap';
+import { RalphMonitorPanel } from '../components/roadmap/RalphMonitorPanel';
+import { usePhaseExecution } from '../hooks/usePhaseExecution';
 
 // =============================================================================
 // Types
@@ -219,6 +221,11 @@ export default function Roadmap() {
   const [zoom, setZoom] = useState(100);
   const [filter, setFilter] = useState<FilterType>('all');
   const [editingPhaseId, setEditingPhaseId] = useState<string | null>(null);
+  const [monitorPhaseId, setMonitorPhaseId] = useState<string | null>(null);
+  const [monitorPhaseTitle, setMonitorPhaseTitle] = useState<string>('');
+
+  // Phase execution state
+  const { isActive, phaseId: executingPhaseId } = usePhaseExecution();
 
   // Fetch roadmap data
   const { data, isLoading, error } = useQuery({
@@ -279,6 +286,19 @@ export default function Roadmap() {
 
   const handleCancelEdit = useCallback(() => {
     setEditingPhaseId(null);
+  }, []);
+
+  const handleExecute = useCallback(
+    (phaseId: string) => {
+      const phase = data?.phases.find((p) => p.id === phaseId);
+      setMonitorPhaseId(phaseId);
+      setMonitorPhaseTitle(phase?.title || phaseId);
+    },
+    [data?.phases]
+  );
+
+  const handleCloseMonitor = useCallback(() => {
+    setMonitorPhaseId(null);
   }, []);
 
   // Loading state
@@ -358,6 +378,17 @@ export default function Roadmap() {
         onStartEdit={handleStartEdit}
         onSaveEdit={handleSaveEdit}
         onCancelEdit={handleCancelEdit}
+        onExecute={handleExecute}
+        isExecutionRunning={isActive}
+        executingPhaseId={executingPhaseId}
+      />
+
+      {/* Ralph Monitor Panel */}
+      <RalphMonitorPanel
+        isOpen={monitorPhaseId !== null}
+        onClose={handleCloseMonitor}
+        phaseId={monitorPhaseId || ''}
+        phaseTitle={monitorPhaseTitle}
       />
 
       {/* Mutation status indicators */}

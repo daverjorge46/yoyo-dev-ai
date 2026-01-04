@@ -43,6 +43,12 @@ export interface RoadmapTimelineProps {
   onSaveEdit: (phaseId: string, newTitle: string) => void;
   /** Callback to cancel edit */
   onCancelEdit: () => void;
+  /** Callback to execute a phase */
+  onExecute?: (phaseId: string) => void;
+  /** Whether an execution is currently running */
+  isExecutionRunning?: boolean;
+  /** ID of the currently executing phase */
+  executingPhaseId?: string | null;
 }
 
 // =============================================================================
@@ -57,6 +63,9 @@ export function RoadmapTimeline({
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
+  onExecute,
+  isExecutionRunning = false,
+  executingPhaseId = null,
 }: RoadmapTimelineProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -145,6 +154,9 @@ export function RoadmapTimeline({
               onStartEdit={onStartEdit}
               onSaveEdit={onSaveEdit}
               onCancelEdit={onCancelEdit}
+              onExecute={onExecute}
+              isExecutionRunning={isExecutionRunning}
+              executingPhaseId={executingPhaseId}
             />
           ))}
         </SortableContext>

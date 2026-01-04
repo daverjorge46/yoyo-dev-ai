@@ -17,6 +17,8 @@ import {
   ChevronRight,
   GripVertical,
   Pencil,
+  Play,
+  Loader2,
 } from 'lucide-react';
 import { RoadmapFeature, type RoadmapFeatureItem } from './RoadmapFeature';
 import { RoadmapEditor } from './RoadmapEditor';
@@ -60,6 +62,12 @@ export interface RoadmapPhaseProps {
   onSaveEdit: (phaseId: string, newTitle: string) => void;
   /** Callback to cancel edit */
   onCancelEdit: () => void;
+  /** Callback to open execution panel */
+  onExecute?: (phaseId: string) => void;
+  /** Whether another phase is currently executing */
+  isExecutionRunning?: boolean;
+  /** ID of the currently executing phase (if any) */
+  executingPhaseId?: string | null;
 }
 
 // =============================================================================
@@ -156,6 +164,9 @@ export function RoadmapPhase({
   onStartEdit,
   onSaveEdit,
   onCancelEdit,
+  onExecute,
+  isExecutionRunning = false,
+  executingPhaseId = null,
 }: RoadmapPhaseProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [isHovered, setIsHovered] = useState(false);
@@ -189,6 +200,14 @@ export function RoadmapPhase({
     e.stopPropagation();
     onStartEdit(phase.id);
   };
+
+  const handleExecuteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onExecute?.(phase.id);
+  };
+
+  const isThisPhaseExecuting = executingPhaseId === phase.id;
+  const canExecute = !isExecutionRunning || isThisPhaseExecuting;
 
   return (
     <motion.div
@@ -254,23 +273,53 @@ export function RoadmapPhase({
                     </h3>
                     <PhaseStatusBadge status={phase.status} />
                     {isHovered && !isEditing && (
-                      <span
-                        onClick={handleEditClick}
-                        className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
-                        data-testid="edit-button"
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Edit phase name"
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            onStartEdit(phase.id);
-                          }
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5 text-gray-500" />
-                      </span>
+                      <>
+                        <span
+                          onClick={handleEditClick}
+                          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                          data-testid="edit-button"
+                          role="button"
+                          tabIndex={0}
+                          aria-label="Edit phase name"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              onStartEdit(phase.id);
+                            }
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                        </span>
+                        {onExecute && (
+                          <span
+                            onClick={canExecute ? handleExecuteClick : undefined}
+                            className={`p-1 rounded transition-colors ${
+                              canExecute
+                                ? 'hover:bg-blue-100 dark:hover:bg-blue-900/30 cursor-pointer'
+                                : 'opacity-50 cursor-not-allowed'
+                            }`}
+                            data-testid="execute-button"
+                            role="button"
+                            tabIndex={canExecute ? 0 : -1}
+                            aria-label={isThisPhaseExecuting ? 'View execution' : 'Execute phase'}
+                            aria-disabled={!canExecute}
+                            onKeyDown={(e) => {
+                              if (canExecute && (e.key === 'Enter' || e.key === ' ')) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                onExecute(phase.id);
+                              }
+                            }}
+                          >
+                            {isThisPhaseExecuting ? (
+                              <Loader2 className="h-3.5 w-3.5 text-blue-500 animate-spin" />
+                            ) : (
+                              <Play className="h-3.5 w-3.5 text-blue-500" />
+                            )}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">

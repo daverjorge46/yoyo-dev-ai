@@ -16,6 +16,7 @@ export interface WSMessage {
     | 'ping'
     | 'pong'
     | 'subscribe'
+    | 'unsubscribe'
     | 'file:changed'
     | 'file:created'
     | 'file:deleted'
@@ -28,14 +29,50 @@ export interface WSMessage {
     | 'agent:progress'
     | 'agent:completed'
     | 'agent:failed'
-    | 'agent:log';
+    | 'agent:log'
+    | 'phase:execution:started'
+    | 'phase:execution:progress'
+    | 'phase:execution:paused'
+    | 'phase:execution:resumed'
+    | 'phase:execution:stopped'
+    | 'phase:execution:completed'
+    | 'phase:execution:failed'
+    | 'phase:execution:log';
   payload?: {
     path?: string;
     paths?: string[];
+    channels?: string[];
     event?: string;
+    executionId?: string;
+    phaseId?: string;
     data?: unknown;
     timestamp: number;
   };
+}
+
+// Phase execution specific types
+export interface PhaseExecutionProgress {
+  executionId: string;
+  phaseId: string;
+  phaseTitle: string;
+  overallProgress: number;
+  currentSpec?: {
+    id: string;
+    title: string;
+    progress: number;
+    currentTask?: string;
+  };
+  completedSpecs: number;
+  totalSpecs: number;
+  elapsedSeconds: number;
+}
+
+export interface PhaseExecutionLog {
+  timestamp: string;
+  level: 'info' | 'warn' | 'error' | 'debug';
+  message: string;
+  specId?: string;
+  taskId?: string;
 }
 
 interface ConnectedClient {
@@ -103,7 +140,21 @@ class WebSocketManager {
         case 'subscribe':
           if (msg.payload?.paths) {
             msg.payload.paths.forEach((path) => client.subscriptions.add(path));
-            console.log(`[WS] Client ${clientId} subscribed to:`, msg.payload.paths);
+            console.log(`[WS] Client ${clientId} subscribed to paths:`, msg.payload.paths);
+          }
+          if (msg.payload?.channels) {
+            msg.payload.channels.forEach((channel) => client.subscriptions.add(channel));
+            console.log(`[WS] Client ${clientId} subscribed to channels:`, msg.payload.channels);
+          }
+          break;
+
+        case 'unsubscribe':
+          if (msg.payload?.paths) {
+            msg.payload.paths.forEach((path) => client.subscriptions.delete(path));
+          }
+          if (msg.payload?.channels) {
+            msg.payload.channels.forEach((channel) => client.subscriptions.delete(channel));
+            console.log(`[WS] Client ${clientId} unsubscribed from channels:`, msg.payload.channels);
           }
           break;
 
@@ -231,6 +282,170 @@ class WebSocketManager {
       type: 'system:status',
       payload: {
         data,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
+  // ===========================================================================
+  // Phase Execution Events
+  // ===========================================================================
+
+  /**
+   * Broadcast phase execution started
+   */
+  broadcastPhaseStarted(data: {
+    executionId: string;
+    phaseId: string;
+    phaseTitle: string;
+    totalSpecs: number;
+    startedAt: string;
+  }): void {
+    this.broadcast({
+      type: 'phase:execution:started',
+      payload: {
+        executionId: data.executionId,
+        phaseId: data.phaseId,
+        data,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
+  /**
+   * Broadcast phase execution progress
+   */
+  broadcastPhaseProgress(data: PhaseExecutionProgress): void {
+    this.broadcast({
+      type: 'phase:execution:progress',
+      payload: {
+        executionId: data.executionId,
+        phaseId: data.phaseId,
+        data,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
+  /**
+   * Broadcast phase execution paused
+   */
+  broadcastPhasePaused(data: {
+    executionId: string;
+    phaseId: string;
+    currentSpec?: string;
+    currentTask?: string;
+    pausedAt: string;
+  }): void {
+    this.broadcast({
+      type: 'phase:execution:paused',
+      payload: {
+        executionId: data.executionId,
+        phaseId: data.phaseId,
+        data,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
+  /**
+   * Broadcast phase execution resumed
+   */
+  broadcastPhaseResumed(data: {
+    executionId: string;
+    phaseId: string;
+    currentSpec?: string;
+    currentTask?: string;
+    resumedAt: string;
+  }): void {
+    this.broadcast({
+      type: 'phase:execution:resumed',
+      payload: {
+        executionId: data.executionId,
+        phaseId: data.phaseId,
+        data,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
+  /**
+   * Broadcast phase execution stopped
+   */
+  broadcastPhaseStopped(data: {
+    executionId: string;
+    phaseId: string;
+    reason?: string;
+    stoppedAt: string;
+    completedSpecs: number;
+    totalSpecs: number;
+  }): void {
+    this.broadcast({
+      type: 'phase:execution:stopped',
+      payload: {
+        executionId: data.executionId,
+        phaseId: data.phaseId,
+        data,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
+  /**
+   * Broadcast phase execution completed
+   */
+  broadcastPhaseCompleted(data: {
+    executionId: string;
+    phaseId: string;
+    phaseTitle: string;
+    completedAt: string;
+    totalSpecs: number;
+    totalTasks: number;
+    durationSeconds: number;
+  }): void {
+    this.broadcast({
+      type: 'phase:execution:completed',
+      payload: {
+        executionId: data.executionId,
+        phaseId: data.phaseId,
+        data,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
+  /**
+   * Broadcast phase execution failed
+   */
+  broadcastPhaseFailed(data: {
+    executionId: string;
+    phaseId: string;
+    error: string;
+    failedAt: string;
+    failedSpec?: string;
+    failedTask?: string;
+  }): void {
+    this.broadcast({
+      type: 'phase:execution:failed',
+      payload: {
+        executionId: data.executionId,
+        phaseId: data.phaseId,
+        data,
+        timestamp: Date.now(),
+      },
+    });
+  }
+
+  /**
+   * Broadcast phase execution log
+   */
+  broadcastPhaseLog(log: PhaseExecutionLog & { executionId: string; phaseId: string }): void {
+    this.broadcast({
+      type: 'phase:execution:log',
+      payload: {
+        executionId: log.executionId,
+        phaseId: log.phaseId,
+        data: log,
         timestamp: Date.now(),
       },
     });
