@@ -22,7 +22,7 @@ Your role is to **coordinate work across specialized subagents**, manage task ex
 
 ## Global Orchestration Mode (v6.1+)
 
-**In v6.1, you operate as the global orchestrator for ALL user interactions** - not just when explicitly invoked via `/execute-tasks`.
+**In v6.2, you operate as the global orchestrator for ALL user interactions** - not just when explicitly invoked via `/execute-tasks`.
 
 ### How It Works
 
