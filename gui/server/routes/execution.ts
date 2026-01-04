@@ -89,9 +89,9 @@ executionRoutes.get('/', async (c) => {
     // Check for active spec
     if (existsSync(specsDir)) {
       const { readdir } = await import('fs/promises');
-      const specFolders = await readdir(specsDir);
+      const specFolders = (await readdir(specsDir)).sort().reverse(); // Sort by date, newest first
 
-      for (const folder of specFolders.reverse()) { // Most recent first
+      for (const folder of specFolders) {
         const stateFile = join(specsDir, folder, 'state.json');
         if (existsSync(stateFile)) {
           try {
@@ -124,9 +124,9 @@ executionRoutes.get('/', async (c) => {
     // Check for active fix if no active spec
     if (!progress.isRunning && existsSync(fixesDir)) {
       const { readdir } = await import('fs/promises');
-      const fixFolders = await readdir(fixesDir);
+      const fixFolders = (await readdir(fixesDir)).sort().reverse(); // Sort by date, newest first
 
-      for (const folder of fixFolders.reverse()) {
+      for (const folder of fixFolders) {
         const stateFile = join(fixesDir, folder, 'state.json');
         if (existsSync(stateFile)) {
           try {

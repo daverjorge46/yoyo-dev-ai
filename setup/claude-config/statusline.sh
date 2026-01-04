@@ -164,25 +164,42 @@ get_spec() {
     echo "none"
 }
 
-# Get task progress from most recent spec
+# Get task progress from active spec (same logic as get_spec)
 get_tasks() {
-    local tasks_file total_items completed_items
+    local spec_dir state_file current_phase tasks_file total_items completed_items
     if [[ -d ".yoyo-dev/specs" ]]; then
-        tasks_file=$(ls -1t .yoyo-dev/specs/*/tasks.md 2>/dev/null | head -1)
-        if [[ -n "$tasks_file" && -f "$tasks_file" ]]; then
-            # Count checkbox items
-            total_items=$(grep -cE '^\s*-\s*\[[x ]\]' "$tasks_file" 2>/dev/null) || total_items=0
-            completed_items=$(grep -cE '^\s*-\s*\[x\]' "$tasks_file" 2>/dev/null) || completed_items=0
+        # Find the active spec (same logic as get_spec)
+        for spec_dir in $(ls -1d .yoyo-dev/specs/*/ 2>/dev/null | sort -r); do
+            state_file="${spec_dir}state.json"
+            tasks_file="${spec_dir}tasks.md"
 
-            # If no checkboxes, count task headers
-            if [[ "$total_items" == "0" ]]; then
-                total_items=$(grep -cE '^###\s+[0-9]+\.|^###\s+Task\s+[0-9]+' "$tasks_file" 2>/dev/null) || total_items=0
-                completed_items=$(grep -cE '^###.*\[x\]|^###.*\(done\)' "$tasks_file" 2>/dev/null) || completed_items=0
+            # Check if this is the active spec
+            local is_active=false
+            if [[ -f "$state_file" ]]; then
+                current_phase=$(grep -o '"current_phase"[[:space:]]*:[[:space:]]*"[^"]*"' "$state_file" 2>/dev/null | sed 's/.*"\([^"]*\)"$/\1/')
+                if [[ -n "$current_phase" && "$current_phase" != "completed" ]]; then
+                    is_active=true
+                fi
+            else
+                # No state.json means spec is in progress
+                is_active=true
             fi
 
-            echo "${completed_items}/${total_items}"
-            return
-        fi
+            if [[ "$is_active" == "true" && -f "$tasks_file" ]]; then
+                # Count checkbox items
+                total_items=$(grep -cE '^\s*-\s*\[[x ]\]' "$tasks_file" 2>/dev/null) || total_items=0
+                completed_items=$(grep -cE '^\s*-\s*\[x\]' "$tasks_file" 2>/dev/null) || completed_items=0
+
+                # If no checkboxes, count task headers
+                if [[ "$total_items" == "0" ]]; then
+                    total_items=$(grep -cE '^###\s+[0-9]+\.|^###\s+Task\s+[0-9]+' "$tasks_file" 2>/dev/null) || total_items=0
+                    completed_items=$(grep -cE '^###.*\[x\]|^###.*\(done\)' "$tasks_file" 2>/dev/null) || completed_items=0
+                fi
+
+                echo "${completed_items}/${total_items}"
+                return
+            fi
+        done
     fi
     echo "0/0"
 }
