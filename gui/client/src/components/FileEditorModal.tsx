@@ -14,14 +14,18 @@ interface FileEditorModalProps {
   filePath: string;
   onClose: () => void;
   title?: string;
+  /** Whether to open in View mode (default: true) */
+  initialViewMode?: boolean;
 }
 
-export function FileEditorModal({ filePath, onClose, title }: FileEditorModalProps) {
-  const [showPreview, setShowPreview] = useState(true);
+export function FileEditorModal({ filePath, onClose, title, initialViewMode = true }: FileEditorModalProps) {
+  // In View mode, show raw markdown by default (showPreview=false)
+  // In Edit mode, show preview by default (showPreview=true)
+  const [isViewMode, setIsViewMode] = useState(initialViewMode);
+  const [showPreview, setShowPreview] = useState(!initialViewMode);
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
-  const [isViewMode, setIsViewMode] = useState(false);
 
   const {
     content,
@@ -83,8 +87,9 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
   // Handle mode toggle
   const handleModeToggle = useCallback(async () => {
     if (isViewMode) {
-      // Switching to Edit mode - no confirmation needed
+      // Switching to Edit mode - show preview split pane
       setIsViewMode(false);
+      setShowPreview(true);
     } else {
       // Switching to View mode - check for unsaved changes
       if (hasUnsavedChanges) {
@@ -102,7 +107,9 @@ export function FileEditorModal({ filePath, onClose, title }: FileEditorModalPro
           discardChanges();
         }
       }
+      // Switching to View mode - show raw markdown by default
       setIsViewMode(true);
+      setShowPreview(false);
     }
   }, [isViewMode, hasUnsavedChanges, save, discardChanges]);
 

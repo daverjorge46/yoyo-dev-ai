@@ -8,7 +8,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
-  Edit2,
+  Eye,
   Plus,
   Trash2,
   FileText,
@@ -365,9 +365,9 @@ function SpecDetailView({
                   <button
                     onClick={() => setEditingFile(fullPath)}
                     className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-indigo-500 transition-all"
-                    title="Edit file"
+                    title="View file"
                   >
-                    <Edit2 className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -393,8 +393,9 @@ function SpecDetailView({
                     setEditingFile(`${specFolder}/sub-specs/${subSpec.name}.md`)
                   }
                   className="p-1 text-gray-400 hover:text-indigo-500"
+                  title="View file"
                 >
-                  <Edit2 className="h-4 w-4" />
+                  <Eye className="h-4 w-4" />
                 </button>
               </div>
             ))}
@@ -411,8 +412,8 @@ function SpecDetailView({
               onClick={() => setEditingFile(`${specFolder}/decisions.md`)}
               className="text-xs text-indigo-500 hover:text-indigo-400 flex items-center gap-1"
             >
-              <Edit2 className="h-3 w-3" />
-              Edit
+              <Eye className="h-3 w-3" />
+              View
             </button>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded p-3 max-h-48 overflow-auto">
@@ -433,8 +434,8 @@ function SpecDetailView({
               onClick={() => setEditingFile(`${specFolder}/spec-lite.md`)}
               className="text-xs text-indigo-500 hover:text-indigo-400 flex items-center gap-1"
             >
-              <Edit2 className="h-3 w-3" />
-              Edit
+              <Eye className="h-3 w-3" />
+              View
             </button>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded p-3 max-h-64 overflow-auto">

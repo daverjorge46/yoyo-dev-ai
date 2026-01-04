@@ -22,5 +22,9 @@
         ]
       }
     ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "bash \"$CLAUDE_PROJECT_DIR/setup/claude-config/statusline.sh\""
   }
 }

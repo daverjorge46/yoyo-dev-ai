@@ -8,7 +8,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
-  Edit2,
+  Eye,
   Plus,
   Trash2,
   Wrench,
@@ -270,9 +270,9 @@ function FixDetailView({
                   <button
                     onClick={() => setEditingFile(fullPath)}
                     className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-orange-500 transition-all"
-                    title="Edit file"
+                    title="View file"
                   >
-                    <Edit2 className="h-4 w-4" />
+                    <Eye className="h-4 w-4" />
                   </button>
                 )}
               </div>
@@ -292,8 +292,8 @@ function FixDetailView({
               onClick={() => setEditingFile(`${fixFolder}/analysis.md`)}
               className="text-xs text-orange-500 hover:text-orange-400 flex items-center gap-1"
             >
-              <Edit2 className="h-3 w-3" />
-              Edit
+              <Eye className="h-3 w-3" />
+              View
             </button>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 max-h-64 overflow-auto">
@@ -315,8 +315,8 @@ function FixDetailView({
               onClick={() => setEditingFile(`${fixFolder}/solution-lite.md`)}
               className="text-xs text-orange-500 hover:text-orange-400 flex items-center gap-1"
             >
-              <Edit2 className="h-3 w-3" />
-              Edit
+              <Eye className="h-3 w-3" />
+              View
             </button>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 max-h-48 overflow-auto">
@@ -338,8 +338,8 @@ function FixDetailView({
               onClick={() => setEditingFile(`${fixFolder}/tasks.md`)}
               className="text-xs text-orange-500 hover:text-orange-400 flex items-center gap-1"
             >
-              <Edit2 className="h-3 w-3" />
-              Edit
+              <Eye className="h-3 w-3" />
+              View
             </button>
           </div>
           <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 max-h-48 overflow-auto">
