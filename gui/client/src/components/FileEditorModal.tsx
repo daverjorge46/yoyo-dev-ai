@@ -9,6 +9,7 @@ import { X, Save, RefreshCw, Eye, EyeOff, AlertTriangle, Check, FileText, Edit2 
 import { MarkdownEditor } from './MarkdownEditor';
 import { MarkdownPreview } from './MarkdownPreview';
 import { useFileEditor } from '../hooks/useFileEditor';
+import { usePanelLayoutContext } from './layout/PanelLayoutContext';
 
 interface FileEditorModalProps {
   filePath: string;
@@ -26,6 +27,9 @@ export function FileEditorModal({ filePath, onClose, title, initialViewMode = tr
   const [splitRatio, setSplitRatio] = useState(0.5);
   const [conflictMessage, setConflictMessage] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+
+  // Get sidebar width from layout context to position modal correctly
+  const { sidebarEffectiveWidth } = usePanelLayoutContext();
 
   const {
     content,
@@ -155,8 +159,11 @@ export function FileEditorModal({ filePath, onClose, title, initialViewMode = tr
   const displayTitle = isViewMode ? `Viewing: ${fileName}` : fileName;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="w-[95vw] h-[90vh] bg-gray-900 rounded-lg shadow-2xl flex flex-col overflow-hidden border border-gray-700">
+    <div
+      className="fixed inset-y-0 right-0 z-50 flex items-center justify-center bg-black/70"
+      style={{ left: sidebarEffectiveWidth }}
+    >
+      <div className="w-[95%] max-w-[95vw] h-[90vh] bg-gray-900 rounded-lg shadow-2xl flex flex-col overflow-hidden border border-gray-700">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700">
           <div className="flex items-center gap-3">
