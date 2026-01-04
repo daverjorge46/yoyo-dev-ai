@@ -52,6 +52,7 @@ GUI_ENABLED=true
 GUI_PORT=5173
 ORCHESTRATION_ENABLED=true
 BANNER_ENABLED=true
+CLEAR_TERMINAL=true
 
 # Ralph Autonomous Development Configuration
 RALPH_MODE=false
@@ -69,6 +70,13 @@ RALPH_ARGS=""
 # Check if output is going to a terminal (not piped/redirected)
 is_interactive_terminal() {
     [ -t 1 ] && [ -t 2 ]
+}
+
+# Clear terminal screen (only in interactive mode)
+clear_terminal() {
+    if [ "$CLEAR_TERMINAL" = true ] && is_interactive_terminal; then
+        clear
+    fi
 }
 
 # ============================================================================
@@ -252,6 +260,9 @@ launch_ralph_mode() {
         exit 1
     fi
 
+    # Clear terminal before launch (default behavior)
+    clear_terminal
+
     # Show launch banner
     echo ""
     echo -e "${UI_PRIMARY}╭──────────────────────────────────────────────────────────────────╮${UI_RESET}"
@@ -331,6 +342,9 @@ launch_claude_code() {
         exit 1
     fi
 
+    # Clear terminal before launch (default behavior)
+    clear_terminal
+
     # Show branded ASCII art banner (if enabled and terminal is interactive)
     if [ "$BANNER_ENABLED" = true ] && is_interactive_terminal; then
         ui_yoyo_banner "v${VERSION}"
@@ -398,18 +412,22 @@ show_version() {
 }
 
 show_help() {
-    # Use the branded help panel if available
+    local show_full_header=true
+
+    # Use the branded help panel for Claude Code commands if available
     if type ui_help_panel &>/dev/null; then
         ui_help_panel
-        return
+        show_full_header=false
     fi
 
-    # Fallback help display
+    # CLI options help
     echo ""
-    echo -e "${UI_PRIMARY}╭──────────────────────────────────────────────────────────────────╮${UI_RESET}"
-    echo -e "${UI_PRIMARY}│${UI_RESET}                    ${UI_SUCCESS}YOYO DEV HELP${UI_RESET}                              ${UI_PRIMARY}│${UI_RESET}"
-    echo -e "${UI_PRIMARY}╰──────────────────────────────────────────────────────────────────╯${UI_RESET}"
-    echo ""
+    if [ "$show_full_header" = true ]; then
+        echo -e "${UI_PRIMARY}╭──────────────────────────────────────────────────────────────────╮${UI_RESET}"
+        echo -e "${UI_PRIMARY}│${UI_RESET}                    ${UI_SUCCESS}YOYO DEV HELP${UI_RESET}                              ${UI_PRIMARY}│${UI_RESET}"
+        echo -e "${UI_PRIMARY}╰──────────────────────────────────────────────────────────────────╯${UI_RESET}"
+        echo ""
+    fi
 
     echo -e "  ${UI_SUCCESS}LAUNCH MODES${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
@@ -425,6 +443,9 @@ show_help() {
     echo ""
     echo -e "  ${UI_PRIMARY}yoyo --no-banner${UI_RESET}"
     echo -e "    ${UI_DIM}Skip branded banner (for CI/scripts)${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}yoyo --no-clear${UI_RESET}"
+    echo -e "    ${UI_DIM}Don't clear terminal before launch${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_SUCCESS}ORCHESTRATION${UI_RESET}"
@@ -521,6 +542,10 @@ main() {
                 ;;
             --no-banner)
                 BANNER_ENABLED=false
+                shift
+                ;;
+            --no-clear)
+                CLEAR_TERMINAL=false
                 shift
                 ;;
             --gui-only)
