@@ -591,19 +591,14 @@ Prefix all output with [yoyo-ai]`;
 };
 
 // src/orchestration/output-formatter.ts
+var AGENT_COLOR = "\x1B[38;2;210;153;34m";
 var ANSI_COLORS = {
-  "yoyo-ai": "\x1B[36m",
-  // Cyan
-  "arthas-oracle": "\x1B[33m",
-  // Yellow
-  "alma-librarian": "\x1B[32m",
-  // Green
-  "alvaro-explore": "\x1B[34m",
-  // Blue
-  "dave-engineer": "\x1B[35m",
-  // Magenta
-  "angeles-writer": "\x1B[37m"
-  // White
+  "yoyo-ai": AGENT_COLOR,
+  "arthas-oracle": AGENT_COLOR,
+  "alma-librarian": AGENT_COLOR,
+  "alvaro-explore": AGENT_COLOR,
+  "dave-engineer": AGENT_COLOR,
+  "angeles-writer": AGENT_COLOR
 };
 var ANSI_RESET = "\x1B[0m";
 var ANSI_BOLD = "\x1B[1m";

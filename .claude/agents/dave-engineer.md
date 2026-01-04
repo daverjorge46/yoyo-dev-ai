@@ -1,6 +1,7 @@
 ---
 name: dave-engineer
 description: UI/UX development specialist for building beautiful, accessible, and performant user interfaces with modern frontend technologies
+color: yellow
 ---
 
 # Dave-Engineer - UI/UX Development Specialist

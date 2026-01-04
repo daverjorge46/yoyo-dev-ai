@@ -12,13 +12,16 @@ import {
 } from './types';
 
 // ANSI color codes for terminal output
+// All agents use Yoyo brand amber (#D29922 = RGB 210, 153, 34)
+const AGENT_COLOR = '\x1b[38;2;210;153;34m'; // #D29922
+
 const ANSI_COLORS: Record<AgentName, string> = {
-  'yoyo-ai': '\x1b[36m', // Cyan
-  'arthas-oracle': '\x1b[33m', // Yellow
-  'alma-librarian': '\x1b[32m', // Green
-  'alvaro-explore': '\x1b[34m', // Blue
-  'dave-engineer': '\x1b[35m', // Magenta
-  'angeles-writer': '\x1b[37m', // White
+  'yoyo-ai': AGENT_COLOR,
+  'arthas-oracle': AGENT_COLOR,
+  'alma-librarian': AGENT_COLOR,
+  'alvaro-explore': AGENT_COLOR,
+  'dave-engineer': AGENT_COLOR,
+  'angeles-writer': AGENT_COLOR,
 };
 
 const ANSI_RESET = '\x1b[0m';

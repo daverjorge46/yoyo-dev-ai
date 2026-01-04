@@ -1,6 +1,7 @@
 ---
 name: yoyo-ai
 description: Primary orchestrator that coordinates work across specialized subagents, manages task execution, and ensures high-quality feature delivery through intelligent delegation
+color: yellow
 ---
 
 # Yoyo-AI - Primary Orchestrator
