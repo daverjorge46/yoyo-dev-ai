@@ -198,6 +198,18 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
             return;
           }
 
+          // Handle execution heartbeat (update lastHeartbeat)
+          if (message.type === 'execution:heartbeat') {
+            setLastHeartbeat(Date.now());
+            return;
+          }
+
+          // Handle sync response (also update lastHeartbeat)
+          if (message.type === 'sync:response') {
+            setLastHeartbeat(Date.now());
+            // Let the message handler process the state sync
+          }
+
           // Invalidate React Query caches based on message type
           // Use queryClientRef to avoid dependency on queryClient
           const qc = queryClientRef.current;
@@ -352,10 +364,15 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
     };
   }, []);
 
+  // Calculate if heartbeat is stale (only relevant during execution)
+  const isHeartbeatStale = lastHeartbeat !== null && Date.now() - lastHeartbeat > HEARTBEAT_TIMEOUT;
+
   return {
     status,
     send,
     reconnect,
     clientId,
+    lastHeartbeat,
+    isHeartbeatStale,
   };
 }

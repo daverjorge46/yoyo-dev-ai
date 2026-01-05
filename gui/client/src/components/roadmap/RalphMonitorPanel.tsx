@@ -5,7 +5,7 @@
  * Shows progress, current task, logs, and provides control buttons.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -21,6 +21,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { usePhaseExecution } from '../../hooks/usePhaseExecution';
+import { useWebSocket } from '../../hooks/useWebSocket';
 import type { SpecProgress, ExecutionLog } from '../../stores/phaseExecutionStore';
 
 // =============================================================================
@@ -44,6 +45,11 @@ function StatusBadge({ status }: { status: string }) {
       icon: Clock,
       className: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
       text: 'Ready',
+    },
+    starting: {
+      icon: Loader2,
+      className: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400 animate-pulse',
+      text: 'Starting...',
     },
     running: {
       icon: Loader2,
@@ -73,15 +79,69 @@ function StatusBadge({ status }: { status: string }) {
   };
 
   const { icon: Icon, className, text } = config[status] || config.idle;
-  const isRunning = status === 'running';
+  const isAnimated = status === 'running' || status === 'starting';
 
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${className}`}
+      data-testid="status-badge"
     >
-      <Icon className={`h-3.5 w-3.5 ${isRunning ? 'animate-spin' : ''}`} />
+      <Icon className={`h-3.5 w-3.5 ${isAnimated ? 'animate-spin' : ''}`} />
       {text}
     </span>
+  );
+}
+
+function ConnectionIndicator({ status }: { status: 'connected' | 'reconnecting' | 'disconnected' }) {
+  const config: Record<string, { color: string; label: string }> = {
+    connected: { color: 'bg-green-500', label: 'Connected' },
+    reconnecting: { color: 'bg-yellow-500 animate-pulse', label: 'Reconnecting...' },
+    disconnected: { color: 'bg-red-500', label: 'Disconnected' },
+  };
+
+  const { color, label } = config[status] || config.disconnected;
+
+  return (
+    <span className="inline-flex items-center gap-1.5" title={label} data-testid="connection-indicator">
+      <span className={`h-2 w-2 rounded-full ${color}`} />
+      <span className="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+    </span>
+  );
+}
+
+function ErrorAlert({
+  error,
+  errorCode,
+  onCopy,
+}: {
+  error: string;
+  errorCode?: string;
+  onCopy: () => void;
+}) {
+  return (
+    <div
+      className="bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 space-y-2"
+      data-testid="error-alert"
+    >
+      <div className="flex items-start gap-2">
+        <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
+        <div className="flex-1 min-w-0">
+          <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
+          {errorCode && (
+            <div className="text-xs text-red-500 dark:text-red-400 font-mono mt-1">
+              Code: {errorCode}
+            </div>
+          )}
+        </div>
+      </div>
+      <button
+        onClick={onCopy}
+        className="w-full text-xs bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded px-2 py-1 hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
+        data-testid="copy-error-button"
+      >
+        Copy Error Details
+      </button>
+    </div>
   );
 }
 
@@ -178,6 +238,8 @@ export function RalphMonitorPanel({
   phaseTitle,
 }: RalphMonitorPanelProps) {
   const logsContainerRef = useRef<HTMLDivElement>(null);
+  const [isActionPending, setIsActionPending] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const {
     status,
@@ -187,8 +249,10 @@ export function RalphMonitorPanel({
     specs,
     logs,
     metrics,
+    isStarting,
     isRunning,
     isPaused,
+    canStart,
     canPause,
     canResume,
     canStop,
@@ -197,7 +261,21 @@ export function RalphMonitorPanel({
     resumeExecution,
     stopExecution,
     reset,
+    handleWebSocketMessage,
   } = usePhaseExecution();
+
+  // Get WebSocket connection status and set up message handler
+  const { status: connectionStatus } = useWebSocket({
+    onMessage: handleWebSocketMessage,
+  });
+
+  // Map connection status to our indicator type
+  const connectionIndicatorStatus =
+    connectionStatus === 'connected'
+      ? 'connected'
+      : connectionStatus === 'reconnecting'
+        ? 'reconnecting'
+        : 'disconnected';
 
   // Auto-scroll logs to bottom
   useEffect(() => {
@@ -206,47 +284,89 @@ export function RalphMonitorPanel({
     }
   }, [logs, isRunning]);
 
-  // Handle start
-  const handleStart = async () => {
+  // Clear action error when status changes
+  useEffect(() => {
+    setActionError(null);
+  }, [status]);
+
+  // Handle start with optimistic UI
+  const handleStart = useCallback(async () => {
+    setIsActionPending(true);
+    setActionError(null);
     try {
       await startExecution(phaseId);
     } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to start execution');
       console.error('Failed to start execution:', err);
+    } finally {
+      setIsActionPending(false);
     }
-  };
+  }, [phaseId, startExecution]);
 
-  // Handle pause
-  const handlePause = async () => {
+  // Handle pause with optimistic UI
+  const handlePause = useCallback(async () => {
+    setIsActionPending(true);
+    setActionError(null);
     try {
       await pauseExecution();
     } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to pause execution');
       console.error('Failed to pause execution:', err);
+    } finally {
+      setIsActionPending(false);
     }
-  };
+  }, [pauseExecution]);
 
-  // Handle resume
-  const handleResume = async () => {
+  // Handle resume with optimistic UI
+  const handleResume = useCallback(async () => {
+    setIsActionPending(true);
+    setActionError(null);
     try {
       await resumeExecution();
     } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to resume execution');
       console.error('Failed to resume execution:', err);
+    } finally {
+      setIsActionPending(false);
     }
-  };
+  }, [resumeExecution]);
 
-  // Handle stop
-  const handleStop = async () => {
+  // Handle stop with optimistic UI
+  const handleStop = useCallback(async () => {
+    setIsActionPending(true);
+    setActionError(null);
     try {
       await stopExecution('User cancelled');
     } catch (err) {
+      setActionError(err instanceof Error ? err.message : 'Failed to stop execution');
       console.error('Failed to stop execution:', err);
+    } finally {
+      setIsActionPending(false);
     }
-  };
+  }, [stopExecution]);
 
   // Handle retry (reset and start again)
-  const handleRetry = async () => {
+  const handleRetry = useCallback(async () => {
     reset();
     await handleStart();
-  };
+  }, [reset, handleStart]);
+
+  // Copy error to clipboard
+  const handleCopyError = useCallback(() => {
+    const errorDetails = [
+      `Error: ${error || actionError}`,
+      `Status: ${status}`,
+      `Phase: ${phaseId}`,
+      `Timestamp: ${new Date().toISOString()}`,
+    ].join('\n');
+
+    navigator.clipboard.writeText(errorDetails).catch((err) => {
+      console.error('Failed to copy error:', err);
+    });
+  }, [error, actionError, status, phaseId]);
+
+  // Determine if buttons should be disabled
+  const buttonsDisabled = isActionPending || isStarting;
 
   // Format elapsed time
   const formatElapsed = (seconds: number) => {
@@ -280,9 +400,12 @@ export function RalphMonitorPanel({
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div>
-                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {phaseTitle}
-                </h2>
+                <div className="flex items-center gap-3">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {phaseTitle}
+                  </h2>
+                  <ConnectionIndicator status={connectionIndicatorStatus} />
+                </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Ralph Execution Monitor</p>
               </div>
               <button
@@ -323,21 +446,34 @@ export function RalphMonitorPanel({
                 </div>
               )}
 
-              {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 flex items-start gap-2">
-                  <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0 mt-0.5" />
-                  <div className="text-sm text-red-700 dark:text-red-300">{error}</div>
-                </div>
+              {(error || actionError) && (
+                <ErrorAlert
+                  error={error || actionError || ''}
+                  onCopy={handleCopyError}
+                />
               )}
             </div>
 
             {/* Control Buttons */}
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex gap-2">
-                {status === 'idle' && (
+                {/* Starting state - show spinner, no buttons */}
+                {isStarting && (
+                  <div
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 rounded-lg"
+                    data-testid="starting-indicator"
+                  >
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Validating prerequisites...
+                  </div>
+                )}
+
+                {/* Idle state - Start button */}
+                {canStart && !isStarting && status === 'idle' && (
                   <button
                     onClick={handleStart}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    disabled={buttonsDisabled}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Start"
                   >
                     <Play className="h-4 w-4" />
@@ -345,10 +481,12 @@ export function RalphMonitorPanel({
                   </button>
                 )}
 
+                {/* Running state - Pause and Stop buttons */}
                 {canPause && (
                   <button
                     onClick={handlePause}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50"
+                    disabled={buttonsDisabled}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-yellow-100 text-yellow-700 rounded-lg hover:bg-yellow-200 transition-colors dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Pause"
                   >
                     <Pause className="h-4 w-4" />
@@ -356,10 +494,12 @@ export function RalphMonitorPanel({
                   </button>
                 )}
 
+                {/* Paused state - Resume button */}
                 {canResume && (
                   <button
                     onClick={handleResume}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50"
+                    disabled={buttonsDisabled}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Resume"
                   >
                     <Play className="h-4 w-4" />
@@ -367,10 +507,12 @@ export function RalphMonitorPanel({
                   </button>
                 )}
 
+                {/* Running/Paused state - Stop button */}
                 {canStop && (
                   <button
                     onClick={handleStop}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                    disabled={buttonsDisabled}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Stop"
                   >
                     <Square className="h-4 w-4" />
@@ -378,10 +520,12 @@ export function RalphMonitorPanel({
                   </button>
                 )}
 
+                {/* Failed state - Retry button */}
                 {status === 'failed' && (
                   <button
                     onClick={handleRetry}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    disabled={buttonsDisabled}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Retry"
                   >
                     <RotateCcw className="h-4 w-4" />
@@ -389,10 +533,12 @@ export function RalphMonitorPanel({
                   </button>
                 )}
 
+                {/* Completed/Stopped state - Start Again button */}
                 {(status === 'completed' || status === 'stopped') && (
                   <button
                     onClick={handleStart}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    disabled={buttonsDisabled}
+                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     aria-label="Start"
                   >
                     <Play className="h-4 w-4" />

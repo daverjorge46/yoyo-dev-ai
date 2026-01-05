@@ -17,6 +17,18 @@ import { usePhaseExecutionStore } from '../../../stores/phaseExecutionStore';
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
+// Mock useWebSocket hook
+vi.mock('../../../hooks/useWebSocket', () => ({
+  useWebSocket: () => ({
+    status: 'connected',
+    send: vi.fn(),
+    reconnect: vi.fn(),
+    clientId: 'test-client-1',
+    lastHeartbeat: Date.now(),
+    isHeartbeatStale: false,
+  }),
+}));
+
 // Mock framer-motion to avoid animation issues in tests
 vi.mock('framer-motion', async () => {
   const actual = await vi.importActual('framer-motion');
@@ -428,6 +440,123 @@ describe('RalphMonitorPanel', () => {
 
       expect(screen.getByText('Starting execution')).toBeInTheDocument();
       expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+    });
+  });
+
+  // ===========================================================================
+  // Starting State
+  // ===========================================================================
+
+  describe('Starting State', () => {
+    beforeEach(() => {
+      act(() => {
+        usePhaseExecutionStore.getState().setStarting({
+          executionId: 'exec-123',
+          phaseId: 'phase-1',
+          phaseTitle: 'Core Features',
+          phaseGoal: 'Build core',
+        });
+      });
+    });
+
+    it('should show starting status badge', () => {
+      render(
+        <RalphMonitorPanel
+          isOpen={true}
+          onClose={() => {}}
+          phaseId="phase-1"
+          phaseTitle="Core Features"
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByText('Starting...')).toBeInTheDocument();
+    });
+
+    it('should show validating message instead of buttons', () => {
+      render(
+        <RalphMonitorPanel
+          isOpen={true}
+          onClose={() => {}}
+          phaseId="phase-1"
+          phaseTitle="Core Features"
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByTestId('starting-indicator')).toBeInTheDocument();
+      expect(screen.getByText('Validating prerequisites...')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /start/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /pause/i })).not.toBeInTheDocument();
+    });
+  });
+
+  // ===========================================================================
+  // Connection Indicator
+  // ===========================================================================
+
+  describe('Connection Indicator', () => {
+    it('should show connection indicator', () => {
+      render(
+        <RalphMonitorPanel
+          isOpen={true}
+          onClose={() => {}}
+          phaseId="phase-1"
+          phaseTitle="Core Features"
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByTestId('connection-indicator')).toBeInTheDocument();
+      expect(screen.getByText('Connected')).toBeInTheDocument();
+    });
+  });
+
+  // ===========================================================================
+  // Error Alert
+  // ===========================================================================
+
+  describe('Error Alert', () => {
+    beforeEach(() => {
+      act(() => {
+        usePhaseExecutionStore.getState().setStarted({
+          executionId: 'exec-123',
+          phaseId: 'phase-1',
+          phaseTitle: 'Core Features',
+          specs: [],
+        });
+        usePhaseExecutionStore.getState().setFailed('Ralph not found', 'spec-1', 'task-1');
+      });
+    });
+
+    it('should display error alert with message', () => {
+      render(
+        <RalphMonitorPanel
+          isOpen={true}
+          onClose={() => {}}
+          phaseId="phase-1"
+          phaseTitle="Core Features"
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByTestId('error-alert')).toBeInTheDocument();
+      expect(screen.getByText('Ralph not found')).toBeInTheDocument();
+    });
+
+    it('should show copy error button', () => {
+      render(
+        <RalphMonitorPanel
+          isOpen={true}
+          onClose={() => {}}
+          phaseId="phase-1"
+          phaseTitle="Core Features"
+        />,
+        { wrapper: createWrapper() }
+      );
+
+      expect(screen.getByTestId('copy-error-button')).toBeInTheDocument();
+      expect(screen.getByText('Copy Error Details')).toBeInTheDocument();
     });
   });
 

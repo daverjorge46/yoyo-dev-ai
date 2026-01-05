@@ -262,6 +262,84 @@ export function usePhaseExecution() {
       const { type, payload } = message;
 
       switch (type) {
+        case 'sync:response':
+          // Handle state sync on reconnect
+          if (payload?.data) {
+            const data = payload.data as {
+              status: 'idle' | 'starting' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed';
+              executionId: string | null;
+              phaseId: string | null;
+              phaseTitle: string | null;
+              phaseGoal: string | null;
+              overallProgress: number;
+              currentSpec: { id: string; title: string; progress: number; currentTask?: string } | null;
+              specs: Array<{ id: string; title: string; status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped'; progress: number }>;
+              metrics: {
+                startedAt: string;
+                elapsedSeconds: number;
+                completedSpecs: number;
+                totalSpecs: number;
+                completedTasks: number;
+                totalTasks: number;
+              } | null;
+              error: string | null;
+              errorCode?: string;
+            };
+
+            if (data.status === 'idle' || data.status === 'stopped' || data.status === 'completed') {
+              store.reset();
+            } else if (data.status === 'starting' && data.executionId) {
+              store.setStarting({
+                executionId: data.executionId,
+                phaseId: data.phaseId ?? '',
+                phaseTitle: data.phaseTitle ?? '',
+                phaseGoal: data.phaseGoal ?? undefined,
+              });
+            } else if (data.status === 'running' && data.executionId) {
+              store.setStarted({
+                executionId: data.executionId,
+                phaseId: data.phaseId ?? '',
+                phaseTitle: data.phaseTitle ?? '',
+                phaseGoal: data.phaseGoal ?? undefined,
+                specs: data.specs,
+              });
+              if (data.overallProgress > 0) {
+                store.updateProgress({
+                  overallProgress: data.overallProgress,
+                  currentSpec: data.currentSpec ?? undefined,
+                  completedSpecs: data.metrics?.completedSpecs,
+                  totalSpecs: data.metrics?.totalSpecs,
+                  completedTasks: data.metrics?.completedTasks,
+                  totalTasks: data.metrics?.totalTasks,
+                  elapsedSeconds: data.metrics?.elapsedSeconds,
+                });
+              }
+            } else if (data.status === 'paused') {
+              store.setPaused();
+            } else if (data.status === 'failed' && data.error) {
+              store.setFailed(data.error);
+            }
+          }
+          break;
+
+        case 'phase:execution:starting':
+          // Handle starting state (pre-flight validation in progress)
+          if (payload?.data) {
+            const data = payload.data as {
+              executionId: string;
+              phaseId: string;
+              phaseTitle: string;
+              phaseGoal?: string;
+            };
+            store.setStarting({
+              executionId: data.executionId,
+              phaseId: data.phaseId,
+              phaseTitle: data.phaseTitle,
+              phaseGoal: data.phaseGoal,
+            });
+          }
+          break;
+
         case 'phase:execution:started':
           if (payload?.data) {
             const data = payload.data as {
@@ -374,9 +452,11 @@ export function usePhaseExecution() {
     metrics: store.metrics,
 
     // Computed state
+    isStarting: store.isStarting(),
     isRunning: store.isRunning(),
     isPaused: store.isPaused(),
     isActive: store.isActive(),
+    canStart: store.canStart(),
     canPause: store.canPause(),
     canResume: store.canResume(),
     canStop: store.canStop(),
