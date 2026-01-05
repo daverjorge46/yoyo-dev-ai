@@ -65,22 +65,22 @@ async function fetchTasksSummary(): Promise<{ summary: TasksSummary }> {
 
 function TerminalHeader({ projectName }: { projectName: string }) {
   return (
-    <div className="terminal-card p-4 mb-6">
+    <div className="terminal-card-gradient-top p-4 mb-6">
       <div className="flex items-center gap-3 mb-3">
         <div className="flex gap-1.5">
           <span className="w-3 h-3 rounded-full bg-terminal-red" />
-          <span className="w-3 h-3 rounded-full bg-terminal-yellow" />
+          <span className="w-3 h-3 rounded-full bg-accent" />
           <span className="w-3 h-3 rounded-full bg-terminal-green" />
         </div>
         <span className="text-xs text-gray-500 dark:text-terminal-text-muted font-mono">
-          yoyo-dev — {projectName}
+          yoyo-dev — <span className="text-primary dark:text-terminal-orange">{projectName}</span>
         </span>
       </div>
       <div className="font-mono text-sm text-gray-700 dark:text-terminal-text">
         <span className="text-terminal-green">$</span>{' '}
-        <span className="text-brand dark:text-terminal-orange">yoyo</span>{' '}
-        <span className="text-gray-500 dark:text-terminal-text-secondary">status</span>
-        <span className="animate-cursor-blink text-brand dark:text-terminal-orange ml-1">_</span>
+        <span className="text-primary dark:text-terminal-orange font-semibold">yoyo</span>{' '}
+        <span className="text-accent dark:text-terminal-yellow">status</span>
+        <span className="animate-cursor-blink text-primary dark:text-terminal-orange ml-1">_</span>
       </div>
     </div>
   );
@@ -104,11 +104,11 @@ function QuickStat({ label, value, subvalue, icon: Icon, href, color, badge }: Q
   const navigate = useNavigate();
 
   const colorClasses = {
-    orange: 'text-brand dark:text-terminal-orange border-brand/30 dark:border-terminal-orange/30 hover:border-brand dark:hover:border-terminal-orange',
+    orange: 'text-primary dark:text-terminal-orange border-primary/30 dark:border-terminal-orange/30 hover:border-primary dark:hover:border-terminal-orange hover:shadow-glow-primary/20',
     green: 'text-success dark:text-terminal-green border-success/30 dark:border-terminal-green/30 hover:border-success dark:hover:border-terminal-green',
     blue: 'text-info dark:text-terminal-blue border-info/30 dark:border-terminal-blue/30 hover:border-info dark:hover:border-terminal-blue',
     purple: 'text-purple-500 dark:text-terminal-purple border-purple-500/30 dark:border-terminal-purple/30 hover:border-purple-500 dark:hover:border-terminal-purple',
-    yellow: 'text-warning dark:text-terminal-yellow border-warning/30 dark:border-terminal-yellow/30 hover:border-warning dark:hover:border-terminal-yellow',
+    yellow: 'text-accent dark:text-terminal-yellow border-accent/30 dark:border-terminal-yellow/30 hover:border-accent dark:hover:border-terminal-yellow hover:shadow-glow-accent/20',
     red: 'text-error dark:text-terminal-red border-error/30 dark:border-terminal-red/30 hover:border-error dark:hover:border-terminal-red',
   };
 
@@ -120,7 +120,7 @@ function QuickStat({ label, value, subvalue, icon: Icon, href, color, badge }: Q
         bg-white dark:bg-terminal-card
         ${colorClasses[color]}
         hover:shadow-md dark:hover:shadow-lg
-        focus:outline-none focus:ring-2 focus:ring-brand dark:focus:ring-terminal-orange focus:ring-offset-2 dark:focus:ring-offset-terminal-bg
+        focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-terminal-orange focus:ring-offset-2 dark:focus:ring-offset-terminal-bg
         text-left w-full
       `}
     >
@@ -162,17 +162,21 @@ function ProgressRing({ progress, size = 120 }: { progress: number; size?: numbe
   const circumference = radius * 2 * Math.PI;
   const strokeDashoffset = circumference - (progress / 100) * circumference;
 
-  const getColor = () => {
-    if (progress === 100) return 'text-terminal-green';
-    if (progress >= 75) return 'text-terminal-blue';
-    if (progress >= 50) return 'text-terminal-yellow';
-    if (progress >= 25) return 'text-terminal-orange';
-    return 'text-terminal-text-muted';
-  };
+  // Use gradient ID for SVG gradient
+  const gradientId = `progress-gradient-${size}`;
+  const isComplete = progress === 100;
 
   return (
     <div className="relative inline-flex items-center justify-center">
       <svg width={size} height={size} className="-rotate-90">
+        {/* Define gradient */}
+        <defs>
+          <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor="#E85D04" />
+            <stop offset="100%" stopColor="#D29922" />
+          </linearGradient>
+        </defs>
+        {/* Background circle */}
         <circle
           className="text-gray-200 dark:text-terminal-border"
           strokeWidth={strokeWidth}
@@ -182,21 +186,31 @@ function ProgressRing({ progress, size = 120 }: { progress: number; size?: numbe
           cx={size / 2}
           cy={size / 2}
         />
+        {/* Progress circle with gradient or green when complete */}
         <circle
-          className={`${getColor()} transition-all duration-500`}
           strokeWidth={strokeWidth}
           strokeDasharray={circumference}
           strokeDashoffset={strokeDashoffset}
           strokeLinecap="round"
-          stroke="currentColor"
+          stroke={isComplete ? '#3fb950' : `url(#${gradientId})`}
           fill="transparent"
           r={radius}
           cx={size / 2}
           cy={size / 2}
+          className="transition-all duration-500"
+          style={{
+            filter: progress > 0 && !isComplete ? 'drop-shadow(0 0 6px rgb(232 93 4 / 0.4))' : undefined,
+          }}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-2xl font-bold text-gray-900 dark:text-terminal-text">{progress}%</span>
+        <span className={`text-2xl font-bold ${
+          isComplete
+            ? 'text-terminal-green'
+            : 'text-gray-900 dark:text-terminal-text'
+        }`}>
+          {progress}%
+        </span>
         <span className="text-xs text-gray-500 dark:text-terminal-text-muted">complete</span>
       </div>
     </div>
@@ -388,32 +402,41 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Progress Section */}
+      {/* Progress Section - Elegant Gradient Design */}
       {summary && summary.totalTasks > 0 && (
-        <div className="terminal-card p-6">
+        <div className="terminal-card-gradient-top p-6">
           <div className="flex items-center justify-between">
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text uppercase tracking-wide mb-4">
+              <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text uppercase tracking-wide mb-4 flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary dark:text-terminal-orange" />
                 Overall Progress
               </h3>
-              <div className="space-y-2">
-                <div className="terminal-progress h-3">
+              <div className="space-y-3">
+                {/* Gradient progress bar */}
+                <div className="progress-gradient h-3">
                   <div
-                    className={`terminal-progress-bar ${
+                    className={`h-full rounded-full transition-all duration-500 ease-out ${
                       summary.progress === 100
                         ? 'bg-terminal-green'
-                        : summary.progress >= 75
-                        ? 'bg-terminal-blue'
-                        : summary.progress >= 50
-                        ? 'bg-terminal-yellow'
-                        : 'bg-terminal-orange'
-                    }`}
+                        : 'progress-gradient-bar'
+                    } ${summary.progress > 0 && summary.progress < 100 ? 'progress-glow' : ''}`}
                     style={{ width: `${summary.progress}%` }}
                   />
                 </div>
-                <div className="flex justify-between text-xs text-gray-500 dark:text-terminal-text-muted">
-                  <span>{summary.completedTasks} of {summary.totalTasks} tasks completed</span>
-                  <span>{summary.progress}%</span>
+                <div className="flex justify-between text-xs">
+                  <span className="text-gray-600 dark:text-terminal-text-secondary">
+                    <span className="font-semibold text-primary dark:text-terminal-orange">{summary.completedTasks}</span>
+                    {' '}of{' '}
+                    <span className="font-semibold">{summary.totalTasks}</span>
+                    {' '}tasks completed
+                  </span>
+                  <span className={`font-bold ${
+                    summary.progress === 100
+                      ? 'text-terminal-green'
+                      : 'text-primary dark:text-accent'
+                  }`}>
+                    {summary.progress}%
+                  </span>
                 </div>
               </div>
             </div>

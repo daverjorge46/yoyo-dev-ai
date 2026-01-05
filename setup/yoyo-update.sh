@@ -53,6 +53,22 @@ source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
 # ============================================================================
 
 VERSION="6.2.0"
+
+# Phase configuration for progress display
+readonly PHASE_BASE_SYNC=1
+readonly PHASE_BACKUP=2
+readonly PHASE_UPDATE=3
+readonly PHASE_VERIFY=4
+CURRENT_PHASE=0
+
+# Track timing for summary
+UPDATE_START_TIME=0
+
+# Track file counts for summary
+TOTAL_FILES_UPDATED=0
+TOTAL_FILES_CREATED=0
+TOTAL_FILES_PRESERVED=0
+
 OVERWRITE_INSTRUCTIONS=true
 OVERWRITE_STANDARDS=true
 OVERWRITE_COMMANDS=true
@@ -157,12 +173,28 @@ done
 # Welcome Screen
 # ============================================================================
 
-ui_clear_screen "$VERSION"
-ui_box_header "UPDATE YOYO DEV" 70 "$UI_PRIMARY"
+# Capture start time for summary
+UPDATE_START_TIME=$(date +%s)
 
 # Get project info
 CURRENT_DIR=$(pwd)
 PROJECT_NAME=$(basename "$CURRENT_DIR")
+
+# Get base installation path early for display
+BASE_YOYO_DEV="$(dirname "$SCRIPT_DIR")"
+
+# Get current version before showing banner
+CURRENT_VERSION="unknown"
+if [ -f ".yoyo-dev/config.yml" ]; then
+    CURRENT_VERSION=$(grep 'yoyo_dev_version:' .yoyo-dev/config.yml 2>/dev/null | cut -d: -f2 | tr -d ' "' || echo 'unknown')
+fi
+
+# Clear screen and show branded update banner
+clear
+ui_update_banner "$CURRENT_VERSION" "$VERSION"
+
+# Show source/destination paths panel
+ui_source_destination_panel "$BASE_YOYO_DEV" "$CURRENT_DIR/.yoyo-dev"
 
 # Validation - check if Yoyo Dev is installed
 if [ ! -d "./.yoyo-dev" ]; then
@@ -222,80 +254,13 @@ if [ -d "./.yoyo-ai" ]; then
     NEEDS_MEMORY_MIGRATION=true
 fi
 
-# Show project info
-ui_section "Project Information" "$ICON_FOLDER"
-ui_kv "Project Name" "$PROJECT_NAME"
-ui_kv "Current Version" "$(grep 'yoyo_dev_version:' .yoyo-dev/config.yml | cut -d: -f2 | tr -d ' ' || echo 'unknown')"
-ui_kv "New Version" "$VERSION"
+# Count protected files for summary
+TOTAL_FILES_PRESERVED=$(find .yoyo-dev/specs .yoyo-dev/fixes .yoyo-dev/recaps .yoyo-dev/patterns .yoyo-dev/product .yoyo-dev/memory -type f 2>/dev/null | wc -l || echo 0)
 
-# Check if memory migration is needed
+# Check if memory migration is needed (show warning if applicable)
 if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
-    ui_kv "Memory Migration" "Required (.yoyo-ai → .yoyo-dev/memory)"
+    ui_warning "Memory migration required (.yoyo-ai → .yoyo-dev/memory)"
 fi
-
-echo ""
-
-# ============================================================================
-# Update Plan
-# ============================================================================
-
-ui_section "Update Plan" "$ICON_PACKAGE"
-
-update_items=()
-
-if [ "$OVERWRITE_INSTRUCTIONS" = true ]; then
-    update_items+=("Instructions → Latest workflow files")
-else
-    update_items+=("Instructions → Keep existing")
-fi
-
-if [ "$OVERWRITE_STANDARDS" = true ]; then
-    update_items+=("Standards → Latest best practices")
-else
-    update_items+=("Standards → Keep existing")
-fi
-
-if [ "$OVERWRITE_COMMANDS" = true ]; then
-    update_items+=("Commands → Latest CLI commands")
-else
-    update_items+=("Commands → Keep existing")
-fi
-
-if [ "$OVERWRITE_AGENTS" = true ]; then
-    update_items+=("Agents → Latest agent definitions")
-else
-    update_items+=("Agents → Keep existing")
-fi
-
-if [ "$OVERWRITE_HOOKS" = true ]; then
-    update_items+=("Hooks → Latest orchestration hooks")
-else
-    update_items+=("Hooks → Keep existing")
-fi
-
-update_items+=("Config → Merge with new options")
-update_items+=("User Data → ${UI_BOLD}Protected${UI_RESET} (specs, fixes, recaps, CLAUDE.md)")
-
-if [ "$REGENERATE_CLAUDE_MD" = true ]; then
-    update_items+=("CLAUDE.md → Regenerate from template")
-fi
-
-if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
-    update_items+=("Memory Migration → .yoyo-ai/ → .yoyo-dev/memory/")
-fi
-
-if [ "$SKIP_MCP_CHECK" = false ]; then
-    update_items+=("MCP Servers → Verify and update")
-fi
-
-for item in "${update_items[@]}"; do
-    echo -e "  ${UI_INFO}${ICON_ARROW}${UI_RESET} ${item}"
-done
-
-echo ""
-
-# Start update immediately (progress is now visible in real-time)
-echo ""
 
 # ============================================================================
 # Update Steps
@@ -369,6 +334,8 @@ create_comprehensive_backup() {
 
     # Backup instructions
     if [ -d ".yoyo-dev/instructions" ]; then
+        local inst_count=$(find ".yoyo-dev/instructions" -type f 2>/dev/null | wc -l)
+        echo -e "  ${UI_DIM}📁 Instructions${UI_RESET} ${UI_DIM}($inst_count files)${UI_RESET}"
         while IFS= read -r -d '' file; do
             ((current++))
             local rel_path="${file#.yoyo-dev/}"
@@ -376,11 +343,13 @@ create_comprehensive_backup() {
             cp "$file" "$backup_dir/$rel_path"
             ui_update_progress "Backup" "$current" "$total" "$rel_path" "$VERBOSE"
         done < <(find ".yoyo-dev/instructions" -type f -print0 2>/dev/null)
-        files_backed_up=$((files_backed_up + $(find ".yoyo-dev/instructions" -type f 2>/dev/null | wc -l)))
+        files_backed_up=$((files_backed_up + inst_count))
     fi
 
     # Backup standards
     if [ -d ".yoyo-dev/standards" ]; then
+        local std_count=$(find ".yoyo-dev/standards" -type f 2>/dev/null | wc -l)
+        echo -e "  ${UI_DIM}📁 Standards${UI_RESET} ${UI_DIM}($std_count files)${UI_RESET}"
         while IFS= read -r -d '' file; do
             ((current++))
             local rel_path="${file#.yoyo-dev/}"
@@ -388,11 +357,13 @@ create_comprehensive_backup() {
             cp "$file" "$backup_dir/$rel_path"
             ui_update_progress "Backup" "$current" "$total" "$rel_path" "$VERBOSE"
         done < <(find ".yoyo-dev/standards" -type f -print0 2>/dev/null)
-        files_backed_up=$((files_backed_up + $(find ".yoyo-dev/standards" -type f 2>/dev/null | wc -l)))
+        files_backed_up=$((files_backed_up + std_count))
     fi
 
     # Backup commands
     if [ -d ".claude/commands" ]; then
+        local cmd_count=$(find ".claude/commands" -type f 2>/dev/null | wc -l)
+        echo -e "  ${UI_DIM}📁 Commands${UI_RESET} ${UI_DIM}($cmd_count files)${UI_RESET}"
         mkdir -p "$backup_dir/commands"
         while IFS= read -r -d '' file; do
             ((current++))
@@ -400,11 +371,13 @@ create_comprehensive_backup() {
             cp "$file" "$backup_dir/commands/$rel_path"
             ui_update_progress "Backup" "$current" "$total" "commands/$rel_path" "$VERBOSE"
         done < <(find ".claude/commands" -type f -print0 2>/dev/null)
-        files_backed_up=$((files_backed_up + $(find ".claude/commands" -type f 2>/dev/null | wc -l)))
+        files_backed_up=$((files_backed_up + cmd_count))
     fi
 
     # Backup agents
     if [ -d ".claude/agents" ]; then
+        local agent_count=$(find ".claude/agents" -type f 2>/dev/null | wc -l)
+        echo -e "  ${UI_DIM}📁 Agents${UI_RESET} ${UI_DIM}($agent_count files)${UI_RESET}"
         mkdir -p "$backup_dir/agents"
         while IFS= read -r -d '' file; do
             ((current++))
@@ -412,11 +385,13 @@ create_comprehensive_backup() {
             cp "$file" "$backup_dir/agents/$rel_path"
             ui_update_progress "Backup" "$current" "$total" "agents/$rel_path" "$VERBOSE"
         done < <(find ".claude/agents" -type f -print0 2>/dev/null)
-        files_backed_up=$((files_backed_up + $(find ".claude/agents" -type f 2>/dev/null | wc -l)))
+        files_backed_up=$((files_backed_up + agent_count))
     fi
 
     # Backup hooks
     if [ -d ".claude/hooks" ]; then
+        local hook_count=$(find ".claude/hooks" -type f 2>/dev/null | wc -l)
+        echo -e "  ${UI_DIM}📁 Hooks${UI_RESET} ${UI_DIM}($hook_count files)${UI_RESET}"
         mkdir -p "$backup_dir/hooks"
         while IFS= read -r -d '' file; do
             ((current++))
@@ -424,11 +399,12 @@ create_comprehensive_backup() {
             cp "$file" "$backup_dir/hooks/$rel_path"
             ui_update_progress "Backup" "$current" "$total" "hooks/$rel_path" "$VERBOSE"
         done < <(find ".claude/hooks" -type f -print0 2>/dev/null)
-        files_backed_up=$((files_backed_up + $(find ".claude/hooks" -type f 2>/dev/null | wc -l)))
+        files_backed_up=$((files_backed_up + hook_count))
     fi
 
     # Backup config
     if [ -f ".yoyo-dev/config.yml" ]; then
+        echo -e "  ${UI_DIM}📁 Config${UI_RESET} ${UI_DIM}(1 file)${UI_RESET}"
         ((current++))
         cp ".yoyo-dev/config.yml" "$backup_dir/config.yml"
         ui_update_progress "Backup" "$current" "$total" "config.yml" "$VERBOSE"
@@ -489,106 +465,143 @@ update_with_progress() {
     echo "$files_copied"
 }
 
-TOTAL_STEPS=12
+TOTAL_STEPS=10
 CURRENT_STEP=0
 
-# Get base installation path
-BASE_YOYO_DEV="$(dirname "$SCRIPT_DIR")"
+# Note: BASE_YOYO_DEV was defined earlier in Welcome Screen section
 
-# Step 1: Comprehensive backup of all framework files
+# Backup directory path (used throughout)
+BACKUP_DIR=".yoyo-dev/backups/$(date +%Y%m%d_%H%M%S)"
+
+# ============================================================================
+# PHASE 1: BASE Sync - Pull latest from repository
+# ============================================================================
+
+CURRENT_PHASE=$PHASE_BASE_SYNC
+ui_phase_indicator $CURRENT_PHASE "BASE Sync" "Backup" "Update" "Verify"
+
+((CURRENT_STEP++))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Pulling latest from BASE installation..."
+
+if [ -d "$BASE_YOYO_DEV/.git" ]; then
+    cd "$BASE_YOYO_DEV"
+
+    # Get current branch and show it
+    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+    show_progress "Branch" "$CURRENT_BRANCH"
+
+    # Fetch and show status
+    show_progress "Fetching latest changes..."
+    if git fetch origin 2>&1 | head -3; then
+        # Check if there are updates
+        LOCAL=$(git rev-parse HEAD 2>/dev/null)
+        REMOTE=$(git rev-parse @{u} 2>/dev/null || echo "$LOCAL")
+
+        if [ "$LOCAL" = "$REMOTE" ]; then
+            ui_success "Already up to date"
+        else
+            show_progress "Pulling updates..."
+            git pull 2>&1 | head -5
+            ui_success "Updates pulled"
+        fi
+    fi
+
+    cd "$CURRENT_DIR"
+else
+    ui_info "No git repository found, using current base files"
+fi
+
+echo ""
+
+# ============================================================================
+# PHASE 2: Backup - Create comprehensive backup before changes
+# ============================================================================
+
+CURRENT_PHASE=$PHASE_BACKUP
+ui_phase_indicator $CURRENT_PHASE "BASE Sync" "Backup" "Update" "Verify"
+
 ((CURRENT_STEP++))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Creating comprehensive backup..."
 
-BACKUP_DIR=".yoyo-dev/backups/$(date +%Y%m%d_%H%M%S)"
 show_progress "Backup location" "$BACKUP_DIR"
 
 # Create comprehensive backup with progress display
 BACKUP_COUNT=$(create_comprehensive_backup "$BACKUP_DIR")
 ui_progress_complete "Backup" "$BACKUP_COUNT" 0
 
+# Calculate backup size
+BACKUP_SIZE=$(du -sh "$BACKUP_DIR" 2>/dev/null | cut -f1 || echo "unknown")
+
+# Show backup confirmation panel
+echo ""
+echo -e "  ${UI_YOYO_YELLOW}╭───────────────────────────────────────────────────────────────╮${UI_RESET}"
+echo -e "  ${UI_YOYO_YELLOW}│${UI_RESET}  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} ${UI_BOLD}BACKUP COMPLETE${UI_RESET}                                        ${UI_YOYO_YELLOW}│${UI_RESET}"
+echo -e "  ${UI_YOYO_YELLOW}├───────────────────────────────────────────────────────────────┤${UI_RESET}"
+echo -e "  ${UI_YOYO_YELLOW}│${UI_RESET}  Files backed up:  ${UI_PRIMARY}$BACKUP_COUNT${UI_RESET} files                              ${UI_YOYO_YELLOW}│${UI_RESET}"
+echo -e "  ${UI_YOYO_YELLOW}│${UI_RESET}  Backup size:      ${UI_PRIMARY}$BACKUP_SIZE${UI_RESET}                                     ${UI_YOYO_YELLOW}│${UI_RESET}"
+echo -e "  ${UI_YOYO_YELLOW}│${UI_RESET}  Location:         ${UI_DIM}$BACKUP_DIR${UI_RESET}  ${UI_YOYO_YELLOW}│${UI_RESET}"
+echo -e "  ${UI_YOYO_YELLOW}╰───────────────────────────────────────────────────────────────╯${UI_RESET}"
 echo ""
 
-# Step 2: Pull latest from base installation
-((CURRENT_STEP++))
-ui_step $CURRENT_STEP $TOTAL_STEPS "Pulling latest version..."
-
-if [ -d "$BASE_YOYO_DEV/.git" ]; then
-    show_progress "Checking for updates from" "$BASE_YOYO_DEV"
-    cd "$BASE_YOYO_DEV"
-
-    # Get current branch and show it
-    CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
-    show_progress "Current branch" "$CURRENT_BRANCH"
-
-    # Fetch and show status
-    show_progress "Fetching latest changes..."
-    if git fetch origin 2>&1 | head -5; then
-        # Check if there are updates
-        LOCAL=$(git rev-parse HEAD 2>/dev/null)
-        REMOTE=$(git rev-parse @{u} 2>/dev/null || echo "$LOCAL")
-
-        if [ "$LOCAL" = "$REMOTE" ]; then
-            show_progress "Already up to date"
-        else
-            show_progress "Pulling updates..."
-            git pull 2>&1 | head -10
-        fi
-    fi
-
-    cd "$CURRENT_DIR"
-    ui_success "Base installation updated"
-else
-    show_progress "Source directory" "$BASE_YOYO_DEV"
-    ui_info "No git repository found, using current base installation"
-fi
-
+ui_success "Your data is safe - proceeding with update"
 echo ""
 
-# Step 3: Update instructions
+# Show protected user data that won't be touched
+ui_protected_data_panel ".yoyo-dev"
+echo ""
+
+# ============================================================================
+# PHASE 3: Update - Apply framework updates
+# ============================================================================
+
+CURRENT_PHASE=$PHASE_UPDATE
+ui_phase_indicator $CURRENT_PHASE "BASE Sync" "Backup" "Update" "Verify"
+
+# Step: Update instructions
 if [ "$OVERWRITE_INSTRUCTIONS" = true ]; then
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Updating instructions..."
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating instructions..."
 
     FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/instructions/" ".yoyo-dev/instructions/" "Instructions")
     track_rsync_changes ".yoyo-dev/instructions/" "$FILE_COUNT"
     echo ""
 else
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Keeping existing instructions..."
-    show_progress "Skipped (--no-overwrite-instructions)"
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Keeping existing instructions..."
+    echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Preserved${UI_RESET} ${UI_DIM}(--no-overwrite-instructions)${UI_RESET}"
     echo ""
 fi
 
 # Step 4: Update standards
 if [ "$OVERWRITE_STANDARDS" = true ]; then
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Updating standards..."
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating standards..."
 
     FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/standards/" ".yoyo-dev/standards/" "Standards")
     track_rsync_changes ".yoyo-dev/standards/" "$FILE_COUNT"
     echo ""
 else
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Keeping existing standards..."
-    show_progress "Skipped (--no-overwrite-standards)"
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Keeping existing standards..."
+    echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Preserved${UI_RESET} ${UI_DIM}(--no-overwrite-standards)${UI_RESET}"
     echo ""
 fi
 
 # Step 5: Update commands
 if [ "$OVERWRITE_COMMANDS" = true ] && [ -d ".claude/commands" ]; then
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Updating CLI commands..."
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating CLI commands..."
 
     FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/.claude/commands/" ".claude/commands/" "Commands")
     track_rsync_changes ".claude/commands/" "$FILE_COUNT"
     echo ""
 else
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping command update..."
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Skipping command update..."
     if [ ! -d ".claude/commands" ]; then
-        show_progress "Skipped (.claude/commands not found)"
+        echo -e "     ${UI_DIM}⊘ Skipped${UI_RESET} ${UI_DIM}(.claude/commands not found)${UI_RESET}"
     else
-        show_progress "Skipped (--no-overwrite-commands)"
+        echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Preserved${UI_RESET} ${UI_DIM}(--no-overwrite-commands)${UI_RESET}"
     fi
     echo ""
 fi
@@ -596,18 +609,18 @@ fi
 # Step 6: Update agents
 if [ "$OVERWRITE_AGENTS" = true ] && [ -d ".claude/agents" ]; then
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Updating agents..."
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating agents..."
 
     FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/.claude/agents/" ".claude/agents/" "Agents")
     track_rsync_changes ".claude/agents/" "$FILE_COUNT"
     echo ""
 else
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping agent update..."
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Skipping agent update..."
     if [ ! -d ".claude/agents" ]; then
-        show_progress "Skipped (.claude/agents not found)"
+        echo -e "     ${UI_DIM}⊘ Skipped${UI_RESET} ${UI_DIM}(.claude/agents not found)${UI_RESET}"
     else
-        show_progress "Skipped (--no-overwrite-agents)"
+        echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Preserved${UI_RESET} ${UI_DIM}(--no-overwrite-agents)${UI_RESET}"
     fi
     echo ""
 fi
@@ -615,7 +628,7 @@ fi
 # Step 7: Update orchestration hooks
 if [ "$OVERWRITE_HOOKS" = true ]; then
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Updating orchestration hooks..."
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating orchestration hooks..."
 
     # Ensure .claude/hooks directory exists
     mkdir -p ".claude/hooks"
@@ -648,8 +661,8 @@ if [ "$OVERWRITE_HOOKS" = true ]; then
     echo ""
 else
     ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping hooks update..."
-    show_progress "Skipped (--no-overwrite-hooks)"
+    ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Skipping hooks update..."
+    echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Preserved${UI_RESET} ${UI_DIM}(--no-overwrite-hooks)${UI_RESET}"
     echo ""
 fi
 
@@ -819,6 +832,14 @@ else
     echo ""
 fi
 
+# ============================================================================
+# Phase 4: VERIFY
+# ============================================================================
+
+CURRENT_PHASE=$PHASE_VERIFY
+ui_phase_indicator $CURRENT_PHASE "BASE Sync" "Backup" "Update" "Verify"
+echo ""
+
 # Step 10: Verify update
 ((CURRENT_STEP++))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying update..."
@@ -891,19 +912,19 @@ echo ""
 # Completion
 # ============================================================================
 
-ui_complete "Update Complete!"
+# Calculate update duration
+UPDATE_END_TIME=$(date +%s)
+UPDATE_DURATION=$((UPDATE_END_TIME - UPDATE_START_TIME))
 
-ui_section "What's New in v${VERSION}" "$ICON_SPARKLES"
+# Calculate file counts
+TOTAL_FILES_UPDATED=${#CHANGED_FILES[@]}
+TOTAL_FILES_CREATED=${#CREATED_FILES[@]}
 
-echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} Yoyo Dev updated to ${UI_BOLD}v${VERSION}${UI_RESET}"
+# Show summary panel
+ui_update_summary_panel "$CURRENT_VERSION" "$VERSION" "$UPDATE_DURATION" "$TOTAL_FILES_UPDATED" "$TOTAL_FILES_CREATED" "$TOTAL_FILES_PRESERVED" "$BACKUP_DIR"
 echo ""
-echo -e "  ${ICON_SPARKLES} ${UI_SUCCESS}Global Orchestration Mode${UI_RESET}"
-echo -e "     ${UI_DIM}• Intent classification on every user message${UI_RESET}"
-echo -e "     ${UI_DIM}• Automatic agent delegation (research, frontend, codebase)${UI_RESET}"
-echo -e "     ${UI_DIM}• Claude Code hook integration${UI_RESET}"
-echo -e "     ${UI_DIM}• Browser GUI dashboard on port 5173${UI_RESET}"
-echo ""
 
+# Memory migration note if applicable
 if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
     echo -e "  ${UI_SUCCESS}${ICON_CHECK}${UI_RESET} Memory migrated to ${UI_BOLD}.yoyo-dev/memory/${UI_RESET}"
     echo ""
@@ -921,7 +942,4 @@ echo ""
 
 echo -e "  ${UI_PRIMARY}3.${UI_RESET} Check for breaking changes:"
 echo -e "     ${UI_DIM}\$ cat $BASE_YOYO_DEV/CHANGELOG.md${UI_RESET}"
-echo ""
-
-ui_info "Backup saved to: ${UI_PRIMARY}$BACKUP_DIR${UI_RESET}"
 echo ""

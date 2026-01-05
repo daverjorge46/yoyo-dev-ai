@@ -139,8 +139,8 @@ function NavItemLink({ item, collapsed }: NavItemLinkProps) {
         text-sm font-medium transition-all duration-150
         ${
           isActive
-            ? 'bg-brand/10 text-brand dark:bg-terminal-orange/15 dark:text-terminal-orange border-l-2 border-brand dark:border-terminal-orange -ml-0.5 pl-3.5'
-            : 'text-gray-600 dark:text-terminal-text-secondary hover:bg-gray-100 dark:hover:bg-terminal-elevated hover:text-gray-900 dark:hover:text-terminal-text'
+            ? 'bg-gradient-to-r from-primary/15 to-accent/10 text-primary dark:text-terminal-orange border-l-3 border-primary dark:border-terminal-orange -ml-0.5 pl-3.5 shadow-sm'
+            : 'text-gray-600 dark:text-terminal-text-secondary hover:bg-gray-100 dark:hover:bg-terminal-elevated hover:text-primary dark:hover:text-terminal-orange'
         }
         ${collapsed ? 'justify-center' : ''}
       `.trim()
@@ -192,30 +192,36 @@ export function CollapsibleSidebar({
         ${className}
       `.trim()}
     >
-      {/* Logo / Header */}
+      {/* Logo / Header - Elegant branding */}
       <div
         className={`
         flex items-center gap-3 px-4 py-4
         border-b border-gray-200 dark:border-terminal-border
+        bg-gradient-to-r from-transparent via-primary/5 to-transparent
+        dark:from-transparent dark:via-terminal-orange/5 dark:to-transparent
         ${collapsed ? 'justify-center' : ''}
       `.trim()}
       >
-        {/* Terminal icon as logo in dark mode */}
+        {/* Logo with subtle glow in dark mode */}
         <div className="flex-shrink-0 relative">
           <img
             src="/yoyo.svg"
             alt="Yoyo"
             className="h-8 w-8 dark:hidden"
           />
-          <Terminal className="h-8 w-8 text-terminal-orange hidden dark:block" />
+          <div className="hidden dark:block relative">
+            <Terminal className="h-8 w-8 text-terminal-orange relative z-10" />
+            <div className="absolute inset-0 bg-terminal-orange/20 blur-lg rounded-full" />
+          </div>
         </div>
         {!collapsed && (
           <div>
             <span className="text-lg font-bold text-gray-900 dark:text-terminal-text truncate block">
-              Yoyo Dev
+              Yoyo{' '}
+              <span className="text-primary dark:text-terminal-orange">Dev</span>
             </span>
             <span className="text-xs text-gray-500 dark:text-terminal-text-muted font-mono">
-              v6.0
+              v6.2
             </span>
           </div>
         )}

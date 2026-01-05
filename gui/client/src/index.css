@@ -67,6 +67,44 @@
     @apply terminal-card-hover active:scale-[0.99];
   }
 
+  /* Elegant card with accent border */
+  .terminal-card-accent {
+    @apply terminal-card;
+    border-left: 3px solid #E85D04;
+  }
+
+  .terminal-card-accent-gold {
+    @apply terminal-card;
+    border-left: 3px solid #D29922;
+  }
+
+  /* Card with gradient top border */
+  .terminal-card-gradient-top {
+    @apply terminal-card relative overflow-hidden;
+  }
+
+  .terminal-card-gradient-top::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #E85D04 0%, #D29922 100%);
+  }
+
+  /* Highlighted card with glow */
+  .terminal-card-highlight {
+    @apply terminal-card;
+    border-color: rgb(232 93 4 / 0.3);
+    box-shadow: 0 0 0 1px rgb(232 93 4 / 0.1), 0 4px 12px rgb(232 93 4 / 0.1);
+  }
+
+  .dark .terminal-card-highlight {
+    border-color: rgb(232 93 4 / 0.4);
+    box-shadow: 0 0 0 1px rgb(232 93 4 / 0.2), 0 4px 20px rgb(232 93 4 / 0.15);
+  }
+
   /* Terminal Input */
   .terminal-input {
     @apply w-full px-3 py-2
@@ -92,9 +130,35 @@
 
   .terminal-btn-primary {
     @apply terminal-btn
-           bg-brand text-terminal-black
-           hover:bg-brand-light active:bg-brand-dark
-           focus:ring-brand;
+           bg-primary text-white
+           hover:bg-primary-400 active:bg-primary-600
+           focus:ring-primary;
+  }
+
+  /* Elegant gradient button */
+  .terminal-btn-gradient {
+    @apply terminal-btn text-white font-semibold;
+    background: linear-gradient(135deg, #E85D04 0%, #D29922 100%);
+    box-shadow: 0 2px 8px rgb(232 93 4 / 0.3);
+  }
+
+  .terminal-btn-gradient:hover {
+    background: linear-gradient(135deg, #fb923c 0%, #facc15 100%);
+    box-shadow: 0 4px 12px rgb(232 93 4 / 0.4);
+    transform: translateY(-1px);
+  }
+
+  .terminal-btn-gradient:active {
+    background: linear-gradient(135deg, #d45500 0%, #ca8a04 100%);
+    transform: translateY(0);
+  }
+
+  /* Accent button variant */
+  .terminal-btn-accent {
+    @apply terminal-btn
+           bg-accent text-white
+           hover:bg-accent-400 active:bg-accent-600
+           focus:ring-accent;
   }
 
   .terminal-btn-secondary {
@@ -156,13 +220,34 @@
            dark:bg-terminal-elevated dark:text-terminal-text-secondary dark:border-terminal-border;
   }
 
-  /* Terminal Progress Bar */
+  /* Terminal Progress Bar - Enhanced with gradients */
   .terminal-progress {
     @apply w-full h-1.5 bg-gray-200 dark:bg-terminal-border rounded-full overflow-hidden;
   }
 
   .terminal-progress-bar {
     @apply h-full rounded-full transition-all duration-slow;
+  }
+
+  /* Gradient Progress Bar - Elegant primary to accent */
+  .progress-gradient {
+    @apply w-full h-2 bg-gray-200 dark:bg-terminal-border rounded-full overflow-hidden relative;
+  }
+
+  .progress-gradient-bar {
+    @apply h-full rounded-full transition-all duration-500 ease-out;
+    background: linear-gradient(90deg, #E85D04 0%, #D29922 100%);
+  }
+
+  .progress-gradient-bar-animated {
+    @apply progress-gradient-bar;
+    background-size: 200% 100%;
+    animation: gradient-shift 2s ease infinite;
+  }
+
+  /* Glowing progress for active states */
+  .progress-glow {
+    box-shadow: 0 0 10px rgb(232 93 4 / 0.4), 0 0 20px rgb(210 153 34 / 0.2);
   }
 
   /* Terminal Section Header */
