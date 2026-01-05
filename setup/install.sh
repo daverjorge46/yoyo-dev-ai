@@ -403,6 +403,9 @@ if [ "$CLAUDE_CODE" = true ]; then
     mkdir -p ".claude/commands"
     mkdir -p ".claude/agents"
     mkdir -p ".claude/hooks"
+    mkdir -p ".claude/skills"
+    mkdir -p ".claude/templates"
+    mkdir -p ".claude/output-styles"
 fi
 
 ui_success "Directories created"
@@ -418,22 +421,22 @@ if [ "$IS_FROM_BASE" = true ]; then
     cp -r "$BASE_YOYO_DEV/standards/"* "$INSTALL_DIR/standards/"
 
     if [ "$CLAUDE_CODE" = true ]; then
-        # Copy commands, agents, skills, templates
-        cp -r "$BASE_YOYO_DEV/.claude/commands/"* ".claude/commands/" 2>/dev/null || true
-        cp -r "$BASE_YOYO_DEV/.claude/agents/"* ".claude/agents/" 2>/dev/null || true
-        cp -r "$BASE_YOYO_DEV/.claude/skills/"* ".claude/skills/" 2>/dev/null || mkdir -p ".claude/skills"
-        cp -r "$BASE_YOYO_DEV/.claude/templates/"* ".claude/templates/" 2>/dev/null || mkdir -p ".claude/templates"
+        # Copy from claude-code/ canonical source directory (not .claude/)
+        # This ensures projects get clean distribution files without local settings
+        cp -r "$BASE_YOYO_DEV/claude-code/commands/"* ".claude/commands/" 2>/dev/null || true
+        cp -r "$BASE_YOYO_DEV/claude-code/agents/"* ".claude/agents/" 2>/dev/null || true
+        cp -r "$BASE_YOYO_DEV/claude-code/skills/"* ".claude/skills/" 2>/dev/null || true
+        cp -r "$BASE_YOYO_DEV/claude-code/templates/"* ".claude/templates/" 2>/dev/null || true
+        cp -r "$BASE_YOYO_DEV/claude-code/output-styles/"* ".claude/output-styles/" 2>/dev/null || true
 
         # Copy orchestration hook bundle
-        if [ -f "$BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs" ]; then
-            cp "$BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs" ".claude/hooks/"
+        if [ -f "$BASE_YOYO_DEV/claude-code/hooks/orchestrate.cjs" ]; then
+            cp "$BASE_YOYO_DEV/claude-code/hooks/orchestrate.cjs" ".claude/hooks/"
             ui_info "Orchestration hook installed"
         fi
 
-        # Copy settings.json with hook configuration (if not exists)
-        if [ ! -f ".claude/settings.json" ] && [ -f "$BASE_YOYO_DEV/.claude/settings.json" ]; then
-            cp "$BASE_YOYO_DEV/.claude/settings.json" ".claude/"
-        fi
+        # Note: settings.json is NOT copied - projects should create their own
+        # based on their specific needs and MCP configuration
     fi
 else
     # Download from GitHub

@@ -587,12 +587,12 @@ else
     echo ""
 fi
 
-# Step 5: Update commands
+# Step 5: Update commands (from claude-code/ canonical source)
 if [ "$OVERWRITE_COMMANDS" = true ] && [ -d ".claude/commands" ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating CLI commands..."
 
-    FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/.claude/commands/" ".claude/commands/" "Commands")
+    FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/claude-code/commands/" ".claude/commands/" "Commands")
     track_rsync_changes ".claude/commands/" "$FILE_COUNT"
     echo ""
 else
@@ -606,12 +606,12 @@ else
     echo ""
 fi
 
-# Step 6: Update agents
+# Step 6: Update agents (from claude-code/ canonical source)
 if [ "$OVERWRITE_AGENTS" = true ] && [ -d ".claude/agents" ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating agents..."
 
-    FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/.claude/agents/" ".claude/agents/" "Agents")
+    FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/claude-code/agents/" ".claude/agents/" "Agents")
     track_rsync_changes ".claude/agents/" "$FILE_COUNT"
     echo ""
 else
@@ -625,7 +625,8 @@ else
     echo ""
 fi
 
-# Step 7: Update orchestration hooks
+# Step 7: Update orchestration hooks (from claude-code/ canonical source)
+# Note: settings.json is NOT copied during updates - projects manage their own settings
 if [ "$OVERWRITE_HOOKS" = true ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating orchestration hooks..."
@@ -633,29 +634,18 @@ if [ "$OVERWRITE_HOOKS" = true ]; then
     # Ensure .claude/hooks directory exists
     mkdir -p ".claude/hooks"
 
-    # Copy hook bundle
-    if [ -f "$BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs" ]; then
+    # Copy hook bundle from claude-code/ canonical source
+    if [ -f "$BASE_YOYO_DEV/claude-code/hooks/orchestrate.cjs" ]; then
         show_progress "Copying orchestration hook bundle"
-        cp "$BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs" ".claude/hooks/"
+        cp "$BASE_YOYO_DEV/claude-code/hooks/orchestrate.cjs" ".claude/hooks/"
         track_file_change ".claude/hooks/orchestrate.cjs"
     else
-        show_progress "Hook bundle not found at $BASE_YOYO_DEV/.claude/hooks/orchestrate.cjs"
+        show_progress "Hook bundle not found at $BASE_YOYO_DEV/claude-code/hooks/orchestrate.cjs"
     fi
 
-    # Copy settings.json with hook configuration
-    if [ -f "$BASE_YOYO_DEV/.claude/settings.json" ]; then
-        if [ -f ".claude/settings.json" ]; then
-            # Merge hook configuration into existing settings.json
-            show_progress "Updating hook configuration in settings.json"
-            # Simple approach: overwrite (user customizations should be in settings.local.json)
-            cp "$BASE_YOYO_DEV/.claude/settings.json" ".claude/settings.json"
-            track_file_change ".claude/settings.json"
-        else
-            show_progress "Creating settings.json with hook configuration"
-            cp "$BASE_YOYO_DEV/.claude/settings.json" ".claude/settings.json"
-            track_file_change ".claude/settings.json" "created"
-        fi
-    fi
+    # Note: settings.json is intentionally NOT copied during updates
+    # Projects should manage their own .claude/settings.json configuration
+    # Only fresh installs receive a settings.json template
 
     ui_success "Orchestration hooks updated"
     echo ""
