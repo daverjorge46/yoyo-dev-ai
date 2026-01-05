@@ -44,3 +44,9 @@ temp/
 
 # Build outputs
 dist/
+
+# Claude Code Local Configuration
+# .claude/ contains local settings, skills, and customizations
+# Each developer has their own local Claude Code setup
+# The canonical source for agents/commands/hooks is in the yoyo-dev framework itself
+.claude/

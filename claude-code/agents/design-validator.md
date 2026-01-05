@@ -1,3 +1,7 @@
+---
+name: design-validator
+---
+
 # Design Validator Agent
 
 ## Role
