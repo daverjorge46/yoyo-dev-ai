@@ -296,31 +296,129 @@ describe('RoadmapPhase', () => {
   });
 
   describe('inline editing', () => {
-    it('should show edit button on hover', async () => {
+    it('should show edit button without hover (always visible)', () => {
       renderWithProviders(<RoadmapPhase {...defaultProps} />);
 
-      const header = screen.getByTestId('phase-header');
-      fireEvent.mouseEnter(header);
-
-      await waitFor(() => {
-        expect(screen.getByTestId('edit-button')).toBeInTheDocument();
-      });
+      // Edit button should be visible without hovering
+      expect(screen.getByTestId('edit-button')).toBeInTheDocument();
     });
 
-    it('should call onStartEdit when edit button is clicked', async () => {
+    it('should call onStartEdit when edit button is clicked', () => {
       const onStartEdit = vi.fn();
       renderWithProviders(
         <RoadmapPhase {...defaultProps} onStartEdit={onStartEdit} />
       );
 
-      const header = screen.getByTestId('phase-header');
-      fireEvent.mouseEnter(header);
+      const editButton = screen.getByTestId('edit-button');
+      fireEvent.click(editButton);
+      expect(onStartEdit).toHaveBeenCalledWith('phase-1');
+    });
+  });
 
-      await waitFor(() => {
-        const editButton = screen.getByTestId('edit-button');
-        fireEvent.click(editButton);
-        expect(onStartEdit).toHaveBeenCalledWith('phase-1');
-      });
+  describe('execution controls', () => {
+    it('should show execute button without hover (always visible)', () => {
+      renderWithProviders(
+        <RoadmapPhase {...defaultProps} onExecute={vi.fn()} />
+      );
+
+      expect(screen.getByTestId('execute-button')).toBeInTheDocument();
+    });
+
+    it('should call onExecute when execute button is clicked', () => {
+      const onExecute = vi.fn();
+      renderWithProviders(
+        <RoadmapPhase {...defaultProps} onExecute={onExecute} />
+      );
+
+      const executeButton = screen.getByTestId('execute-button');
+      fireEvent.click(executeButton);
+      expect(onExecute).toHaveBeenCalledWith('phase-1');
+    });
+
+    it('should show pause and stop buttons when phase is executing', () => {
+      renderWithProviders(
+        <RoadmapPhase
+          {...defaultProps}
+          onExecute={vi.fn()}
+          onPause={vi.fn()}
+          onStop={vi.fn()}
+          isExecutionRunning={true}
+          executingPhaseId="phase-1"
+        />
+      );
+
+      expect(screen.getByTestId('pause-button')).toBeInTheDocument();
+      expect(screen.getByTestId('stop-button')).toBeInTheDocument();
+      expect(screen.queryByTestId('execute-button')).not.toBeInTheDocument();
+    });
+
+    it('should call onPause when pause button is clicked', () => {
+      const onPause = vi.fn();
+      renderWithProviders(
+        <RoadmapPhase
+          {...defaultProps}
+          onExecute={vi.fn()}
+          onPause={onPause}
+          onStop={vi.fn()}
+          isExecutionRunning={true}
+          executingPhaseId="phase-1"
+        />
+      );
+
+      const pauseButton = screen.getByTestId('pause-button');
+      fireEvent.click(pauseButton);
+      expect(onPause).toHaveBeenCalled();
+    });
+
+    it('should call onStop when stop button is clicked', () => {
+      const onStop = vi.fn();
+      renderWithProviders(
+        <RoadmapPhase
+          {...defaultProps}
+          onExecute={vi.fn()}
+          onPause={vi.fn()}
+          onStop={onStop}
+          isExecutionRunning={true}
+          executingPhaseId="phase-1"
+        />
+      );
+
+      const stopButton = screen.getByTestId('stop-button');
+      fireEvent.click(stopButton);
+      expect(onStop).toHaveBeenCalled();
+    });
+
+    it('should show execute button (disabled) when another phase is executing', () => {
+      renderWithProviders(
+        <RoadmapPhase
+          {...defaultProps}
+          onExecute={vi.fn()}
+          onPause={vi.fn()}
+          onStop={vi.fn()}
+          isExecutionRunning={true}
+          executingPhaseId="phase-2"
+        />
+      );
+
+      const executeButton = screen.getByTestId('execute-button');
+      expect(executeButton).toBeInTheDocument();
+      expect(executeButton).toHaveAttribute('aria-disabled', 'true');
+    });
+
+    it('should not call onExecute when button is disabled', () => {
+      const onExecute = vi.fn();
+      renderWithProviders(
+        <RoadmapPhase
+          {...defaultProps}
+          onExecute={onExecute}
+          isExecutionRunning={true}
+          executingPhaseId="phase-2"
+        />
+      );
+
+      const executeButton = screen.getByTestId('execute-button');
+      fireEvent.click(executeButton);
+      expect(onExecute).not.toHaveBeenCalled();
     });
   });
 

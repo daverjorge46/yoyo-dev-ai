@@ -18,6 +18,8 @@ import {
   GripVertical,
   Pencil,
   Play,
+  Pause,
+  Square,
   Loader2,
 } from 'lucide-react';
 import { RoadmapFeature, type RoadmapFeatureItem } from './RoadmapFeature';
@@ -64,6 +66,10 @@ export interface RoadmapPhaseProps {
   onCancelEdit: () => void;
   /** Callback to open execution panel */
   onExecute?: (phaseId: string) => void;
+  /** Callback to pause execution */
+  onPause?: () => void;
+  /** Callback to stop execution */
+  onStop?: () => void;
   /** Whether another phase is currently executing */
   isExecutionRunning?: boolean;
   /** ID of the currently executing phase (if any) */
@@ -165,11 +171,12 @@ export function RoadmapPhase({
   onSaveEdit,
   onCancelEdit,
   onExecute,
+  onPause,
+  onStop,
   isExecutionRunning = false,
   executingPhaseId = null,
 }: RoadmapPhaseProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
-  const [isHovered, setIsHovered] = useState(false);
 
   // Sortable hook for drag-drop
   const {
@@ -206,6 +213,16 @@ export function RoadmapPhase({
     onExecute?.(phase.id);
   };
 
+  const handlePauseClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onPause?.();
+  };
+
+  const handleStopClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    onStop?.();
+  };
+
   const isThisPhaseExecuting = executingPhaseId === phase.id;
   const canExecute = !isExecutionRunning || isThisPhaseExecuting;
 
@@ -226,8 +243,6 @@ export function RoadmapPhase({
       <div
         className="flex items-center gap-2"
         data-testid="phase-header"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         {/* Drag Handle */}
         <div
@@ -272,26 +287,73 @@ export function RoadmapPhase({
                       Phase {phase.number}: {phase.title}
                     </h3>
                     <PhaseStatusBadge status={phase.status} />
-                    {isHovered && !isEditing && (
+                    {/* Action buttons - always visible */}
+                    <span
+                      onClick={handleEditClick}
+                      className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
+                      data-testid="edit-button"
+                      role="button"
+                      tabIndex={0}
+                      aria-label="Edit phase name"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onStartEdit(phase.id);
+                        }
+                      }}
+                    >
+                      <Pencil className="h-3.5 w-3.5 text-gray-500" />
+                    </span>
+                    {/* Execution controls */}
+                    {onExecute && (
                       <>
-                        <span
-                          onClick={handleEditClick}
-                          className="p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors cursor-pointer"
-                          data-testid="edit-button"
-                          role="button"
-                          tabIndex={0}
-                          aria-label="Edit phase name"
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter' || e.key === ' ') {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              onStartEdit(phase.id);
-                            }
-                          }}
-                        >
-                          <Pencil className="h-3.5 w-3.5 text-gray-500" />
-                        </span>
-                        {onExecute && (
+                        {isThisPhaseExecuting ? (
+                          /* Show Pause and Stop when this phase is executing */
+                          <>
+                            {onPause && (
+                              <span
+                                onClick={handlePauseClick}
+                                className="p-1 rounded hover:bg-yellow-100 dark:hover:bg-yellow-900/30 transition-colors cursor-pointer"
+                                data-testid="pause-button"
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Pause execution"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onPause();
+                                  }
+                                }}
+                              >
+                                <Pause className="h-3.5 w-3.5 text-yellow-600" />
+                              </span>
+                            )}
+                            {onStop && (
+                              <span
+                                onClick={handleStopClick}
+                                className="p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors cursor-pointer"
+                                data-testid="stop-button"
+                                role="button"
+                                tabIndex={0}
+                                aria-label="Stop execution"
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onStop();
+                                  }
+                                }}
+                              >
+                                <Square className="h-3.5 w-3.5 text-red-500" />
+                              </span>
+                            )}
+                            {/* Show spinner to indicate running */}
+                            <Loader2 className="h-3.5 w-3.5 text-blue-500 animate-spin" />
+                          </>
+                        ) : (
+                          /* Show Play button when not executing */
                           <span
                             onClick={canExecute ? handleExecuteClick : undefined}
                             className={`p-1 rounded transition-colors ${
@@ -302,7 +364,7 @@ export function RoadmapPhase({
                             data-testid="execute-button"
                             role="button"
                             tabIndex={canExecute ? 0 : -1}
-                            aria-label={isThisPhaseExecuting ? 'View execution' : 'Execute phase'}
+                            aria-label="Execute phase with Ralph"
                             aria-disabled={!canExecute}
                             onKeyDown={(e) => {
                               if (canExecute && (e.key === 'Enter' || e.key === ' ')) {
@@ -312,11 +374,7 @@ export function RoadmapPhase({
                               }
                             }}
                           >
-                            {isThisPhaseExecuting ? (
-                              <Loader2 className="h-3.5 w-3.5 text-blue-500 animate-spin" />
-                            ) : (
-                              <Play className="h-3.5 w-3.5 text-blue-500" />
-                            )}
+                            <Play className="h-3.5 w-3.5 text-blue-500" />
                           </span>
                         )}
                       </>

@@ -20,9 +20,9 @@ export type MemoryBlockType = 'persona' | 'project' | 'user' | 'corrections';
 
 /**
  * Memory storage scope.
- * - global: Stored in ~/yoyo-dev/memory/, applies to all projects
- * - project: Stored in .yoyo-dev/memory/, project-specific
- */
+ * - global: Stored in ~/.yoyo-ai/memory/, applies to all projects
+ * - project: Stored in .yoyo-ai/memory/, project-specific
+*/
 export type MemoryScope = 'global' | 'project';
 
 /**

@@ -45,6 +45,10 @@ export interface RoadmapTimelineProps {
   onCancelEdit: () => void;
   /** Callback to execute a phase */
   onExecute?: (phaseId: string) => void;
+  /** Callback to pause execution */
+  onPause?: () => void;
+  /** Callback to stop execution */
+  onStop?: () => void;
   /** Whether an execution is currently running */
   isExecutionRunning?: boolean;
   /** ID of the currently executing phase */
@@ -64,6 +68,8 @@ export function RoadmapTimeline({
   onSaveEdit,
   onCancelEdit,
   onExecute,
+  onPause,
+  onStop,
   isExecutionRunning = false,
   executingPhaseId = null,
 }: RoadmapTimelineProps) {
@@ -155,6 +161,8 @@ export function RoadmapTimeline({
               onSaveEdit={onSaveEdit}
               onCancelEdit={onCancelEdit}
               onExecute={onExecute}
+              onPause={onPause}
+              onStop={onStop}
               isExecutionRunning={isExecutionRunning}
               executingPhaseId={executingPhaseId}
             />
