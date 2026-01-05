@@ -20,6 +20,16 @@ import type {
   MessageRole,
 } from './types.js';
 
+function isMemoryBlockIdentifier(value: unknown): value is MemoryBlock {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'id' in value &&
+    'type' in value &&
+    'scope' in value
+  );
+}
+
 // =============================================================================
 // Types
 // =============================================================================
@@ -332,17 +342,23 @@ export function getBlock(
 ): MemoryBlock | null;
 export function getBlock(
   store: MemoryStore,
-  typeOrId: MemoryBlockType | string,
+  typeOrId: MemoryBlockType | string | MemoryBlock,
   scope?: MemoryScope
 ): MemoryBlock | null {
+  const selector = isMemoryBlockIdentifier(typeOrId)
+    ? { id: typeOrId.id }
+    : scope === undefined
+      ? { id: typeOrId as string }
+      : { type: typeOrId as MemoryBlockType, scope };
+
   const statement =
-    scope === undefined
+    'id' in selector
       ? store.db.prepare('SELECT * FROM memory_blocks WHERE id = ?')
       : store.db.prepare('SELECT * FROM memory_blocks WHERE type = ? AND scope = ?');
 
-  const row = (scope === undefined
-    ? statement.get(typeOrId)
-    : statement.get(typeOrId, scope)) as MemoryBlockRow | undefined;
+  const row = ('id' in selector
+    ? statement.get(selector.id)
+    : statement.get(selector.type, selector.scope)) as MemoryBlockRow | undefined;
 
   if (!row) return null;
   return rowToBlock(row);

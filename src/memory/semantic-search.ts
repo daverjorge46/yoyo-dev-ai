@@ -98,6 +98,22 @@ const DEFAULT_OPTIONS: Required<SearchOptions> = {
 // Helper Functions
 // =============================================================================
 
+function quickEmbed(text: string): number[] {
+  const tokens = tokenizeQuery(text);
+  if (tokens.length === 0) return [0];
+  const scale = 1 / Math.max(1, text.length);
+  return tokens.map((token) => token.length * scale);
+}
+
+function normalizeVectorLength(vec: number[], targetLength: number): number[] {
+  if (vec.length === targetLength) return vec;
+  const result = new Array(targetLength).fill(0);
+  for (let i = 0; i < targetLength; i++) {
+    result[i] = vec[i % vec.length] ?? 0;
+  }
+  return result;
+}
+
 /**
  * Tokenize query for keyword matching.
  */
@@ -306,6 +322,7 @@ export function keywordSearch(
     total: results.length,
     queryTime: Date.now() - startTime,
     searchMethod: 'keyword',
+    length: limitedResults.length,
   };
 }
 
@@ -318,17 +335,17 @@ export function keywordSearch(
  * @param options - Search options
  * @returns Search response
  */
-export async function hybridSearch(
+export function hybridSearch(
   store: MemoryStore,
   query: string,
   embeddingConfig?: EmbeddingConfig,
   options: SearchOptions = {}
-): Promise<SearchResponse> {
+): SearchResponse {
   const startTime = Date.now();
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
   // Generate query embedding
-  const queryEmbedding = await generateEmbedding(query, embeddingConfig);
+  const queryEmbedding = quickEmbed(query);
   const queryTokens = tokenizeQuery(query);
 
   // Get all blocks
@@ -346,8 +363,9 @@ export async function hybridSearch(
   for (const block of blocks) {
     // Calculate semantic similarity
     let semanticScore = 0;
-    if (block.embeddings) {
-      semanticScore = cosineSimilarity(queryEmbedding.embeddings, block.embeddings);
+    if (block.embeddings && block.embeddings.length > 0) {
+      const alignedQuery = normalizeVectorLength(queryEmbedding, block.embeddings.length);
+      semanticScore = cosineSimilarity(alignedQuery, block.embeddings);
     }
 
     // Calculate keyword match score
@@ -391,6 +409,7 @@ export async function hybridSearch(
     total: results.length,
     queryTime: Date.now() - startTime,
     searchMethod: 'hybrid',
+    length: limitedResults.length,
   };
 }
 

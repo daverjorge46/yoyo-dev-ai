@@ -14,6 +14,8 @@
  */
 
 import type { MemoryStore } from '../store.js';
+import { hasEnhancedColumns } from '../enhanced-store.js';
+export { hasEnhancedColumns };
 
 // =============================================================================
 // Migration Metadata
@@ -22,6 +24,12 @@ import type { MemoryStore } from '../store.js';
 export const MIGRATION_VERSION = 2;
 export const MIGRATION_NAME = 'v2-enhanced-schema';
 export const MIGRATION_DESCRIPTION = 'Add enhanced memory features: embeddings, relevance, tags, hierarchy';
+
+export interface MigrationResult {
+  success: boolean;
+  toVersion: number;
+  alreadyApplied: boolean;
+}
 
 // =============================================================================
 // Migration SQL
@@ -157,27 +165,19 @@ export function isMigrationApplied(store: MemoryStore): boolean {
 }
 
 /**
- * Check if enhanced columns exist.
- */
-export function hasEnhancedColumns(store: MemoryStore): boolean {
-  try {
-    store.db.prepare('SELECT embeddings FROM memory_blocks LIMIT 1').get();
-    return true;
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Apply the V2 enhanced schema migration.
  *
  * @param store - MemoryStore instance
  * @returns true if migration was applied, false if already applied
  */
-export function applyMigration(store: MemoryStore): boolean {
+export function applyMigration(store: MemoryStore): MigrationResult {
   // Check if already applied
   if (isMigrationApplied(store)) {
-    return false;
+    return {
+      success: true,
+      toVersion: MIGRATION_VERSION,
+      alreadyApplied: true,
+    };
   }
 
   // Apply migration in a transaction
@@ -252,7 +252,11 @@ export function applyMigration(store: MemoryStore): boolean {
   });
 
   transaction();
-  return true;
+  return {
+    success: true,
+    toVersion: MIGRATION_VERSION,
+    alreadyApplied: false,
+  };
 }
 
 /**
@@ -294,6 +298,8 @@ export function rollbackMigration(store: MemoryStore): boolean {
  * Get migration status information.
  */
 export function getMigrationStatus(store: MemoryStore): {
+  needsMigration: boolean;
+  targetVersion: number;
   applied: boolean;
   hasEnhancedColumns: boolean;
   appliedAt: string | null;
@@ -316,6 +322,8 @@ export function getMigrationStatus(store: MemoryStore): {
   const schemaVersion = versionResult ? parseInt(versionResult.value, 10) : 1;
 
   return {
+    needsMigration: !applied || !hasColumns || schemaVersion < MIGRATION_VERSION,
+    targetVersion: MIGRATION_VERSION,
     applied,
     hasEnhancedColumns: hasColumns,
     appliedAt,

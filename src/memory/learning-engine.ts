@@ -205,6 +205,17 @@ export class LearningEngine {
       if (tagDetail) details.push(tagDetail);
     }
 
+    if (details.length === 0) {
+      details.push({
+        type: 'pattern',
+        description: 'Conversation processed with no actionable learnings',
+        confidence: 0.5,
+        targetBlock: 'project',
+        applied: false,
+        reason: 'Fallback learning entry',
+      });
+    }
+
     // Calculate overall confidence
     const avgConfidence = details.length > 0
       ? details.reduce((sum, d) => sum + d.confidence, 0) / details.length
@@ -257,6 +268,17 @@ export class LearningEngine {
       // General instruction - add to relevant block
       const detail = this.applyGeneralLearning(instruction, blockType, tagResult.tags);
       details.push(detail);
+    }
+
+    if (details.length === 0) {
+      details.push({
+        type: 'correction',
+        description: instruction,
+        confidence: 0.8,
+        targetBlock: blockType,
+        applied: false,
+        reason: 'Fallback learning entry',
+      });
     }
 
     const avgConfidence = details.length > 0

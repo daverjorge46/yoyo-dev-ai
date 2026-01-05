@@ -41,6 +41,8 @@ interface UseWebSocketReturn {
   send: (message: WSMessage) => void;
   reconnect: () => void;
   clientId: string | null;
+  lastHeartbeat: number | null;
+  isHeartbeatStale: boolean;
 }
 
 // =============================================================================
@@ -58,6 +60,10 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
 
   const [status, setStatus] = useState<ConnectionStatus>('connecting');
   const [clientId, setClientId] = useState<string | null>(null);
+  const [lastHeartbeat, setLastHeartbeat] = useState<number | null>(null);
+
+  // Heartbeat timeout detection (15 seconds)
+  const HEARTBEAT_TIMEOUT = 15000;
 
   // WebSocket and timer refs
   const wsRef = useRef<WebSocket | null>(null);
@@ -159,6 +165,11 @@ export function useWebSocket(options: UseWebSocketOptions = {}): UseWebSocketRet
         isConnecting.current = false;
         setStatus('connected');
         reconnectAttempts.current = 0;
+        setLastHeartbeat(Date.now());
+
+        // Request current execution state (sync on connect)
+        wsRef.current?.send(JSON.stringify({ type: 'sync:request' }));
+        console.log('[WS] Sent sync:request');
 
         // Call callback from ref
         onConnectRef.current?.();

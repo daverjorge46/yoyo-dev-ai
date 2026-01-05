@@ -11,33 +11,16 @@ import { exec as execCallback, ChildProcess } from 'child_process';
 import { existsSync, accessSync, constants } from 'fs';
 import { join } from 'path';
 
-// Error codes for execution failures
-export type ExecutionErrorCode =
-  | 'RALPH_NOT_FOUND'
-  | 'PROJECT_NOT_INITIALIZED'
-  | 'PROMPT_GENERATION_FAILED'
-  | 'SPAWN_FAILED'
-  | 'PROCESS_CRASHED'
-  | 'EXECUTION_NOT_RUNNING'
-  | 'ALREADY_RUNNING';
+// Import shared types and error utilities
+import {
+  ExecutionErrorCode,
+  CheckResult,
+  ValidationResult,
+  getErrorMessage,
+} from '../lib/error-messages.js';
 
-// Result of a single validation check
-export interface CheckResult {
-  success: boolean;
-  check: string;
-  errorCode?: ExecutionErrorCode;
-  message?: string;
-  details?: string;
-}
-
-// Result of full validation
-export interface ValidationResult {
-  success: boolean;
-  errorCode?: ExecutionErrorCode;
-  message?: string;
-  checks: CheckResult[];
-  durationMs: number;
-}
+// Re-export types for convenience
+export { ExecutionErrorCode, CheckResult, ValidationResult };
 
 // Options for PreflightValidator
 export interface PreflightValidatorOptions {
@@ -48,17 +31,6 @@ export interface PreflightValidatorOptions {
   ) => ChildProcess;
   promptTimeout?: number; // Timeout for prompt generation in ms
 }
-
-// Error messages for each error code
-const ERROR_MESSAGES: Record<ExecutionErrorCode, string> = {
-  RALPH_NOT_FOUND: 'Ralph CLI not installed. Run: pip install ralph-cli',
-  PROJECT_NOT_INITIALIZED: 'Project not set up for Ralph execution.',
-  PROMPT_GENERATION_FAILED: 'Failed to generate execution prompt.',
-  SPAWN_FAILED: 'Failed to start Ralph process. Check system resources.',
-  PROCESS_CRASHED: 'Ralph exited unexpectedly. Check logs for details.',
-  EXECUTION_NOT_RUNNING: 'No execution in progress.',
-  ALREADY_RUNNING: 'Execution already in progress. Stop current execution first.',
-};
 
 export class PreflightValidator {
   private projectRoot: string;
@@ -97,7 +69,7 @@ export class PreflightValidator {
           success: false,
           check: checkName,
           errorCode: 'RALPH_NOT_FOUND',
-          message: ERROR_MESSAGES.RALPH_NOT_FOUND,
+          message: getErrorMessage('RALPH_NOT_FOUND'),
           details: 'Ralph binary not found in PATH',
         };
       }
@@ -119,7 +91,7 @@ export class PreflightValidator {
         success: false,
         check: checkName,
         errorCode: 'RALPH_NOT_FOUND',
-        message: ERROR_MESSAGES.RALPH_NOT_FOUND,
+        message: getErrorMessage('RALPH_NOT_FOUND'),
         details: error instanceof Error ? error.message : 'Unknown error',
       };
     }
@@ -137,7 +109,7 @@ export class PreflightValidator {
         success: false,
         check: checkName,
         errorCode: 'PROJECT_NOT_INITIALIZED',
-        message: ERROR_MESSAGES.PROJECT_NOT_INITIALIZED,
+        message: getErrorMessage('PROJECT_NOT_INITIALIZED'),
         details: 'Project root does not exist',
       };
     }
@@ -149,7 +121,7 @@ export class PreflightValidator {
         success: false,
         check: checkName,
         errorCode: 'PROJECT_NOT_INITIALIZED',
-        message: ERROR_MESSAGES.PROJECT_NOT_INITIALIZED,
+        message: getErrorMessage('PROJECT_NOT_INITIALIZED'),
         details: '.yoyo-dev directory not found. Run: yoyo-init',
       };
     }
@@ -161,7 +133,7 @@ export class PreflightValidator {
         success: false,
         check: checkName,
         errorCode: 'PROJECT_NOT_INITIALIZED',
-        message: ERROR_MESSAGES.PROJECT_NOT_INITIALIZED,
+        message: getErrorMessage('PROJECT_NOT_INITIALIZED'),
         details: 'ralph-prompt-generator.sh not found in setup/',
       };
     }
@@ -173,7 +145,7 @@ export class PreflightValidator {
         success: false,
         check: checkName,
         errorCode: 'PROJECT_NOT_INITIALIZED',
-        message: ERROR_MESSAGES.PROJECT_NOT_INITIALIZED,
+        message: getErrorMessage('PROJECT_NOT_INITIALIZED'),
         details: 'ralph-prompt-generator.sh is not executable',
       };
     }
@@ -204,7 +176,7 @@ export class PreflightValidator {
           success: false,
           check: checkName,
           errorCode: 'PROMPT_GENERATION_FAILED',
-          message: ERROR_MESSAGES.PROMPT_GENERATION_FAILED,
+          message: getErrorMessage('PROMPT_GENERATION_FAILED'),
           details: 'PROMPT.md was not created after running generator',
         };
       }
@@ -221,7 +193,7 @@ export class PreflightValidator {
         success: false,
         check: checkName,
         errorCode: 'PROMPT_GENERATION_FAILED',
-        message: ERROR_MESSAGES.PROMPT_GENERATION_FAILED,
+        message: getErrorMessage('PROMPT_GENERATION_FAILED'),
         details: isTimeout
           ? `Prompt generation timeout after ${this.promptTimeout}ms`
           : `Generator failed: ${errorMessage}`,

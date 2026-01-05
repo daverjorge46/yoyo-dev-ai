@@ -11,12 +11,14 @@
 import { spawn, type ChildProcess, type SpawnOptionsWithoutStdio } from 'child_process';
 import * as path from 'path';
 import { wsManager } from './websocket.js';
+import { PreflightValidator, type ValidationResult } from './preflight-validator.js';
+import { type ExecutionErrorCode, getErrorMessage } from '../lib/error-messages.js';
 
 // =============================================================================
 // Types
 // =============================================================================
 
-export type PhaseExecutionStatus = 'idle' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed';
+export type PhaseExecutionStatus = 'idle' | 'starting' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed';
 
 export interface PhaseItem {
   title: string;
@@ -97,6 +99,9 @@ export interface StartExecutionResult {
   specsToExecute: SpecExecutionInfo[];
   estimatedItems: number;
   startedAt: string;
+  error?: string;
+  errorCode?: ExecutionErrorCode;
+  validationResult?: ValidationResult;
 }
 
 export interface PauseResult {
@@ -146,6 +151,7 @@ interface PhaseExecutionServiceOptions {
   spawn?: SpawnFn;
   generatePrompt?: PromptGeneratorFn;
   skipPromptGeneration?: boolean;
+  skipPreflightValidation?: boolean;
 }
 
 // =============================================================================
@@ -157,6 +163,7 @@ export class PhaseExecutionService {
   private spawn: SpawnFn;
   private generatePrompt: PromptGeneratorFn | null;
   private skipPromptGeneration: boolean;
+  private skipPreflightValidation: boolean;
 
   // Execution state
   private executionId: string | null = null;
@@ -193,6 +200,7 @@ export class PhaseExecutionService {
     this.spawn = options.spawn ?? spawn;
     this.generatePrompt = options.generatePrompt ?? null;
     this.skipPromptGeneration = options.skipPromptGeneration ?? false;
+    this.skipPreflightValidation = options.skipPreflightValidation ?? false;
   }
 
   // ===========================================================================
@@ -201,15 +209,32 @@ export class PhaseExecutionService {
 
   /**
    * Start execution of a roadmap phase
+   *
+   * Flow:
+   * 1. Transition to 'starting' state
+   * 2. Run preflight validation (Ralph installed, project initialized, PROMPT.md generation)
+   * 3. If validation fails, transition to 'failed' and return error
+   * 4. If validation passes, spawn Ralph and transition to 'running'
    */
   async startExecution(params: StartExecutionParams): Promise<StartExecutionResult> {
-    if (this.status === 'running' || this.status === 'paused') {
-      throw new Error('Another phase execution is already in progress');
+    // Check if execution is already in progress
+    if (this.status === 'starting' || this.status === 'running' || this.status === 'paused') {
+      const errorCode: ExecutionErrorCode = 'ALREADY_RUNNING';
+      return {
+        executionId: this.executionId ?? '',
+        phaseId: params.phaseId,
+        status: this.status,
+        specsToExecute: [],
+        estimatedItems: 0,
+        startedAt: new Date().toISOString(),
+        error: getErrorMessage(errorCode),
+        errorCode,
+      };
     }
 
-    // Reset state
+    // Initialize execution state - transition to 'starting'
     this.executionId = `exec-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-    this.status = 'running';
+    this.status = 'starting';
     this.phaseId = params.phaseId;
     this.phaseTitle = params.phaseTitle;
     this.phaseGoal = params.phaseGoal;
@@ -221,6 +246,78 @@ export class PhaseExecutionService {
     this.loopCount = 0;
     this.apiCalls = 0;
     this.progress = { overall: 0, currentSpec: null };
+    this.specs = [];
+
+    // Broadcast 'starting' event
+    this.broadcastStarting();
+
+    // Run preflight validation unless skipped (e.g., in tests)
+    let validationResult: ValidationResult | undefined;
+
+    if (!this.skipPreflightValidation) {
+      this.addLog('Starting execution - running pre-flight validation...', 'info');
+
+      const validator = new PreflightValidator(this.projectRoot);
+
+      try {
+        const validationPromise = validator.validateAll(params.phaseId);
+        const timeoutPromise = new Promise<ValidationResult>((_, reject) => {
+          setTimeout(() => reject(new Error('Validation timeout after 5000ms')), 5000);
+        });
+
+        validationResult = await Promise.race([validationPromise, timeoutPromise]);
+      } catch (error) {
+        // Validation timed out or threw an error
+        const errorMessage = error instanceof Error ? error.message : 'Unknown validation error';
+        const startedAt = this.startTime?.toISOString() ?? new Date().toISOString();
+        const executionId = this.executionId ?? '';
+
+        this.status = 'failed';
+        this.error = errorMessage;
+        this.addLog(`Pre-flight validation failed: ${errorMessage}`, 'error');
+        this.broadcastFailed(errorMessage);
+        this.resetToIdle();
+
+        return {
+          executionId,
+          phaseId: params.phaseId,
+          status: 'failed',
+          specsToExecute: [],
+          estimatedItems: 0,
+          startedAt,
+          error: errorMessage,
+          errorCode: 'PROMPT_GENERATION_FAILED',
+        };
+      }
+
+      // Check validation result
+      if (!validationResult.success) {
+        const startedAt = this.startTime?.toISOString() ?? new Date().toISOString();
+        const executionId = this.executionId ?? '';
+
+        this.status = 'failed';
+        this.error = validationResult.message ?? 'Pre-flight validation failed';
+        this.addLog(`Pre-flight validation failed: ${validationResult.message}`, 'error');
+        this.broadcastFailed(validationResult.message ?? 'Validation failed');
+        this.resetToIdle();
+
+        return {
+          executionId,
+          phaseId: params.phaseId,
+          status: 'failed',
+          specsToExecute: [],
+          estimatedItems: 0,
+          startedAt,
+          error: validationResult.message,
+          errorCode: validationResult.errorCode,
+          validationResult,
+        };
+      }
+
+      this.addLog(`Pre-flight validation passed in ${validationResult.durationMs}ms`, 'info');
+    } else {
+      this.addLog('Skipping pre-flight validation (test mode)', 'debug');
+    }
 
     // Filter items if selectedSpecs provided
     const itemsToExecute = params.selectedSpecs
@@ -241,11 +338,12 @@ export class PhaseExecutionService {
     // Estimate total tasks (rough estimate: 5 tasks per spec)
     this.totalTasks = this.specs.length * 5;
 
-    // Broadcast start event
+    // Transition to 'running' and broadcast 'started' event
+    this.status = 'running';
     this.broadcastStarted();
 
-    // Generate PROMPT.md and start Ralph
-    await this.generatePromptAndStartRalph(params);
+    // Start Ralph process (PROMPT.md already generated by validator)
+    await this.startRalphProcess();
 
     return {
       executionId: this.executionId,
@@ -254,6 +352,7 @@ export class PhaseExecutionService {
       specsToExecute: this.specs,
       estimatedItems: this.totalTasks,
       startedAt: this.startTime.toISOString(),
+      validationResult,
     };
   }
 
@@ -681,6 +780,20 @@ export class PhaseExecutionService {
   // WebSocket Broadcasting
   // ===========================================================================
 
+  private broadcastStarting(): void {
+    wsManager.broadcast({
+      type: 'phase:execution:starting' as any,
+      payload: {
+        data: {
+          executionId: this.executionId,
+          phaseId: this.phaseId,
+          phaseTitle: this.phaseTitle,
+        },
+        timestamp: Date.now(),
+      },
+    });
+  }
+
   private broadcastStarted(): void {
     wsManager.broadcast({
       type: 'phase:execution:started' as any,
@@ -689,6 +802,7 @@ export class PhaseExecutionService {
           executionId: this.executionId,
           phaseId: this.phaseId,
           phaseTitle: this.phaseTitle,
+          specs: this.specs,
         },
         timestamp: Date.now(),
       },

@@ -13,6 +13,7 @@ import { create } from 'zustand';
 
 export type ExecutionStatus =
   | 'idle'
+  | 'starting'
   | 'running'
   | 'paused'
   | 'stopped'
@@ -90,6 +91,13 @@ interface PhaseExecutionState {
 
 interface PhaseExecutionActions {
   // State setters
+  setStarting: (data: {
+    executionId: string;
+    phaseId: string;
+    phaseTitle: string;
+    phaseGoal?: string;
+  }) => void;
+
   setStarted: (data: {
     executionId: string;
     phaseId: string;
@@ -127,9 +135,11 @@ interface PhaseExecutionActions {
   reset: () => void;
 
   // Computed getters
+  isStarting: () => boolean;
   isRunning: () => boolean;
   isPaused: () => boolean;
   isActive: () => boolean;
+  canStart: () => boolean;
   canPause: () => boolean;
   canResume: () => boolean;
   canStop: () => boolean;
@@ -166,6 +176,22 @@ export const usePhaseExecutionStore = create<PhaseExecutionState & PhaseExecutio
     // =========================================================================
     // State Setters
     // =========================================================================
+
+    setStarting: (data) => {
+      set({
+        executionId: data.executionId,
+        phaseId: data.phaseId,
+        phaseTitle: data.phaseTitle,
+        phaseGoal: data.phaseGoal ?? null,
+        status: 'starting',
+        error: null,
+        overallProgress: 0,
+        currentSpec: null,
+        specs: [],
+        logs: [],
+        metrics: null,
+      });
+    },
 
     setStarted: (data) => {
       set({
@@ -301,9 +327,11 @@ export const usePhaseExecutionStore = create<PhaseExecutionState & PhaseExecutio
     // Computed Getters
     // =========================================================================
 
+    isStarting: () => get().status === 'starting',
     isRunning: () => get().status === 'running',
     isPaused: () => get().status === 'paused',
-    isActive: () => ['running', 'paused'].includes(get().status),
+    isActive: () => ['starting', 'running', 'paused'].includes(get().status),
+    canStart: () => ['idle', 'stopped', 'completed', 'failed'].includes(get().status),
     canPause: () => get().status === 'running',
     canResume: () => get().status === 'paused',
     canStop: () => ['running', 'paused'].includes(get().status),

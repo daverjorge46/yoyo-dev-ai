@@ -17,6 +17,10 @@ export interface WSMessage {
     | 'pong'
     | 'subscribe'
     | 'unsubscribe'
+    | 'sync:request'
+    | 'sync:response'
+    | 'execution:heartbeat'
+    | 'phase:execution:starting'
     | 'file:changed'
     | 'file:created'
     | 'file:deleted'
@@ -50,6 +54,38 @@ export interface WSMessage {
   };
 }
 
+// Sync state type for sync:request/response
+export interface SyncState {
+  status: 'idle' | 'starting' | 'running' | 'paused' | 'stopped' | 'completed' | 'failed';
+  executionId: string | null;
+  phaseId: string | null;
+  phaseTitle: string | null;
+  phaseGoal: string | null;
+  overallProgress: number;
+  currentSpec: {
+    id: string;
+    title: string;
+    progress: number;
+    currentTask?: string;
+  } | null;
+  specs: Array<{
+    id: string;
+    title: string;
+    status: 'pending' | 'running' | 'completed' | 'failed' | 'skipped';
+    progress: number;
+  }>;
+  metrics: {
+    startedAt: string;
+    elapsedSeconds: number;
+    completedSpecs: number;
+    totalSpecs: number;
+    completedTasks: number;
+    totalTasks: number;
+  } | null;
+  error: string | null;
+  errorCode?: string;
+}
+
 // Phase execution specific types
 export interface PhaseExecutionProgress {
   executionId: string;
@@ -79,8 +115,12 @@ interface ConnectedClient {
   ws: WSContext;
   subscriptions: Set<string>;
   lastPing: number;
+  lastHeartbeat: number;
   id: string;
 }
+
+// State provider type for sync responses
+export type StateProvider = () => SyncState;
 
 // =============================================================================
 // WebSocket Manager
@@ -89,10 +129,23 @@ interface ConnectedClient {
 class WebSocketManager {
   private clients: Map<string, ConnectedClient> = new Map();
   private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+  private executionHeartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private clientIdCounter = 0;
+  private stateProvider: StateProvider | null = null;
+
+  // Heartbeat configuration
+  private readonly EXECUTION_HEARTBEAT_INTERVAL = 5000; // 5 seconds during execution
+  private readonly HEARTBEAT_TIMEOUT = 15000; // 15 seconds for stale detection
 
   constructor() {
     this.startHeartbeat();
+  }
+
+  /**
+   * Set the state provider for sync responses
+   */
+  setStateProvider(provider: StateProvider): void {
+    this.stateProvider = provider;
   }
 
   /**
@@ -100,10 +153,12 @@ class WebSocketManager {
    */
   addClient(ws: WSContext): string {
     const id = `client-${++this.clientIdCounter}-${Date.now()}`;
+    const now = Date.now();
     this.clients.set(id, {
       ws,
       subscriptions: new Set(['.yoyo-dev/']), // Default subscription
-      lastPing: Date.now(),
+      lastPing: now,
+      lastHeartbeat: now,
       id,
     });
     console.log(`[WS] Client connected: ${id} (total: ${this.clients.size})`);
@@ -137,6 +192,10 @@ class WebSocketManager {
           });
           break;
 
+        case 'sync:request':
+          this.handleSyncRequest(clientId);
+          break;
+
         case 'subscribe':
           if (msg.payload?.paths) {
             msg.payload.paths.forEach((path) => client.subscriptions.add(path));
@@ -164,6 +223,122 @@ class WebSocketManager {
     } catch (err) {
       console.error(`[WS] Failed to parse message from ${clientId}:`, err);
     }
+  }
+
+  // ===========================================================================
+  // Sync Protocol
+  // ===========================================================================
+
+  /**
+   * Handle sync:request - send current execution state to client
+   */
+  handleSyncRequest(clientId: string): void {
+    const client = this.clients.get(clientId);
+    if (!client) return;
+
+    const state = this.stateProvider?.() ?? this.getDefaultSyncState();
+    console.log(`[WS] Sending sync:response to ${clientId} (status: ${state.status})`);
+
+    this.sendToClient(clientId, {
+      type: 'sync:response',
+      payload: {
+        timestamp: Date.now(),
+        data: state,
+      },
+    });
+  }
+
+  /**
+   * Get default sync state when no provider is set
+   */
+  private getDefaultSyncState(): SyncState {
+    return {
+      status: 'idle',
+      executionId: null,
+      phaseId: null,
+      phaseTitle: null,
+      phaseGoal: null,
+      overallProgress: 0,
+      currentSpec: null,
+      specs: [],
+      metrics: null,
+      error: null,
+    };
+  }
+
+  // ===========================================================================
+  // Execution Heartbeat
+  // ===========================================================================
+
+  /**
+   * Start execution heartbeat (every 5 seconds during active execution)
+   */
+  startExecutionHeartbeat(): void {
+    if (this.executionHeartbeatInterval) return;
+
+    console.log('[WS] Starting execution heartbeat');
+    this.executionHeartbeatInterval = setInterval(() => {
+      this.broadcast({
+        type: 'execution:heartbeat',
+        payload: {
+          timestamp: Date.now(),
+        },
+      });
+
+      // Update lastHeartbeat for all clients
+      for (const [, client] of this.clients) {
+        client.lastHeartbeat = Date.now();
+      }
+    }, this.EXECUTION_HEARTBEAT_INTERVAL);
+  }
+
+  /**
+   * Stop execution heartbeat
+   */
+  stopExecutionHeartbeat(): void {
+    if (this.executionHeartbeatInterval) {
+      console.log('[WS] Stopping execution heartbeat');
+      clearInterval(this.executionHeartbeatInterval);
+      this.executionHeartbeatInterval = null;
+    }
+  }
+
+  /**
+   * Check for clients that haven't received heartbeat in configured timeout
+   * Returns list of stale client IDs
+   */
+  checkHeartbeatTimeout(timeoutMs?: number): string[] {
+    const timeout = timeoutMs ?? this.HEARTBEAT_TIMEOUT;
+    const now = Date.now();
+    const staleClients: string[] = [];
+
+    for (const [id, client] of this.clients) {
+      if (now - client.lastHeartbeat > timeout) {
+        staleClients.push(id);
+      }
+    }
+
+    return staleClients;
+  }
+
+  /**
+   * Broadcast phase starting (pre-flight validation in progress)
+   */
+  broadcastPhaseStarting(data: {
+    executionId: string;
+    phaseId: string;
+    phaseTitle: string;
+    phaseGoal?: string;
+  }): void {
+    this.broadcast({
+      type: 'phase:execution:starting',
+      payload: {
+        executionId: data.executionId,
+        phaseId: data.phaseId,
+        data,
+        timestamp: Date.now(),
+      },
+    });
   }
 
   /**
@@ -489,6 +664,9 @@ class WebSocketManager {
     if (this.heartbeatInterval) {
       clearInterval(this.heartbeatInterval);
     }
+
+    // Stop execution heartbeat if running
+    this.stopExecutionHeartbeat();
 
     for (const [id, client] of this.clients) {
       try {

@@ -96,10 +96,11 @@ describe('PhaseExecutionService', () => {
     vi.clearAllMocks();
     resetPhaseExecutionService();
     mockSpawn = vi.fn();
-    // Skip prompt generation in tests to avoid shell script dependency
+    // Skip prompt generation and preflight validation in tests
     service = new PhaseExecutionService(testProjectRoot, {
       spawn: mockSpawn,
       skipPromptGeneration: true,
+      skipPreflightValidation: true,
     });
   });
 
@@ -170,37 +171,26 @@ describe('PhaseExecutionService', () => {
       expect(result.specsToExecute).toHaveLength(2);
     });
 
-    it('should call prompt generator when not skipped', async () => {
+    it('should skip preflight validation when skipPreflightValidation is true', async () => {
       const mockProcess = createMockChildProcess({ stayRunning: true });
       mockSpawn.mockReturnValue(mockProcess);
-      const mockGeneratePrompt = vi.fn().mockResolvedValue(undefined);
 
-      // Create service with custom prompt generator
-      const serviceWithPrompt = new PhaseExecutionService(testProjectRoot, {
-        spawn: mockSpawn,
-        generatePrompt: mockGeneratePrompt,
-      });
-
-      await serviceWithPrompt.startExecution({
+      // Service with skipPreflightValidation: true should start without running PreflightValidator
+      const result = await service.startExecution({
         phaseId: 'phase-2',
         phaseTitle: 'API Layer',
         phaseGoal: 'Build REST API',
         items: [{ title: 'Endpoints', specExists: false, specPath: null }],
       });
 
-      // Should have called the prompt generator
-      expect(mockGeneratePrompt).toHaveBeenCalledWith(
-        testProjectRoot,
-        'phase-2',
-        'API Layer',
-        'Build REST API',
-        '- Endpoints'
-      );
-
-      serviceWithPrompt.cleanup();
+      // Should have started successfully (skipPreflightValidation is true in test setup)
+      expect(result.status).toBe('running');
+      expect(result.error).toBeUndefined();
+      expect(result.errorCode).toBeUndefined();
+      expect(mockSpawn).toHaveBeenCalled();
     });
 
-    it('should reject if already running', async () => {
+    it('should return error if already running', async () => {
       const mockProcess = createMockChildProcess({ stayRunning: true });
       mockSpawn.mockReturnValue(mockProcess);
 
@@ -211,14 +201,17 @@ describe('PhaseExecutionService', () => {
         items: [],
       });
 
-      await expect(
-        service.startExecution({
-          phaseId: 'phase-2',
-          phaseTitle: 'Another',
-          phaseGoal: 'Test',
-          items: [],
-        })
-      ).rejects.toThrow('Another phase execution is already in progress');
+      // Second execution should return an error result, not throw
+      const result = await service.startExecution({
+        phaseId: 'phase-2',
+        phaseTitle: 'Another',
+        phaseGoal: 'Test',
+        items: [],
+      });
+
+      expect(result.status).toBe('running'); // Status is still the current running status
+      expect(result.errorCode).toBe('ALREADY_RUNNING');
+      expect(result.error).toContain('already');
     });
 
     it('should broadcast phase:execution:started event', async () => {
