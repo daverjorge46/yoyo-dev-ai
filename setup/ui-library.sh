@@ -1366,6 +1366,511 @@ ui_update_step() {
     printf "\n  ${UI_ACCENT}[%d/%d]${UI_RESET} %s\n" "$step_num" "$total_steps" "$message"
 }
 
+# ============================================================================
+# Update Progress Display Functions (for yoyo-update)
+# ============================================================================
+
+# Display branded update banner with "UPDATING" ASCII art
+# Usage: ui_update_banner "6.1.0" "6.2.0"
+# Shows version transition with Yoyo Yellow branding
+ui_update_banner() {
+    local from_version="${1:-unknown}"
+    local to_version="${2:-unknown}"
+    local term_width
+    term_width=$(_get_terminal_width)
+
+    # For narrow terminals (<80 cols), show compact banner
+    if [ "$term_width" -lt 80 ]; then
+        _ui_update_banner_compact "$from_version" "$to_version"
+        return
+    fi
+
+    # Full ASCII art banner for wide terminals
+    _ui_update_banner_full "$from_version" "$to_version" "$term_width"
+}
+
+# Compact update banner for narrow terminals
+_ui_update_banner_compact() {
+    local from_version="$1"
+    local to_version="$2"
+    local border_width=40
+
+    echo ""
+    # Top border
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_DBL_TL}"
+    for ((i=0; i<border_width; i++)); do
+        echo -n "${BOX_DBL_H}"
+    done
+    echo -e "${BOX_DBL_TR}${UI_RESET}"
+
+    # Content line
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_DBL_V}${UI_RESET}"
+    echo -ne "  ${UI_YOYO_YELLOW}${UI_BOLD}UPDATING${UI_RESET}  "
+    echo -ne "${UI_SUBTEXT0}${from_version}${UI_RESET}"
+    echo -ne " ${UI_YOYO_YELLOW}→${UI_RESET} "
+    echo -ne "${UI_SUCCESS}${to_version}${UI_RESET}"
+    local content_len=$((2 + 8 + 2 + ${#from_version} + 3 + ${#to_version}))
+    local padding=$((border_width - content_len))
+    if [ "$padding" -gt 0 ]; then
+        printf "%${padding}s" ""
+    fi
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_DBL_V}${UI_RESET}"
+
+    # Bottom border
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_DBL_BL}"
+    for ((i=0; i<border_width; i++)); do
+        echo -n "${BOX_DBL_H}"
+    done
+    echo -e "${BOX_DBL_BR}${UI_RESET}"
+    echo ""
+}
+
+# Full ASCII art update banner for wide terminals
+_ui_update_banner_full() {
+    local from_version="$1"
+    local to_version="$2"
+    local term_width="$3"
+
+    # Banner content width
+    local banner_width=70
+
+    # Cap at terminal width
+    if [ "$banner_width" -gt $((term_width - 2)) ]; then
+        banner_width=$((term_width - 2))
+    fi
+
+    # ASCII art for "UPDATING" (6 lines)
+    local art_line1="  ██╗   ██╗██████╗ ██████╗  █████╗ ████████╗██╗███╗   ██╗ ██████╗   "
+    local art_line2="  ██║   ██║██╔══██╗██╔══██╗██╔══██╗╚══██╔══╝██║████╗  ██║██╔════╝   "
+    local art_line3="  ██║   ██║██████╔╝██║  ██║███████║   ██║   ██║██╔██╗ ██║██║  ███╗  "
+    local art_line4="  ██║   ██║██╔═══╝ ██║  ██║██╔══██║   ██║   ██║██║╚██╗██║██║   ██║  "
+    local art_line5="  ╚██████╔╝██║     ██████╔╝██║  ██║   ██║   ██║██║ ╚████║╚██████╔╝  "
+    local art_line6="   ╚═════╝ ╚═╝     ╚═════╝ ╚═╝  ╚═╝   ╚═╝   ╚═╝╚═╝  ╚═══╝ ╚═════╝   "
+
+    local art_display_width=68
+
+    # Helper to print art line
+    _print_update_art_line() {
+        local content="$1"
+        local display_width="$2"
+        local padding=$((banner_width - display_width))
+
+        echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_DBL_V}${UI_RESET}"
+        echo -ne "${UI_YOYO_YELLOW}${content}${UI_RESET}"
+        if [ "$padding" -gt 0 ]; then
+            printf "%${padding}s" ""
+        fi
+        echo -e "${UI_YOYO_YELLOW_DIM}${BOX_DBL_V}${UI_RESET}"
+    }
+
+    echo ""
+
+    # Top border
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_DBL_TL}"
+    for ((i=0; i<banner_width; i++)); do
+        echo -n "${BOX_DBL_H}"
+    done
+    echo -e "${BOX_DBL_TR}${UI_RESET}"
+
+    # ASCII art lines
+    _print_update_art_line "$art_line1" "$art_display_width"
+    _print_update_art_line "$art_line2" "$art_display_width"
+    _print_update_art_line "$art_line3" "$art_display_width"
+    _print_update_art_line "$art_line4" "$art_display_width"
+    _print_update_art_line "$art_line5" "$art_display_width"
+    _print_update_art_line "$art_line6" "$art_display_width"
+
+    # Separator
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_DBL_VR}"
+    for ((i=0; i<banner_width; i++)); do
+        echo -n "${BOX_DBL_H}"
+    done
+    echo -e "${BOX_DBL_VL}${UI_RESET}"
+
+    # Version transition line
+    local version_text="  ${from_version}  →  ${to_version}"
+    local framework_text="Yoyo Dev AI Framework"
+    local separator_char="|"
+
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_DBL_V}${UI_RESET}"
+    echo -ne "${UI_SUBTEXT0}  ${from_version}${UI_RESET}"
+    echo -ne "  ${UI_YOYO_YELLOW}→${UI_RESET}  "
+    echo -ne "${UI_SUCCESS}${UI_BOLD}${to_version}${UI_RESET}"
+    echo -ne "${UI_YOYO_YELLOW_DIM}   ${separator_char}   ${UI_RESET}"
+    echo -ne "${UI_SUBTEXT1}${framework_text}${UI_RESET}"
+
+    local content_len=$((2 + ${#from_version} + 5 + ${#to_version} + 7 + ${#framework_text}))
+    local padding=$((banner_width - content_len))
+    if [ "$padding" -gt 0 ]; then
+        printf "%${padding}s" ""
+    fi
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_DBL_V}${UI_RESET}"
+
+    # Bottom border
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_DBL_BL}"
+    for ((i=0; i<banner_width; i++)); do
+        echo -n "${BOX_DBL_H}"
+    done
+    echo -e "${BOX_DBL_BR}${UI_RESET}"
+
+    echo ""
+}
+
+# Display phase progress indicator
+# Usage: ui_phase_indicator current_phase "Phase1" "Phase2" "Phase3" "Phase4"
+# Example: ui_phase_indicator 2 "BASE Sync" "Backup" "Update" "Verify"
+#
+# Output: ● BASE Sync  ─  ◉ Backup  ─  ○ Update  ─  ○ Verify
+#
+# Symbols: ● = completed (green), ◉ = in progress (yellow), ○ = pending (dim)
+ui_phase_indicator() {
+    local current_phase="$1"
+    shift
+    local phases=("$@")
+    local total_phases=${#phases[@]}
+
+    echo ""
+    echo -n "  "
+
+    for ((i=0; i<total_phases; i++)); do
+        local phase_num=$((i + 1))
+        local phase_name="${phases[$i]}"
+
+        if [ "$phase_num" -lt "$current_phase" ]; then
+            # Completed phase
+            echo -ne "${UI_SUCCESS}●${UI_RESET} ${UI_SUCCESS}${phase_name}${UI_RESET}"
+        elif [ "$phase_num" -eq "$current_phase" ]; then
+            # Current phase (in progress)
+            echo -ne "${UI_YOYO_YELLOW}◉${UI_RESET} ${UI_YOYO_YELLOW}${UI_BOLD}${phase_name}${UI_RESET}"
+        else
+            # Pending phase
+            echo -ne "${UI_OVERLAY0}○${UI_RESET} ${UI_OVERLAY0}${phase_name}${UI_RESET}"
+        fi
+
+        # Add separator between phases
+        if [ "$phase_num" -lt "$total_phases" ]; then
+            echo -ne "  ${UI_OVERLAY0}─${UI_RESET}  "
+        fi
+    done
+
+    echo ""
+    echo ""
+}
+
+# Display protected user data panel
+# Usage: ui_protected_data_panel ".yoyo-dev"
+# Shows directories that will NOT be modified during update
+ui_protected_data_panel() {
+    local yoyo_dir="${1:-.yoyo-dev}"
+    local width=69
+
+    # Count items in protected directories
+    local specs_count=0
+    local fixes_count=0
+    local recaps_count=0
+    local patterns_count=0
+    local product_files=""
+    local memory_status=""
+
+    if [ -d "${yoyo_dir}/specs" ]; then
+        specs_count=$(find "${yoyo_dir}/specs" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+    fi
+    if [ -d "${yoyo_dir}/fixes" ]; then
+        fixes_count=$(find "${yoyo_dir}/fixes" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l)
+    fi
+    if [ -d "${yoyo_dir}/recaps" ]; then
+        recaps_count=$(find "${yoyo_dir}/recaps" -type f -name "*.md" 2>/dev/null | wc -l)
+    fi
+    if [ -d "${yoyo_dir}/patterns" ]; then
+        patterns_count=$(find "${yoyo_dir}/patterns" -type f -name "*.md" 2>/dev/null | wc -l)
+    fi
+    if [ -d "${yoyo_dir}/product" ]; then
+        product_files="mission, roadmap, tech-stack"
+    else
+        product_files="(not created)"
+    fi
+    if [ -d "${yoyo_dir}/memory" ]; then
+        memory_status="persistent database"
+    else
+        memory_status="(not initialized)"
+    fi
+
+    echo ""
+
+    # Top border
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_TL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_TR}${UI_RESET}"
+
+    # Header
+    local header_text="🛡️  PROTECTED USER DATA (will NOT be modified)"
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_INFO}${UI_BOLD}${header_text}${UI_RESET}"
+    local header_len=$((${#header_text} + 2))
+    local header_padding=$((width - header_len))
+    printf "%${header_padding}s" ""
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+
+    # Separator
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_VR}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_VL}${UI_RESET}"
+
+    # Helper to print a protected directory row
+    _print_protected_row() {
+        local dir_name="$1"
+        local count_text="$2"
+        local row_content="  ${UI_SUCCESS}${ICON_SUCCESS}${UI_RESET} ${UI_TEXT}${dir_name}${UI_RESET}       ${UI_DIM}${count_text}${UI_RESET}"
+
+        echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+        echo -ne "  ${UI_SUCCESS}${ICON_SUCCESS}${UI_RESET} "
+        printf "${UI_TEXT}%-12s${UI_RESET}" "$dir_name"
+        echo -ne "${UI_DIM}${count_text}${UI_RESET}"
+        local content_len=$((4 + 12 + ${#count_text}))
+        local padding=$((width - content_len))
+        printf "%${padding}s" ""
+        echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    }
+
+    _print_protected_row "specs/" "${specs_count} specifications"
+    _print_protected_row "fixes/" "${fixes_count} bug fixes"
+    _print_protected_row "recaps/" "${recaps_count} session recaps"
+    _print_protected_row "patterns/" "${patterns_count} learned patterns"
+    _print_protected_row "product/" "${product_files}"
+    _print_protected_row "memory/" "${memory_status}"
+
+    # Bottom border
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_BL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_BR}${UI_RESET}"
+
+    echo ""
+}
+
+# Display source and destination panel for update
+# Usage: ui_source_destination_panel "/path/to/base" "/path/to/project/.yoyo-dev"
+ui_source_destination_panel() {
+    local base_path="$1"
+    local project_path="$2"
+    local width=69
+
+    # Get git info if available
+    local git_branch=""
+    local git_status=""
+    if [ -d "${base_path}/.git" ]; then
+        git_branch=$(git -C "$base_path" branch --show-current 2>/dev/null || echo "")
+        if [ -n "$git_branch" ]; then
+            # Check if up to date
+            local local_ref
+            local remote_ref
+            local_ref=$(git -C "$base_path" rev-parse HEAD 2>/dev/null)
+            remote_ref=$(git -C "$base_path" rev-parse "@{u}" 2>/dev/null || echo "$local_ref")
+            if [ "$local_ref" = "$remote_ref" ]; then
+                git_status="(up to date)"
+            else
+                git_status="(updates available)"
+            fi
+        fi
+    fi
+
+    # Get project name
+    local project_name
+    project_name=$(basename "$(dirname "$project_path")")
+
+    # Shorten paths for display
+    local display_base="${base_path/#$HOME/~}"
+    local display_project="${project_path/#$HOME/~}"
+
+    echo ""
+
+    # Top border
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_TL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_TR}${UI_RESET}"
+
+    # Header
+    local header_text="📦  UPDATE PATHS"
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_YOYO_YELLOW}${UI_BOLD}${header_text}${UI_RESET}"
+    local header_len=$((${#header_text} + 2))
+    local header_padding=$((width - header_len))
+    printf "%${header_padding}s" ""
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+
+    # Separator
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_VR}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_VL}${UI_RESET}"
+
+    # Source line
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_DIM}Source (BASE):${UI_RESET}  "
+    echo -ne "${UI_SAPPHIRE}${display_base}${UI_RESET}"
+    local source_len=$((2 + 14 + 2 + ${#display_base}))
+    local source_padding=$((width - source_len))
+    printf "%${source_padding}s" ""
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+
+    # Branch line (if git repo)
+    if [ -n "$git_branch" ]; then
+        echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+        echo -ne "  ${UI_DIM}Branch:${UI_RESET}         "
+        echo -ne "${UI_TEXT}${git_branch}${UI_RESET} ${UI_DIM}${git_status}${UI_RESET}"
+        local branch_len=$((2 + 7 + 9 + ${#git_branch} + 1 + ${#git_status}))
+        local branch_padding=$((width - branch_len))
+        printf "%${branch_padding}s" ""
+        echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    fi
+
+    # Arrow separator
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_OVERLAY0}"
+    for ((i=0; i<28; i++)); do printf "─"; done
+    echo -ne " ${UI_YOYO_YELLOW}→${UI_RESET} ${UI_OVERLAY0}"
+    for ((i=0; i<28; i++)); do printf "─"; done
+    echo -ne "${UI_RESET}"
+    local arrow_len=$((2 + 28 + 3 + 28))
+    local arrow_padding=$((width - arrow_len))
+    printf "%${arrow_padding}s" ""
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+
+    # Destination line
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_DIM}Destination:${UI_RESET}    "
+    echo -ne "${UI_GREEN}${display_project}${UI_RESET}"
+    local dest_len=$((2 + 12 + 4 + ${#display_project}))
+    local dest_padding=$((width - dest_len))
+    printf "%${dest_padding}s" ""
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+
+    # Project name line
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_DIM}Project:${UI_RESET}        "
+    echo -ne "${UI_TEXT}${UI_BOLD}${project_name}${UI_RESET}"
+    local proj_len=$((2 + 8 + 8 + ${#project_name}))
+    local proj_padding=$((width - proj_len))
+    printf "%${proj_padding}s" ""
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+
+    # Bottom border
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_BL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_BR}${UI_RESET}"
+
+    echo ""
+}
+
+# Display update summary panel after completion
+# Usage: ui_update_summary_panel from_version to_version duration_seconds files_updated files_created files_preserved backup_location
+ui_update_summary_panel() {
+    local from_version="$1"
+    local to_version="$2"
+    local duration="$3"
+    local files_updated="$4"
+    local files_created="$5"
+    local files_preserved="$6"
+    local backup_location="$7"
+    local width=69
+
+    echo ""
+
+    # Top border with success color
+    echo -ne "${UI_SUCCESS}${BOX_TL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_TR}${UI_RESET}"
+
+    # Header
+    local header_text="✨  UPDATE COMPLETE"
+    echo -ne "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_SUCCESS}${UI_BOLD}${header_text}${UI_RESET}"
+    local header_len=$((${#header_text} + 2))
+    local header_padding=$((width - header_len))
+    printf "%${header_padding}s" ""
+    echo -e "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+
+    # Separator
+    echo -ne "${UI_SUCCESS}${BOX_VR}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_VL}${UI_RESET}"
+
+    # Version line
+    echo -ne "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_DIM}Version:${UI_RESET}        "
+    echo -ne "${UI_SUBTEXT0}${from_version}${UI_RESET} ${UI_YOYO_YELLOW}→${UI_RESET} ${UI_SUCCESS}${UI_BOLD}${to_version}${UI_RESET}"
+    local ver_len=$((2 + 8 + 8 + ${#from_version} + 3 + ${#to_version}))
+    local ver_padding=$((width - ver_len))
+    printf "%${ver_padding}s" ""
+    echo -e "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+
+    # Duration line
+    echo -ne "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_DIM}Duration:${UI_RESET}       "
+    echo -ne "${UI_TEXT}${duration} seconds${UI_RESET}"
+    local dur_len=$((2 + 9 + 7 + ${#duration} + 8))
+    local dur_padding=$((width - dur_len))
+    printf "%${dur_padding}s" ""
+    echo -e "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+
+    # Thin separator
+    echo -ne "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_OVERLAY0}"
+    for ((i=0; i<width-4; i++)); do printf "─"; done
+    echo -ne "${UI_RESET}  "
+    echo -e "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+
+    # Files updated
+    echo -ne "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_DIM}Files Updated:${UI_RESET}  "
+    printf "${UI_TEXT}%4d${UI_RESET}" "$files_updated"
+    local upd_len=$((2 + 14 + 2 + 4))
+    local upd_padding=$((width - upd_len))
+    printf "%${upd_padding}s" ""
+    echo -e "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+
+    # Files created
+    echo -ne "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_DIM}Files Created:${UI_RESET}  "
+    printf "${UI_TEXT}%4d${UI_RESET}" "$files_created"
+    local cre_len=$((2 + 14 + 2 + 4))
+    local cre_padding=$((width - cre_len))
+    printf "%${cre_padding}s" ""
+    echo -e "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+
+    # Files preserved
+    echo -ne "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_DIM}Files Preserved:${UI_RESET}"
+    printf "${UI_INFO}%4d${UI_RESET}" "$files_preserved"
+    echo -ne " ${UI_DIM}(user data)${UI_RESET}"
+    local pres_len=$((2 + 16 + 4 + 12))
+    local pres_padding=$((width - pres_len))
+    printf "%${pres_padding}s" ""
+    echo -e "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+
+    # Thin separator
+    echo -ne "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_OVERLAY0}"
+    for ((i=0; i<width-4; i++)); do printf "─"; done
+    echo -ne "${UI_RESET}  "
+    echo -e "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+
+    # Backup location
+    local display_backup="${backup_location/#$HOME/~}"
+    echo -ne "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_DIM}Backup:${UI_RESET}         "
+    echo -ne "${UI_SAPPHIRE}${display_backup}${UI_RESET}"
+    local bak_len=$((2 + 7 + 9 + ${#display_backup}))
+    local bak_padding=$((width - bak_len))
+    printf "%${bak_padding}s" ""
+    echo -e "${UI_SUCCESS}${BOX_V}${UI_RESET}"
+
+    # Bottom border
+    echo -ne "${UI_SUCCESS}${BOX_BL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_BR}${UI_RESET}"
+
+    echo ""
+}
+
 # Export all functions
 export -f supports_truecolor
 export -f ui_line ui_box_header ui_section ui_success ui_error ui_warning ui_info
