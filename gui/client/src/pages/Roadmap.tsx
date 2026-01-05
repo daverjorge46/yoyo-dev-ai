@@ -147,12 +147,12 @@ function OverallProgress({ data }: { data: RoadmapData }) {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <Target className="h-5 w-5 text-indigo-500" aria-hidden="true" />
+          <Target className="h-5 w-5 text-[#E85D04]" aria-hidden="true" />
           <h3 className="font-medium text-gray-900 dark:text-white">
             Overall Progress
           </h3>
         </div>
-        <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
+        <span className="text-2xl font-bold text-[#E85D04]">
           {data.overallProgress}%
         </span>
       </div>
@@ -161,7 +161,7 @@ function OverallProgress({ data }: { data: RoadmapData }) {
           initial={{ width: 0 }}
           animate={{ width: `${data.overallProgress}%` }}
           transition={{ duration: 1, ease: 'easeOut' }}
-          className="bg-indigo-600 h-2.5 rounded-full"
+          className="bg-[#E85D04] h-2.5 rounded-full"
         />
       </div>
       <div className="flex items-center justify-between mt-2 text-sm text-gray-500 dark:text-gray-400">

@@ -513,7 +513,7 @@ export default function Specs() {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+          className="flex items-center gap-2 px-4 py-2 bg-[#E85D04] text-white rounded-lg hover:bg-[#D65503] transition-colors"
         >
           <Plus className="h-4 w-4" />
           New Spec
@@ -528,7 +528,7 @@ export default function Specs() {
           </p>
           <button
             onClick={() => setShowCreateModal(true)}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#E85D04] text-white rounded-lg hover:bg-[#D65503] transition-colors"
           >
             <Plus className="h-4 w-4" />
             Create Specification
