@@ -142,6 +142,33 @@ if [ "$CURRENT_DIR" = "$HOME" ]; then
     exit 1
 fi
 
+# Validation: Prevent installing in the framework source directory itself
+SCRIPT_PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+if [ "$CURRENT_DIR" = "$SCRIPT_PARENT_DIR" ]; then
+    ui_error "Cannot install within the framework source directory"
+    echo ""
+    echo "  This is the Yoyo Dev framework source repository."
+    echo "  Installation creates project-specific data that would pollute the repo."
+    echo ""
+    echo "  To use Yoyo Dev:"
+    echo "    1. Navigate to your project directory: ${UI_PRIMARY}cd /path/to/your-project${UI_RESET}"
+    echo "    2. Run installation from there: ${UI_PRIMARY}$0${UI_RESET}"
+    echo ""
+    exit 1
+fi
+
+# Additional check: Look for framework markers (catches symlinks and copied frameworks)
+if [ -f "$CURRENT_DIR/setup/install.sh" ] && [ -d "$CURRENT_DIR/instructions" ] && [ -d "$CURRENT_DIR/standards" ]; then
+    ui_error "Detected Yoyo Dev framework directory"
+    echo ""
+    echo "  This directory appears to be the Yoyo Dev framework source."
+    echo "  Cannot create .yoyo-dev within the framework repository."
+    echo ""
+    echo "  Please run this script from a separate project directory."
+    echo ""
+    exit 1
+fi
+
 # Check for old directory structure
 if [ -d "yoyo-dev" ] && [ ! -d "./.yoyo-dev" ]; then
     ui_warning "Found old 'yoyo-dev/' directory"

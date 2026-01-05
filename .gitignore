@@ -28,24 +28,11 @@ tmp/
 temp/
 *.tmp
 
-# User-specific project files (not part of yoyo-dev framework)
-.yoyo-dev/product/
-.yoyo-dev/specs/
-.yoyo-dev/fixes/
-.yoyo-dev/recaps/
-.yoyo-dev/reviews/
-.yoyo-dev/design/audits/
-
-# Prevent duplicate lib in yoyo-dev base repo
-# The lib/ directory should only exist at project root, not in .yoyo-dev/
-.yoyo-dev/lib/
-
-# Keep example files but ignore user-generated content
-!.yoyo-dev/product/.gitkeep
-!.yoyo-dev/specs/.gitkeep
-!.yoyo-dev/fixes/.gitkeep
-!.yoyo-dev/recaps/.gitkeep
-!.yoyo-dev/reviews/.gitkeep
+# Yoyo Dev Project Data - ENTIRE directory ignored
+# The BASE framework repository should NEVER contain a .yoyo-dev directory
+# .yoyo-dev/ is created during PROJECT installation, not in the framework source
+# This prevents project-specific data from contaminating the distributed framework
+.yoyo-dev/
 
 # Local environment files
 .env
@@ -54,13 +41,6 @@ temp/
 
 # Cache
 .cache/
-
-# Yoyo Dev memory system (databases, settings)
-.yoyo-dev/memory/
-
-# TUI v4 session and error logs
-.yoyo-dev/.tui-session.json
-.yoyo-dev/tui-errors.log
 
 # Build outputs
 dist/
