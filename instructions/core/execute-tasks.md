@@ -245,7 +245,7 @@ Update state.json to mark execution as started and record the current task.
   <file_path>.yoyo-dev/specs/[SPEC_FOLDER]/state.json</file_path>
   <updates>
     - execution_started: [CURRENT_DATE] (if null)
-    - current_phase: "implementation"
+    - current_phase: "executing"
     - active_task: [TASK_NUMBER]
   </updates>
 </state_update>
@@ -253,10 +253,29 @@ Update state.json to mark execution as started and record the current task.
 <instructions>
   ACTION: Read state.json
   UPDATE: Set execution_started if first execution
-  UPDATE: Set current_phase to "implementation"
-  UPDATE: Set active_task to current task number
+  UPDATE: Set current_phase to "executing"
+  UPDATE: Set active_task to current task number (e.g., "1", "2")
   SAVE: Updated state
+
+  **IMPORTANT for Progress Tracking:**
+  The GUI Dashboard reads state.json to display execution progress.
+  Always update active_task before starting each task throughout execution.
 </instructions>
+
+<state_json_schema>
+{
+  "spec_name": "feature-name",
+  "spec_created": "YYYY-MM-DD",
+  "tasks_created": "YYYY-MM-DD",
+  "execution_started": "YYYY-MM-DD",
+  "execution_completed": null,
+  "current_phase": "executing",
+  "completed_tasks": ["1", "2"],
+  "active_task": "3",
+  "pr_url": null,
+  "key_files_modified": []
+}
+</state_json_schema>
 
 </step>
 
@@ -384,6 +403,9 @@ Check git status to ensure we're aware of the current branch and any uncommitted
       # PARALLEL EXECUTION
       START_TIME: Record start time
 
+      # Update state.json with first task in group as active (for GUI progress tracking)
+      UPDATE_STATE: Set active_task to first task number in group
+
       # Check for frontend work delegation (Yoyo-AI only)
       IF orchestrator == "yoyo-ai":
         FOR each task in group:
@@ -457,6 +479,9 @@ Check git status to ensure we're aware of the current branch and any uncommitted
 
           UPDATE: tasks.md with completed statuses
 
+          # Update state.json: add completed tasks to completed_tasks array
+          UPDATE_STATE: Add all task numbers from group to completed_tasks in state.json
+
           IF --implementation-reports flag enabled:
             CREATE: implementation/ folder if not exists
             GENERATE: implementation/task-group-N.md report
@@ -508,12 +533,18 @@ Check git status to ensure we're aware of the current branch and any uncommitted
       # SEQUENTIAL EXECUTION (single task in group)
       OUTPUT: "Executing Task [N]..."
 
+      # Update state.json with current active task (for GUI progress tracking)
+      UPDATE_STATE: Set active_task to current task number in state.json
+
       START_TIME: Record start time
       EXECUTE: Single task using execute-task.md
       WAIT: For completion
       CHECK: Success
       END_TIME: Record end time
       UPDATE: tasks.md
+
+      # Update state.json: add task to completed_tasks, clear active_task
+      UPDATE_STATE: Add task number to completed_tasks array in state.json
 
       IF --implementation-reports flag enabled:
         CREATE: implementation/ folder if not exists
