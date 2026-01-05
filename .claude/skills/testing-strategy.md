@@ -1,6 +1,6 @@
 # Testing Strategy Expert
 
-Write tests using TDD, pytest, and bash testing patterns with mocking, fixtures, and coverage analysis.
+Master **testing strategy** with TDD, pytest, and bash testing patterns including mocking, fixtures, and coverage.
 
 **Keywords:** test, tdd, pytest, unit test, integration test, mock, fixture, coverage, flaky test, failing test, test strategy, regression
 

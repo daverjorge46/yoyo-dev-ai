@@ -1,6 +1,6 @@
 # Git Workflow Expert
 
-Manage git commits, branches, PRs, and GitHub workflows with conventional commit standards.
+Master **git workflow** with commits, branches, PRs, and GitHub workflows using conventional commit standards.
 
 **Keywords:** git, commit, branch, merge, rebase, pull request, pr, gh cli, conventional commits, git hook, conflict, push, amend
 

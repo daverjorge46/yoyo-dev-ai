@@ -1,6 +1,6 @@
 # Python Development Expert
 
-Build Python applications with virtual environments, Textual TUIs, async patterns, and modern tooling.
+Build **Python applications** with venvs, Textual TUIs, async patterns, and modern tooling.
 
 **Keywords:** python, pip, venv, virtualenv, requirements.txt, textual, rich, asyncio, pytest, import error, module not found
 

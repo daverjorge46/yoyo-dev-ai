@@ -1,6 +1,6 @@
 # Bash Scripting Expert
 
-Write, debug, and optimize bash scripts with error handling, validation, and cross-platform compatibility.
+Create robust **bash scripts** with error handling, validation, and cross-platform compatibility.
 
 **Keywords:** bash, shell, script, sh, automation, setup script, installer, CLI tool, exit code, shebang
 
