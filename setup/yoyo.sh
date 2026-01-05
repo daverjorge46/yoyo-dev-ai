@@ -60,6 +60,7 @@ RALPH_MONITOR=false
 RALPH_CALLS=100
 RALPH_TIMEOUT=30
 RALPH_VERBOSE=false
+RALPH_FORCE=false
 RALPH_COMMAND=""
 RALPH_ARGS=""
 
@@ -241,7 +242,146 @@ run_ralph_loop() {
     ralph "${ralph_args[@]}"
 }
 
+# ============================================================================
+# Lock File Management (Single Execution Enforcement)
+# ============================================================================
+
+# Generate project hash for lock file path
+get_project_hash() {
+    echo -n "$USER_PROJECT_DIR" | md5sum | cut -c1-12
+}
+
+# Get lock file path
+get_lock_file_path() {
+    echo "/tmp/yoyo-ralph-$(get_project_hash).lock"
+}
+
+# Get PID file path
+get_pid_file_path() {
+    echo "/tmp/yoyo-ralph-$(get_project_hash).pid"
+}
+
+# Check if a process is running
+is_process_running() {
+    local pid=$1
+    kill -0 "$pid" 2>/dev/null
+}
+
+# Check if lock file is valid (process still running)
+is_ralph_locked() {
+    local lock_file
+    lock_file=$(get_lock_file_path)
+
+    if [ ! -f "$lock_file" ]; then
+        return 1  # Not locked
+    fi
+
+    # Read PID from lock file
+    local pid
+    pid=$(grep -o '"pid":[[:space:]]*[0-9]*' "$lock_file" 2>/dev/null | grep -o '[0-9]*')
+
+    if [ -z "$pid" ]; then
+        # Invalid lock file, clean up
+        rm -f "$lock_file"
+        return 1
+    fi
+
+    # Check if process is running
+    if is_process_running "$pid"; then
+        return 0  # Locked and process running
+    fi
+
+    # Stale lock (process dead), clean up
+    ui_info "Cleaning up stale lock file..."
+    rm -f "$lock_file"
+    rm -f "$(get_pid_file_path)"
+    return 1
+}
+
+# Get lock file info for display
+get_lock_info() {
+    local lock_file
+    lock_file=$(get_lock_file_path)
+
+    if [ ! -f "$lock_file" ]; then
+        return 1
+    fi
+
+    # Extract fields from JSON
+    local pid phase_id started_at
+    pid=$(grep -o '"pid":[[:space:]]*[0-9]*' "$lock_file" 2>/dev/null | grep -o '[0-9]*')
+    phase_id=$(grep -o '"phaseId":[[:space:]]*"[^"]*"' "$lock_file" 2>/dev/null | cut -d'"' -f4)
+    started_at=$(grep -o '"startedAt":[[:space:]]*"[^"]*"' "$lock_file" 2>/dev/null | cut -d'"' -f4)
+
+    echo "PID: $pid"
+    echo "Phase: $phase_id"
+    echo "Started: $started_at"
+}
+
+# Create lock file
+create_lock_file() {
+    local phase_id="${1:-unknown}"
+    local execution_id="${2:-$(date +%s)}"
+    local lock_file
+    lock_file=$(get_lock_file_path)
+
+    cat > "$lock_file" <<EOF
+{
+  "pid": $$,
+  "startedAt": "$(date -Iseconds)",
+  "phaseId": "$phase_id",
+  "projectPath": "$USER_PROJECT_DIR",
+  "executionId": "$execution_id"
+}
+EOF
+
+    # Create PID file
+    echo $$ > "$(get_pid_file_path)"
+}
+
+# Clean up lock files
+cleanup_lock_files() {
+    rm -f "$(get_lock_file_path)"
+    rm -f "$(get_pid_file_path)"
+}
+
+# Set up cleanup trap
+setup_lock_cleanup() {
+    trap cleanup_lock_files EXIT INT TERM
+}
+
 launch_ralph_mode() {
+    # Check for existing lock (single execution enforcement)
+    if is_ralph_locked; then
+        if [ "$RALPH_FORCE" = true ]; then
+            ui_warning "Force override: killing existing Ralph execution..."
+            # Get PID from lock file and kill it
+            local lock_file
+            lock_file=$(get_lock_file_path)
+            local pid
+            pid=$(grep -o '"pid":[[:space:]]*[0-9]*' "$lock_file" 2>/dev/null | grep -o '[0-9]*')
+            if [ -n "$pid" ]; then
+                kill -TERM "$pid" 2>/dev/null || true
+                sleep 1
+                kill -KILL "$pid" 2>/dev/null || true
+            fi
+            cleanup_lock_files
+        else
+            echo ""
+            ui_error "Another Ralph execution is already running for this project"
+            echo ""
+            echo -e "  ${UI_DIM}Lock file:${UI_RESET} $(get_lock_file_path)"
+            echo ""
+            get_lock_info | while read -r line; do
+                echo -e "  ${UI_DIM}$line${UI_RESET}"
+            done
+            echo ""
+            echo -e "  Use ${UI_PRIMARY}--force${UI_RESET} to override (will kill existing process)"
+            echo ""
+            exit 1
+        fi
+    fi
+
     # Check Ralph is installed
     if ! check_ralph_installed; then
         if ! install_ralph_prompt; then
@@ -254,9 +394,14 @@ launch_ralph_mode() {
         fi
     fi
 
+    # Create lock file
+    create_lock_file "$RALPH_COMMAND" "$(date +%s)"
+    setup_lock_cleanup
+
     # Generate PROMPT.md for the command
     if ! generate_ralph_prompt "$RALPH_COMMAND" "$RALPH_ARGS"; then
         ui_error "Failed to generate PROMPT.md"
+        cleanup_lock_files
         exit 1
     fi
 
@@ -510,6 +655,7 @@ show_help() {
     echo -e "    ${UI_PRIMARY}--ralph-timeout N${UI_RESET}    ${UI_DIM}Minutes/loop (default: 30)${UI_RESET}"
     echo -e "    ${UI_PRIMARY}--ralph-monitor${UI_RESET}      ${UI_DIM}Enable tmux dashboard${UI_RESET}"
     echo -e "    ${UI_PRIMARY}--ralph-verbose${UI_RESET}      ${UI_DIM}Detailed output${UI_RESET}"
+    echo -e "    ${UI_PRIMARY}--force${UI_RESET}              ${UI_DIM}Override existing lock (kill running process)${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_DIM}Documentation: https://github.com/daverjorge46/yoyo-dev-ai${UI_RESET}"
@@ -592,6 +738,10 @@ main() {
                 ;;
             --ralph-verbose)
                 RALPH_VERBOSE=true
+                shift
+                ;;
+            --force|-f)
+                RALPH_FORCE=true
                 shift
                 ;;
             launch|"")

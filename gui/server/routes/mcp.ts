@@ -86,17 +86,37 @@ async function getMCPServers(): Promise<MCPServer[]> {
     // Try non-JSON format
     try {
       const { stdout } = await execAsync('docker mcp server ls');
-      const lines = stdout.trim().split('\n').slice(1); // Skip header
+      const lines = stdout.trim().split('\n');
       const servers: MCPServer[] = [];
 
       for (const line of lines) {
-        const parts = line.trim().split(/\s+/);
-        if (parts.length >= 1) {
+        const trimmed = line.trim();
+
+        // Skip empty lines
+        if (!trimmed) continue;
+
+        // Skip header lines (e.g., "MCP Servers (5 enabled)")
+        if (trimmed.startsWith('MCP Servers')) continue;
+
+        // Skip column header line
+        if (trimmed.startsWith('NAME') && trimmed.includes('SECRETS')) continue;
+
+        // Skip separator lines (lines of dashes)
+        if (/^[-─]+$/.test(trimmed)) continue;
+
+        // Skip tip/info lines at the end
+        if (trimmed.startsWith('Tip:')) continue;
+
+        const parts = trimmed.split(/\s{2,}/); // Split on 2+ spaces for column-aligned output
+        if (parts.length >= 1 && parts[0]) {
+          const name = parts[0];
+          // Extra validation: skip if name looks invalid
+          if (name.length > 50 || /^[-─]+$/.test(name)) continue;
+
           servers.push({
-            name: parts[0],
+            name,
             status: 'running',
-            image: parts[1] || undefined,
-            tag: parts[2] || 'latest',
+            // For this format, we don't have image/tag info
           });
         }
       }

@@ -68,6 +68,7 @@ while [[ $# -gt 0 ]]; do
             echo "Commands:"
             echo "  execute-tasks    Generate for task execution"
             echo "  execute-phase    Generate for roadmap phase execution"
+            echo "  resume-phase     Generate for resuming interrupted phase"
             echo "  create-spec      Generate for spec creation"
             echo "  create-fix       Generate for bug fix workflow"
             echo "  create-new       Generate for complete feature creation"
@@ -501,6 +502,108 @@ After each iteration:
 EOF
 }
 
+generate_resume_phase_prompt() {
+    local resume_args="$1"
+
+    # Parse JSON args for resume context
+    local phase_id phase_title last_task pending_specs progress
+    phase_id=$(echo "$resume_args" | grep -o '"phaseId":"[^"]*"' | cut -d'"' -f4)
+    phase_title=$(echo "$resume_args" | grep -o '"phaseTitle":"[^"]*"' | cut -d'"' -f4)
+    last_task=$(echo "$resume_args" | grep -o '"lastTask":"[^"]*"' | cut -d'"' -f4)
+    pending_specs=$(echo "$resume_args" | grep -o '"pendingSpecs":"[^"]*"' | cut -d'"' -f4 | sed 's/\\n/\n/g')
+    progress=$(echo "$resume_args" | grep -o '"progress":"[^"]*"' | cut -d'"' -f4)
+
+    cat << EOF
+# Yoyo Dev - Resume Phase Execution
+
+## Context
+
+You are resuming a previously interrupted phase execution. The previous execution was paused or stopped.
+
+## Resume Information
+
+**Phase ID:** $phase_id
+**Phase Title:** $phase_title
+**Previous Progress:** $progress
+
+## Last Completed Task
+
+The last task that was being worked on before interruption:
+\`\`\`
+$last_task
+\`\`\`
+
+## Pending Specs (Remaining Work)
+
+$pending_specs
+
+## Reference Files
+
+Load these for context:
+- Mission: \`.yoyo-dev/product/mission-lite.md\`
+- Tech Stack: \`.yoyo-dev/product/tech-stack.md\`
+- Roadmap: \`.yoyo-dev/product/roadmap.md\`
+- Execution State: \`.yoyo-dev/ralph/execution-state.json\`
+
+## Resume Instructions
+
+1. **Load State**
+   - Read \`.yoyo-dev/ralph/execution-state.json\`
+   - Verify which specs are completed vs pending
+   - Identify current task index for running specs
+
+2. **Verify Previous Work**
+   - Check if the last task was actually completed (tests passing)
+   - If incomplete, continue from that task
+   - If complete, move to next task
+
+3. **Continue Execution**
+   - Resume from the first pending spec
+   - Execute remaining tasks for each spec
+   - Report progress with standard markers
+
+## Progress Reporting
+
+Use these markers for machine-readable output:
+- \`[RESUME] Resuming from <task>\` - Initial resume marker
+- \`[PROGRESS] XX%\` - Overall phase progress
+- \`[TASK_COMPLETE] <task>\` - Individual task completed
+- \`[SPEC_COMPLETE] <spec>\` - Entire spec finished
+- \`[PHASE_STATUS] <status>\` - Phase status update
+
+## State Verification
+
+Before continuing:
+1. Run tests to verify existing implementation
+2. Check for any uncommitted changes
+3. Verify task statuses in tasks.md match actual state
+
+## Exit Conditions
+
+**SUCCESS - Exit when ALL conditions met:**
+- All pending specs have tasks created
+- All tasks marked completed
+- All tests passing
+
+When complete, output exactly:
+\`\`\`
+PHASE COMPLETE: $phase_title
+\`\`\`
+
+**FAILURE - Exit on:**
+- 5 consecutive loops without any task completion
+- Tests failing after 3 fix attempts per spec
+- State inconsistency detected (abort and report)
+
+## Important Notes
+
+- This is a RESUME - work already exists
+- Verify before overwriting
+- Check git status for uncommitted changes
+- Report any state inconsistencies immediately
+EOF
+}
+
 # ============================================================================
 # Main
 # ============================================================================
@@ -528,6 +631,9 @@ main() {
             ;;
         execute-phase)
             generate_execute_phase_prompt "$COMMAND_ARGS" > "$output_file"
+            ;;
+        resume-phase)
+            generate_resume_phase_prompt "$COMMAND_ARGS" > "$output_file"
             ;;
         create-spec)
             generate_create_spec_prompt "$COMMAND_ARGS" > "$output_file"

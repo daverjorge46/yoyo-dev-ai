@@ -121,18 +121,18 @@ export function MCPStatusCard() {
           {mcp.servers.map((server, index) => (
             <div
               key={server.name || `server-${index}`}
-              className="flex items-center justify-between text-sm py-2 px-3 bg-gray-50 dark:bg-terminal-elevated rounded"
+              className="flex items-center justify-between text-sm py-2 px-3 bg-gray-50 dark:bg-terminal-elevated rounded overflow-hidden"
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 {server.status === 'running' ? (
-                  <Circle className="h-2 w-2 text-terminal-green fill-terminal-green" />
+                  <Circle className="h-2 w-2 text-terminal-green fill-terminal-green flex-shrink-0" />
                 ) : (
-                  <Circle className="h-2 w-2 text-terminal-red fill-terminal-red" />
+                  <Circle className="h-2 w-2 text-terminal-red fill-terminal-red flex-shrink-0" />
                 )}
-                <span className="text-gray-900 dark:text-terminal-text font-mono">{server.name}</span>
+                <span className="text-gray-900 dark:text-terminal-text font-mono truncate">{server.name}</span>
               </div>
               {server.tag && (
-                <span className="text-xs text-gray-400 dark:text-terminal-text-muted">{server.tag}</span>
+                <span className="text-xs text-gray-400 dark:text-terminal-text-muted flex-shrink-0 ml-2">{server.tag}</span>
               )}
             </div>
           ))}
