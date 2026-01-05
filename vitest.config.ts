@@ -10,6 +10,7 @@ export default defineConfig({
       'src/**/*.{test,spec}.{ts,tsx}',
       'gui/client/src/**/*.{test,spec}.{ts,tsx}',
       'gui/server/__tests__/**/*.{test,spec}.ts',
+      'gui/server/services/__tests__/**/*.{test,spec}.ts',
       'packages/**/*.{test,spec}.{ts,tsx}',
     ],
     environmentMatchGlobs: [['gui/client/**', 'happy-dom']],
