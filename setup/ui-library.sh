@@ -1882,3 +1882,6 @@ export -f ui_render_progress_bar ui_project_dashboard
 export -f _dashboard_get_active_spec _dashboard_get_active_spec_dir
 export -f _dashboard_count_tasks _dashboard_count_recent_fixes _dashboard_get_git_branch
 export -f ui_is_interactive ui_update_progress ui_progress_complete ui_update_step
+export -f ui_update_banner _ui_update_banner_compact _ui_update_banner_full
+export -f ui_phase_indicator ui_protected_data_panel ui_source_destination_panel
+export -f ui_update_summary_panel
