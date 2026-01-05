@@ -81,13 +81,23 @@
 
 ### Installation
 
-```bash
-# Install from GitHub
-curl -L https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/install.sh | bash -s -- --claude-code
+Yoyo Dev uses a **two-phase installation** model:
 
-# Or with base installation
-~/.yoyo-dev/setup/install.sh --claude-code
+| Phase | Location | Purpose |
+|-------|----------|---------|
+| **BASE** | `~/yoyo-dev/` | Framework source (scripts, instructions, templates) |
+| **PROJECT** | `.yoyo-dev/` | Project-specific data (specs, fixes, memory) |
+
+```bash
+# Phase 1: Clone or download the BASE framework
+git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/yoyo-dev
+
+# Phase 2: Install in your project directory
+cd /path/to/your-project
+~/yoyo-dev/setup/install.sh --claude-code
 ```
+
+> **Note:** The `.yoyo-dev/` directory is created during project installation. The BASE repository does not contain this directory - each project gets its own isolated workspace.
 
 ### Launch
 
