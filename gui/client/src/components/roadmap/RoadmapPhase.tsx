@@ -21,6 +21,7 @@ import {
   Pause,
   Square,
   Loader2,
+  Eye,
 } from 'lucide-react';
 import { RoadmapFeature, type RoadmapFeatureItem } from './RoadmapFeature';
 import { RoadmapEditor } from './RoadmapEditor';
@@ -309,7 +310,7 @@ export function RoadmapPhase({
                     {onExecute && (
                       <>
                         {isThisPhaseExecuting ? (
-                          /* Show Pause and Stop when this phase is executing */
+                          /* Show Pause, Stop, and View Progress when this phase is executing */
                           <>
                             {onPause && (
                               <span
@@ -349,8 +350,25 @@ export function RoadmapPhase({
                                 <Square className="h-3.5 w-3.5 text-red-500" />
                               </span>
                             )}
-                            {/* Show spinner to indicate running */}
-                            <Loader2 className="h-3.5 w-3.5 text-blue-500 animate-spin" />
+                            {/* Show Progress button to open monitor panel */}
+                            <span
+                              onClick={handleExecuteClick}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors cursor-pointer"
+                              data-testid="view-progress-button"
+                              role="button"
+                              tabIndex={0}
+                              aria-label="View execution progress"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' || e.key === ' ') {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  onExecute(phase.id);
+                                }
+                              }}
+                            >
+                              <Loader2 className="h-3 w-3 text-blue-600 animate-spin" />
+                              <span className="text-xs font-medium text-blue-700 dark:text-blue-400">Progress</span>
+                            </span>
                           </>
                         ) : (
                           /* Show Play button when not executing */

@@ -225,7 +225,7 @@ export default function Roadmap() {
   const [monitorPhaseTitle, setMonitorPhaseTitle] = useState<string>('');
 
   // Phase execution state
-  const { isActive, phaseId: executingPhaseId, pauseExecution, stopExecution } = usePhaseExecution();
+  const { isActive, phaseId: executingPhaseId, pauseExecution, stopExecution, reset: resetExecution } = usePhaseExecution();
 
   // Fetch roadmap data
   const { data, isLoading, error } = useQuery({
@@ -306,16 +306,26 @@ export default function Roadmap() {
       await pauseExecution();
     } catch (err) {
       console.error('Failed to pause execution:', err);
+      // Reset frontend state if backend says execution isn't running
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('not running') || errorMessage.includes('No execution')) {
+        resetExecution();
+      }
     }
-  }, [pauseExecution]);
+  }, [pauseExecution, resetExecution]);
 
   const handleStop = useCallback(async () => {
     try {
       await stopExecution('User cancelled from roadmap');
     } catch (err) {
       console.error('Failed to stop execution:', err);
+      // Reset frontend state if backend says execution isn't running
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      if (errorMessage.includes('not running') || errorMessage.includes('No execution')) {
+        resetExecution();
+      }
     }
-  }, [stopExecution]);
+  }, [stopExecution, resetExecution]);
 
   // Loading state
   if (isLoading) {

@@ -335,7 +335,7 @@ describe('RoadmapPhase', () => {
       expect(onExecute).toHaveBeenCalledWith('phase-1');
     });
 
-    it('should show pause and stop buttons when phase is executing', () => {
+    it('should show pause, stop, and progress buttons when phase is executing', () => {
       renderWithProviders(
         <RoadmapPhase
           {...defaultProps}
@@ -349,7 +349,27 @@ describe('RoadmapPhase', () => {
 
       expect(screen.getByTestId('pause-button')).toBeInTheDocument();
       expect(screen.getByTestId('stop-button')).toBeInTheDocument();
+      expect(screen.getByTestId('view-progress-button')).toBeInTheDocument();
+      expect(screen.getByText('Progress')).toBeInTheDocument();
       expect(screen.queryByTestId('execute-button')).not.toBeInTheDocument();
+    });
+
+    it('should call onExecute when progress button is clicked to open panel', () => {
+      const onExecute = vi.fn();
+      renderWithProviders(
+        <RoadmapPhase
+          {...defaultProps}
+          onExecute={onExecute}
+          onPause={vi.fn()}
+          onStop={vi.fn()}
+          isExecutionRunning={true}
+          executingPhaseId="phase-1"
+        />
+      );
+
+      const progressButton = screen.getByTestId('view-progress-button');
+      fireEvent.click(progressButton);
+      expect(onExecute).toHaveBeenCalledWith('phase-1');
     });
 
     it('should call onPause when pause button is clicked', () => {

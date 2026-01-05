@@ -324,14 +324,25 @@ export function importBlock(store: MemoryStore, input: ImportBlockInput): Memory
  * @param scope - Block scope
  * @returns MemoryBlock or null if not found
  */
+export function getBlock(store: MemoryStore, id: string): MemoryBlock | null;
 export function getBlock(
   store: MemoryStore,
   type: MemoryBlockType,
   scope: MemoryScope
+): MemoryBlock | null;
+export function getBlock(
+  store: MemoryStore,
+  typeOrId: MemoryBlockType | string,
+  scope?: MemoryScope
 ): MemoryBlock | null {
-  const row = store.db
-    .prepare('SELECT * FROM memory_blocks WHERE type = ? AND scope = ?')
-    .get(type, scope) as MemoryBlockRow | undefined;
+  const statement =
+    scope === undefined
+      ? store.db.prepare('SELECT * FROM memory_blocks WHERE id = ?')
+      : store.db.prepare('SELECT * FROM memory_blocks WHERE type = ? AND scope = ?');
+
+  const row = (scope === undefined
+    ? statement.get(typeOrId)
+    : statement.get(typeOrId, scope)) as MemoryBlockRow | undefined;
 
   if (!row) return null;
   return rowToBlock(row);
@@ -341,13 +352,18 @@ export function getBlock(
  * Get all memory blocks for a scope.
  *
  * @param store - MemoryStore instance
- * @param scope - Block scope to filter by
+ * @param scope - Block scope to filter by (optional, returns all if omitted)
  * @returns Array of MemoryBlocks
  */
-export function getAllBlocks(store: MemoryStore, scope: MemoryScope): MemoryBlock[] {
-  const rows = store.db
-    .prepare('SELECT * FROM memory_blocks WHERE scope = ? ORDER BY type')
-    .all(scope) as MemoryBlockRow[];
+export function getAllBlocks(store: MemoryStore, scope?: MemoryScope): MemoryBlock[] {
+  const statement =
+    scope === undefined
+      ? store.db.prepare('SELECT * FROM memory_blocks ORDER BY type')
+      : store.db.prepare('SELECT * FROM memory_blocks WHERE scope = ? ORDER BY type');
+
+  const rows = (scope === undefined
+    ? statement.all()
+    : statement.all(scope)) as MemoryBlockRow[];
 
   return rows.map(rowToBlock);
 }

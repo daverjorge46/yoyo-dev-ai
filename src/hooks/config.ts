@@ -116,6 +116,7 @@ export function loadHookConfig(projectRoot?: string): HookConfig {
   const configPath = join(root, ".yoyo-dev", "config.yml");
 
   if (!existsSync(configPath)) {
+    console.log(`[Hooks] No config.yml found at ${configPath}, using defaults`);
     return DEFAULT_HOOK_CONFIG;
   }
 
@@ -195,6 +196,7 @@ export function applyHookConfig(config: HookConfig): void {
     for (const hook of hookRegistry.listAll()) {
       hookRegistry.disable(hook.name);
     }
+    console.log("[Hooks] All hooks disabled via configuration");
     return;
   }
 
@@ -203,6 +205,7 @@ export function applyHookConfig(config: HookConfig): void {
     for (const [hookName, hookSettings] of Object.entries(config.hooks)) {
       const hook = hookRegistry.get(hookName);
       if (!hook) {
+        console.log(`[Hooks] Hook not found: ${hookName}`);
         continue;
       }
 
@@ -241,6 +244,8 @@ export function applyHookConfig(config: HookConfig): void {
 export function initializeHooksFromConfig(projectRoot?: string): void {
   const config = loadHookConfig(projectRoot);
   applyHookConfig(config);
+  const root = projectRoot ?? process.cwd();
+  console.log(`[Hooks] Hooks initialized from configuration (${join(root, ".yoyo-dev", "config.yml")})`);
 }
 
 /**

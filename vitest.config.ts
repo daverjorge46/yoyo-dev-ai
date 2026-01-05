@@ -12,7 +12,7 @@ export default defineConfig({
       'gui/server/__tests__/**/*.{test,spec}.ts',
       'packages/**/*.{test,spec}.{ts,tsx}',
     ],
-    environmentMatchGlobs: [['gui/client/**', 'jsdom']],
+    environmentMatchGlobs: [['gui/client/**', 'happy-dom']],
     setupFiles: ['gui/client/src/__tests__/setup.ts'],
     exclude: ['**/node_modules/**', '**/dist/**', 'coverage/**'],
   },

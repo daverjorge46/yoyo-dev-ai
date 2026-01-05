@@ -231,14 +231,28 @@ export function saveEnhancedBlock(
  */
 export function getEnhancedBlock(
   store: MemoryStore,
+  id: string
+): EnhancedMemoryBlock | null;
+export function getEnhancedBlock(
+  store: MemoryStore,
   type: MemoryBlockType,
   scope: MemoryScope
+): EnhancedMemoryBlock | null;
+export function getEnhancedBlock(
+  store: MemoryStore,
+  typeOrId: MemoryBlockType | string,
+  scope?: MemoryScope
 ): EnhancedMemoryBlock | null {
   ensureEnhancedSchema(store);
 
-  const row = store.db
-    .prepare('SELECT * FROM memory_blocks WHERE type = ? AND scope = ?')
-    .get(type, scope) as EnhancedMemoryBlockRow | undefined;
+  const statement =
+    scope === undefined
+      ? store.db.prepare('SELECT * FROM memory_blocks WHERE id = ?')
+      : store.db.prepare('SELECT * FROM memory_blocks WHERE type = ? AND scope = ?');
+
+  const row = (scope === undefined
+    ? statement.get(typeOrId)
+    : statement.get(typeOrId, scope)) as EnhancedMemoryBlockRow | undefined;
 
   if (!row) return null;
   return rowToEnhancedBlock(row);
@@ -286,19 +300,45 @@ export function getAllEnhancedBlocks(
  */
 export function updateBlockEmbeddings(
   store: MemoryStore,
+  id: string,
+  embeddings: number[]
+): boolean;
+export function updateBlockEmbeddings(
+  store: MemoryStore,
   type: MemoryBlockType,
   scope: MemoryScope,
   embeddings: number[]
+): boolean;
+export function updateBlockEmbeddings(
+  store: MemoryStore,
+  idOrType: MemoryBlockType | string,
+  scopeOrEmbeddings: MemoryScope | number[],
+  maybeEmbeddings?: number[]
 ): boolean {
   ensureEnhancedSchema(store);
 
-  const result = store.db
-    .prepare(`
-      UPDATE memory_blocks
-      SET embeddings = ?, updated_at = datetime('now')
-      WHERE type = ? AND scope = ?
-    `)
-    .run(JSON.stringify(embeddings), type, scope);
+  const usingId = Array.isArray(scopeOrEmbeddings);
+  const embeddings = usingId ? scopeOrEmbeddings : maybeEmbeddings;
+
+  if (!embeddings) {
+    return false;
+  }
+
+  const statement = store.db.prepare(`
+    UPDATE memory_blocks
+    SET embeddings = @embeddings, updated_at = datetime('now')
+    WHERE ${usingId ? 'id = @id' : 'type = @type AND scope = @scope'}
+  `);
+
+  const params = usingId
+    ? { embeddings: JSON.stringify(embeddings), id: idOrType }
+    : {
+        embeddings: JSON.stringify(embeddings),
+        type: idOrType as MemoryBlockType,
+        scope: scopeOrEmbeddings as MemoryScope,
+      };
+
+  const result = statement.run(params);
 
   return result.changes > 0;
 }
@@ -318,21 +358,47 @@ export function updateBlockEmbeddings(
  */
 export function updateBlockRelevance(
   store: MemoryStore,
+  id: string,
+  score: number
+): boolean;
+export function updateBlockRelevance(
+  store: MemoryStore,
   type: MemoryBlockType,
   scope: MemoryScope,
   score: number
+): boolean;
+export function updateBlockRelevance(
+  store: MemoryStore,
+  idOrType: MemoryBlockType | string,
+  scopeOrScore: MemoryScope | number,
+  maybeScore?: number
 ): boolean {
   ensureEnhancedSchema(store);
 
+  const usingId = typeof scopeOrScore === 'number';
+  const score = usingId ? scopeOrScore : maybeScore;
+
+  if (score === undefined) {
+    return false;
+  }
+
   const clampedScore = Math.max(0, Math.min(1, score));
 
-  const result = store.db
-    .prepare(`
-      UPDATE memory_blocks
-      SET relevance_score = ?, updated_at = datetime('now')
-      WHERE type = ? AND scope = ?
-    `)
-    .run(clampedScore, type, scope);
+  const statement = store.db.prepare(`
+    UPDATE memory_blocks
+    SET relevance_score = @score, updated_at = datetime('now')
+    WHERE ${usingId ? 'id = @id' : 'type = @type AND scope = @scope'}
+  `);
+
+  const params = usingId
+    ? { score: clampedScore, id: idOrType }
+    : {
+        score: clampedScore,
+        type: idOrType as MemoryBlockType,
+        scope: scopeOrScore as MemoryScope,
+      };
+
+  const result = statement.run(params);
 
   return result.changes > 0;
 }
@@ -377,21 +443,43 @@ export function getBlocksByRelevance(
  * @param tags - New tags array
  * @returns true if updated, false if block not found
  */
+export function updateBlockTags(store: MemoryStore, id: string, tags: string[]): boolean;
 export function updateBlockTags(
   store: MemoryStore,
   type: MemoryBlockType,
   scope: MemoryScope,
   tags: string[]
+): boolean;
+export function updateBlockTags(
+  store: MemoryStore,
+  idOrType: MemoryBlockType | string,
+  scopeOrTags: MemoryScope | string[],
+  maybeTags?: string[]
 ): boolean {
   ensureEnhancedSchema(store);
 
-  const result = store.db
-    .prepare(`
-      UPDATE memory_blocks
-      SET context_tags = ?, updated_at = datetime('now')
-      WHERE type = ? AND scope = ?
-    `)
-    .run(JSON.stringify(tags), type, scope);
+  const usingId = Array.isArray(scopeOrTags);
+  const tags = usingId ? scopeOrTags : maybeTags;
+
+  if (!tags) {
+    return false;
+  }
+
+  const statement = store.db.prepare(`
+    UPDATE memory_blocks
+    SET context_tags = @tags, updated_at = datetime('now')
+    WHERE ${usingId ? 'id = @id' : 'type = @type AND scope = @scope'}
+  `);
+
+  const params = usingId
+    ? { tags: JSON.stringify(tags), id: idOrType }
+    : {
+        tags: JSON.stringify(tags),
+        type: idOrType as MemoryBlockType,
+        scope: scopeOrTags as MemoryScope,
+      };
+
+  const result = statement.run(params);
 
   return result.changes > 0;
 }
