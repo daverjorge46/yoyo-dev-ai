@@ -40,6 +40,11 @@ export interface NavItem {
   icon: React.ReactNode;
 }
 
+export interface NavGroup {
+  name: string;
+  items: NavItem[];
+}
+
 export interface CollapsibleSidebarProps {
   /** Whether the sidebar is collapsed to icon-only mode */
   collapsed: boolean;
@@ -50,69 +55,99 @@ export interface CollapsibleSidebarProps {
 }
 
 // =============================================================================
-// Navigation Items
+// Navigation Groups (Workflow Order)
 // =============================================================================
 
-const navItems: NavItem[] = [
+const navGroups: NavGroup[] = [
   {
-    path: '/',
-    label: 'Dashboard',
-    icon: <LayoutDashboard className="h-5 w-5" />,
+    name: 'Overview',
+    items: [
+      {
+        path: '/',
+        label: 'Dashboard',
+        icon: <LayoutDashboard className="h-5 w-5" />,
+      },
+      {
+        path: '/roadmap',
+        label: 'Roadmap',
+        icon: <Map className="h-5 w-5" />,
+      },
+    ],
   },
   {
-    path: '/specs',
-    label: 'Specs',
-    icon: <FileText className="h-5 w-5" />,
+    name: 'Planning',
+    items: [
+      {
+        path: '/specs',
+        label: 'Specs',
+        icon: <FileText className="h-5 w-5" />,
+      },
+      {
+        path: '/fixes',
+        label: 'Fixes',
+        icon: <Wrench className="h-5 w-5" />,
+      },
+    ],
   },
   {
-    path: '/fixes',
-    label: 'Fixes',
-    icon: <Wrench className="h-5 w-5" />,
+    name: 'Execution',
+    items: [
+      {
+        path: '/tasks',
+        label: 'Tasks',
+        icon: <LayoutGrid className="h-5 w-5" />,
+      },
+      {
+        path: '/chat',
+        label: 'Chat',
+        icon: <MessageSquare className="h-5 w-5" />,
+      },
+    ],
   },
   {
-    path: '/tasks',
-    label: 'Tasks',
-    icon: <LayoutGrid className="h-5 w-5" />,
+    name: 'AI Tools',
+    items: [
+      {
+        path: '/memory',
+        label: 'Memory',
+        icon: <Brain className="h-5 w-5" />,
+      },
+      {
+        path: '/skills',
+        label: 'Skills',
+        icon: <Zap className="h-5 w-5" />,
+      },
+      {
+        path: '/patterns',
+        label: 'Patterns',
+        icon: <Layers className="h-5 w-5" />,
+      },
+      {
+        path: '/agents',
+        label: 'Agents',
+        icon: <Bot className="h-5 w-5" />,
+      },
+    ],
   },
   {
-    path: '/roadmap',
-    label: 'Roadmap',
-    icon: <Map className="h-5 w-5" />,
+    name: 'Review',
+    items: [
+      {
+        path: '/recaps',
+        label: 'Recaps',
+        icon: <History className="h-5 w-5" />,
+      },
+    ],
   },
   {
-    path: '/chat',
-    label: 'Chat',
-    icon: <MessageSquare className="h-5 w-5" />,
-  },
-  {
-    path: '/memory',
-    label: 'Memory',
-    icon: <Brain className="h-5 w-5" />,
-  },
-  {
-    path: '/skills',
-    label: 'Skills',
-    icon: <Zap className="h-5 w-5" />,
-  },
-  {
-    path: '/recaps',
-    label: 'Recaps',
-    icon: <History className="h-5 w-5" />,
-  },
-  {
-    path: '/patterns',
-    label: 'Patterns',
-    icon: <Layers className="h-5 w-5" />,
-  },
-  {
-    path: '/agents',
-    label: 'Agents',
-    icon: <Bot className="h-5 w-5" />,
-  },
-  {
-    path: '/help',
-    label: 'Help',
-    icon: <HelpCircle className="h-5 w-5" />,
+    name: 'Support',
+    items: [
+      {
+        path: '/help',
+        label: 'Help',
+        icon: <HelpCircle className="h-5 w-5" />,
+      },
+    ],
   },
 ];
 
@@ -123,16 +158,19 @@ const navItems: NavItem[] = [
 interface NavItemLinkProps {
   item: NavItem;
   collapsed: boolean;
+  groupName: string;
 }
 
-function NavItemLink({ item, collapsed }: NavItemLinkProps) {
+function NavItemLink({ item, collapsed, groupName }: NavItemLinkProps) {
   const { path, label, icon } = item;
+  const tooltipText = `[${groupName}] ${label}`;
 
   return (
     <NavLink
       to={path}
       end={path === '/'}
-      title={collapsed ? label : undefined}
+      title={collapsed ? tooltipText : undefined}
+      aria-label={`${label} - ${groupName}`}
       className={({ isActive }) =>
         `
         group relative flex items-center gap-3 px-3 py-2 rounded-md
@@ -167,10 +205,24 @@ function NavItemLink({ item, collapsed }: NavItemLinkProps) {
           "
           role="tooltip"
         >
+          <span className="text-gray-400 dark:text-terminal-text-muted font-normal">[{groupName}]</span>{' '}
           {label}
         </span>
       )}
     </NavLink>
+  );
+}
+
+interface NavSeparatorProps {
+  collapsed: boolean;
+}
+
+function NavSeparator({ collapsed }: NavSeparatorProps) {
+  if (collapsed) return null;
+  return (
+    <div className="my-2 mx-3">
+      <div className="w-1/2 mx-auto border-t border-gray-200 dark:border-gray-700" />
+    </div>
   );
 }
 
@@ -229,12 +281,24 @@ export function CollapsibleSidebar({
 
       {/* Navigation */}
       <nav
-        className="flex-1 overflow-y-auto px-2 py-4 space-y-1"
+        className="flex-1 overflow-y-auto px-2 py-4"
         role="navigation"
         aria-label="Main navigation"
       >
-        {navItems.map((item) => (
-          <NavItemLink key={item.path} item={item} collapsed={collapsed} />
+        {navGroups.map((group, groupIndex) => (
+          <div key={group.name}>
+            {groupIndex > 0 && <NavSeparator collapsed={collapsed} />}
+            <div className="space-y-1">
+              {group.items.map((item) => (
+                <NavItemLink
+                  key={item.path}
+                  item={item}
+                  collapsed={collapsed}
+                  groupName={group.name}
+                />
+              ))}
+            </div>
+          </div>
         ))}
       </nav>
 
