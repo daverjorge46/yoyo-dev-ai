@@ -5,18 +5,20 @@
  * Re-exports types from execution-errors.ts for convenience.
  */
 
-import {
+import type {
   ExecutionErrorCode,
-  EXECUTION_ERROR_CODES,
   ExecutionErrorResponse,
   CheckResult,
   ValidationResult,
 } from '../types/execution-errors.js';
+import { EXECUTION_ERROR_CODES } from '../types/execution-errors.js';
 
-// Re-export types for convenience
-export {
+// Re-export value
+export { EXECUTION_ERROR_CODES };
+
+// Re-export types (isolatedModules requires 'export type' for type-only exports)
+export type {
   ExecutionErrorCode,
-  EXECUTION_ERROR_CODES,
   ExecutionErrorResponse,
   CheckResult,
   ValidationResult,

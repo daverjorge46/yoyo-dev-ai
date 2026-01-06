@@ -12,15 +12,15 @@ import { existsSync, accessSync, constants } from 'fs';
 import { join } from 'path';
 
 // Import shared types and error utilities
-import {
+import type {
   ExecutionErrorCode,
   CheckResult,
   ValidationResult,
-  getErrorMessage,
 } from '../lib/error-messages.js';
+import { getErrorMessage } from '../lib/error-messages.js';
 
-// Re-export types for convenience
-export { ExecutionErrorCode, CheckResult, ValidationResult };
+// Re-export types for convenience (isolatedModules requires 'export type')
+export type { ExecutionErrorCode, CheckResult, ValidationResult };
 
 // Options for PreflightValidator
 export interface PreflightValidatorOptions {
