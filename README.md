@@ -85,19 +85,20 @@ Yoyo Dev uses a **two-phase installation** model:
 
 | Phase | Location | Purpose |
 |-------|----------|---------|
-| **BASE** | `~/yoyo-dev/` | Framework source (scripts, instructions, templates) |
+| **BASE** | `~/.yoyo-dev-base` | Framework source (shared across projects) |
 | **PROJECT** | `.yoyo-dev/` | Project-specific data (specs, fixes, memory) |
 
 ```bash
-# Phase 1: Clone or download the BASE framework
-git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/yoyo-dev
+# Step 1: Install BASE (one-time)
+git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base
+~/.yoyo-dev-base/setup/install-global-command.sh
 
-# Phase 2: Install in your project directory
+# Step 2: Initialize in your project
 cd /path/to/your-project
-~/yoyo-dev/setup/install.sh --claude-code
+yoyo-init --claude-code
 ```
 
-> **Note:** The `.yoyo-dev/` directory is created during project installation. The BASE repository does not contain this directory - each project gets its own isolated workspace.
+> **Note:** The `.yoyo-dev/` directory is created during project initialization. Each project gets its own isolated workspace.
 
 ### Launch
 
@@ -110,12 +111,18 @@ yoyo --no-gui
 
 # GUI standalone
 yoyo-gui
+
+# Diagnose issues
+yoyo-doctor
 ```
 
 ### Verify Installation
 
 ```bash
-# Check MCP servers (should show 4 servers)
+# Run diagnostic
+yoyo-doctor
+
+# Check MCP servers
 docker mcp server ls
 
 # Launch Yoyo Dev
@@ -440,9 +447,20 @@ npm run test:integration
 <summary><strong>Global command not found</strong></summary>
 
 ```bash
-bash .yoyo-dev/setup/install-global-command.sh
-echo 'export PATH="$HOME/bin:$PATH"' >> ~/.bashrc
+# Reinstall global commands
+~/.yoyo-dev-base/setup/install-global-command.sh
+
+# Add to PATH if needed
+echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 source ~/.bashrc
+```
+</details>
+
+<details>
+<summary><strong>Full diagnostic</strong></summary>
+
+```bash
+yoyo-doctor --verbose
 ```
 </details>
 

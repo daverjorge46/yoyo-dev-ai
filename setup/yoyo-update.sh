@@ -54,6 +54,43 @@ source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
 
 VERSION="6.2.0"
 
+# BASE installation location (can be overridden with YOYO_BASE_DIR env var)
+DEFAULT_BASE_DIR="$HOME/.yoyo-dev-base"
+YOYO_BASE_DIR="${YOYO_BASE_DIR:-$DEFAULT_BASE_DIR}"
+
+# Detect BASE installation
+detect_base_installation() {
+    # Priority order for finding BASE:
+    # 1. YOYO_BASE_DIR environment variable
+    # 2. ~/.yoyo-dev-base (new canonical location)
+    # 3. ~/yoyo-dev (legacy location)
+    # 4. Script parent directory (running from cloned repo)
+
+    if [ -d "$YOYO_BASE_DIR/instructions" ] && [ -d "$YOYO_BASE_DIR/standards" ]; then
+        echo "$YOYO_BASE_DIR"
+        return 0
+    fi
+
+    if [ -d "$HOME/.yoyo-dev-base/instructions" ] && [ -d "$HOME/.yoyo-dev-base/standards" ]; then
+        echo "$HOME/.yoyo-dev-base"
+        return 0
+    fi
+
+    if [ -d "$HOME/yoyo-dev/instructions" ] && [ -d "$HOME/yoyo-dev/standards" ]; then
+        echo "$HOME/yoyo-dev"
+        return 0
+    fi
+
+    # Check if running from symlink (script directory parent)
+    local script_parent="$(dirname "$SCRIPT_DIR")"
+    if [ -d "$script_parent/instructions" ] && [ -d "$script_parent/standards" ]; then
+        echo "$script_parent"
+        return 0
+    fi
+
+    return 1
+}
+
 # Phase configuration for progress display
 readonly PHASE_BASE_SYNC=1
 readonly PHASE_BACKUP=2
@@ -181,7 +218,19 @@ CURRENT_DIR=$(pwd)
 PROJECT_NAME=$(basename "$CURRENT_DIR")
 
 # Get base installation path early for display
-BASE_YOYO_DEV="$(dirname "$SCRIPT_DIR")"
+BASE_YOYO_DEV=""
+if BASE_YOYO_DEV=$(detect_base_installation); then
+    : # BASE found
+else
+    ui_error "BASE installation not found"
+    echo ""
+    echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev-base"
+    echo ""
+    echo "  To install BASE:"
+    echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base${UI_RESET}"
+    echo ""
+    exit 1
+fi
 
 # Get current version before showing banner
 CURRENT_VERSION="unknown"
@@ -211,18 +260,21 @@ if [ ! -d "./.yoyo-dev" ]; then
 
     if [ "$install_choice" = "1" ]; then
         echo ""
-        ui_info "Starting installation..."
+        ui_info "Starting initialization..."
         echo ""
 
-        # Use the BASE installation at ~/yoyo-dev/
-        install_script="$HOME/yoyo-dev/setup/install.sh"
+        # Use detected BASE installation
+        local init_script="$BASE_YOYO_DEV/setup/init.sh"
+        local install_script="$BASE_YOYO_DEV/setup/install.sh"
 
-        if [ -f "$install_script" ]; then
+        if [ -f "$init_script" ]; then
+            exec bash "$init_script" --claude-code
+        elif [ -f "$install_script" ]; then
             exec bash "$install_script" --claude-code
         else
-            ui_error "Installation script not found at: $install_script"
+            ui_error "Initialization script not found at: $BASE_YOYO_DEV/setup/"
             echo ""
-            echo "  Please ensure Yoyo Dev BASE is installed at ~/yoyo-dev/"
+            echo "  Please ensure Yoyo Dev BASE is properly installed at ~/.yoyo-dev-base/"
             echo ""
             exit 1
         fi

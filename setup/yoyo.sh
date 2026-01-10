@@ -48,6 +48,42 @@ fi
 readonly VERSION="6.2.0"
 readonly USER_PROJECT_DIR="$(pwd)"
 
+# BASE installation location (can be overridden with YOYO_BASE_DIR env var)
+DEFAULT_BASE_DIR="$HOME/.yoyo-dev-base"
+YOYO_BASE_DIR="${YOYO_BASE_DIR:-$DEFAULT_BASE_DIR}"
+
+# Detect BASE installation
+detect_base_installation() {
+    # Priority order for finding BASE:
+    # 1. YOYO_BASE_DIR environment variable
+    # 2. ~/.yoyo-dev-base (new canonical location)
+    # 3. ~/yoyo-dev (legacy location)
+    # 4. Script parent directory (running from cloned repo)
+
+    if [ -d "$YOYO_BASE_DIR/instructions" ] && [ -d "$YOYO_BASE_DIR/standards" ]; then
+        echo "$YOYO_BASE_DIR"
+        return 0
+    fi
+
+    if [ -d "$HOME/.yoyo-dev-base/instructions" ] && [ -d "$HOME/.yoyo-dev-base/standards" ]; then
+        echo "$HOME/.yoyo-dev-base"
+        return 0
+    fi
+
+    if [ -d "$HOME/yoyo-dev/instructions" ] && [ -d "$HOME/yoyo-dev/standards" ]; then
+        echo "$HOME/yoyo-dev"
+        return 0
+    fi
+
+    # Check if running from within cloned repo
+    if [ -d "$YOYO_INSTALL_DIR/instructions" ] && [ -d "$YOYO_INSTALL_DIR/standards" ]; then
+        echo "$YOYO_INSTALL_DIR"
+        return 0
+    fi
+
+    return 1
+}
+
 GUI_ENABLED=true
 GUI_PORT=5173
 ORCHESTRATION_ENABLED=true
@@ -432,14 +468,14 @@ launch_ralph_mode() {
 # ============================================================================
 
 launch_claude_code() {
-    # Check if Yoyo Dev is installed
+    # Check if Yoyo Dev is installed in this project
     if [ ! -d "./.yoyo-dev" ]; then
         echo ""
         ui_warning "Yoyo Dev not detected in this directory"
         echo ""
-        echo -e "  Would you like to install Yoyo Dev in this project?"
+        echo -e "  Would you like to initialize Yoyo Dev in this project?"
         echo ""
-        echo -e "    ${UI_PRIMARY}1.${UI_RESET} Install Yoyo Dev (recommended)"
+        echo -e "    ${UI_PRIMARY}1.${UI_RESET} Initialize Yoyo Dev (recommended)"
         echo -e "    ${UI_PRIMARY}2.${UI_RESET} Exit"
         echo ""
         echo -n "  Choice [1]: "
@@ -448,30 +484,42 @@ launch_claude_code() {
 
         if [ "$install_choice" = "1" ]; then
             echo ""
-            ui_info "Starting installation..."
+            ui_info "Starting initialization..."
             echo ""
 
-            # Use the BASE installation at ~/yoyo-dev/
-            local install_script="$HOME/yoyo-dev/setup/install.sh"
-
-            if [ -f "$install_script" ]; then
-                exec bash "$install_script" --claude-code
-            else
-                ui_error "Installation script not found at: $install_script"
-                echo ""
-                echo "  Please ensure Yoyo Dev BASE is installed at ~/yoyo-dev/"
-                echo ""
-                echo "  To install BASE:"
-                echo "    ${UI_PRIMARY}git clone https://github.com/user/yoyo-dev-ai.git ~/yoyo-dev${UI_RESET}"
-                echo ""
-                exit 1
+            # Detect BASE installation
+            local base_dir
+            if base_dir=$(detect_base_installation); then
+                local init_script="$base_dir/setup/init.sh"
+                if [ -f "$init_script" ]; then
+                    exec bash "$init_script" --claude-code
+                fi
+                # Fallback to install.sh for legacy installations
+                local install_script="$base_dir/setup/install.sh"
+                if [ -f "$install_script" ]; then
+                    exec bash "$install_script" --claude-code
+                fi
             fi
+
+            # BASE not found
+            ui_error "BASE installation not found"
+            echo ""
+            echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev-base"
+            echo ""
+            echo "  To install BASE:"
+            echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base${UI_RESET}"
+            echo "    ${UI_PRIMARY}~/.yoyo-dev-base/setup/install-global-command.sh${UI_RESET}"
+            echo ""
+            echo "  Then initialize this project:"
+            echo "    ${UI_PRIMARY}yoyo-init --claude-code${UI_RESET}"
+            echo ""
+            exit 1
         else
             echo ""
-            ui_info "Installation cancelled"
+            ui_info "Initialization cancelled"
             echo ""
-            echo "  To install manually:"
-            echo "    ${UI_PRIMARY}~/yoyo-dev/setup/install.sh --claude-code${UI_RESET}"
+            echo "  To initialize manually:"
+            echo "    ${UI_PRIMARY}yoyo-init --claude-code${UI_RESET}"
             echo ""
             exit 0
         fi

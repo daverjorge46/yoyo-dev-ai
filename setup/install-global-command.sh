@@ -1,11 +1,12 @@
 #!/bin/bash
 
-# Yoyo Dev v6.0 - Global Command Installation
+# Yoyo Dev v6.2 - Global Command Installation
 # Installs all Yoyo Dev commands globally:
-#   - yoyo         : Claude Code + Browser GUI (default)
+#   - yoyo         : Launch Claude Code + Browser GUI
+#   - yoyo-init    : Initialize Yoyo Dev in a project
 #   - yoyo-update  : Update Yoyo Dev installation
 #   - yoyo-gui     : Browser-based GUI dashboard
-#   - yoyo-install : Install Yoyo Dev in a project
+#   - yoyo-doctor  : Diagnose installation issues
 
 set -euo pipefail
 
@@ -33,9 +34,15 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Define commands to install
 declare -A COMMANDS=(
     ["yoyo"]="yoyo.sh"
+    ["yoyo-init"]="init.sh"
     ["yoyo-update"]="yoyo-update.sh"
     ["yoyo-gui"]="yoyo-gui.sh"
-    ["yoyo-install"]="install.sh"
+    ["yoyo-doctor"]="yoyo-doctor.sh"
+)
+
+# Legacy alias (kept for backwards compatibility)
+declare -A LEGACY_COMMANDS=(
+    ["yoyo-install"]="init.sh"
 )
 
 # Determine installation directory
@@ -66,20 +73,19 @@ echo ""
 INSTALLED_COUNT=0
 FAILED_COUNT=0
 
-# Install each command
-for cmd in "${!COMMANDS[@]}"; do
-    launcher="${COMMANDS[$cmd]}"
-    launcher_path="$SCRIPT_DIR/$launcher"
-    install_path="$INSTALL_DIR/$cmd"
+# Function to install a command
+install_command() {
+    local cmd="$1"
+    local launcher="$2"
+    local launcher_path="$SCRIPT_DIR/$launcher"
+    local install_path="$INSTALL_DIR/$cmd"
 
     echo -ne "  Installing ${CYAN}$cmd${RESET}... "
 
     # Check if launcher exists
     if [ ! -f "$launcher_path" ]; then
-        echo -e "${RED}FAILED${RESET} (launcher not found)"
-        echo -e "    ${DIM}Expected: $launcher_path${RESET}"
-        ((FAILED_COUNT++))
-        continue
+        echo -e "${YELLOW}SKIP${RESET} (script not found)"
+        return 1
     fi
 
     # Make launcher executable
@@ -98,19 +104,40 @@ for cmd in "${!COMMANDS[@]}"; do
     if [ "$NEED_SUDO" = true ]; then
         if sudo ln -sf "$launcher_path" "$install_path" 2>/dev/null; then
             echo -e "${GREEN}OK${RESET}"
-            ((INSTALLED_COUNT++))
+            return 0
         else
             echo -e "${RED}FAILED${RESET} (sudo required)"
-            ((FAILED_COUNT++))
+            return 1
         fi
     else
         if ln -sf "$launcher_path" "$install_path" 2>/dev/null; then
             echo -e "${GREEN}OK${RESET}"
-            ((INSTALLED_COUNT++))
+            return 0
         else
             echo -e "${RED}FAILED${RESET}"
-            ((FAILED_COUNT++))
+            return 1
         fi
+    fi
+}
+
+# Install main commands
+echo -e "${BOLD}Main Commands:${RESET}"
+for cmd in "${!COMMANDS[@]}"; do
+    launcher="${COMMANDS[$cmd]}"
+    if install_command "$cmd" "$launcher"; then
+        ((INSTALLED_COUNT++))
+    else
+        ((FAILED_COUNT++))
+    fi
+done
+
+# Install legacy aliases
+echo ""
+echo -e "${BOLD}Legacy Aliases (backwards compatibility):${RESET}"
+for cmd in "${!LEGACY_COMMANDS[@]}"; do
+    launcher="${LEGACY_COMMANDS[$cmd]}"
+    if install_command "$cmd" "$launcher"; then
+        ((INSTALLED_COUNT++))
     fi
 done
 
@@ -160,7 +187,7 @@ fi
 echo -e "${BOLD}Testing commands:${RESET}"
 echo ""
 
-for cmd in yoyo yoyo-update yoyo-gui yoyo-install; do
+for cmd in yoyo yoyo-init yoyo-update yoyo-gui yoyo-doctor; do
     if command -v $cmd &> /dev/null; then
         echo -e "  ${GREEN}✓${RESET} ${CYAN}$cmd${RESET} is available"
     else
@@ -173,17 +200,22 @@ echo "────────────────────────�
 echo ""
 echo -e "${BOLD}Available Commands:${RESET}"
 echo ""
-echo -e "  ${GREEN}yoyo${RESET}              Launch Claude Code + Browser GUI (default)"
+echo -e "  ${GREEN}yoyo${RESET}              Launch Claude Code + Browser GUI"
 echo -e "  ${GREEN}yoyo --no-gui${RESET}     Launch Claude Code without browser GUI"
-echo -e "  ${GREEN}yoyo --stop-gui${RESET}   Stop background GUI server"
 echo -e "  ${GREEN}yoyo --help${RESET}       Show command reference"
 echo ""
-echo -e "  ${GREEN}yoyo-install${RESET}      Install Yoyo Dev in current project"
+echo -e "  ${GREEN}yoyo-init${RESET}         Initialize Yoyo Dev in current project"
+echo -e "  ${GREEN}yoyo-init --install-base${RESET}   Install BASE first, then init"
+echo ""
+echo -e "  ${GREEN}yoyo-update${RESET}       Update Yoyo Dev in current project"
 echo ""
 echo -e "  ${GREEN}yoyo-gui${RESET}          Launch browser-based GUI standalone"
 echo -e "  ${GREEN}yoyo-gui --dev${RESET}    Development mode with hot reload"
 echo ""
-echo -e "  ${GREEN}yoyo-update${RESET}       Update Yoyo Dev in current project"
+echo -e "  ${GREEN}yoyo-doctor${RESET}       Diagnose installation issues"
+echo ""
+echo -e "${DIM}BASE Installation:${RESET} ~/.yoyo-dev-base"
+echo -e "${DIM}Project Installation:${RESET} .yoyo-dev/"
 echo ""
 echo -e "${DIM}Yoyo Dev v${VERSION} - \"Your AI learns. Your AI remembers. Your AI evolves.\"${RESET}"
 echo ""
