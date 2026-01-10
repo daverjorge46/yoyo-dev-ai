@@ -125,9 +125,9 @@ echo -e "${BOLD}Main Commands:${RESET}"
 for cmd in "${!COMMANDS[@]}"; do
     launcher="${COMMANDS[$cmd]}"
     if install_command "$cmd" "$launcher"; then
-        ((INSTALLED_COUNT++))
+        INSTALLED_COUNT=$((INSTALLED_COUNT + 1))
     else
-        ((FAILED_COUNT++))
+        FAILED_COUNT=$((FAILED_COUNT + 1))
     fi
 done
 
@@ -137,7 +137,7 @@ echo -e "${BOLD}Legacy Aliases (backwards compatibility):${RESET}"
 for cmd in "${!LEGACY_COMMANDS[@]}"; do
     launcher="${LEGACY_COMMANDS[$cmd]}"
     if install_command "$cmd" "$launcher"; then
-        ((INSTALLED_COUNT++))
+        INSTALLED_COUNT=$((INSTALLED_COUNT + 1))
     fi
 done
 
