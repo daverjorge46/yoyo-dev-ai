@@ -98,6 +98,11 @@ const navGroups: NavGroup[] = [
         icon: <LayoutGrid className="h-5 w-5" />,
       },
       {
+        path: '/terminals',
+        label: 'Terminals',
+        icon: <Terminal className="h-5 w-5" />,
+      },
+      {
         path: '/chat',
         label: 'Chat',
         icon: <MessageSquare className="h-5 w-5" />,

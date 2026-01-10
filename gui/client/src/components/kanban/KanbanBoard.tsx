@@ -46,6 +46,8 @@ export interface KanbanBoardProps {
   onTaskClick: (task: KanbanTask) => void;
   /** Handler when a task is moved to a new column */
   onTaskMove: (taskId: string, newColumn: ColumnId) => void;
+  /** Handler when a task card is right-clicked */
+  onTaskContextMenu?: (task: KanbanTask, x: number, y: number) => void;
   /** Loading state */
   isLoading?: boolean;
   /** ID of the currently keyboard-focused task */
@@ -62,6 +64,7 @@ export function KanbanBoard({
   columns,
   onTaskClick,
   onTaskMove,
+  onTaskContextMenu,
   isLoading = false,
   focusedTaskId,
   disabled = false,
@@ -242,6 +245,7 @@ export function KanbanBoard({
             key={column.id}
             column={column}
             onTaskClick={onTaskClick}
+            onTaskContextMenu={onTaskContextMenu}
             focusedTaskId={focusedTaskId}
             disabled={disabled}
           />

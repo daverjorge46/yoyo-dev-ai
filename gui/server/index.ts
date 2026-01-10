@@ -38,8 +38,11 @@ import { orchestrationRoutes } from './routes/orchestration.js';
 import { helpRoutes } from './routes/help.js';
 import { changelogRoutes } from './routes/changelog.js';
 import { chatRoutes } from './routes/chat.js';
+import { terminalsRoutes } from './routes/terminals.js';
+import { worktreesRoutes } from './routes/worktrees.js';
 import { wsManager } from './services/websocket.js';
 import { fileWatcher } from './services/file-watcher.js';
+import { resetTerminalPool } from './services/terminalPool.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -139,6 +142,8 @@ app.route('/api/orchestration', orchestrationRoutes);
 app.route('/api/help', helpRoutes);
 app.route('/api/changelog', changelogRoutes);
 app.route('/api/chat', chatRoutes);
+app.route('/api/terminals', terminalsRoutes);
+app.route('/api/worktrees', worktreesRoutes);
 
 // Health check with WebSocket status
 app.get('/api/health', (c) => {
@@ -242,6 +247,7 @@ export async function startServer(options: ServerOptions = {}) {
     console.log('\n  Shutting down...');
     await fileWatcher.stop();
     wsManager.stop();
+    resetTerminalPool();
     process.exit(0);
   };
 

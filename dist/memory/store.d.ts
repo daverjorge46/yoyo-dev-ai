@@ -106,15 +106,16 @@ export declare function importBlock(store: MemoryStore, input: ImportBlockInput)
  * @param scope - Block scope
  * @returns MemoryBlock or null if not found
  */
+export declare function getBlock(store: MemoryStore, id: string): MemoryBlock | null;
 export declare function getBlock(store: MemoryStore, type: MemoryBlockType, scope: MemoryScope): MemoryBlock | null;
 /**
  * Get all memory blocks for a scope.
  *
  * @param store - MemoryStore instance
- * @param scope - Block scope to filter by
+ * @param scope - Block scope to filter by (optional, returns all if omitted)
  * @returns Array of MemoryBlocks
  */
-export declare function getAllBlocks(store: MemoryStore, scope: MemoryScope): MemoryBlock[];
+export declare function getAllBlocks(store: MemoryStore, scope?: MemoryScope): MemoryBlock[];
 /**
  * Delete a memory block by ID.
  *

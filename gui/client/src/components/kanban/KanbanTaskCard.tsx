@@ -24,6 +24,8 @@ export interface KanbanTaskCardProps {
   task: KanbanTask;
   /** Click handler for opening task details */
   onClick: (task: KanbanTask) => void;
+  /** Right-click context menu handler */
+  onContextMenu?: (task: KanbanTask, x: number, y: number) => void;
   /** Whether this card is currently focused via keyboard */
   isFocused?: boolean;
   /** Whether drag is disabled */
@@ -37,6 +39,7 @@ export interface KanbanTaskCardProps {
 export function KanbanTaskCard({
   task,
   onClick,
+  onContextMenu,
   isFocused = false,
   disabled = false,
 }: KanbanTaskCardProps) {
@@ -94,6 +97,13 @@ export function KanbanTaskCard({
     }
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    if (onContextMenu) {
+      e.preventDefault();
+      onContextMenu(task, e.clientX, e.clientY);
+    }
+  };
+
   return (
     <div
       ref={setNodeRef}
@@ -117,6 +127,7 @@ export function KanbanTaskCard({
       aria-describedby={`task-details-${task.id}`}
       onClick={handleClick}
       onKeyDown={handleKeyDown}
+      onContextMenu={handleContextMenu}
     >
       {/* Drag handle indicator */}
       <div

@@ -15,3 +15,6 @@ export type { KanbanBoardProps } from './KanbanBoard';
 
 export { TaskDetailPanel } from './TaskDetailPanel';
 export type { TaskDetailPanelProps } from './TaskDetailPanel';
+
+export { TaskContextMenu } from './TaskContextMenu';
+export type { TaskContextMenuProps } from './TaskContextMenu';

@@ -24,6 +24,8 @@ export interface KanbanColumnProps {
   column: KanbanColumnType;
   /** Handler when a task card is clicked */
   onTaskClick: (task: KanbanTask) => void;
+  /** Handler when a task card is right-clicked */
+  onTaskContextMenu?: (task: KanbanTask, x: number, y: number) => void;
   /** ID of the currently keyboard-focused task */
   focusedTaskId?: string | null;
   /** Whether task interactions are disabled */
@@ -76,6 +78,7 @@ const COLUMN_COLORS: Record<
 export function KanbanColumn({
   column,
   onTaskClick,
+  onTaskContextMenu,
   focusedTaskId,
   disabled = false,
 }: KanbanColumnProps) {
@@ -139,6 +142,7 @@ export function KanbanColumn({
                 key={task.id}
                 task={task}
                 onClick={onTaskClick}
+                onContextMenu={onTaskContextMenu}
                 isFocused={focusedTaskId === task.id}
                 disabled={disabled}
               />

@@ -6,6 +6,13 @@
  */
 import Database from 'better-sqlite3';
 import { v4 as uuidv4 } from 'uuid';
+function isMemoryBlockIdentifier(value) {
+    return (typeof value === 'object' &&
+        value !== null &&
+        'id' in value &&
+        'type' in value &&
+        'scope' in value);
+}
 // =============================================================================
 // Constants
 // =============================================================================
@@ -223,18 +230,18 @@ export function importBlock(store, input) {
     }
     return block;
 }
-/**
- * Get a memory block by type and scope.
- *
- * @param store - MemoryStore instance
- * @param type - Block type
- * @param scope - Block scope
- * @returns MemoryBlock or null if not found
- */
-export function getBlock(store, type, scope) {
-    const row = store.db
-        .prepare('SELECT * FROM memory_blocks WHERE type = ? AND scope = ?')
-        .get(type, scope);
+export function getBlock(store, typeOrId, scope) {
+    const selector = isMemoryBlockIdentifier(typeOrId)
+        ? { id: typeOrId.id }
+        : scope === undefined
+            ? { id: typeOrId }
+            : { type: typeOrId, scope };
+    const statement = 'id' in selector
+        ? store.db.prepare('SELECT * FROM memory_blocks WHERE id = ?')
+        : store.db.prepare('SELECT * FROM memory_blocks WHERE type = ? AND scope = ?');
+    const row = ('id' in selector
+        ? statement.get(selector.id)
+        : statement.get(selector.type, selector.scope));
     if (!row)
         return null;
     return rowToBlock(row);
@@ -243,13 +250,16 @@ export function getBlock(store, type, scope) {
  * Get all memory blocks for a scope.
  *
  * @param store - MemoryStore instance
- * @param scope - Block scope to filter by
+ * @param scope - Block scope to filter by (optional, returns all if omitted)
  * @returns Array of MemoryBlocks
  */
 export function getAllBlocks(store, scope) {
-    const rows = store.db
-        .prepare('SELECT * FROM memory_blocks WHERE scope = ? ORDER BY type')
-        .all(scope);
+    const statement = scope === undefined
+        ? store.db.prepare('SELECT * FROM memory_blocks ORDER BY type')
+        : store.db.prepare('SELECT * FROM memory_blocks WHERE scope = ? ORDER BY type');
+    const rows = (scope === undefined
+        ? statement.all()
+        : statement.all(scope));
     return rows.map(rowToBlock);
 }
 /**

@@ -12,17 +12,21 @@
  * - Detail panel for selected task
  */
 
-import { useEffect, useCallback } from 'react';
-import { KanbanBoard, TaskDetailPanel } from '../components/kanban';
-import { useKanban, type ColumnId } from '../hooks/useKanban';
+import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { KanbanBoard, TaskDetailPanel, TaskContextMenu } from '../components/kanban';
+import { useKanban, type ColumnId, type KanbanTask } from '../hooks/useKanban';
+import { useTerminals } from '../hooks/useTerminals';
 import { usePanelLayoutContext } from '../components/layout';
 import { Filter, LayoutGrid, Keyboard, Terminal, Loader2, ChevronDown } from 'lucide-react';
+import type { AgentType } from '../types/terminal';
 
 // =============================================================================
 // Component
 // =============================================================================
 
 export default function TasksKanban() {
+  const navigate = useNavigate();
   const {
     columns,
     specs,
@@ -45,7 +49,15 @@ export default function TasksKanban() {
     navigatePrevColumn,
   } = useKanban();
 
+  const { spawn } = useTerminals();
   const { setDetailContent, setDetailOpen } = usePanelLayoutContext();
+
+  // Context menu state
+  const [contextMenu, setContextMenu] = useState<{
+    task: KanbanTask;
+    x: number;
+    y: number;
+  } | null>(null);
 
   // Update detail panel when task is selected
   useEffect(() => {
@@ -156,6 +168,49 @@ export default function TasksKanban() {
     [moveTask]
   );
 
+  // Handle context menu
+  const handleTaskContextMenu = useCallback(
+    (task: KanbanTask, x: number, y: number) => {
+      setContextMenu({ task, x, y });
+    },
+    []
+  );
+
+  const handleCloseContextMenu = useCallback(() => {
+    setContextMenu(null);
+  }, []);
+
+  const handleSendToTerminal = useCallback(
+    async (task: KanbanTask, agentType: AgentType) => {
+      try {
+        await spawn({
+          agentType,
+          name: `${task.title}`,
+          taskId: task.id,
+          specId: task.specName,
+        });
+        navigate('/terminals');
+      } catch (err) {
+        console.error('Failed to spawn terminal:', err);
+      }
+    },
+    [spawn, navigate]
+  );
+
+  const handleViewSpec = useCallback(
+    (task: KanbanTask) => {
+      navigate(`/specs?id=${task.specName}`);
+    },
+    [navigate]
+  );
+
+  const handleMoveToColumn = useCallback(
+    (task: KanbanTask, column: ColumnId) => {
+      moveTask(task.id, column);
+    },
+    [moveTask]
+  );
+
   // Error state
   if (error) {
     return (
@@ -250,9 +305,23 @@ export default function TasksKanban() {
         columns={columns}
         onTaskClick={handleTaskClick}
         onTaskMove={handleTaskMove}
+        onTaskContextMenu={handleTaskContextMenu}
         isLoading={isLoading}
         focusedTaskId={focusedTaskId}
       />
+
+      {/* Context Menu */}
+      {contextMenu && (
+        <TaskContextMenu
+          task={contextMenu.task}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={handleCloseContextMenu}
+          onSendToTerminal={handleSendToTerminal}
+          onMoveToColumn={handleMoveToColumn}
+          onViewSpec={handleViewSpec}
+        />
+      )}
 
       {/* Load More Button */}
       {!isLoading && hasMore && (
