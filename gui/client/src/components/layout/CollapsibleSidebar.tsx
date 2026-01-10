@@ -28,6 +28,7 @@ import {
   Terminal,
   Bot,
   HelpCircle,
+  ClipboardList,
 } from 'lucide-react';
 
 // =============================================================================
@@ -137,6 +138,11 @@ const navGroups: NavGroup[] = [
   {
     name: 'Review',
     items: [
+      {
+        path: '/qa',
+        label: 'QA Reviews',
+        icon: <ClipboardList className="h-5 w-5" />,
+      },
       {
         path: '/recaps',
         label: 'Recaps',

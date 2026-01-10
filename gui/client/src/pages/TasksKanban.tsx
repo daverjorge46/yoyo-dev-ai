@@ -49,7 +49,7 @@ export default function TasksKanban() {
     navigatePrevColumn,
   } = useKanban();
 
-  const { spawn } = useTerminals();
+  const { spawn, isSpawning } = useTerminals();
   const { setDetailContent, setDetailOpen } = usePanelLayoutContext();
 
   // Context menu state
@@ -58,6 +58,24 @@ export default function TasksKanban() {
     x: number;
     y: number;
   } | null>(null);
+
+  // Handle send to terminal from detail panel
+  const handleDetailPanelSendToTerminal = useCallback(
+    async (task: KanbanTask, agentType: AgentType) => {
+      try {
+        await spawn({
+          agentType,
+          name: task.title,
+          taskId: task.id,
+          specId: task.specName,
+        });
+        navigate('/terminals');
+      } catch (err) {
+        console.error('Failed to spawn terminal:', err);
+      }
+    },
+    [spawn, navigate]
+  );
 
   // Update detail panel when task is selected
   useEffect(() => {
@@ -74,6 +92,8 @@ export default function TasksKanban() {
               moveTask(selectedTask.id, column);
             }
           }}
+          onSendToTerminal={handleDetailPanelSendToTerminal}
+          isSpawning={isSpawning}
         />
       );
       setDetailOpen(true);
@@ -81,7 +101,7 @@ export default function TasksKanban() {
       setDetailContent(null);
       setDetailOpen(false);
     }
-  }, [selectedTask, setDetailContent, setDetailOpen, setSelectedTask, moveTask]);
+  }, [selectedTask, setDetailContent, setDetailOpen, setSelectedTask, moveTask, handleDetailPanelSendToTerminal, isSpawning]);
 
   // Keyboard navigation
   useEffect(() => {

@@ -20,6 +20,7 @@ import Patterns from './pages/Patterns';
 import Chat from './pages/Chat';
 import Agents from './pages/Agents';
 import Terminals from './pages/Terminals';
+import QA from './pages/QA';
 import Help from './pages/Help';
 import { ConnectionStatus } from './components/ConnectionStatus';
 import { ThemeToggle, useTheme } from './components/ThemeToggle';
@@ -138,6 +139,7 @@ function MainContent({ isLoading, status, wsStatus, onReconnect }: MainContentPr
             <Route path="/patterns" element={<Patterns />} />
             <Route path="/agents" element={<Agents />} />
             <Route path="/terminals" element={<Terminals />} />
+            <Route path="/qa" element={<QA />} />
             <Route path="/help" element={<Help />} />
           </Routes>
         </ErrorBoundary>

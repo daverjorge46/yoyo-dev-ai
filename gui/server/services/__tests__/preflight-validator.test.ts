@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeEach, afterEach, vi, Mock } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { EventEmitter } from 'events';
-import { ChildProcess } from 'child_process';
+import type { ChildProcess } from 'child_process';
 import { mkdirSync, rmSync, writeFileSync, chmodSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
@@ -8,12 +8,13 @@ import { tmpdir } from 'os';
 // Import after mocks are set up
 import {
   PreflightValidator,
-  ValidationResult,
-  ExecutionErrorCode,
 } from '../preflight-validator.js';
 
 // Test project root
 const TEST_PROJECT_ROOT = join(tmpdir(), 'yoyo-preflight-test-' + Date.now());
+
+// Type for mock exec function
+type MockExecFn = ReturnType<typeof vi.fn>;
 
 // Helper to create mock exec result
 function createMockExec(options: {
@@ -21,14 +22,14 @@ function createMockExec(options: {
   stderr?: string;
   error?: Error | null;
   exitCode?: number;
-}): (cmd: string, opts: any, callback: (error: Error | null, stdout: string, stderr: string) => void) => ChildProcess {
-  return vi.fn((cmd: string, opts: any, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
+}): MockExecFn {
+  return vi.fn((_cmd: string, _opts: unknown, callback: (error: Error | null, stdout: string, stderr: string) => void) => {
     const process = new EventEmitter() as ChildProcess;
-    (process as any).pid = 12345;
+    (process as unknown as { pid: number }).pid = 12345;
 
     setTimeout(() => {
       if (options.error) {
-        const err = options.error as any;
+        const err = options.error as Error & { code?: number };
         err.code = options.exitCode ?? 1;
         callback(err, options.stdout ?? '', options.stderr ?? '');
       } else {
@@ -42,7 +43,7 @@ function createMockExec(options: {
 
 describe('PreflightValidator', () => {
   let validator: PreflightValidator;
-  let mockExec: Mock;
+  let mockExec: MockExecFn;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -98,9 +99,9 @@ describe('PreflightValidator', () => {
 
     it('should check ralph version after finding binary', async () => {
       let callCount = 0;
-      mockExec = vi.fn((cmd: string, opts: any, callback: Function) => {
+      mockExec = vi.fn((cmd: string, _opts: unknown, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
         const process = new EventEmitter() as ChildProcess;
-        (process as any).pid = 12345;
+        (process as unknown as { pid: number }).pid = 12345;
 
         setTimeout(() => {
           callCount++;
@@ -158,9 +159,9 @@ describe('PreflightValidator', () => {
   describe('generatePrompt', () => {
     it('should return success when prompt generation succeeds', async () => {
       // Mock exec for prompt generation
-      mockExec = vi.fn((cmd: string, opts: any, callback: Function) => {
+      mockExec = vi.fn((_cmd: string, _opts: unknown, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
         const process = new EventEmitter() as ChildProcess;
-        (process as any).pid = 12345;
+        (process as unknown as { pid: number }).pid = 12345;
 
         setTimeout(() => {
           // Create the PROMPT.md file
@@ -196,10 +197,10 @@ describe('PreflightValidator', () => {
 
     it('should timeout after 10 seconds', async () => {
       // Mock that never calls callback
-      mockExec = vi.fn((cmd: string, opts: any, callback: Function) => {
+      mockExec = vi.fn((_cmd: string, _opts: unknown, _callback: (err: Error | null, stdout: string, stderr: string) => void) => {
         const process = new EventEmitter() as ChildProcess;
-        (process as any).pid = 12345;
-        (process as any).kill = vi.fn(() => true);
+        (process as unknown as { pid: number }).pid = 12345;
+        (process as unknown as { kill: () => boolean }).kill = vi.fn(() => true);
         // Never call callback - simulates hang
         return process;
       });
@@ -232,10 +233,9 @@ describe('PreflightValidator', () => {
   describe('validateAll', () => {
     it('should run all checks and return success when all pass', async () => {
       // Mock successful ralph check
-      let callIndex = 0;
-      mockExec = vi.fn((cmd: string, opts: any, callback: Function) => {
+      mockExec = vi.fn((cmd: string, _opts: unknown, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
         const process = new EventEmitter() as ChildProcess;
-        (process as any).pid = 12345;
+        (process as unknown as { pid: number }).pid = 12345;
 
         setTimeout(() => {
           if (cmd.includes('which ralph')) {
@@ -280,9 +280,9 @@ describe('PreflightValidator', () => {
 
     it('should complete in under 2 seconds for happy path', async () => {
       // Mock fast successful checks
-      mockExec = vi.fn((cmd: string, opts: any, callback: Function) => {
+      mockExec = vi.fn((cmd: string, _opts: unknown, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
         const process = new EventEmitter() as ChildProcess;
-        (process as any).pid = 12345;
+        (process as unknown as { pid: number }).pid = 12345;
 
         setImmediate(() => {
           if (cmd.includes('ralph-prompt-generator')) {

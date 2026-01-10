@@ -12,6 +12,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { KanbanTask, ColumnId } from '../../hooks/useKanban';
+import type { AgentType } from '../../types/terminal';
+import { AGENT_TYPE_LABELS } from '../../types/terminal';
 import {
   X,
   CheckCircle2,
@@ -23,6 +25,8 @@ import {
   FolderOpen,
   Terminal,
   ChevronDown,
+  Play,
+  Loader2,
 } from 'lucide-react';
 
 // =============================================================================
@@ -36,11 +40,23 @@ export interface TaskDetailPanelProps {
   onClose: () => void;
   /** Move task to a new column */
   onMoveToColumn: (column: ColumnId) => void;
+  /** Send task to terminal with agent */
+  onSendToTerminal?: (task: KanbanTask, agentType: AgentType) => Promise<void>;
+  /** Whether terminal spawn is in progress */
+  isSpawning?: boolean;
 }
 
 // =============================================================================
 // Column Options with terminal styling
 // =============================================================================
+
+const AGENT_OPTIONS: Array<{ type: AgentType; description: string }> = [
+  { type: 'yoyo-ai', description: 'Primary orchestrator' },
+  { type: 'dave-engineer', description: 'Frontend/UI specialist' },
+  { type: 'implementer', description: 'Focused implementation' },
+  { type: 'arthas-oracle', description: 'Strategic advisor' },
+  { type: 'qa-reviewer', description: 'Quality assurance' },
+];
 
 const COLUMN_OPTIONS: Array<{
   id: ColumnId;
@@ -177,9 +193,26 @@ export function TaskDetailPanel({
   task,
   onClose,
   onMoveToColumn,
+  onSendToTerminal,
+  isSpawning = false,
 }: TaskDetailPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const [showAgentDropdown, setShowAgentDropdown] = useState(false);
+  const agentDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close agent dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (agentDropdownRef.current && !agentDropdownRef.current.contains(e.target as Node)) {
+        setShowAgentDropdown(false);
+      }
+    };
+    if (showAgentDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }
+  }, [showAgentDropdown]);
 
   // Focus close button when panel opens
   useEffect(() => {
@@ -308,6 +341,72 @@ export function TaskDetailPanel({
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Send to Terminal */}
+        {onSendToTerminal && (
+          <div>
+            <label className="block text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-terminal-text-muted mb-2">
+              Execute
+            </label>
+            <div ref={agentDropdownRef} className="relative">
+              <button
+                onClick={() => setShowAgentDropdown(!showAgentDropdown)}
+                disabled={isSpawning}
+                className="
+                  w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded
+                  bg-brand dark:bg-terminal-orange text-white
+                  hover:opacity-90 transition-opacity
+                  disabled:opacity-50 disabled:cursor-not-allowed
+                "
+              >
+                <span className="flex items-center gap-2">
+                  {isSpawning ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
+                  {isSpawning ? 'Spawning...' : 'Send to Terminal'}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform ${showAgentDropdown ? 'rotate-180' : ''}`}
+                />
+              </button>
+
+              {showAgentDropdown && !isSpawning && (
+                <div className="absolute top-full left-0 right-0 mt-1 z-50 terminal-card shadow-lg overflow-hidden animate-slide-down">
+                  <div className="p-2 border-b border-gray-200 dark:border-terminal-border">
+                    <span className="text-xs font-medium text-gray-500 dark:text-terminal-text-muted">
+                      Select Agent
+                    </span>
+                  </div>
+                  {AGENT_OPTIONS.map(({ type, description }) => (
+                    <button
+                      key={type}
+                      onClick={() => {
+                        if (task) {
+                          onSendToTerminal(task, type);
+                          setShowAgentDropdown(false);
+                        }
+                      }}
+                      className="
+                        w-full flex flex-col px-3 py-2 text-left
+                        hover:bg-gray-50 dark:hover:bg-terminal-elevated
+                        transition-colors
+                      "
+                    >
+                      <span className="font-medium text-sm text-gray-900 dark:text-terminal-text">
+                        {AGENT_TYPE_LABELS[type]}
+                      </span>
+                      <span className="text-xs text-gray-500 dark:text-terminal-text-muted">
+                        {description}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
