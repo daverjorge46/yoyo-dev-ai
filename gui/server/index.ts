@@ -40,6 +40,7 @@ import { changelogRoutes } from './routes/changelog.js';
 import { chatRoutes } from './routes/chat.js';
 import { terminalsRoutes } from './routes/terminals.js';
 import { worktreesRoutes } from './routes/worktrees.js';
+import { qaRoutes } from './routes/qa.js';
 import { wsManager } from './services/websocket.js';
 import { fileWatcher } from './services/file-watcher.js';
 import { resetTerminalPool } from './services/terminalPool.js';
@@ -144,6 +145,7 @@ app.route('/api/changelog', changelogRoutes);
 app.route('/api/chat', chatRoutes);
 app.route('/api/terminals', terminalsRoutes);
 app.route('/api/worktrees', worktreesRoutes);
+app.route('/api/qa', qaRoutes);
 
 // Health check with WebSocket status
 app.get('/api/health', (c) => {

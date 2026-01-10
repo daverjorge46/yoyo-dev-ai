@@ -25,6 +25,7 @@ import type {
   DEFAULT_POOL_CONFIG,
 } from '../types/terminal.js';
 import { wsManager } from './websocket.js';
+import { getWorktreeManager } from './worktreeManager.js';
 
 // =============================================================================
 // Constants
@@ -291,6 +292,23 @@ export class TerminalPool {
     const name = options.name ?? this.generateTerminalName(options.agentType);
     const now = new Date();
 
+    // Auto-create worktree if enabled and specId is provided
+    let worktreePath: string | undefined;
+    let worktreeBranch: string | undefined;
+
+    if (options.useWorktree && options.specId && this.config.worktreeEnabled) {
+      try {
+        const worktreeManager = getWorktreeManager(this.config.projectRoot);
+        const worktreeInfo = await worktreeManager.create(options.specId);
+        worktreePath = worktreeInfo.path;
+        worktreeBranch = worktreeInfo.branch;
+        console.log(`[TerminalPool] Created worktree at ${worktreePath} for terminal ${name}`);
+      } catch (error) {
+        console.error(`[TerminalPool] Failed to create worktree:`, error);
+        // Continue without worktree - don't fail the terminal spawn
+      }
+    }
+
     const session: TerminalSession = {
       id,
       name,
@@ -300,6 +318,8 @@ export class TerminalPool {
       lastActivityAt: now,
       boundTaskId: options.taskId,
       boundSpecId: options.specId,
+      worktreePath,
+      worktreeBranch,
       injectedContext: options.context,
       progress: 0,
       outputLineCount: 0,
@@ -314,7 +334,8 @@ export class TerminalPool {
     // Start the agent process
     await this.startProcess(session);
 
-    console.log(`[TerminalPool] Spawned terminal ${name} (${id}) with agent ${options.agentType}`);
+    console.log(`[TerminalPool] Spawned terminal ${name} (${id}) with agent ${options.agentType}` +
+      (worktreePath ? ` in worktree ${worktreeBranch}` : ''));
     return session;
   }
 

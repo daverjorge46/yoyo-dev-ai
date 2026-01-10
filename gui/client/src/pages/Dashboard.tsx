@@ -18,6 +18,7 @@ import { GitStatusCard } from '../components/GitStatusCard';
 import { MCPStatusCard } from '../components/MCPStatusCard';
 import { ExecutionProgressCard } from '../components/ExecutionProgressCard';
 import { SkeletonDashboard } from '../components/SkeletonLoader';
+import { TerminalsWidget, QAWidget } from '../components/dashboard';
 
 interface StatusResponse {
   name: string;
@@ -451,12 +452,14 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left Column */}
         <div className="space-y-6">
-          <ExecutionProgressCard />
+          <TerminalsWidget />
+          <QAWidget />
           <QuickActions />
         </div>
 
         {/* Middle Column */}
         <div className="space-y-6">
+          <ExecutionProgressCard />
           <GitStatusCard />
           <MCPStatusCard />
         </div>
