@@ -1,5 +1,6 @@
 {
   "term:theme": "yoyo-dev",
+  "term:localshellpath": "~/.yoyo-dev-base/setup/wave-shell-wrapper.sh",
   "web:defaulturl": "http://localhost:5173",
   "term:fontsize": 14,
   "term:fontfamily": "JetBrains Mono, Fira Code, Consolas, monospace",
