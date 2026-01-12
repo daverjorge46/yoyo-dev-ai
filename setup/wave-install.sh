@@ -1037,8 +1037,7 @@ wait_for_wave_ready() {
 
 # Setup yoyo-dev layout in Wave Terminal
 # This runs in background after Wave opens (every time)
-# Layout: Left=yoyo-cli (via shell wrapper), Center=GUI, Right-top=Files, Right-bottom=System
-# Wave Terminal automatically positions new blocks in the layout
+# Layout: Left=yoyo-cli terminal, Center=GUI browser, Right-top=Files, Right-bottom=System
 setup_yoyo_layout() {
     local project_dir="${1:-$PWD}"
     local layout_log="${HOME}/.yoyo-dev-base/.wave-layout.log"
@@ -1051,14 +1050,14 @@ setup_yoyo_layout() {
     log_layout "Starting layout setup for: $project_dir"
 
     # Wait for Wave to be ready
-    if ! wait_for_wave_ready 60; then
-        log_layout "ERROR: Wave not ready after 60 seconds"
+    if ! wait_for_wave_ready 30; then
+        log_layout "ERROR: Wave not ready after 30 seconds"
         return 1
     fi
 
     log_layout "Wave is ready"
 
-    # Additional delay for UI to stabilize (Wave needs time to create initial tab)
+    # Small additional delay for UI to stabilize
     sleep 2
 
     # Check if wsh is available
@@ -1070,36 +1069,27 @@ setup_yoyo_layout() {
     log_layout "wsh is available"
 
     # Set up the yoyo-dev layout using wsh commands
-    # Note: The default terminal already runs yoyo-cli via wave-shell-wrapper.sh
-    # We need to open the additional panes (GUI, Files, Sysinfo)
+    # The layout is created by opening blocks - Wave positions them automatically
 
-    # 1. Open the GUI dashboard (center pane)
-    # Using the full URL to ensure proper loading
-    log_layout "Opening GUI dashboard..."
-    if wsh web open "http://localhost:5173" 2>/dev/null; then
-        log_layout "GUI dashboard opened successfully"
-    else
-        log_layout "WARN: GUI dashboard failed to open (GUI may not be running)"
-    fi
-    sleep 1.5
-
-    # 2. Open the file browser with project directory (right-top)
-    log_layout "Opening file browser for: $project_dir"
-    if wsh view "$project_dir" 2>/dev/null; then
-        log_layout "File browser opened successfully"
-    else
-        log_layout "WARN: File browser failed to open"
-    fi
+    # 1. Launch yoyo-cli in a new terminal block (left pane)
+    #    Use wsh run with -c flag to execute the command in a new terminal
+    log_layout "Launching yoyo-cli terminal..."
+    wsh run -c "clear && cd '$project_dir' && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)" &>/dev/null || true
     sleep 1
 
-    # 3. Open system info (right-bottom)
-    log_layout "Opening system info..."
-    if wsh sysinfo 2>/dev/null; then
-        log_layout "System info opened successfully"
-    else
-        log_layout "WARN: System info failed to open"
-    fi
+    # 2. Open the GUI dashboard (center pane)
+    log_layout "Opening GUI dashboard..."
+    wsh web open "http://localhost:5173" &>/dev/null || true
     sleep 0.5
+
+    # 3. Open the file browser with project directory (right-top)
+    log_layout "Opening file browser for: $project_dir"
+    wsh view "$project_dir" &>/dev/null || true
+    sleep 0.5
+
+    # 4. Open system info (right-bottom)
+    log_layout "Opening system info..."
+    wsh sysinfo &>/dev/null || true
 
     log_layout "Layout setup complete"
     return 0

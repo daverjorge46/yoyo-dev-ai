@@ -5,7 +5,7 @@
   "defwidget@ai": null,
   "defwidget@sysinfo": null,
   "defwidget@docs": null,
- "yoyo@claude": {
+  "yoyo@claude": {
     "icon": "terminal",
     "label": "Yoyo-Cli",
     "color": "#00BCD4",
@@ -14,7 +14,7 @@
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "yoyo-cli"
+        "cmd:initscript": "clear && cd \"${YOYO_PROJECT_DIR:-$PWD}\" && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)"
       }
     }
   },
@@ -26,7 +26,7 @@
     "blockdef": {
       "meta": {
         "view": "preview",
-        "file": "${YOYO_PROJECT_DIR:-~}"
+        "file": "~"
       }
     }
   },

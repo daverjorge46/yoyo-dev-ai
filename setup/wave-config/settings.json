@@ -1,16 +1,15 @@
 {
   "term:theme": "yoyo-dev",
-  "term:localshellpath": "~/.yoyo-dev-base/setup/wave-shell-wrapper.sh",
   "web:defaulturl": "http://localhost:5173",
   "term:fontsize": 14,
   "term:fontfamily": "JetBrains Mono, Fira Code, Consolas, monospace",
   "window:nativetitlebar": true,
-  "window:savelastwindow": false,
+  "window:savelastwindow": true,
   "window:opacity": 1.0,
   "widget:showhelp": false,
   "telemetry:enabled": false,
   "autocomplete:enabled": true,
-  "tab:preset": "tab@yoyo-dev",
+  "tab:preset": "bg@yoyo-dev",
   "window:showmenubar": true,
   "waveai:showcloudmodes": false
 }
