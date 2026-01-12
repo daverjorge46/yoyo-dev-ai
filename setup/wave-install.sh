@@ -9,7 +9,7 @@ set -euo pipefail
 # ============================================================================
 
 readonly WAVE_VERSION="0.10.0"
-readonly WAVE_CONFIG_VERSION="1.3.4"
+readonly WAVE_CONFIG_VERSION="1.3.5"
 readonly WAVE_DOWNLOAD_BASE="https://github.com/wavetermdev/waveterm/releases/download"
 readonly WAVE_CONFIG_DIR="${HOME}/.config/waveterm"
 readonly WAVE_VERSION_FILE="${WAVE_CONFIG_DIR}/.yoyo-dev-wave-version"
@@ -1037,6 +1037,7 @@ wait_for_wave_ready() {
 
 # Setup yoyo-dev layout in Wave Terminal
 # This runs in background after Wave opens (first time only)
+# Layout: Left=yoyo-cli, Middle=GUI, Right-top=Files, Right-bottom=System
 setup_yoyo_layout() {
     local project_dir="${1:-$PWD}"
 
@@ -1048,22 +1049,30 @@ setup_yoyo_layout() {
     # Small additional delay for UI to stabilize
     sleep 2
 
-    # Try to set up the layout using wsh commands
+    # Check if wsh is available
+    if ! command -v wsh &>/dev/null; then
+        mark_layout_done
+        return 1
+    fi
+
+    # Set up the yoyo-dev layout using wsh commands
     # Note: This is best-effort - Wave may not support all operations
 
-    # 1. Try to run claude in the current terminal block
-    #    Using 'wsh run' creates a new block, so we use a different approach
-    #    The terminal widget's initscript handles this when clicking the widget
+    # 1. Launch yoyo-cli in the default terminal (left pane)
+    #    The terminal that opens by default should run yoyo-cli
+    wsh run -c "clear && cd '$project_dir' && (command -v yoyo-cli >/dev/null && yoyo-cli || claude)" &>/dev/null || true
+    sleep 1
 
-    # 2. Try to open the web panel with localhost:5173
-    if command -v wsh &>/dev/null; then
-        wsh web open "http://localhost:5173" &>/dev/null || true
-    fi
+    # 2. Open the GUI dashboard (middle pane)
+    wsh web open "http://localhost:5173" &>/dev/null || true
+    sleep 0.5
 
-    # 3. Try to open the file browser with project directory
-    if command -v wsh &>/dev/null; then
-        wsh view "$project_dir" &>/dev/null || true
-    fi
+    # 3. Open the file browser with project directory (right-top)
+    wsh view "$project_dir" &>/dev/null || true
+    sleep 0.5
+
+    # 4. Open system info (right-bottom)
+    wsh sysinfo &>/dev/null || true
 
     # Mark setup as done
     mark_layout_done
