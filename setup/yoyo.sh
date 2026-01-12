@@ -614,6 +614,9 @@ launch_with_wave() {
         disown
     fi
 
+    # Export project directory for Wave widgets
+    export YOYO_PROJECT_DIR="$USER_PROJECT_DIR"
+
     # Launch Wave Terminal
     # Wave will use the deployed configuration from ~/.config/waveterm/
     exec "$wave_path"

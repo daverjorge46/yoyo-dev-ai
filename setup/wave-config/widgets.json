@@ -14,7 +14,7 @@
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "command -v yoyo-cli >/dev/null && yoyo-cli || claude"
+        "cmd:initscript": "cd \"${YOYO_PROJECT_DIR:-$PWD}\" && (command -v yoyo-cli >/dev/null && yoyo-cli || claude)"
       }
     }
   },
@@ -26,7 +26,7 @@
     "blockdef": {
       "meta": {
         "view": "preview",
-        "file": "~"
+        "file": "${YOYO_PROJECT_DIR:-~}"
       }
     }
   },
