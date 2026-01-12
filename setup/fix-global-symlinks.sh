@@ -30,19 +30,12 @@ if [ ! -d "$BASE_DIR" ]; then
     exit 1
 fi
 
-# Check if yoyo.sh exists
-if [ ! -f "$BASE_DIR/setup/yoyo.sh" ]; then
-    echo -e "${RED}ERROR: yoyo.sh not found at $BASE_DIR/setup/yoyo.sh${RESET}"
-    echo ""
-    exit 1
-fi
-
-# Check if yoyo-update.sh exists
-if [ ! -f "$BASE_DIR/setup/yoyo-update.sh" ]; then
-    echo -e "${RED}ERROR: yoyo-update.sh not found at $BASE_DIR/setup/yoyo-update.sh${RESET}"
-    echo ""
-    exit 1
-fi
+# Check required scripts exist
+for script in yoyo.sh yoyo-cli.sh yoyo-update.sh; do
+    if [ ! -f "$BASE_DIR/setup/$script" ]; then
+        echo -e "${YELLOW}WARNING: $script not found at $BASE_DIR/setup/$script${RESET}"
+    fi
+done
 
 echo -e "${CYAN}📍 Base installation:${RESET} $BASE_DIR"
 echo ""
@@ -92,7 +85,8 @@ echo ""
 # Ask for confirmation
 echo -e "${BOLD}This will:${RESET}"
 echo "  1. Fix /usr/local/bin/yoyo → $BASE_DIR/setup/yoyo.sh"
-echo "  2. Fix /usr/local/bin/yoyo-update → $BASE_DIR/setup/yoyo-update.sh"
+echo "  2. Fix /usr/local/bin/yoyo-cli → $BASE_DIR/setup/yoyo-cli.sh"
+echo "  3. Fix /usr/local/bin/yoyo-update → $BASE_DIR/setup/yoyo-update.sh"
 echo ""
 read -p "Continue? [Y/n] " -n 1 -r
 echo ""
@@ -104,39 +98,40 @@ fi
 
 echo ""
 
-# Fix yoyo symlink
-echo -e "${CYAN}→${RESET} Fixing yoyo command..."
-if sudo ln -sf "$BASE_DIR/setup/yoyo.sh" /usr/local/bin/yoyo; then
-    echo -e "  ${GREEN}✓${RESET} Symlink created: /usr/local/bin/yoyo → $BASE_DIR/setup/yoyo.sh"
-else
-    echo -e "  ${RED}✗${RESET} Failed to create symlink (sudo required)"
-    exit 1
-fi
+# Function to fix a symlink
+fix_symlink() {
+    local cmd="$1"
+    local script="$2"
+    local script_path="$BASE_DIR/setup/$script"
 
-# Ensure yoyo.sh is executable
-if sudo chmod +x "$BASE_DIR/setup/yoyo.sh"; then
-    echo -e "  ${GREEN}✓${RESET} Made executable: $BASE_DIR/setup/yoyo.sh"
-else
-    echo -e "  ${YELLOW}⚠${RESET}  Could not set executable permission"
-fi
+    echo -e "${CYAN}→${RESET} Fixing $cmd command..."
 
-echo ""
+    if [ ! -f "$script_path" ]; then
+        echo -e "  ${YELLOW}⚠${RESET}  Script not found: $script_path (skipping)"
+        return 1
+    fi
 
-# Fix yoyo-update symlink
-echo -e "${CYAN}→${RESET} Fixing yoyo-update command..."
-if sudo ln -sf "$BASE_DIR/setup/yoyo-update.sh" /usr/local/bin/yoyo-update; then
-    echo -e "  ${GREEN}✓${RESET} Symlink created: /usr/local/bin/yoyo-update → $BASE_DIR/setup/yoyo-update.sh"
-else
-    echo -e "  ${RED}✗${RESET} Failed to create symlink (sudo required)"
-    exit 1
-fi
+    if sudo ln -sf "$script_path" "/usr/local/bin/$cmd"; then
+        echo -e "  ${GREEN}✓${RESET} Symlink created: /usr/local/bin/$cmd → $script_path"
+    else
+        echo -e "  ${RED}✗${RESET} Failed to create symlink (sudo required)"
+        return 1
+    fi
 
-# Ensure yoyo-update.sh is executable
-if sudo chmod +x "$BASE_DIR/setup/yoyo-update.sh"; then
-    echo -e "  ${GREEN}✓${RESET} Made executable: $BASE_DIR/setup/yoyo-update.sh"
-else
-    echo -e "  ${YELLOW}⚠${RESET}  Could not set executable permission"
-fi
+    if sudo chmod +x "$script_path"; then
+        echo -e "  ${GREEN}✓${RESET} Made executable: $script_path"
+    else
+        echo -e "  ${YELLOW}⚠${RESET}  Could not set executable permission"
+    fi
+
+    echo ""
+    return 0
+}
+
+# Fix all symlinks
+fix_symlink "yoyo" "yoyo.sh"
+fix_symlink "yoyo-cli" "yoyo-cli.sh"
+fix_symlink "yoyo-update" "yoyo-update.sh"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -146,26 +141,29 @@ echo ""
 echo -e "${BOLD}Verification:${RESET}"
 echo ""
 
-YOYO_TARGET=$(readlink -f /usr/local/bin/yoyo)
-if [ -f "$YOYO_TARGET" ]; then
-    echo -e "  ${GREEN}✓${RESET} yoyo command: $YOYO_TARGET"
-else
-    echo -e "  ${RED}✗${RESET} yoyo command: Still broken"
-    exit 1
-fi
+verify_symlink() {
+    local cmd="$1"
+    local target
+    if [ -L "/usr/local/bin/$cmd" ]; then
+        target=$(readlink -f "/usr/local/bin/$cmd" 2>/dev/null || echo "broken")
+        if [ -f "$target" ]; then
+            echo -e "  ${GREEN}✓${RESET} $cmd command: $target"
+            return 0
+        fi
+    fi
+    echo -e "  ${YELLOW}⚠${RESET} $cmd command: Not available or broken"
+    return 1
+}
 
-UPDATE_TARGET=$(readlink -f /usr/local/bin/yoyo-update)
-if [ -f "$UPDATE_TARGET" ]; then
-    echo -e "  ${GREEN}✓${RESET} yoyo-update command: $UPDATE_TARGET"
-else
-    echo -e "  ${RED}✗${RESET} yoyo-update command: Still broken"
-    exit 1
-fi
+verify_symlink "yoyo"
+verify_symlink "yoyo-cli"
+verify_symlink "yoyo-update"
 
 echo ""
 echo -e "${GREEN}${BOLD}✅ Global commands fixed successfully!${RESET}"
 echo ""
 echo -e "${CYAN}Test the fix:${RESET}"
 echo "  $ yoyo --version"
+echo "  $ yoyo-cli --help"
 echo "  $ yoyo --help"
 echo ""

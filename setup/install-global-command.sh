@@ -34,6 +34,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Define commands to install
 declare -A COMMANDS=(
     ["yoyo"]="yoyo.sh"
+    ["yoyo-cli"]="yoyo-cli.sh"
     ["yoyo-init"]="init.sh"
     ["yoyo-update"]="yoyo-update.sh"
     ["yoyo-gui"]="yoyo-gui.sh"
@@ -187,7 +188,7 @@ fi
 echo -e "${BOLD}Testing commands:${RESET}"
 echo ""
 
-for cmd in yoyo yoyo-init yoyo-update yoyo-gui yoyo-doctor; do
+for cmd in yoyo yoyo-cli yoyo-init yoyo-update yoyo-gui yoyo-doctor; do
     if command -v $cmd &> /dev/null; then
         echo -e "  ${GREEN}✓${RESET} ${CYAN}$cmd${RESET} is available"
     else
@@ -200,9 +201,11 @@ echo "────────────────────────�
 echo ""
 echo -e "${BOLD}Available Commands:${RESET}"
 echo ""
-echo -e "  ${GREEN}yoyo${RESET}              Launch Claude Code + Browser GUI"
-echo -e "  ${GREEN}yoyo --no-gui${RESET}     Launch Claude Code without browser GUI"
+echo -e "  ${GREEN}yoyo${RESET}              Launch Wave Terminal with yoyo-dev-ai"
+echo -e "  ${GREEN}yoyo --no-wave${RESET}    Launch Claude Code without Wave Terminal"
 echo -e "  ${GREEN}yoyo --help${RESET}       Show command reference"
+echo ""
+echo -e "  ${GREEN}yoyo-cli${RESET}          Launch Claude Code in CLI mode (for Wave widget)"
 echo ""
 echo -e "  ${GREEN}yoyo-init${RESET}         Initialize Yoyo Dev in current project"
 echo -e "  ${GREEN}yoyo-init --install-base${RESET}   Install BASE first, then init"

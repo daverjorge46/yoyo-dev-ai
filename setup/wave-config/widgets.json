@@ -5,19 +5,16 @@
   "defwidget@ai": null,
   "defwidget@sysinfo": null,
   "defwidget@docs": null,
-  "yoyo@terminal": {
+  "yoyo@claude": {
     "icon": "terminal",
-    "label": "Terminal",
+    "label": "Yoyo-Cli",
     "color": "#00BCD4",
-    "description": "Yoyo Dev Terminal with Claude Code",
+    "description": "Launch yoyo-dev-ai framework with Claude Code in terminal",
     "blockdef": {
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:cwd": "${HOME}",
-        "cmd:initscript.bash": "claude",
-        "cmd:initscript.zsh": "claude",
-        "cmd:initscript.fish": "claude"
+        "cmd:initscript": "yoyo-cli"
       }
     }
   },
