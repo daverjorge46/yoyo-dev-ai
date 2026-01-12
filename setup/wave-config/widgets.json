@@ -14,7 +14,7 @@
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "cd \"${YOYO_PROJECT_DIR:-$PWD}\" && (command -v yoyo-cli >/dev/null && yoyo-cli || claude)"
+        "cmd:initscript": "clear && cd \"${YOYO_PROJECT_DIR:-$PWD}\" && (command -v yoyo-cli >/dev/null && yoyo-cli || claude)"
       }
     }
   },
