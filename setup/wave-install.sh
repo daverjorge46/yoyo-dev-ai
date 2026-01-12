@@ -9,7 +9,7 @@ set -euo pipefail
 # ============================================================================
 
 readonly WAVE_VERSION="0.10.0"
-readonly WAVE_CONFIG_VERSION="1.4.0"
+readonly WAVE_CONFIG_VERSION="1.5.0"
 readonly WAVE_DOWNLOAD_BASE="https://github.com/wavetermdev/waveterm/releases/download"
 readonly WAVE_CONFIG_DIR="${HOME}/.config/waveterm"
 readonly WAVE_VERSION_FILE="${WAVE_CONFIG_DIR}/.yoyo-dev-wave-version"
@@ -1036,14 +1036,13 @@ wait_for_wave_ready() {
 }
 
 # Setup yoyo-dev layout in Wave Terminal
-# This runs in background after Wave opens (first time only)
+# This runs in background after Wave opens (every time)
 # Layout: Left=yoyo-cli (via shell wrapper), Middle=GUI, Right-top=Files, Right-bottom=System
 setup_yoyo_layout() {
     local project_dir="${1:-$PWD}"
 
-    # Wait longer for Wave to be ready
+    # Wait for Wave to be ready
     if ! wait_for_wave_ready 45; then
-        mark_layout_done
         return 1
     fi
 
@@ -1052,7 +1051,6 @@ setup_yoyo_layout() {
 
     # Check if wsh is available
     if ! command -v wsh &>/dev/null; then
-        mark_layout_done
         return 1
     fi
 
@@ -1071,9 +1069,6 @@ setup_yoyo_layout() {
     # 3. Open system info (right-bottom)
     wsh sysinfo &>/dev/null || true
     sleep 0.5
-
-    # Mark setup as done
-    mark_layout_done
 
     return 0
 }

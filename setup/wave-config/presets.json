@@ -25,5 +25,14 @@
     "bg:opacity": 1.0,
     "bg:activebordercolor": "#00BCD4",
     "bg:bordercolor": "#21262d"
+  },
+  "tab@yoyo-dev": {
+    "display:name": "Yoyo Dev Workspace",
+    "display:order": 1,
+    "bg": "linear-gradient(135deg, #0a0e14 0%, #0d1620 40%, #0a1628 70%, #061018 100%)",
+    "bg:opacity": 0.98,
+    "bg:activebordercolor": "#E85D04",
+    "bg:bordercolor": "#1e3a4a",
+    "tab:preset": "bg@yoyo-dev"
   }
 }
