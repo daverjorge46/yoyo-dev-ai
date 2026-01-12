@@ -534,7 +534,7 @@ echo ""
 # Installation Steps
 # ============================================================================
 
-TOTAL_STEPS=9
+TOTAL_STEPS=10
 CURRENT_STEP=0
 
 # Step 1: Create directories
@@ -769,6 +769,29 @@ if [ ${#errors[@]} -gt 0 ]; then
 fi
 
 ui_success "Installation verified"
+echo ""
+
+# Step: Verify global commands
+((++CURRENT_STEP))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying global commands (yoyo, yoyo-cli)..."
+
+# Check if global commands are available
+if ! command -v yoyo-cli &>/dev/null; then
+    echo -e "  ${UI_WARNING}⚠${UI_RESET} yoyo-cli command not found"
+
+    # Try to install global commands
+    if [ -f "$BASE_YOYO_DEV/setup/install-global-command.sh" ]; then
+        echo -e "  ${UI_PRIMARY}→${UI_RESET} Installing global commands..."
+        bash "$BASE_YOYO_DEV/setup/install-global-command.sh" 2>&1 | grep -E "Installing|OK|SKIP|FAILED" | head -10
+        ui_success "Global commands installed"
+    else
+        echo ""
+        echo -e "  ${UI_WARNING}To install global commands manually:${UI_RESET}"
+        echo -e "    ${UI_PRIMARY}bash $BASE_YOYO_DEV/setup/install-global-command.sh${UI_RESET}"
+    fi
+else
+    ui_success "Global commands verified (yoyo, yoyo-cli available)"
+fi
 echo ""
 
 # ============================================================================

@@ -536,7 +536,7 @@ update_with_progress() {
     echo "$files_copied"
 }
 
-TOTAL_STEPS=11
+TOTAL_STEPS=12
 CURRENT_STEP=0
 
 # Note: BASE_YOYO_DEV was defined earlier in Welcome Screen section
@@ -580,6 +580,34 @@ if [ -d "$BASE_YOYO_DEV/.git" ]; then
     cd "$CURRENT_DIR"
 else
     ui_info "No git repository found, using current base files"
+fi
+
+echo ""
+
+# Step: Reinstall global commands (yoyo, yoyo-cli, etc.)
+((CURRENT_STEP++))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying global commands (yoyo, yoyo-cli)..."
+
+if [ -f "$BASE_YOYO_DEV/setup/install-global-command.sh" ]; then
+    # Check if yoyo-cli is available
+    if ! command -v yoyo-cli &>/dev/null; then
+        show_progress "yoyo-cli not found, installing global commands..."
+        bash "$BASE_YOYO_DEV/setup/install-global-command.sh" 2>&1 | grep -E "Installing|OK|SKIP|FAILED" | head -10
+        ui_success "Global commands installed"
+    else
+        # Verify symlinks are valid
+        YOYO_CLI_PATH=$(command -v yoyo-cli 2>/dev/null)
+        if [ -L "$YOYO_CLI_PATH" ] && [ ! -e "$YOYO_CLI_PATH" ]; then
+            show_progress "yoyo-cli symlink broken, reinstalling..."
+            bash "$BASE_YOYO_DEV/setup/install-global-command.sh" 2>&1 | grep -E "Installing|OK|SKIP|FAILED" | head -10
+            ui_success "Global commands reinstalled"
+        else
+            show_progress "yoyo-cli is available at $YOYO_CLI_PATH"
+            ui_success "Global commands verified"
+        fi
+    fi
+else
+    ui_warning "install-global-command.sh not found, skipping global command installation"
 fi
 
 echo ""
