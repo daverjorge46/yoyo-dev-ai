@@ -14,7 +14,7 @@
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "yoyo-cli"
+        "cmd:initscript": "command -v yoyo-cli >/dev/null && yoyo-cli || claude"
       }
     }
   },
