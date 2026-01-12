@@ -20,13 +20,22 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Determine base installation directory
-BASE_DIR="$HOME/yoyo-dev"
-
-# Check if base installation exists
-if [ ! -d "$BASE_DIR" ]; then
-    echo -e "${RED}ERROR: Base installation not found at $BASE_DIR${RESET}"
+# Check in order: standard location, environment variable, legacy location
+if [ -d "$HOME/.yoyo-dev-base" ]; then
+    BASE_DIR="$HOME/.yoyo-dev-base"
+elif [ -n "$YOYO_BASE_DIR" ] && [ -d "$YOYO_BASE_DIR" ]; then
+    BASE_DIR="$YOYO_BASE_DIR"
+elif [ -d "$HOME/yoyo-dev" ]; then
+    BASE_DIR="$HOME/yoyo-dev"
+else
+    echo -e "${RED}ERROR: Base installation not found${RESET}"
     echo ""
-    echo "Please ensure Yoyo Dev is installed in your home directory."
+    echo "Checked locations:"
+    echo "  - $HOME/.yoyo-dev-base (standard)"
+    echo "  - \$YOYO_BASE_DIR environment variable"
+    echo "  - $HOME/yoyo-dev (legacy)"
+    echo ""
+    echo "Please install Yoyo Dev first or set YOYO_BASE_DIR."
     exit 1
 fi
 
