@@ -5,16 +5,16 @@
   "defwidget@ai": null,
   "defwidget@sysinfo": null,
   "defwidget@docs": null,
-  "yoyo@claude": {
+ "yoyo@claude": {
     "icon": "terminal",
     "label": "Yoyo-Cli",
-    "color": "#E85D04",
+    "color": "#00BCD4",
     "description": "Launch yoyo-dev-ai framework with Claude Code in terminal",
     "blockdef": {
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "clear && cd \"${YOYO_PROJECT_DIR:-$PWD}\" && (command -v yoyo-cli >/dev/null && yoyo-cli || claude)"
+        "cmd:initscript": "yoyo-cli"
       }
     }
   },
@@ -26,7 +26,7 @@
     "blockdef": {
       "meta": {
         "view": "preview",
-        "file": "~"
+        "file": "${YOYO_PROJECT_DIR:-~}"
       }
     }
   },
