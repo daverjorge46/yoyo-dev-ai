@@ -32,6 +32,7 @@ import type {
   ItemExecutionState,
   ItemExecutionStep,
 } from '../../hooks/usePhaseExecutor';
+import { usePanelLayoutContext } from '../layout/PanelLayoutContext';
 
 // =============================================================================
 // Types
@@ -223,6 +224,9 @@ export function PhaseExecutionPanel({
 }: PhaseExecutionPanelProps) {
   const [expandedItemId, setExpandedItemId] = React.useState<string | null>(null);
 
+  // Get sidebar width to offset backdrop - allows sidebar navigation while panel is open
+  const { sidebarEffectiveWidth } = usePanelLayoutContext();
+
   // Auto-expand active item
   React.useEffect(() => {
     if (execution?.currentItemId) {
@@ -244,13 +248,23 @@ export function PhaseExecutionPanel({
   return (
     <AnimatePresence>
       {isOpen && (
-        <motion.div
-          initial={{ x: '100%' }}
-          animate={{ x: 0 }}
-          exit={{ x: '100%' }}
-          transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed right-0 top-0 bottom-0 w-full md:w-[450px] bg-white dark:bg-gray-900 shadow-2xl z-40 flex flex-col border-l border-gray-200 dark:border-gray-700"
-        >
+        <>
+          {/* Backdrop - offset from sidebar to allow navigation while panel is open */}
+          <motion.div
+            className="fixed top-0 right-0 bottom-0 bg-black/20 dark:bg-black/40 z-30"
+            style={{ left: sidebarEffectiveWidth }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+          />
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            className="fixed right-0 top-0 bottom-0 w-full md:w-[450px] bg-white dark:bg-gray-900 shadow-2xl z-40 flex flex-col border-l border-gray-200 dark:border-gray-700"
+          >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
             <div className="flex items-center gap-3">
@@ -394,6 +408,7 @@ export function PhaseExecutionPanel({
             )}
           </div>
         </motion.div>
+        </>
       )}
     </AnimatePresence>
   );

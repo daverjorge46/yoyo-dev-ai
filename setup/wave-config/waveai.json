@@ -1,0 +1,6 @@
+{
+  "_comment": "Wave AI configuration for Yoyo Dev. Claude Code is the primary AI interface - this file provides minimal config to avoid conflicts.",
+  "enabled": false,
+  "provider": "none",
+  "note": "Yoyo Dev uses Claude Code as the primary AI assistant. Launch Claude Code using the yoyo@claude widget or by running 'claude' in any terminal."
+}

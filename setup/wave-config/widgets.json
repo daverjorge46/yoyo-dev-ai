@@ -1,0 +1,66 @@
+{
+  "defwidget@terminal": null,
+  "defwidget@files": null,
+  "defwidget@web": null,
+  "defwidget@ai": null,
+  "defwidget@sysinfo": null,
+  "yoyo@claude": {
+    "icon": "terminal",
+    "label": "Claude",
+    "color": "#00BCD4",
+    "description": "Launch Claude Code in terminal",
+    "blockdef": {
+      "meta": {
+        "view": "term",
+        "controller": "shell",
+        "cmd:initscript": "claude"
+      }
+    }
+  },
+  "yoyo@files": {
+    "icon": "folder",
+    "label": "Files",
+    "color": "#7ee787",
+    "description": "Project file browser",
+    "blockdef": {
+      "meta": {
+        "view": "preview"
+      }
+    }
+  },
+  "yoyo@gui": {
+    "icon": "globe",
+    "label": "GUI",
+    "color": "#79c0ff",
+    "description": "Yoyo Dev dashboard",
+    "blockdef": {
+      "meta": {
+        "view": "web",
+        "url": "http://localhost:5173"
+      }
+    }
+  },
+  "yoyo@docs": {
+    "icon": "book",
+    "label": "Docs",
+    "color": "#d2a8ff",
+    "description": "Yoyo Dev documentation",
+    "blockdef": {
+      "meta": {
+        "view": "web",
+        "url": "https://github.com/daverjorge46/yoyo-dev-ai"
+      }
+    }
+  },
+  "yoyo@sysinfo": {
+    "icon": "activity",
+    "label": "System",
+    "color": "#d29922",
+    "description": "System resource monitor",
+    "blockdef": {
+      "meta": {
+        "view": "sysinfo"
+      }
+    }
+  }
+}

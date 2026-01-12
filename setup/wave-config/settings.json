@@ -1,0 +1,13 @@
+{
+  "term:theme": "yoyo-dev",
+  "web:defaulturl": "http://localhost:5173",
+  "term:fontsize": 14,
+  "term:fontfamily": "JetBrains Mono, Fira Code, Consolas, monospace",
+  "window:nativetitlebar": true,
+  "window:savelastwindow": true,
+  "window:opacity": 1.0,
+  "widget:showhelp": false,
+  "telemetry:enabled": false,
+  "autocomplete:enabled": true,
+  "tab:preset": "bg@yoyo-dev"
+}

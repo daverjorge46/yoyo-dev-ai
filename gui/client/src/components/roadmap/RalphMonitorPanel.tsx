@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import { usePhaseExecution } from '../../hooks/usePhaseExecution';
 import { useWebSocket } from '../../hooks/useWebSocket';
+import { usePanelLayoutContext } from '../layout/PanelLayoutContext';
 import type { SpecProgress, ExecutionLog } from '../../stores/phaseExecutionStore';
 
 // =============================================================================
@@ -241,6 +242,9 @@ export function RalphMonitorPanel({
   const [isActionPending, setIsActionPending] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
 
+  // Get sidebar width to offset backdrop - allows sidebar navigation while panel is open
+  const { sidebarEffectiveWidth } = usePanelLayoutContext();
+
   const {
     status,
     error,
@@ -379,9 +383,10 @@ export function RalphMonitorPanel({
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop */}
+          {/* Backdrop - offset from sidebar to allow navigation while panel is open */}
           <motion.div
-            className="fixed inset-0 bg-black/20 dark:bg-black/40 z-40"
+            className="fixed top-0 right-0 bottom-0 bg-black/20 dark:bg-black/40 z-40"
+            style={{ left: sidebarEffectiveWidth }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

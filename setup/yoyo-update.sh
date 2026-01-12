@@ -49,6 +49,18 @@ source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
 }
 
 # ============================================================================
+# Load Wave Install Functions
+# ============================================================================
+
+# Source wave-install.sh for config deployment functions
+if [ -f "$SCRIPT_DIR/wave-install.sh" ]; then
+    source "$SCRIPT_DIR/wave-install.sh"
+    WAVE_INSTALL_AVAILABLE=true
+else
+    WAVE_INSTALL_AVAILABLE=false
+fi
+
+# ============================================================================
 # Configuration
 # ============================================================================
 
@@ -114,6 +126,7 @@ OVERWRITE_HOOKS=true
 REGENERATE_CLAUDE_MD=false
 VERBOSE=false
 SKIP_MCP_CHECK=false
+SKIP_WAVE_CONFIG=false
 
 # Track files changed during update
 declare -a CHANGED_FILES=()
@@ -158,6 +171,10 @@ while [[ $# -gt 0 ]]; do
             SKIP_MCP_CHECK=true
             shift
             ;;
+        --skip-wave-config)
+            SKIP_WAVE_CONFIG=true
+            shift
+            ;;
         --regenerate-claude)
             REGENERATE_CLAUDE_MD=true
             shift
@@ -186,6 +203,7 @@ Options:
   ${UI_PRIMARY}--no-overwrite-hooks${UI_RESET}           Keep existing orchestration hooks
   ${UI_PRIMARY}--no-overwrite${UI_RESET}                 Keep all existing framework files
   ${UI_PRIMARY}--skip-mcp-check${UI_RESET}               Skip MCP server verification
+  ${UI_PRIMARY}--skip-wave-config${UI_RESET}             Skip Wave Terminal configuration update
   ${UI_PRIMARY}--regenerate-claude${UI_RESET}            Regenerate project CLAUDE.md from template
   ${UI_PRIMARY}-v, --verbose${UI_RESET}                  Show detailed update information
   ${UI_PRIMARY}-h, --help${UI_RESET}                     Show this help message
@@ -193,6 +211,7 @@ Options:
 Examples:
   $0                       # Update all framework files
   $0 --no-overwrite        # Keep all customizations
+  $0 --skip-wave-config    # Skip Wave Terminal config update
   $0 --verbose             # Show detailed output
 
 EOF
@@ -517,7 +536,7 @@ update_with_progress() {
     echo "$files_copied"
 }
 
-TOTAL_STEPS=10
+TOTAL_STEPS=11
 CURRENT_STEP=0
 
 # Note: BASE_YOYO_DEV was defined earlier in Welcome Screen section
@@ -783,7 +802,7 @@ fi
 ui_success "Configuration merged"
 echo ""
 
-# Step 8: Migrate memory from .yoyo-ai/ to .yoyo-dev/memory/
+# Step 10: Migrate memory from .yoyo-ai/ to .yoyo-dev/memory/
 if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Migrating memory system..."
@@ -845,7 +864,45 @@ else
     echo ""
 fi
 
-# Step 9: Check MCP servers
+# Step 11: Update Wave Terminal configuration
+((CURRENT_STEP++))
+if [ "$SKIP_WAVE_CONFIG" = true ]; then
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping Wave Terminal configuration..."
+    echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Skipped${UI_RESET} ${UI_DIM}(--skip-wave-config)${UI_RESET}"
+    echo ""
+elif [ "$WAVE_INSTALL_AVAILABLE" = true ]; then
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Checking Wave Terminal configuration..."
+
+    # Check if Wave config needs update
+    if check_config_version 2>/dev/null; then
+        # Update needed
+        show_progress "Wave configuration update available"
+
+        # Get current installed version for reporting
+        WAVE_CURRENT_VERSION="none"
+        if [ -f "$WAVE_VERSION_FILE" ]; then
+            WAVE_CURRENT_VERSION=$(cat "$WAVE_VERSION_FILE" 2>/dev/null || echo "unknown")
+        fi
+
+        # Deploy updated configuration
+        if deploy_wave_config 2>/dev/null; then
+            ui_success "Wave config updated from v${WAVE_CURRENT_VERSION} to v${WAVE_CONFIG_VERSION}"
+            track_file_change "Wave Terminal config (v${WAVE_CONFIG_VERSION})"
+        else
+            ui_warning "Wave config update failed - continuing with update"
+        fi
+    else
+        # Already up to date
+        ui_success "Wave configuration already up to date (v${WAVE_CONFIG_VERSION})"
+    fi
+    echo ""
+else
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Wave Terminal configuration..."
+    echo -e "     ${UI_DIM}⊘ Skipped${UI_RESET} ${UI_DIM}(wave-install.sh not found)${UI_RESET}"
+    echo ""
+fi
+
+# Step 12: Check MCP servers
 if [ "$SKIP_MCP_CHECK" = false ]; then
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Checking MCP servers..."
@@ -882,7 +939,7 @@ CURRENT_PHASE=$PHASE_VERIFY
 ui_phase_indicator $CURRENT_PHASE "BASE Sync" "Backup" "Update" "Verify"
 echo ""
 
-# Step 10: Verify update
+# Step: Verify update
 ((CURRENT_STEP++))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying update..."
 

@@ -1,0 +1,26 @@
+{
+  "bg@yoyo-dev": {
+    "display:name": "Yoyo Dev",
+    "display:order": 1,
+    "bg": "linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d2137 100%)",
+    "bg:opacity": 0.95,
+    "border:color": "#00BCD4",
+    "border:color:unfocused": "#30363d"
+  },
+  "bg@yoyo-dev-vibrant": {
+    "display:name": "Yoyo Dev Vibrant",
+    "display:order": 2,
+    "bg": "linear-gradient(135deg, #0d1117 0%, #0d2137 40%, #0a3d5c 100%)",
+    "bg:opacity": 0.98,
+    "border:color": "#00BCD4",
+    "border:color:unfocused": "#30363d"
+  },
+  "bg@yoyo-dev-subtle": {
+    "display:name": "Yoyo Dev Subtle",
+    "display:order": 3,
+    "bg": "#0d1117",
+    "bg:opacity": 1.0,
+    "border:color": "#00BCD4",
+    "border:color:unfocused": "#21262d"
+  }
+}

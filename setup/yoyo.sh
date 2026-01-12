@@ -42,6 +42,14 @@ else
 fi
 
 # ============================================================================
+# Load Wave Install Functions
+# ============================================================================
+
+if [ -f "$SCRIPT_DIR/wave-install.sh" ]; then
+    source "$SCRIPT_DIR/wave-install.sh"
+fi
+
+# ============================================================================
 # Configuration
 # ============================================================================
 
@@ -89,6 +97,11 @@ GUI_PORT=5173
 ORCHESTRATION_ENABLED=true
 BANNER_ENABLED=true
 CLEAR_TERMINAL=true
+
+# Wave Terminal Configuration
+WAVE_ENABLED=true
+WAVE_FALLBACK=true  # Fallback to standard terminal if Wave unavailable
+WAVE_ONLY=false     # Launch Wave without Claude Code
 
 # Ralph Autonomous Development Configuration
 RALPH_MODE=false
@@ -464,6 +477,138 @@ launch_ralph_mode() {
 }
 
 # ============================================================================
+# Wave Terminal Functions
+# ============================================================================
+
+# Check if Wave Terminal functions are available
+is_wave_available() {
+    # Check if wave-install.sh was sourced and detect_wave function exists
+    if type detect_wave &>/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
+# Prompt user to install Wave Terminal
+prompt_wave_installation() {
+    echo ""
+    ui_warning "Wave Terminal not found"
+    echo ""
+    echo "  Wave Terminal provides an enhanced development experience:"
+    echo ""
+    echo -e "  ${UI_SUCCESS}*${UI_RESET} Multi-pane layouts in a single window"
+    echo -e "  ${UI_SUCCESS}*${UI_RESET} Built-in web browser for GUI dashboard"
+    echo -e "  ${UI_SUCCESS}*${UI_RESET} File browser with previews"
+    echo -e "  ${UI_SUCCESS}*${UI_RESET} Custom yoyo-dev themed interface"
+    echo ""
+    echo -e "  ${UI_PRIMARY}1.${UI_RESET} Install Wave Terminal now (recommended)"
+    echo -e "  ${UI_PRIMARY}2.${UI_RESET} Continue with standard terminal"
+    echo -e "  ${UI_PRIMARY}3.${UI_RESET} Exit"
+    echo ""
+    echo -n "  Choice [1]: "
+    read -r install_choice
+    install_choice="${install_choice:-1}"
+
+    case "$install_choice" in
+        1)
+            echo ""
+            if install_wave --force; then
+                return 0
+            else
+                ui_warning "Wave installation failed, falling back to standard terminal"
+                return 1
+            fi
+            ;;
+        2)
+            ui_info "Using standard terminal mode"
+            return 1
+            ;;
+        3|*)
+            ui_info "Exiting"
+            exit 0
+            ;;
+    esac
+}
+
+# Launch yoyo-dev with Wave Terminal
+launch_with_wave() {
+    local wave_path=""
+
+    # Get Wave binary path
+    if ! wave_path=$(detect_wave); then
+        ui_error "Wave detection failed"
+        return 1
+    fi
+
+    # Deploy Wave configuration
+    ui_info "Deploying yoyo-dev Wave configuration..."
+    if ! deploy_wave_config; then
+        ui_warning "Wave config deployment failed, continuing anyway"
+    fi
+
+    # Clear terminal before launch (default behavior)
+    clear_terminal
+
+    # Show branded ASCII art banner (if enabled and terminal is interactive)
+    if [ "$BANNER_ENABLED" = true ] && is_interactive_terminal; then
+        ui_yoyo_banner "v${VERSION}"
+
+        # Show project dashboard
+        if [ -d "./.yoyo-dev" ]; then
+            ui_project_dashboard ".yoyo-dev"
+        fi
+    fi
+
+    echo -e "  ${UI_DIM}Project:${UI_RESET}  $(basename "$USER_PROJECT_DIR")"
+    echo -e "  ${UI_DIM}Mode:${UI_RESET}     Wave Terminal"
+
+    # Launch GUI in background if enabled
+    if [ "$GUI_ENABLED" = true ]; then
+        echo -e "  ${UI_DIM}GUI:${UI_RESET}      Starting on port $GUI_PORT..."
+        if launch_gui_background; then
+            sleep 1
+            local network_ip
+            network_ip=$(get_network_ip)
+            echo -e "  ${UI_DIM}GUI:${UI_RESET}      ${UI_SUCCESS}http://localhost:$GUI_PORT${UI_RESET}"
+            if [ -n "$network_ip" ]; then
+                echo -e "  ${UI_DIM}Network:${UI_RESET}  ${UI_SUCCESS}http://${network_ip}:$GUI_PORT${UI_RESET}"
+            fi
+        else
+            echo -e "  ${UI_DIM}GUI:${UI_RESET}      ${UI_YELLOW}Not available${UI_RESET}"
+        fi
+    else
+        echo -e "  ${UI_DIM}GUI:${UI_RESET}      Disabled"
+    fi
+
+    echo ""
+    echo -e "  ${UI_DIM}Commands:${UI_RESET} /yoyo-status /specs /tasks /fixes"
+    echo -e "  ${UI_DIM}Help:${UI_RESET}     /yoyo-help"
+
+    # Show orchestration status
+    if [ "$ORCHESTRATION_ENABLED" = true ]; then
+        echo -e "  ${UI_DIM}Orchestration:${UI_RESET} ${UI_SUCCESS}Global Mode (v6.1)${UI_RESET}"
+    else
+        echo -e "  ${UI_DIM}Orchestration:${UI_RESET} ${UI_YELLOW}Disabled${UI_RESET}"
+    fi
+    echo ""
+
+    ui_info "Launching Wave Terminal..."
+    echo ""
+
+    # Change to project directory
+    cd "$USER_PROJECT_DIR"
+
+    # Set orchestration environment variable
+    if [ "$ORCHESTRATION_ENABLED" = false ]; then
+        export YOYO_ORCHESTRATION=false
+    fi
+
+    # Launch Wave Terminal
+    # Wave will use the deployed configuration from ~/.config/waveterm/
+    exec "$wave_path"
+}
+
+# ============================================================================
 # Claude Code Native Launch
 # ============================================================================
 
@@ -626,19 +771,39 @@ show_help() {
     echo -e "  ─────────────────────────────────────────────────────────────────"
     echo ""
     echo -e "  ${UI_PRIMARY}yoyo${UI_RESET}"
-    echo -e "    ${UI_DIM}Launch Claude Code + Browser GUI (default)${UI_RESET}"
+    echo -e "    ${UI_DIM}Launch with Wave Terminal + GUI (default if Wave installed)${UI_RESET}"
     echo ""
     echo -e "  ${UI_PRIMARY}yoyo --no-gui${UI_RESET}"
-    echo -e "    ${UI_DIM}Launch Claude Code without browser GUI${UI_RESET}"
+    echo -e "    ${UI_DIM}Launch without browser GUI${UI_RESET}"
     echo ""
     echo -e "  ${UI_PRIMARY}yoyo --gui-only${UI_RESET}"
-    echo -e "    ${UI_DIM}Open browser GUI only (no Claude Code)${UI_RESET}"
+    echo -e "    ${UI_DIM}Open browser GUI only (no terminal)${UI_RESET}"
     echo ""
     echo -e "  ${UI_PRIMARY}yoyo --no-banner${UI_RESET}"
     echo -e "    ${UI_DIM}Skip branded banner (for CI/scripts)${UI_RESET}"
     echo ""
     echo -e "  ${UI_PRIMARY}yoyo --no-clear${UI_RESET}"
     echo -e "    ${UI_DIM}Don't clear terminal before launch${UI_RESET}"
+    echo ""
+
+    echo -e "  ${UI_SUCCESS}WAVE TERMINAL${UI_RESET}"
+    echo -e "  ─────────────────────────────────────────────────────────────────"
+    echo ""
+    echo -e "  ${UI_DIM}Wave Terminal provides an enhanced multi-pane development${UI_RESET}"
+    echo -e "  ${UI_DIM}environment with built-in GUI dashboard, file browser,${UI_RESET}"
+    echo -e "  ${UI_DIM}and custom yoyo-dev theming.${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}yoyo --no-wave${UI_RESET}"
+    echo -e "    ${UI_DIM}Skip Wave and use standard terminal with Claude Code${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}yoyo --install-wave${UI_RESET}"
+    echo -e "    ${UI_DIM}Force Wave Terminal installation/reinstallation${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}yoyo --wave-only${UI_RESET}"
+    echo -e "    ${UI_DIM}Launch Wave Terminal without Claude Code${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_DIM}Wave config location: ~/.config/waveterm/${UI_RESET}"
+    echo -e "  ${UI_DIM}Yoyo-dev deploys custom themes, widgets, and settings.${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_SUCCESS}ORCHESTRATION${UI_RESET}"
@@ -651,9 +816,9 @@ show_help() {
     echo -e "    ${UI_DIM}Disable global orchestration for this session${UI_RESET}"
     echo ""
     echo -e "  ${UI_DIM}Other disable methods:${UI_RESET}"
-    echo -e "    ${UI_DIM}• Set YOYO_ORCHESTRATION=false in environment${UI_RESET}"
-    echo -e "    ${UI_DIM}• Set orchestration.enabled: false in config.yml${UI_RESET}"
-    echo -e "    ${UI_DIM}• Prefix message with \"directly:\" for one-time bypass${UI_RESET}"
+    echo -e "    ${UI_DIM}* Set YOYO_ORCHESTRATION=false in environment${UI_RESET}"
+    echo -e "    ${UI_DIM}* Set orchestration.enabled: false in config.yml${UI_RESET}"
+    echo -e "    ${UI_DIM}* Prefix message with \"directly:\" for one-time bypass${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_SUCCESS}GUI MANAGEMENT${UI_RESET}"
@@ -742,6 +907,26 @@ main() {
                 CLEAR_TERMINAL=false
                 shift
                 ;;
+            --no-wave)
+                WAVE_ENABLED=false
+                shift
+                ;;
+            --install-wave)
+                # Force Wave installation
+                if is_wave_available; then
+                    install_wave --force
+                    exit $?
+                else
+                    ui_error "Wave install script not available"
+                    echo ""
+                    echo "  Please ensure setup/wave-install.sh exists"
+                    exit 1
+                fi
+                ;;
+            --wave-only)
+                WAVE_ONLY=true
+                shift
+                ;;
             --gui-only)
                 local gui_script="$SCRIPT_DIR/yoyo-gui.sh"
                 if [ -f "$gui_script" ]; then
@@ -816,7 +1001,122 @@ main() {
     # Execute based on mode
     if [ "$RALPH_MODE" = true ]; then
         launch_ralph_mode
+        exit 0
+    fi
+
+    # Wave-only mode: just launch Wave without Claude Code
+    if [ "$WAVE_ONLY" = true ]; then
+        if is_wave_available; then
+            local wave_path
+            if wave_path=$(detect_wave); then
+                ui_info "Launching Wave Terminal..."
+                deploy_wave_config 2>/dev/null || true
+                cd "$USER_PROJECT_DIR"
+                exec "$wave_path"
+            else
+                ui_error "Wave Terminal not installed"
+                echo ""
+                echo "  Install with: ${UI_PRIMARY}yoyo --install-wave${UI_RESET}"
+                exit 1
+            fi
+        else
+            ui_error "Wave install script not available"
+            exit 1
+        fi
+    fi
+
+    # Check if Yoyo Dev is installed in this project (required for all modes)
+    if [ ! -d "./.yoyo-dev" ]; then
+        echo ""
+        ui_warning "Yoyo Dev not detected in this directory"
+        echo ""
+        echo -e "  Would you like to initialize Yoyo Dev in this project?"
+        echo ""
+        echo -e "    ${UI_PRIMARY}1.${UI_RESET} Initialize Yoyo Dev (recommended)"
+        echo -e "    ${UI_PRIMARY}2.${UI_RESET} Exit"
+        echo ""
+        echo -n "  Choice [1]: "
+        read -r init_choice
+        init_choice="${init_choice:-1}"
+
+        if [ "$init_choice" = "1" ]; then
+            echo ""
+            ui_info "Starting initialization..."
+            echo ""
+
+            # Detect BASE installation
+            local base_dir
+            if base_dir=$(detect_base_installation); then
+                local init_script="$base_dir/setup/init.sh"
+                if [ -f "$init_script" ]; then
+                    exec bash "$init_script" --claude-code
+                fi
+                # Fallback to install.sh for legacy installations
+                local install_script="$base_dir/setup/install.sh"
+                if [ -f "$install_script" ]; then
+                    exec bash "$install_script" --claude-code
+                fi
+            fi
+
+            # BASE not found
+            ui_error "BASE installation not found"
+            echo ""
+            echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev-base"
+            echo ""
+            echo "  To install BASE:"
+            echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base${UI_RESET}"
+            echo "    ${UI_PRIMARY}~/.yoyo-dev-base/setup/install-global-command.sh${UI_RESET}"
+            echo ""
+            echo "  Then initialize this project:"
+            echo "    ${UI_PRIMARY}yoyo-init --claude-code${UI_RESET}"
+            echo ""
+            exit 1
+        else
+            echo ""
+            ui_info "Initialization cancelled"
+            echo ""
+            echo "  To initialize manually:"
+            echo "    ${UI_PRIMARY}yoyo-init --claude-code${UI_RESET}"
+            echo ""
+            exit 0
+        fi
+    fi
+
+    # Determine launch mode: Wave or standard terminal
+    if [ "$WAVE_ENABLED" = true ] && is_wave_available; then
+        # Check if Wave is installed
+        local wave_path
+        if wave_path=$(detect_wave 2>/dev/null); then
+            # Wave is installed - use it
+            launch_with_wave
+        else
+            # Wave not installed
+            if [ "$WAVE_FALLBACK" = true ]; then
+                # Prompt to install or fallback
+                if prompt_wave_installation; then
+                    # Installation succeeded, try launching with Wave
+                    if wave_path=$(detect_wave 2>/dev/null); then
+                        launch_with_wave
+                    else
+                        # Still can't find Wave, fallback
+                        ui_warning "Wave still not detected, using standard terminal"
+                        launch_claude_code
+                    fi
+                else
+                    # User chose to skip or installation failed
+                    launch_claude_code
+                fi
+            else
+                # No fallback - just fail
+                ui_error "Wave Terminal not installed and fallback disabled"
+                echo ""
+                echo "  Install with: ${UI_PRIMARY}yoyo --install-wave${UI_RESET}"
+                echo "  Or use: ${UI_PRIMARY}yoyo --no-wave${UI_RESET} for standard terminal"
+                exit 1
+            fi
+        fi
     else
+        # Wave disabled or not available - use standard terminal
         launch_claude_code
     fi
 }
