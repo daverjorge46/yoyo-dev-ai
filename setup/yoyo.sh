@@ -603,6 +603,17 @@ launch_with_wave() {
         export YOYO_ORCHESTRATION=false
     fi
 
+    # Launch layout setup in background if needed (first time only)
+    # This will run after Wave opens and set up the yoyo-dev layout
+    if needs_layout_setup; then
+        ui_info "First launch detected - will configure yoyo-dev layout..."
+        (
+            # Run layout setup in background
+            setup_yoyo_layout "$USER_PROJECT_DIR"
+        ) &
+        disown
+    fi
+
     # Launch Wave Terminal
     # Wave will use the deployed configuration from ~/.config/waveterm/
     exec "$wave_path"

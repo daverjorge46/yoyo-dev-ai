@@ -9,7 +9,7 @@ set -euo pipefail
 # ============================================================================
 
 readonly WAVE_VERSION="0.10.0"
-readonly WAVE_CONFIG_VERSION="1.0.0"
+readonly WAVE_CONFIG_VERSION="1.2.0"
 readonly WAVE_DOWNLOAD_BASE="https://github.com/wavetermdev/waveterm/releases/download"
 readonly WAVE_CONFIG_DIR="${HOME}/.config/waveterm"
 readonly WAVE_VERSION_FILE="${WAVE_CONFIG_DIR}/.yoyo-dev-wave-version"
@@ -993,6 +993,91 @@ deploy_wave_config() {
     else
         ui_warning "Deployed ${deployed_count} files, ${failed_count} failed"
         return 1
+    fi
+}
+
+# ============================================================================
+# Layout Setup Functions
+# ============================================================================
+
+# Marker file to track if initial layout setup has been done
+readonly WAVE_LAYOUT_MARKER="${WAVE_CONFIG_DIR}/.yoyo-dev-layout-done"
+
+# Check if initial layout setup is needed
+needs_layout_setup() {
+    # Return 0 (true) if setup is needed, 1 (false) if already done
+    if [ -f "$WAVE_LAYOUT_MARKER" ]; then
+        return 1
+    fi
+    return 0
+}
+
+# Mark layout setup as complete
+mark_layout_done() {
+    echo "$(date -Iseconds)" > "$WAVE_LAYOUT_MARKER"
+    chmod 600 "$WAVE_LAYOUT_MARKER" 2>/dev/null || true
+}
+
+# Wait for Wave to be ready (wsh becomes available)
+wait_for_wave_ready() {
+    local max_wait="${1:-30}"
+    local waited=0
+
+    while [ $waited -lt $max_wait ]; do
+        # Check if wsh is available and responsive
+        if command -v wsh &>/dev/null && wsh wavepath &>/dev/null; then
+            return 0
+        fi
+        sleep 1
+        ((waited++))
+    done
+
+    return 1
+}
+
+# Setup yoyo-dev layout in Wave Terminal
+# This runs in background after Wave opens (first time only)
+setup_yoyo_layout() {
+    local project_dir="${1:-$PWD}"
+
+    # Wait for Wave to be ready
+    if ! wait_for_wave_ready 30; then
+        return 1
+    fi
+
+    # Small additional delay for UI to stabilize
+    sleep 2
+
+    # Try to set up the layout using wsh commands
+    # Note: This is best-effort - Wave may not support all operations
+
+    # 1. Try to run claude in the current terminal block
+    #    Using 'wsh run' creates a new block, so we use a different approach
+    #    The terminal widget's initscript handles this when clicking the widget
+
+    # 2. Try to open the web panel with localhost:5173
+    if command -v wsh &>/dev/null; then
+        wsh web open "http://localhost:5173" &>/dev/null || true
+    fi
+
+    # 3. Try to open the file browser with project directory
+    if command -v wsh &>/dev/null; then
+        wsh view "$project_dir" &>/dev/null || true
+    fi
+
+    # Mark setup as done
+    mark_layout_done
+
+    return 0
+}
+
+# Reset layout setup marker (allows re-running setup)
+reset_layout_marker() {
+    if [ -f "$WAVE_LAYOUT_MARKER" ]; then
+        rm -f "$WAVE_LAYOUT_MARKER"
+        ui_success "Layout marker reset. Next Wave launch will run setup."
+    else
+        ui_info "Layout marker does not exist."
     fi
 }
 

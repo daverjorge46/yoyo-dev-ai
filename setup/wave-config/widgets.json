@@ -4,62 +4,56 @@
   "defwidget@web": null,
   "defwidget@ai": null,
   "defwidget@sysinfo": null,
-  "yoyo@claude": {
+  "yoyo@terminal": {
     "icon": "terminal",
-    "label": "Claude",
+    "label": "Terminal",
     "color": "#00BCD4",
-    "description": "Launch Claude Code in terminal",
+    "description": "Yoyo Dev Terminal with Claude Code",
     "blockdef": {
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "claude"
+        "cmd:cwd": "${HOME}",
+        "cmd:initscript.bash": "claude",
+        "cmd:initscript.zsh": "claude",
+        "cmd:initscript.fish": "claude"
       }
     }
   },
   "yoyo@files": {
-    "icon": "folder",
+    "icon": "folder-open",
     "label": "Files",
     "color": "#7ee787",
     "description": "Project file browser",
     "blockdef": {
       "meta": {
-        "view": "preview"
+        "view": "preview",
+        "file": "~"
       }
     }
   },
   "yoyo@gui": {
-    "icon": "globe",
+    "icon": "gauge",
     "label": "GUI",
     "color": "#79c0ff",
-    "description": "Yoyo Dev dashboard",
+    "description": "Yoyo Dev Dashboard",
     "blockdef": {
       "meta": {
         "view": "web",
-        "url": "http://localhost:5173"
-      }
-    }
-  },
-  "yoyo@docs": {
-    "icon": "book",
-    "label": "Docs",
-    "color": "#d2a8ff",
-    "description": "Yoyo Dev documentation",
-    "blockdef": {
-      "meta": {
-        "view": "web",
-        "url": "https://github.com/daverjorge46/yoyo-dev-ai"
+        "url": "http://localhost:5173",
+        "pinnedurl": "http://localhost:5173"
       }
     }
   },
   "yoyo@sysinfo": {
-    "icon": "activity",
+    "icon": "chart-line",
     "label": "System",
-    "color": "#d29922",
+    "color": "#ffa657",
     "description": "System resource monitor",
     "blockdef": {
       "meta": {
-        "view": "sysinfo"
+        "view": "sysinfo",
+        "sysinfo:type": "CPU + Mem"
       }
     }
   }

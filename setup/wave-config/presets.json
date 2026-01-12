@@ -2,25 +2,28 @@
   "bg@yoyo-dev": {
     "display:name": "Yoyo Dev",
     "display:order": 1,
-    "bg": "linear-gradient(135deg, #0d1117 0%, #161b22 50%, #0d2137 100%)",
-    "bg:opacity": 0.95,
-    "border:color": "#00BCD4",
-    "border:color:unfocused": "#30363d"
+    "bg:*": true,
+    "bg": "linear-gradient(135deg, #0a0e14 0%, #0d1620 40%, #0a1628 70%, #061018 100%)",
+    "bg:opacity": 0.98,
+    "bg:activebordercolor": "#00BCD4",
+    "bg:bordercolor": "#1e3a4a"
   },
   "bg@yoyo-dev-vibrant": {
     "display:name": "Yoyo Dev Vibrant",
     "display:order": 2,
-    "bg": "linear-gradient(135deg, #0d1117 0%, #0d2137 40%, #0a3d5c 100%)",
-    "bg:opacity": 0.98,
-    "border:color": "#00BCD4",
-    "border:color:unfocused": "#30363d"
+    "bg:*": true,
+    "bg": "linear-gradient(145deg, #061018 0%, #0d2030 30%, #00404a 70%, #005a6a 100%)",
+    "bg:opacity": 0.95,
+    "bg:activebordercolor": "#00E5FF",
+    "bg:bordercolor": "#00BCD4"
   },
   "bg@yoyo-dev-subtle": {
     "display:name": "Yoyo Dev Subtle",
     "display:order": 3,
+    "bg:*": true,
     "bg": "#0d1117",
     "bg:opacity": 1.0,
-    "border:color": "#00BCD4",
-    "border:color:unfocused": "#21262d"
+    "bg:activebordercolor": "#00BCD4",
+    "bg:bordercolor": "#21262d"
   }
 }
