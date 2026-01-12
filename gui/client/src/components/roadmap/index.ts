@@ -9,3 +9,5 @@ export { RoadmapFeature, type RoadmapFeatureItem, type RoadmapFeatureProps } fro
 export { RoadmapPhase, type RoadmapPhaseData, type RoadmapSection, type RoadmapPhaseProps } from './RoadmapPhase';
 export { RoadmapTimeline, type RoadmapTimelineProps } from './RoadmapTimeline';
 export { RoadmapEditor, type RoadmapEditorProps } from './RoadmapEditor';
+export { PhaseExecutionModal, type PhaseExecutionModalProps } from './PhaseExecutionModal';
+export { PhaseExecutionPanel, type PhaseExecutionPanelProps } from './PhaseExecutionPanel';

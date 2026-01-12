@@ -20,9 +20,12 @@ import { motion } from 'framer-motion';
 import {
   RoadmapTimeline,
   type RoadmapPhaseData,
+  PhaseExecutionModal,
+  PhaseExecutionPanel,
 } from '../components/roadmap';
 import { RalphMonitorPanel } from '../components/roadmap/RalphMonitorPanel';
 import { usePhaseExecution } from '../hooks/usePhaseExecution';
+import { usePhaseExecutor } from '../hooks/usePhaseExecutor';
 
 // =============================================================================
 // Types
@@ -224,8 +227,14 @@ export default function Roadmap() {
   const [monitorPhaseId, setMonitorPhaseId] = useState<string | null>(null);
   const [monitorPhaseTitle, setMonitorPhaseTitle] = useState<string>('');
 
-  // Phase execution state
+  // Phase execution state (Ralph-based - legacy)
   const { isActive, phaseId: executingPhaseId, pauseExecution, stopExecution, reset: resetExecution } = usePhaseExecution();
+
+  // New terminal-based phase executor
+  const phaseExecutor = usePhaseExecutor();
+  const [showExecutionModal, setShowExecutionModal] = useState(false);
+  const [showExecutionPanel, setShowExecutionPanel] = useState(false);
+  const [selectedPhaseForExecution, setSelectedPhaseForExecution] = useState<RoadmapPhaseData | null>(null);
 
   // Fetch roadmap data
   const { data, isLoading, error } = useQuery({
@@ -289,6 +298,29 @@ export default function Roadmap() {
   }, []);
 
   const handleExecute = useCallback(
+    (phaseId: string) => {
+      const phase = data?.phases.find((p) => p.id === phaseId);
+      // Open the new terminal-based execution modal
+      setSelectedPhaseForExecution(phase || null);
+      setShowExecutionModal(true);
+    },
+    [data?.phases]
+  );
+
+  const handleStartExecution = useCallback(
+    async (request: Parameters<typeof phaseExecutor.start>[0]) => {
+      try {
+        await phaseExecutor.start(request);
+        setShowExecutionModal(false);
+        setShowExecutionPanel(true);
+      } catch (error) {
+        console.error('Failed to start execution:', error);
+      }
+    },
+    [phaseExecutor]
+  );
+
+  const handleLegacyExecute = useCallback(
     (phaseId: string) => {
       const phase = data?.phases.find((p) => p.id === phaseId);
       setMonitorPhaseId(phaseId);
@@ -405,18 +437,40 @@ export default function Roadmap() {
         onSaveEdit={handleSaveEdit}
         onCancelEdit={handleCancelEdit}
         onExecute={handleExecute}
-        onPause={handlePause}
-        onStop={handleStop}
-        isExecutionRunning={isActive}
-        executingPhaseId={executingPhaseId}
+        onPause={phaseExecutor.isExecuting ? phaseExecutor.pause : handlePause}
+        onStop={phaseExecutor.isExecuting ? phaseExecutor.cancel : handleStop}
+        isExecutionRunning={isActive || phaseExecutor.isExecuting}
+        executingPhaseId={phaseExecutor.currentExecution?.phaseId ?? executingPhaseId}
       />
 
-      {/* Ralph Monitor Panel */}
+      {/* Ralph Monitor Panel (Legacy) */}
       <RalphMonitorPanel
         isOpen={monitorPhaseId !== null}
         onClose={handleCloseMonitor}
         phaseId={monitorPhaseId || ''}
         phaseTitle={monitorPhaseTitle}
+      />
+
+      {/* New Terminal-Based Phase Execution Modal */}
+      <PhaseExecutionModal
+        isOpen={showExecutionModal}
+        onClose={() => setShowExecutionModal(false)}
+        phase={selectedPhaseForExecution}
+        onStart={handleStartExecution}
+        isStarting={phaseExecutor.isStarting}
+      />
+
+      {/* Phase Execution Panel */}
+      <PhaseExecutionPanel
+        isOpen={showExecutionPanel}
+        onClose={() => setShowExecutionPanel(false)}
+        execution={phaseExecutor.currentExecution}
+        onPause={phaseExecutor.pause}
+        onResume={phaseExecutor.resume}
+        onCancel={phaseExecutor.cancel}
+        isPausing={phaseExecutor.isPausing}
+        isResuming={phaseExecutor.isResuming}
+        isCancelling={phaseExecutor.isCancelling}
       />
 
       {/* Mutation status indicators */}

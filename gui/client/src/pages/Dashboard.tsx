@@ -18,7 +18,7 @@ import { GitStatusCard } from '../components/GitStatusCard';
 import { MCPStatusCard } from '../components/MCPStatusCard';
 import { ExecutionProgressCard } from '../components/ExecutionProgressCard';
 import { SkeletonDashboard } from '../components/SkeletonLoader';
-import { TerminalsWidget, QAWidget } from '../components/dashboard';
+import { TerminalsWidget, QAWidget, PhaseExecutionWidget } from '../components/dashboard';
 
 interface StatusResponse {
   name: string;
@@ -466,6 +466,7 @@ export default function Dashboard() {
 
         {/* Right Column */}
         <div className="space-y-6">
+          <PhaseExecutionWidget />
           <SystemStatus status={status!} />
           {/* Project Info */}
           <div className="terminal-card p-4">
