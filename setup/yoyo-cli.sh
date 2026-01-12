@@ -51,7 +51,8 @@ GUI_PORT="${YOYO_GUI_PORT:-5173}"
 GUI_ENABLED="${YOYO_GUI_ENABLED:-true}"
 BANNER_ENABLED="${YOYO_BANNER_ENABLED:-true}"
 ORCHESTRATION_ENABLED="${YOYO_ORCHESTRATION:-true}"
-USER_PROJECT_DIR="${PWD}"
+# Use YOYO_PROJECT_DIR if set (from Wave environment), otherwise use current directory
+USER_PROJECT_DIR="${YOYO_PROJECT_DIR:-$PWD}"
 
 # ============================================================================
 # Utility Functions
@@ -110,6 +111,11 @@ launch_gui_background() {
 # ============================================================================
 
 launch_yoyo_cli() {
+    # Change to project directory if YOYO_PROJECT_DIR is set (from Wave environment)
+    if [ -n "$YOYO_PROJECT_DIR" ] && [ -d "$YOYO_PROJECT_DIR" ]; then
+        cd "$YOYO_PROJECT_DIR" || true
+    fi
+
     # Check if Yoyo Dev is installed in this project
     if [ ! -d "./.yoyo-dev" ]; then
         echo ""
