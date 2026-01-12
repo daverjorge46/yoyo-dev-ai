@@ -4,6 +4,7 @@
   "defwidget@web": null,
   "defwidget@ai": null,
   "defwidget@sysinfo": null,
+  "defwidget@docs": null,
   "yoyo@terminal": {
     "icon": "terminal",
     "label": "Terminal",
