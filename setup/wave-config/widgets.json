@@ -8,7 +8,7 @@
   "yoyo@claude": {
     "icon": "terminal",
     "label": "Yoyo-Cli",
-    "color": "#00BCD4",
+    "color": "#E85D04",
     "description": "Launch yoyo-dev-ai framework with Claude Code in terminal",
     "blockdef": {
       "meta": {
@@ -21,7 +21,7 @@
   "yoyo@files": {
     "icon": "folder-open",
     "label": "Files",
-    "color": "#7ee787",
+    "color": "#E85D04",
     "description": "Project file browser",
     "blockdef": {
       "meta": {
@@ -33,7 +33,7 @@
   "yoyo@gui": {
     "icon": "gauge",
     "label": "GUI",
-    "color": "#79c0ff",
+    "color": "#E85D04",
     "description": "Yoyo Dev Dashboard",
     "blockdef": {
       "meta": {
@@ -46,7 +46,7 @@
   "yoyo@sysinfo": {
     "icon": "chart-line",
     "label": "System",
-    "color": "#ffa657",
+    "color": "#E85D04",
     "description": "System resource monitor",
     "blockdef": {
       "meta": {

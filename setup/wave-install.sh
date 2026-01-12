@@ -9,7 +9,7 @@ set -euo pipefail
 # ============================================================================
 
 readonly WAVE_VERSION="0.10.0"
-readonly WAVE_CONFIG_VERSION="1.3.1"
+readonly WAVE_CONFIG_VERSION="1.3.2"
 readonly WAVE_DOWNLOAD_BASE="https://github.com/wavetermdev/waveterm/releases/download"
 readonly WAVE_CONFIG_DIR="${HOME}/.config/waveterm"
 readonly WAVE_VERSION_FILE="${WAVE_CONFIG_DIR}/.yoyo-dev-wave-version"
