@@ -57,10 +57,15 @@ WAVE_PATHS_MACOS=(
 )
 
 WAVE_PATHS_LINUX=(
+    "/usr/bin/waveterm"
     "/usr/bin/wave"
+    "/usr/local/bin/waveterm"
     "/usr/local/bin/wave"
+    "/opt/Wave/waveterm"
     "/opt/wave/wave"
+    "$HOME/.local/bin/waveterm"
     "$HOME/.local/bin/wave"
+    "/snap/bin/waveterm"
     "/snap/bin/wave"
 )
 
@@ -180,13 +185,15 @@ detect_wave() {
     os_type=$(detect_os)
     local wave_path=""
 
-    # First try command -v (most reliable)
-    if wave_path=$(command -v wave 2>/dev/null); then
-        if [ -x "$wave_path" ]; then
-            echo "$wave_path"
-            return 0
+    # First try command -v for both 'waveterm' and 'wave' (most reliable)
+    for cmd in waveterm wave; do
+        if wave_path=$(command -v "$cmd" 2>/dev/null); then
+            if [ -x "$wave_path" ]; then
+                echo "$wave_path"
+                return 0
+            fi
         fi
-    fi
+    done
 
     # Check platform-specific paths
     case "$os_type" in
