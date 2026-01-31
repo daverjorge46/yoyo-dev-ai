@@ -69,6 +69,25 @@ block_exists() {
     wsh getmeta -b "block:${block_id}" view 2>/dev/null | grep -q . 2>/dev/null
 }
 
+# Find a block by its yoyo:widget metadata tag (fallback when state file is stale)
+# Returns the block ID if found, empty string otherwise
+find_block_by_meta() {
+    local widget="$1"
+    local all_blocks bid meta_val
+    all_blocks=$(wsh blocks list --json --timeout=3000 2>/dev/null) || true
+    if [ -z "$all_blocks" ] || [ "$all_blocks" = "null" ]; then
+        return 1
+    fi
+    for bid in $(echo "$all_blocks" | jq -r '.[].blockid' 2>/dev/null); do
+        meta_val=$(wsh getmeta -b "block:${bid}" "${META_KEY}" 2>/dev/null) || true
+        if [ "$meta_val" = "$widget" ]; then
+            echo "$bid"
+            return 0
+        fi
+    done
+    return 1
+}
+
 # ============================================================================
 # Block ID Parsing
 # ============================================================================
@@ -192,7 +211,17 @@ toggle_widget() {
         return 0
     fi
 
-    # Step 3: No existing block found (or it was manually closed) - create fresh (toggle on)
+    # Step 3: Fallback - scan blocks by metadata tag (handles stale state file)
+    local meta_id
+    meta_id=$(find_block_by_meta "$widget") || true
+    if [ -n "$meta_id" ]; then
+        # Found via metadata - toggle it off and update state
+        wsh deleteblock -b "block:${meta_id}" &>/dev/null || true
+        set_widget_state "$widget" "$meta_id" false
+        return 0
+    fi
+
+    # Step 4: No existing block found - create fresh (toggle on)
     local new_id
     new_id=$(create_widget_block "$widget") || {
         echo "Failed to create widget block: $widget" >&2
