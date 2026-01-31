@@ -1,22 +1,18 @@
 {
-  "gui": {
-    "block_id": "538d4b5a-992e-4e40-9aa0-2462ce5aa2a4",
+  "yoyo-cli": {
+    "block_id": "b283b674-056e-4df7-9d01-df0ecd4f3b56",
     "visible": true
   },
-  "files": {
-    "block_id": "c4374562-da46-4d22-974e-749a809cfb60",
+  "gui": {
+    "block_id": "eacb8bfd-0d15-48a8-a03f-e20cf26e3841",
     "visible": true
   },
   "system": {
-    "block_id": "0272340d-7adf-4cd0-9409-ff6ffa86bb6d",
-    "visible": true
-  },
-  "yoyo-cli": {
-    "block_id": "30a1bb55-18a8-478f-8f05-5e544aaebeb8",
+    "block_id": "ffb9f9c4-b25d-400c-b4cc-13383f3181c5",
     "visible": true
   },
   "terminal": {
-    "block_id": "8092e728-7900-4917-acce-e486ce383dfa",
+    "block_id": "2ae5c71d-3948-4589-8fc1-0e1ec1c3d572",
     "visible": true
   }
 }
