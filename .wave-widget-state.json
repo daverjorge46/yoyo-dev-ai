@@ -1,14 +1,14 @@
 {
   "gui": {
-    "block_id": "98a14f26-caeb-4aed-8695-b3df5a85a3c8",
-    "visible": true
+    "block_id": "2daf743d-2a9b-42bd-ab50-d53f814d653f",
+    "visible": false
   },
   "files": {
     "block_id": "c4374562-da46-4d22-974e-749a809cfb60",
     "visible": true
   },
   "system": {
-    "block_id": "f84d1a09-ca37-4b6b-914e-979a799a5992",
+    "block_id": "10dfacbf-0edd-42e1-85fb-deb4cf2b10f7",
     "visible": true
   },
   "yoyo-cli": {
