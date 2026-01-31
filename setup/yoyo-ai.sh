@@ -112,9 +112,58 @@ is_daemon_running() {
     [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null
 }
 
+is_gateway_installed() {
+    # Check if gateway service is installed (systemd user service exists)
+    systemctl --user is-enabled openclaw-gateway.service &>/dev/null 2>&1
+}
+
+is_gateway_running() {
+    # Check if gateway is responding on its port
+    curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${OPENCLAW_PORT}" 2>/dev/null | grep -q "426\|200\|101" 2>/dev/null || \
+        systemctl --user is-active openclaw-gateway.service &>/dev/null 2>&1
+}
+
+ensure_initialized() {
+    # Step 1: Ensure OpenClaw is installed
+    if ! is_openclaw_installed; then
+        ui_info "Installing OpenClaw..."
+        npm install -g openclaw@latest 2>&1 | tail -1 || {
+            ui_error "Failed to install OpenClaw"
+            return 1
+        }
+        ui_success "OpenClaw installed"
+        echo ""
+    fi
+
+    # Step 2: Ensure config exists (openclaw setup)
+    if [ ! -f "$OPENCLAW_CONFIG_PATH" ]; then
+        ui_info "Running initial setup..."
+        openclaw setup --non-interactive 2>&1 || openclaw setup 2>&1 || {
+            ui_warning "Setup needs manual configuration"
+            echo -e "  Run: ${UI_PRIMARY}openclaw setup${UI_RESET}"
+            return 1
+        }
+        ui_success "Configuration created"
+        echo ""
+    fi
+
+    # Step 3: Ensure gateway service is installed
+    if ! is_gateway_installed; then
+        ui_info "Installing gateway service..."
+        openclaw gateway install 2>&1 || {
+            ui_warning "Gateway service installation failed — will run gateway directly"
+            return 0
+        }
+        ui_success "Gateway service installed"
+        echo ""
+    fi
+
+    return 0
+}
+
 daemon_start() {
-    if is_daemon_running; then
-        ui_info "Daemon is already running (PID: $(get_daemon_pid))"
+    if is_gateway_running; then
+        ui_success "Gateway is already running on port ${OPENCLAW_PORT}"
         return 0
     fi
 
@@ -122,49 +171,60 @@ daemon_start() {
         ui_error "OpenClaw is not installed"
         echo ""
         echo -e "  Install with: ${UI_PRIMARY}npm install -g openclaw@latest${UI_RESET}"
-        echo -e "  Or run: ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET} for full setup"
         echo ""
         return 1
     fi
 
-    ui_info "Starting OpenClaw daemon..."
-    openclaw daemon start 2>&1 || {
-        ui_error "Failed to start daemon"
-        echo ""
-        echo -e "  Try: ${UI_PRIMARY}openclaw daemon start${UI_RESET}"
-        echo -e "  Or:  ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET} to diagnose"
-        echo ""
-        return 1
-    }
+    ui_info "Starting OpenClaw gateway..."
 
-    # Wait briefly for daemon to start
-    sleep 1
+    # Try systemd service first
+    if is_gateway_installed; then
+        systemctl --user start openclaw-gateway.service 2>&1 || true
+        sleep 1
+        if is_gateway_running; then
+            ui_success "Gateway started on port ${OPENCLAW_PORT}"
+            return 0
+        fi
+    fi
 
-    if is_daemon_running; then
-        ui_success "Daemon started (PID: $(get_daemon_pid))"
+    # Fallback: start gateway directly in background
+    openclaw gateway --port "$OPENCLAW_PORT" &>/dev/null &
+    disown
+    sleep 2
+
+    if is_gateway_running; then
+        ui_success "Gateway started on port ${OPENCLAW_PORT}"
     else
-        ui_warning "Daemon may not have started correctly"
-        echo -e "  Check with: ${UI_PRIMARY}yoyo-ai --status${UI_RESET}"
+        ui_warning "Gateway may not have started correctly"
+        echo -e "  Try manually: ${UI_PRIMARY}openclaw gateway --port ${OPENCLAW_PORT}${UI_RESET}"
+        echo -e "  Or diagnose:  ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET}"
     fi
 }
 
 daemon_stop() {
-    if ! is_daemon_running; then
-        ui_info "Daemon is not running"
+    if ! is_gateway_running && ! is_daemon_running; then
+        ui_info "Gateway is not running"
         return 0
     fi
 
-    ui_info "Stopping OpenClaw daemon..."
-    openclaw daemon stop 2>&1 || {
-        # Fallback: kill the process directly
-        local pid
-        pid=$(get_daemon_pid)
-        if [ -n "$pid" ]; then
-            kill "$pid" 2>/dev/null || true
-        fi
-    }
+    ui_info "Stopping OpenClaw gateway..."
 
-    ui_success "Daemon stopped"
+    # Try systemd service first
+    if is_gateway_installed; then
+        systemctl --user stop openclaw-gateway.service 2>&1 || true
+    fi
+
+    # Also try killing any direct gateway process
+    pkill -f "openclaw.*gateway" 2>/dev/null || true
+
+    # Fallback: kill by PID
+    local pid
+    pid=$(get_daemon_pid)
+    if [ -n "$pid" ]; then
+        kill "$pid" 2>/dev/null || true
+    fi
+
+    ui_success "Gateway stopped"
 }
 
 # ============================================================================
@@ -178,34 +238,7 @@ cmd_start() {
 
     ui_yoyo_ai_banner "v${VERSION}"
 
-    if ! is_openclaw_installed; then
-        ui_warning "OpenClaw is not installed"
-        echo ""
-        echo -e "  ${UI_PRIMARY}1.${UI_RESET} Install OpenClaw now (recommended)"
-        echo -e "  ${UI_PRIMARY}2.${UI_RESET} Exit"
-        echo ""
-        echo -n "  Choice [1]: "
-        read -r choice
-        choice="${choice:-1}"
-
-        if [ "$choice" = "1" ]; then
-            ui_info "Installing OpenClaw..."
-            npm install -g openclaw@latest || {
-                ui_error "Installation failed"
-                exit 1
-            }
-            ui_success "OpenClaw installed"
-            echo ""
-
-            ui_info "Running onboarding..."
-            openclaw onboard --install-daemon || {
-                ui_warning "Onboarding had issues - you may need to configure manually"
-            }
-            echo ""
-        else
-            exit 0
-        fi
-    fi
+    ensure_initialized || exit 1
 
     daemon_start
 }
@@ -394,9 +427,39 @@ show_version() {
 # ============================================================================
 
 main() {
-    # No arguments: show status, offer to start if stopped
+    # No arguments: ensure initialized, start if stopped, show status
     if [ $# -eq 0 ]; then
-        cmd_status
+        if ! check_prerequisites; then
+            exit 1
+        fi
+
+        ui_yoyo_ai_banner "v${VERSION}"
+
+        ensure_initialized || true
+
+        if ! is_gateway_running; then
+            daemon_start
+        fi
+
+        # Show status
+        local status="stopped"
+        local pid=""
+        if is_gateway_running; then
+            status="running"
+            pid=$(get_daemon_pid)
+        fi
+        ui_yoyo_ai_status_panel "$status" "$OPENCLAW_PORT" "$pid"
+
+        echo -e "  ${UI_DIM}OpenClaw:${UI_RESET}  $(get_openclaw_version)"
+        local node_ver
+        node_ver=$(node --version 2>/dev/null || echo "not found")
+        echo -e "  ${UI_DIM}Node.js:${UI_RESET}   ${node_ver}"
+        if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
+            echo -e "  ${UI_DIM}Config:${UI_RESET}    ${OPENCLAW_CONFIG_PATH}"
+        else
+            echo -e "  ${UI_DIM}Config:${UI_RESET}    ${UI_WARNING}not found${UI_RESET}"
+        fi
+        echo ""
         exit 0
     fi
 
