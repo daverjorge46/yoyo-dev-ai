@@ -1057,6 +1057,36 @@ if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
     echo ""
 fi
 
+# ============================================================================
+# Check Global Commands
+# ============================================================================
+
+echo ""
+ui_info "Checking global commands..."
+
+if ! command -v yoyo-cli &>/dev/null; then
+    echo ""
+    ui_warning "Global command 'yoyo-cli' not found"
+    echo ""
+    echo -e "  Would you like to install global yoyo commands?"
+    echo ""
+    echo -e "    ${UI_PRIMARY}1.${UI_RESET} Install global commands (recommended)"
+    echo -e "    ${UI_PRIMARY}2.${UI_RESET} Skip"
+    echo ""
+    echo -n "  Choice [1]: "
+    read -r install_choice
+    install_choice="${install_choice:-1}"
+
+    if [ "$install_choice" = "1" ]; then
+        if bash "$BASE_YOYO_DEV/setup/install-global-command.sh"; then
+            ui_success "Global commands installed"
+        else
+            ui_warning "Installation failed"
+        fi
+    fi
+    echo ""
+fi
+
 ui_section "Next Steps" "$ICON_ROCKET"
 
 echo -e "  ${UI_PRIMARY}1.${UI_RESET} Launch Claude Code with Yoyo Dev:"

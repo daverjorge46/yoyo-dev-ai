@@ -14,7 +14,7 @@
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "clear && cd \"${YOYO_PROJECT_DIR:-$PWD}\" && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)"
+        "cmd:initscript": "clear && cd \"${YOYO_PROJECT_DIR:-$PWD}\" && (command -v yoyo-cli >/dev/null && yoyo-cli || [ -f \"$HOME/.yoyo-dev-base/setup/yoyo-cli.sh\" ] && \"$HOME/.yoyo-dev-base/setup/yoyo-cli.sh\" || [ -f \"$HOME/yoyo-dev/setup/yoyo-cli.sh\" ] && \"$HOME/yoyo-dev/setup/yoyo-cli.sh\" || command -v claude >/dev/null && claude || bash)"
       }
     }
   },

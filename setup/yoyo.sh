@@ -617,7 +617,8 @@ launch_with_wave() {
 
     # Launch Wave Terminal
     # Wave will use the deployed configuration from ~/.config/waveterm/
-    exec "$wave_path"
+    # Redirect stderr to suppress ANSI escape sequences from auto-update checks
+    exec "$wave_path" 2>"$HOME/.yoyo-dev-base/.wave-errors.log"
 }
 
 # ============================================================================
@@ -888,6 +889,33 @@ show_help() {
 }
 
 # ============================================================================
+# Global Command Installation
+# ============================================================================
+
+ensure_global_commands() {
+    # Check if yoyo-cli is available
+    if ! command -v yoyo-cli &>/dev/null; then
+        echo ""
+        ui_info "Installing global yoyo commands..."
+        local base_dir
+        if base_dir=$(detect_base_installation); then
+            local installer="$base_dir/setup/install-global-command.sh"
+            if [ -f "$installer" ]; then
+                if bash "$installer" 2>/dev/null; then
+                    ui_success "Global commands installed successfully"
+                else
+                    ui_warning "Could not install global commands automatically"
+                    echo ""
+                    echo "  You can install them manually:"
+                    echo -e "    ${UI_PRIMARY}$installer${UI_RESET}"
+                    echo ""
+                fi
+            fi
+        fi
+    fi
+}
+
+# ============================================================================
 # Main Entry Point
 # ============================================================================
 
@@ -1093,6 +1121,9 @@ main() {
             exit 0
         fi
     fi
+
+    # Ensure global commands are installed (yoyo-cli, etc.)
+    ensure_global_commands
 
     # Determine launch mode: Wave or standard terminal
     if [ "$WAVE_ENABLED" = true ] && is_wave_available; then

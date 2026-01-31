@@ -593,6 +593,31 @@ ui_success "Installation verified"
 echo ""
 
 # ============================================================================
+# Install Global Commands
+# ============================================================================
+
+ui_info "Installing global yoyo commands..."
+echo ""
+
+# Run global command installer
+if [ "$IS_FROM_BASE" = true ] && [ -f "$BASE_YOYO_DEV/setup/install-global-command.sh" ]; then
+    if bash "$BASE_YOYO_DEV/setup/install-global-command.sh" 2>/dev/null; then
+        ui_success "Global commands installed successfully"
+    else
+        ui_warning "Could not install global commands"
+        echo ""
+        echo "  You can install them manually later:"
+        echo -e "    ${UI_PRIMARY}$BASE_YOYO_DEV/setup/install-global-command.sh${UI_RESET}"
+        echo ""
+    fi
+else
+    ui_warning "Global command installer not found (skipping)"
+    echo ""
+fi
+
+echo ""
+
+# ============================================================================
 # Completion
 # ============================================================================
 
