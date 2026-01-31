@@ -285,13 +285,11 @@ Contains hook configuration for orchestration system.
 - `--claude-code` - Enable Claude Code integration
 - `--no-claude-md` - Skip CLAUDE.md generation
 - `--no-auto-mcp` - Skip MCP server setup
-- `--no-openclaw` - Skip OpenClaw AI assistant installation
 
 **yoyo-update.sh:**
 - `--no-overwrite` - Keep all customizations
 - `--regenerate-claude` - Regenerate project CLAUDE.md
 - `--skip-mcp-check` - Skip MCP verification
-- `--skip-openclaw` - Skip OpenClaw update
 
 ---
 

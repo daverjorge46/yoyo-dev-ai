@@ -65,7 +65,7 @@
 - **`yoyo-ai`** -- personal AI assistant daemon
 - **`yoyo`** -- deprecated alias for `yoyo-dev`
 - Multi-agent orchestration (Oracle, Librarian, Explore, Frontend, Writer)
-- `--no-openclaw` / `--skip-openclaw` flags for install/update
+- Mandatory yoyo-ai (OpenClaw) in all installations
 
 </td>
 </tr>
@@ -288,7 +288,7 @@ yoyo_ai:
 
 ### Installation
 
-OpenClaw is installed automatically during `yoyo-init` (step 9). To skip, use `--no-openclaw`. To install later:
+OpenClaw is installed automatically during `yoyo-init` (step 9) as a mandatory component. If installation fails (e.g., Node.js < 22), install manually:
 
 ```bash
 npm install -g openclaw@latest
@@ -488,8 +488,6 @@ yoyo-update --no-overwrite
 # Skip MCP check
 yoyo-update --skip-mcp-check
 
-# Skip OpenClaw update
-yoyo-update --skip-openclaw
 ```
 
 **Protected Files** (never overwritten):

@@ -55,6 +55,8 @@ source "$SCRIPT_DIR/ui-library.sh" 2>/dev/null || {
 # Source wave-install.sh for config deployment functions
 if [ -f "$SCRIPT_DIR/wave-install.sh" ]; then
     source "$SCRIPT_DIR/wave-install.sh"
+    # wave-install.sh sets -euo pipefail; restore to just -e for this script
+    set +u +o pipefail
     WAVE_INSTALL_AVAILABLE=true
 else
     WAVE_INSTALL_AVAILABLE=false
@@ -127,8 +129,6 @@ REGENERATE_CLAUDE_MD=false
 VERBOSE=false
 SKIP_MCP_CHECK=false
 SKIP_WAVE_CONFIG=false
-SKIP_OPENCLAW=false
-
 # Track files changed during update
 declare -a CHANGED_FILES=()
 declare -a CREATED_FILES=()
@@ -176,10 +176,6 @@ while [[ $# -gt 0 ]]; do
             SKIP_WAVE_CONFIG=true
             shift
             ;;
-        --skip-openclaw)
-            SKIP_OPENCLAW=true
-            shift
-            ;;
         --regenerate-claude)
             REGENERATE_CLAUDE_MD=true
             shift
@@ -209,7 +205,6 @@ Options:
   ${UI_PRIMARY}--no-overwrite${UI_RESET}                 Keep all existing framework files
   ${UI_PRIMARY}--skip-mcp-check${UI_RESET}               Skip MCP server verification
   ${UI_PRIMARY}--skip-wave-config${UI_RESET}             Skip Wave Terminal configuration update
-  ${UI_PRIMARY}--skip-openclaw${UI_RESET}                Skip OpenClaw update
   ${UI_PRIMARY}--regenerate-claude${UI_RESET}            Regenerate project CLAUDE.md from template
   ${UI_PRIMARY}-v, --verbose${UI_RESET}                  Show detailed update information
   ${UI_PRIMARY}-h, --help${UI_RESET}                     Show this help message
@@ -332,7 +327,9 @@ if [ -d "./.yoyo-ai" ]; then
 fi
 
 # Count protected files for summary
-TOTAL_FILES_PRESERVED=$(find .yoyo-dev/specs .yoyo-dev/fixes .yoyo-dev/recaps .yoyo-dev/patterns .yoyo-dev/product .yoyo-dev/memory -type f 2>/dev/null | wc -l || echo 0)
+TOTAL_FILES_PRESERVED=$(find .yoyo-dev/specs .yoyo-dev/fixes .yoyo-dev/recaps .yoyo-dev/patterns .yoyo-dev/product .yoyo-dev/memory -type f 2>/dev/null | wc -l || true)
+TOTAL_FILES_PRESERVED="${TOTAL_FILES_PRESERVED// /}"
+TOTAL_FILES_PRESERVED="${TOTAL_FILES_PRESERVED:-0}"
 
 # Check if memory migration is needed (show warning if applicable)
 if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
@@ -409,16 +406,17 @@ create_comprehensive_backup() {
     [ -d ".claude/hooks" ] && total=$((total + $(find ".claude/hooks" -type f 2>/dev/null | wc -l)))
     [ -f ".yoyo-dev/config.yml" ] && total=$((total + 1))
 
+    # Redirect all display output to stderr so $() capture only gets the final count
     # Backup instructions
     if [ -d ".yoyo-dev/instructions" ]; then
         local inst_count=$(find ".yoyo-dev/instructions" -type f 2>/dev/null | wc -l)
-        echo -e "  ${UI_DIM}📁 Instructions${UI_RESET} ${UI_DIM}($inst_count files)${UI_RESET}"
+        echo -e "  ${UI_DIM}📁 Instructions${UI_RESET} ${UI_DIM}($inst_count files)${UI_RESET}" >&2
         while IFS= read -r -d '' file; do
-            ((current++))
+            current=$((current + 1))
             local rel_path="${file#.yoyo-dev/}"
             mkdir -p "$backup_dir/$(dirname "$rel_path")"
             cp "$file" "$backup_dir/$rel_path"
-            ui_update_progress "Backup" "$current" "$total" "$rel_path" "$VERBOSE"
+            ui_update_progress "Backup" "$current" "$total" "$rel_path" "$VERBOSE" >&2
         done < <(find ".yoyo-dev/instructions" -type f -print0 2>/dev/null)
         files_backed_up=$((files_backed_up + inst_count))
     fi
@@ -426,13 +424,13 @@ create_comprehensive_backup() {
     # Backup standards
     if [ -d ".yoyo-dev/standards" ]; then
         local std_count=$(find ".yoyo-dev/standards" -type f 2>/dev/null | wc -l)
-        echo -e "  ${UI_DIM}📁 Standards${UI_RESET} ${UI_DIM}($std_count files)${UI_RESET}"
+        echo -e "  ${UI_DIM}📁 Standards${UI_RESET} ${UI_DIM}($std_count files)${UI_RESET}" >&2
         while IFS= read -r -d '' file; do
-            ((current++))
+            current=$((current + 1))
             local rel_path="${file#.yoyo-dev/}"
             mkdir -p "$backup_dir/$(dirname "$rel_path")"
             cp "$file" "$backup_dir/$rel_path"
-            ui_update_progress "Backup" "$current" "$total" "$rel_path" "$VERBOSE"
+            ui_update_progress "Backup" "$current" "$total" "$rel_path" "$VERBOSE" >&2
         done < <(find ".yoyo-dev/standards" -type f -print0 2>/dev/null)
         files_backed_up=$((files_backed_up + std_count))
     fi
@@ -440,13 +438,13 @@ create_comprehensive_backup() {
     # Backup commands
     if [ -d ".claude/commands" ]; then
         local cmd_count=$(find ".claude/commands" -type f 2>/dev/null | wc -l)
-        echo -e "  ${UI_DIM}📁 Commands${UI_RESET} ${UI_DIM}($cmd_count files)${UI_RESET}"
+        echo -e "  ${UI_DIM}📁 Commands${UI_RESET} ${UI_DIM}($cmd_count files)${UI_RESET}" >&2
         mkdir -p "$backup_dir/commands"
         while IFS= read -r -d '' file; do
-            ((current++))
+            current=$((current + 1))
             local rel_path="${file#.claude/commands/}"
             cp "$file" "$backup_dir/commands/$rel_path"
-            ui_update_progress "Backup" "$current" "$total" "commands/$rel_path" "$VERBOSE"
+            ui_update_progress "Backup" "$current" "$total" "commands/$rel_path" "$VERBOSE" >&2
         done < <(find ".claude/commands" -type f -print0 2>/dev/null)
         files_backed_up=$((files_backed_up + cmd_count))
     fi
@@ -454,13 +452,13 @@ create_comprehensive_backup() {
     # Backup agents
     if [ -d ".claude/agents" ]; then
         local agent_count=$(find ".claude/agents" -type f 2>/dev/null | wc -l)
-        echo -e "  ${UI_DIM}📁 Agents${UI_RESET} ${UI_DIM}($agent_count files)${UI_RESET}"
+        echo -e "  ${UI_DIM}📁 Agents${UI_RESET} ${UI_DIM}($agent_count files)${UI_RESET}" >&2
         mkdir -p "$backup_dir/agents"
         while IFS= read -r -d '' file; do
-            ((current++))
+            current=$((current + 1))
             local rel_path="${file#.claude/agents/}"
             cp "$file" "$backup_dir/agents/$rel_path"
-            ui_update_progress "Backup" "$current" "$total" "agents/$rel_path" "$VERBOSE"
+            ui_update_progress "Backup" "$current" "$total" "agents/$rel_path" "$VERBOSE" >&2
         done < <(find ".claude/agents" -type f -print0 2>/dev/null)
         files_backed_up=$((files_backed_up + agent_count))
     fi
@@ -468,23 +466,23 @@ create_comprehensive_backup() {
     # Backup hooks
     if [ -d ".claude/hooks" ]; then
         local hook_count=$(find ".claude/hooks" -type f 2>/dev/null | wc -l)
-        echo -e "  ${UI_DIM}📁 Hooks${UI_RESET} ${UI_DIM}($hook_count files)${UI_RESET}"
+        echo -e "  ${UI_DIM}📁 Hooks${UI_RESET} ${UI_DIM}($hook_count files)${UI_RESET}" >&2
         mkdir -p "$backup_dir/hooks"
         while IFS= read -r -d '' file; do
-            ((current++))
+            current=$((current + 1))
             local rel_path="${file#.claude/hooks/}"
             cp "$file" "$backup_dir/hooks/$rel_path"
-            ui_update_progress "Backup" "$current" "$total" "hooks/$rel_path" "$VERBOSE"
+            ui_update_progress "Backup" "$current" "$total" "hooks/$rel_path" "$VERBOSE" >&2
         done < <(find ".claude/hooks" -type f -print0 2>/dev/null)
         files_backed_up=$((files_backed_up + hook_count))
     fi
 
     # Backup config
     if [ -f ".yoyo-dev/config.yml" ]; then
-        echo -e "  ${UI_DIM}📁 Config${UI_RESET} ${UI_DIM}(1 file)${UI_RESET}"
-        ((current++))
+        echo -e "  ${UI_DIM}📁 Config${UI_RESET} ${UI_DIM}(1 file)${UI_RESET}" >&2
+        current=$((current + 1))
         cp ".yoyo-dev/config.yml" "$backup_dir/config.yml"
-        ui_update_progress "Backup" "$current" "$total" "config.yml" "$VERBOSE"
+        ui_update_progress "Backup" "$current" "$total" "config.yml" "$VERBOSE" >&2
         files_backed_up=$((files_backed_up + 1))
     fi
 
@@ -520,23 +518,23 @@ update_with_progress() {
     mkdir -p "$dest_dir"
 
     for file in "${files[@]}"; do
-        ((current++))
+        current=$((current + 1))
         local relative_path="${file#$src_dir/}"
 
         # Create directory structure and copy file
         mkdir -p "$(dirname "$dest_dir/$relative_path")"
         if cp "$file" "$dest_dir/$relative_path" 2>/dev/null; then
-            ((files_copied++))
+            files_copied=$((files_copied + 1))
         else
-            ((errors++))
+            errors=$((errors + 1))
         fi
 
         # Update progress display
-        ui_update_progress "$category" "$current" "$total" "$relative_path" "$VERBOSE"
+        ui_update_progress "$category" "$current" "$total" "$relative_path" "$VERBOSE" >&2
     done
 
     # Show completion
-    ui_progress_complete "$category" "$files_copied" "$errors"
+    ui_progress_complete "$category" "$files_copied" "$errors" >&2
 
     UPDATE_ERRORS=$errors
     echo "$files_copied"
@@ -557,7 +555,7 @@ BACKUP_DIR=".yoyo-dev/backups/$(date +%Y%m%d_%H%M%S)"
 CURRENT_PHASE=$PHASE_BASE_SYNC
 ui_phase_indicator $CURRENT_PHASE "BASE Sync" "Backup" "Update" "Verify"
 
-((CURRENT_STEP++))
+CURRENT_STEP=$((CURRENT_STEP + 1))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Pulling latest from BASE installation..."
 
 if [ -d "$BASE_YOYO_DEV/.git" ]; then
@@ -591,7 +589,7 @@ fi
 echo ""
 
 # Step: Reinstall global commands (yoyo, yoyo-cli, etc.)
-((CURRENT_STEP++))
+CURRENT_STEP=$((CURRENT_STEP + 1))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying global commands (yoyo-dev, yoyo-ai, yoyo-cli)..."
 
 if [ -f "$BASE_YOYO_DEV/setup/install-global-command.sh" ]; then
@@ -632,7 +630,7 @@ echo ""
 CURRENT_PHASE=$PHASE_BACKUP
 ui_phase_indicator $CURRENT_PHASE "BASE Sync" "Backup" "Update" "Verify"
 
-((CURRENT_STEP++))
+CURRENT_STEP=$((CURRENT_STEP + 1))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Creating comprehensive backup..."
 
 show_progress "Backup location" "$BACKUP_DIR"
@@ -671,14 +669,14 @@ ui_phase_indicator $CURRENT_PHASE "BASE Sync" "Backup" "Update" "Verify"
 
 # Step: Update instructions
 if [ "$OVERWRITE_INSTRUCTIONS" = true ]; then
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating instructions..."
 
     FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/instructions/" ".yoyo-dev/instructions/" "Instructions")
     track_rsync_changes ".yoyo-dev/instructions/" "$FILE_COUNT"
     echo ""
 else
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Keeping existing instructions..."
     echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Preserved${UI_RESET} ${UI_DIM}(--no-overwrite-instructions)${UI_RESET}"
     echo ""
@@ -686,14 +684,14 @@ fi
 
 # Step 4: Update standards
 if [ "$OVERWRITE_STANDARDS" = true ]; then
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating standards..."
 
     FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/standards/" ".yoyo-dev/standards/" "Standards")
     track_rsync_changes ".yoyo-dev/standards/" "$FILE_COUNT"
     echo ""
 else
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Keeping existing standards..."
     echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Preserved${UI_RESET} ${UI_DIM}(--no-overwrite-standards)${UI_RESET}"
     echo ""
@@ -701,14 +699,14 @@ fi
 
 # Step 5: Update commands (from claude-code/ canonical source)
 if [ "$OVERWRITE_COMMANDS" = true ] && [ -d ".claude/commands" ]; then
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating CLI commands..."
 
     FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/claude-code/commands/" ".claude/commands/" "Commands")
     track_rsync_changes ".claude/commands/" "$FILE_COUNT"
     echo ""
 else
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Skipping command update..."
     if [ ! -d ".claude/commands" ]; then
         echo -e "     ${UI_DIM}⊘ Skipped${UI_RESET} ${UI_DIM}(.claude/commands not found)${UI_RESET}"
@@ -720,14 +718,14 @@ fi
 
 # Step 6: Update agents (from claude-code/ canonical source)
 if [ "$OVERWRITE_AGENTS" = true ] && [ -d ".claude/agents" ]; then
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating agents..."
 
     FILE_COUNT=$(update_with_progress "$BASE_YOYO_DEV/claude-code/agents/" ".claude/agents/" "Agents")
     track_rsync_changes ".claude/agents/" "$FILE_COUNT"
     echo ""
 else
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Skipping agent update..."
     if [ ! -d ".claude/agents" ]; then
         echo -e "     ${UI_DIM}⊘ Skipped${UI_RESET} ${UI_DIM}(.claude/agents not found)${UI_RESET}"
@@ -740,7 +738,7 @@ fi
 # Step 7: Update orchestration hooks (from claude-code/ canonical source)
 # Note: settings.json is NOT copied during updates - projects manage their own settings
 if [ "$OVERWRITE_HOOKS" = true ]; then
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Updating orchestration hooks..."
 
     # Ensure .claude/hooks directory exists
@@ -762,7 +760,7 @@ if [ "$OVERWRITE_HOOKS" = true ]; then
     ui_success "Orchestration hooks updated"
     echo ""
 else
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "📁 Skipping hooks update..."
     echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Preserved${UI_RESET} ${UI_DIM}(--no-overwrite-hooks)${UI_RESET}"
     echo ""
@@ -770,7 +768,7 @@ fi
 
 # Step 8: Regenerate CLAUDE.md (optional, only if --regenerate-claude flag set)
 if [ "$REGENERATE_CLAUDE_MD" = true ]; then
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Regenerating project CLAUDE.md..."
 
     TEMPLATE_FILE="$BASE_YOYO_DEV/setup/templates/PROJECT-CLAUDE.md"
@@ -805,7 +803,7 @@ if [ "$REGENERATE_CLAUDE_MD" = true ]; then
     fi
     echo ""
 else
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "CLAUDE.md check..."
     if [ -f "./CLAUDE.md" ]; then
         show_progress "CLAUDE.md exists and is protected"
@@ -816,7 +814,7 @@ else
 fi
 
 # Step 9: Merge config
-((CURRENT_STEP++))
+CURRENT_STEP=$((CURRENT_STEP + 1))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Merging configuration..."
 track_file_change ".yoyo-dev/config.yml"
 
@@ -845,7 +843,7 @@ echo ""
 
 # Step 10: Migrate memory from .yoyo-ai/ to .yoyo-dev/memory/
 if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Migrating memory system..."
 
     # Create new directories
@@ -877,7 +875,7 @@ if [ "$NEEDS_MEMORY_MIGRATION" = true ]; then
     ui_success "Memory migration complete"
     echo ""
 else
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Memory system check..."
 
     # Ensure memory directories exist
@@ -906,7 +904,7 @@ else
 fi
 
 # Step 11: Update Wave Terminal configuration
-((CURRENT_STEP++))
+CURRENT_STEP=$((CURRENT_STEP + 1))
 if [ "$SKIP_WAVE_CONFIG" = true ]; then
     ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping Wave Terminal configuration..."
     echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Skipped${UI_RESET} ${UI_DIM}(--skip-wave-config)${UI_RESET}"
@@ -945,7 +943,7 @@ fi
 
 # Step 12: Check MCP servers
 if [ "$SKIP_MCP_CHECK" = false ]; then
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Checking MCP servers..."
 
     if [ -f "$SCRIPT_DIR/docker-mcp-setup.sh" ]; then
@@ -966,26 +964,27 @@ if [ "$SKIP_MCP_CHECK" = false ]; then
     fi
     echo ""
 else
-    ((CURRENT_STEP++))
+    CURRENT_STEP=$((CURRENT_STEP + 1))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping MCP server check..."
     show_progress "Skipped (--skip-mcp-check)"
     echo ""
 fi
 
-# Step 13: Update OpenClaw (yoyo-ai)
-if [ "$SKIP_OPENCLAW" = false ]; then
-    ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Updating OpenClaw (yoyo-ai)..."
+# Step 13: Update OpenClaw (yoyo-ai) — mandatory in V7
+CURRENT_STEP=$((CURRENT_STEP + 1))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Updating OpenClaw (yoyo-ai)..."
 
-    # Source functions.sh for check_node_version
-    if [ -f "$SCRIPT_DIR/functions.sh" ]; then
-        source "$SCRIPT_DIR/functions.sh"
-    fi
+YOYO_AI_STATUS="failed:unknown"
 
-    # Add yoyo_ai config section if missing (migration for existing installs)
-    if [ -f ".yoyo-dev/config.yml" ] && ! grep -q "^yoyo_ai:" .yoyo-dev/config.yml 2>/dev/null; then
-        show_progress "Adding yoyo_ai config section"
-        cat >> .yoyo-dev/config.yml << 'YOYO_AI_EOF'
+# Source functions.sh for check_node_version
+if [ -f "$SCRIPT_DIR/functions.sh" ]; then
+    source "$SCRIPT_DIR/functions.sh"
+fi
+
+# Add yoyo_ai config section if missing (migration for existing installs)
+if [ -f ".yoyo-dev/config.yml" ] && ! grep -q "^yoyo_ai:" .yoyo-dev/config.yml 2>/dev/null; then
+    show_progress "Adding yoyo_ai config section"
+    cat >> .yoyo-dev/config.yml << 'YOYO_AI_EOF'
 
 # Yoyo AI (OpenClaw Personal Assistant)
 yoyo_ai:
@@ -1000,51 +999,58 @@ yoyo_ai:
     update:
       auto_check: true
 YOYO_AI_EOF
-        track_file_change ".yoyo-dev/config.yml (yoyo_ai section added)"
-    fi
+    track_file_change ".yoyo-dev/config.yml (yoyo_ai section added)"
+fi
 
-    if command -v openclaw &>/dev/null; then
-        local current_oc_ver
-        current_oc_ver=$(openclaw --version 2>/dev/null || echo "unknown")
-        show_progress "Current OpenClaw version" "$current_oc_ver"
-        show_progress "Updating OpenClaw..."
+if command -v openclaw &>/dev/null; then
+    current_oc_ver=$(openclaw --version 2>/dev/null || echo "unknown")
+    show_progress "Current OpenClaw version" "$current_oc_ver"
+    show_progress "Updating OpenClaw..."
 
-        if npm update -g openclaw@latest 2>&1 | tail -1; then
-            local new_oc_ver
-            new_oc_ver=$(openclaw --version 2>/dev/null || echo "unknown")
-            ui_success "OpenClaw updated to ${new_oc_ver}"
-            track_file_change "OpenClaw (${current_oc_ver} → ${new_oc_ver})"
+    if npm update -g openclaw@latest 2>&1 | tail -1; then
+        new_oc_ver=$(openclaw --version 2>/dev/null || echo "unknown")
+        ui_success "OpenClaw updated to ${new_oc_ver}"
+        track_file_change "OpenClaw (${current_oc_ver} → ${new_oc_ver})"
+        if [ "$current_oc_ver" = "$new_oc_ver" ]; then
+            YOYO_AI_STATUS="already-up-to-date"
         else
-            ui_warning "OpenClaw update failed - continuing"
+            YOYO_AI_STATUS="updated"
         fi
     else
-        # Not installed - auto-install (mandatory in V7)
-        if node_ver=$(check_node_version 22 2>/dev/null); then
-            show_progress "OpenClaw not installed - installing (mandatory in yoyo-dev-ai V7)"
-            ui_info "Installing OpenClaw (yoyo-ai)..."
-            if npm install -g openclaw@latest 2>&1 | tail -1; then
-                ui_success "OpenClaw installed"
-                openclaw onboard --install-daemon 2>&1 | tail -3 || true
-                # Update config
-                if [ -f ".yoyo-dev/config.yml" ]; then
-                    sed -i.bak 's/installed: false/installed: true/' .yoyo-dev/config.yml 2>/dev/null
-                    rm -f .yoyo-dev/config.yml.bak
-                fi
-                track_file_change "OpenClaw (freshly installed)"
-            else
-                ui_warning "OpenClaw installation failed - run 'npm install -g openclaw@latest' manually"
-            fi
-        else
-            ui_warning "OpenClaw (yoyo-ai) requires Node.js >= 22 - please upgrade Node.js to enable yoyo-ai"
-        fi
+        ui_warning "OpenClaw update failed — continuing"
+        YOYO_AI_STATUS="failed:npm update failed"
     fi
-    echo ""
 else
-    ((CURRENT_STEP++))
-    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping OpenClaw update..."
-    echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Skipped${UI_RESET} ${UI_DIM}(--skip-openclaw)${UI_RESET}"
-    echo ""
+    # Not installed — auto-install (mandatory in V7)
+    if node_ver=$(check_node_version 22 2>/dev/null); then
+        show_progress "OpenClaw not installed — installing (mandatory in yoyo-dev-ai V7)"
+        ui_info "Installing OpenClaw (yoyo-ai)..."
+        if npm install -g openclaw@latest 2>&1 | tail -1; then
+            ui_success "OpenClaw installed"
+            openclaw onboard --install-daemon 2>&1 | tail -3 || true
+            # Update config
+            if [ -f ".yoyo-dev/config.yml" ]; then
+                sed -i.bak 's/installed: false/installed: true/' .yoyo-dev/config.yml 2>/dev/null
+                rm -f .yoyo-dev/config.yml.bak
+            fi
+            track_file_change "OpenClaw (freshly installed)"
+            YOYO_AI_STATUS="installed"
+        else
+            ui_warning "OpenClaw installation failed — run 'npm install -g openclaw@latest' manually"
+            YOYO_AI_STATUS="failed:npm install failed"
+        fi
+    else
+        if [ "$node_ver" = "not_installed" ]; then
+            ui_warning "Node.js not installed — yoyo-ai requires Node.js >= 22"
+            YOYO_AI_STATUS="failed:Node.js not installed"
+        else
+            ui_warning "Node.js v${node_ver} too old — yoyo-ai requires Node.js >= 22"
+            YOYO_AI_STATUS="failed:Node.js >= 22 required"
+        fi
+        echo -e "  ${UI_DIM}Install Node.js >= 22 and re-run to enable yoyo-ai${UI_RESET}"
+    fi
 fi
+echo ""
 
 # ============================================================================
 # Phase 4: VERIFY
@@ -1055,7 +1061,7 @@ ui_phase_indicator $CURRENT_PHASE "BASE Sync" "Backup" "Update" "Verify"
 echo ""
 
 # Step: Verify update
-((CURRENT_STEP++))
+CURRENT_STEP=$((CURRENT_STEP + 1))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying update..."
 
 errors=()
@@ -1134,8 +1140,17 @@ UPDATE_DURATION=$((UPDATE_END_TIME - UPDATE_START_TIME))
 TOTAL_FILES_UPDATED=${#CHANGED_FILES[@]}
 TOTAL_FILES_CREATED=${#CREATED_FILES[@]}
 
+# Determine yoyo-dev status
+if [ "$CURRENT_VERSION" = "$VERSION" ]; then
+    YOYO_DEV_STATUS="already-up-to-date"
+else
+    YOYO_DEV_STATUS="updated"
+fi
+
 # Show summary panel
 ui_update_summary_panel "$CURRENT_VERSION" "$VERSION" "$UPDATE_DURATION" "$TOTAL_FILES_UPDATED" "$TOTAL_FILES_CREATED" "$TOTAL_FILES_PRESERVED" "$BACKUP_DIR"
+
+ui_component_status_panel "$YOYO_DEV_STATUS" "$YOYO_AI_STATUS"
 echo ""
 
 # Memory migration note if applicable

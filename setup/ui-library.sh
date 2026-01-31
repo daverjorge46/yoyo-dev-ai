@@ -2032,6 +2032,75 @@ ui_yoyo_ai_status_panel() {
     echo ""
 }
 
+# Display component status panel for install/update completion
+# Usage: ui_component_status_panel "yoyo_dev_status" "yoyo_ai_status"
+# Status values: installed, updated, already-up-to-date, failed:<reason>
+ui_component_status_panel() {
+    local yoyo_dev_status="${1:-installed}"
+    local yoyo_ai_status="${2:-installed}"
+    local width=69
+
+    echo ""
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_TL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_TR}${UI_RESET}"
+
+    # Header
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_YOYO_YELLOW}${UI_BOLD}COMPONENT STATUS${UI_RESET}"
+    local header_len=$((2 + 16))
+    local header_pad=$((width - header_len))
+    printf "%${header_pad}s" ""
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_VR}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_VL}${UI_RESET}"
+
+    # yoyo-dev row
+    local dev_color="$UI_SUCCESS"
+    local dev_icon="$ICON_SUCCESS"
+    local dev_label="$yoyo_dev_status"
+    if [[ "$yoyo_dev_status" == failed* ]]; then
+        dev_color="$UI_ERROR"
+        dev_icon="$ICON_ERROR"
+        dev_label="${yoyo_dev_status#failed:}"
+    fi
+
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_TEXT}yoyo-dev      ${dev_color}${dev_icon} ${dev_label}${UI_RESET}"
+    local dev_len=$((2 + 14 + 2 + ${#dev_label}))
+    local dev_pad=$((width - dev_len))
+    printf "%${dev_pad}s" ""
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+
+    # yoyo-ai row
+    local ai_color="$UI_SUCCESS"
+    local ai_icon="$ICON_SUCCESS"
+    local ai_label="$yoyo_ai_status"
+    if [[ "$yoyo_ai_status" == failed* ]]; then
+        ai_color="$UI_ERROR"
+        ai_icon="$ICON_ERROR"
+        ai_label="${yoyo_ai_status#failed:}"
+    elif [[ "$yoyo_ai_status" == partial* ]]; then
+        ai_color="$UI_WARNING"
+        ai_icon="~"
+        ai_label="${yoyo_ai_status#partial:}"
+    fi
+
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+    echo -ne "  ${ICON_OPENCLAW} ${UI_TEXT}yoyo-ai       ${ai_color}${ai_icon} ${ai_label}${UI_RESET}"
+    local ai_len=$((2 + 2 + 14 + 2 + ${#ai_label}))
+    local ai_pad=$((width - ai_len))
+    printf "%${ai_pad}s" ""
+    echo -e "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
+
+    echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_BL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_BR}${UI_RESET}"
+    echo ""
+}
+
 # Export all functions
 export -f supports_truecolor
 export -f ui_line ui_box_header ui_section ui_success ui_error ui_warning ui_info
@@ -2046,4 +2115,4 @@ export -f ui_is_interactive ui_update_progress ui_progress_complete ui_update_st
 export -f ui_update_banner _ui_update_banner_compact _ui_update_banner_full
 export -f ui_phase_indicator ui_protected_data_panel ui_source_destination_panel
 export -f ui_update_summary_panel
-export -f ui_yoyo_ai_banner ui_yoyo_ai_status_panel
+export -f ui_yoyo_ai_banner ui_yoyo_ai_status_panel ui_component_status_panel
