@@ -266,6 +266,7 @@ install_from_github() {
 OPENCLAW_PORT="${OPENCLAW_PORT:-18789}"
 OPENCLAW_TOKEN_FILE="${OPENCLAW_TOKEN_FILE:-$HOME/.openclaw/.gateway-token}"
 OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json}"
+OPENCLAW_ONBOARD_MARKER="${OPENCLAW_ONBOARD_MARKER:-$HOME/.openclaw/.yoyo-onboarded}"
 
 # Generate or load a persistent gateway token
 # Exports OPENCLAW_GATEWAY_TOKEN
@@ -303,6 +304,20 @@ set_openclaw_gateway_mode() {
     fi
 }
 
+# Check if yoyo-ai onboarding has been completed
+is_yoyo_onboarded() {
+    [ -f "$OPENCLAW_ONBOARD_MARKER" ]
+}
+
+# Back up existing openclaw config from external/old installation
+backup_openclaw_config() {
+    if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
+        local backup="${OPENCLAW_CONFIG_PATH}.backup.$(date +%Y%m%d%H%M%S)"
+        cp "$OPENCLAW_CONFIG_PATH" "$backup"
+        echo "  Backed up existing config to $(basename "$backup")"
+    fi
+}
+
 # Run full openclaw onboarding with token auth and daemon install
 # Requires OPENCLAW_GATEWAY_TOKEN to be set (call ensure_openclaw_token first)
 run_openclaw_onboard() {
@@ -318,15 +333,23 @@ run_openclaw_onboard() {
 
     # Patch systemd service with token if onboard created it
     patch_openclaw_systemd_service
+
+    # Mark yoyo-ai onboarding as completed
+    mkdir -p "$(dirname "$OPENCLAW_ONBOARD_MARKER")"
+    date -Iseconds > "$OPENCLAW_ONBOARD_MARKER"
 }
 
-# Print dashboard URL and token to stdout
-# Accepts optional ui helper function names; falls back to echo
+# Print dashboard URL (with token) to stdout
 show_openclaw_dashboard_info() {
-    echo ""
-    echo -e "  \033[2mDashboard:\033[0m \033[0;36mhttp://127.0.0.1:${OPENCLAW_PORT}\033[0m"
+    local token=""
     if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
-        echo -e "  \033[2mToken:\033[0m     \033[2m$(cat "$OPENCLAW_TOKEN_FILE")\033[0m"
+        token="$(cat "$OPENCLAW_TOKEN_FILE")"
+    fi
+    echo ""
+    if [ -n "$token" ]; then
+        echo -e "  \033[2mDashboard:\033[0m \033[0;36mhttp://127.0.0.1:${OPENCLAW_PORT}?token=${token}\033[0m"
+    else
+        echo -e "  \033[2mDashboard:\033[0m \033[0;36mhttp://127.0.0.1:${OPENCLAW_PORT}\033[0m"
     fi
     echo ""
 }

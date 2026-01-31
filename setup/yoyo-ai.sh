@@ -54,6 +54,7 @@ readonly VERSION="1.0.0"
 readonly OPENCLAW_PORT="${OPENCLAW_PORT:-18789}"
 readonly OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG:-$HOME/.openclaw/openclaw.json}"
 readonly OPENCLAW_TOKEN_FILE="$HOME/.openclaw/.gateway-token"
+readonly OPENCLAW_ONBOARD_MARKER="$HOME/.openclaw/.yoyo-onboarded"
 
 # ============================================================================
 # Node.js Validation
@@ -145,15 +146,21 @@ ensure_initialized() {
         echo ""
     fi
 
-    # Step 2: If no config, run full onboarding; otherwise just ensure token/mode/service
-    if [ ! -f "$OPENCLAW_CONFIG_PATH" ]; then
+    # Step 2: Run onboarding if yoyo-ai has never been onboarded
+    if ! is_yoyo_onboarded; then
+        # Back up any existing config from external/old installation
+        if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
+            ui_info "Found existing OpenClaw config — backing up before onboarding..."
+            backup_openclaw_config
+        fi
+
         ui_info "Running OpenClaw onboarding..."
         ensure_openclaw_token
         run_openclaw_onboard
         ui_success "OpenClaw onboarded"
         echo ""
     else
-        # Config exists — just ensure token, mode, and service
+        # Already onboarded — just ensure token, mode, and service
         ensure_gateway_mode
         ensure_gateway_token
 
