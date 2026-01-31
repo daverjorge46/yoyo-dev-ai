@@ -113,20 +113,29 @@ create_widget_block() {
             block_id=$(parse_block_id "$output")
             ;;
         files)
-            # wsh view doesn't print block ID to stdout, so detect via blocks list diff
-            local before_ids
+            # wsh view doesn't print block ID to stdout
+            # Collect block IDs before opening, excluding our own ephemeral block
+            local before_ids self_id
+            self_id="${WAVETERM_BLOCKID:-}"
             before_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
             wsh view "$project_dir" &>/dev/null || true
-            sleep 0.5
+            sleep 0.8
             local after_ids new_id
             after_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
-            # Find ID in after that's not in before
+            # Find new ID that wasn't in before and isn't our own ephemeral block
             for new_id in $after_ids; do
+                [ "$new_id" = "$self_id" ] && continue
                 if ! echo "$before_ids" | grep -qF "$new_id"; then
                     block_id="$new_id"
                     break
                 fi
             done
+            # If diff detection failed, the file browser still opened via wsh view
+            # Use a placeholder so create_widget_block doesn't return failure
+            if [ -z "$block_id" ]; then
+                echo ""
+                return 0
+            fi
             ;;
         gui)
             output=$(wsh web open "http://localhost:5173" 2>&1) || true
@@ -141,6 +150,10 @@ create_widget_block() {
                 # Convert the term block to sysinfo view
                 wsh setmeta -b "block:${block_id}" view=sysinfo "sysinfo:type=CPU + Mem" &>/dev/null || true
             fi
+            ;;
+        terminal)
+            output=$(wsh run -c "cd '$project_dir' && bash" 2>&1) || true
+            block_id=$(parse_block_id "$output")
             ;;
         *)
             echo "Unknown widget: $widget" >&2
@@ -217,16 +230,16 @@ main() {
 
     if [ -z "$widget" ]; then
         echo "Usage: wave-toggle.sh <widget-name> [--self-delete]" >&2
-        echo "Widget names: yoyo-cli, files, gui, system" >&2
+        echo "Widget names: yoyo-cli, files, gui, system, terminal" >&2
         exit 1
     fi
 
     # Validate widget name
     case "$widget" in
-        yoyo-cli|files|gui|system) ;;
+        yoyo-cli|files|gui|system|terminal) ;;
         *)
             echo "Unknown widget: $widget" >&2
-            echo "Valid names: yoyo-cli, files, gui, system" >&2
+            echo "Valid names: yoyo-cli, files, gui, system, terminal" >&2
             exit 1
             ;;
     esac

@@ -1131,28 +1131,28 @@ setup_yoyo_layout() {
 
     # Set up the yoyo-dev layout using wsh commands
     # The layout is created by opening blocks - Wave positions them automatically
+    # Creation order determines layout: left→right, top→bottom
     local output block_id
 
-    # 1. Launch yoyo-cli in a new terminal block (left pane)
+    # 1. Launch yoyo-cli in a new terminal block (left pane, ~60%)
     log_layout "Launching yoyo-cli terminal..."
     output=$(wsh run -c "clear && cd '$project_dir' && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)" 2>&1) || true
     block_id=$(parse_block_id "$output")
     record_widget "yoyo-cli" "$block_id"
     sleep 1
 
-    # 2. Open the GUI dashboard (center pane)
-    log_layout "Waiting for GUI server on port 5173..."
-    if wait_for_gui_ready 5173 15; then
-        log_layout "GUI server is ready, opening dashboard..."
-        output=$(wsh web open "http://localhost:5173" 2>&1) || true
-        block_id=$(parse_block_id "$output")
-        record_widget "gui" "$block_id"
-    else
-        log_layout "WARNING: GUI server not ready after 15s, skipping web view"
+    # 2. Open system info (right-top)
+    log_layout "Opening system info..."
+    output=$(wsh run -c "sleep infinity" 2>&1) || true
+    block_id=$(parse_block_id "$output")
+    if [ -n "$block_id" ]; then
+        sleep 0.3
+        wsh setmeta -b "block:${block_id}" view=sysinfo "sysinfo:type=CPU + Mem" &>/dev/null || true
     fi
+    record_widget "system" "$block_id"
     sleep 0.5
 
-    # 3. Open the file browser with project directory (right-top)
+    # 3. Open the file browser with project directory (right-bottom, under system)
     log_layout "Opening file browser for: $project_dir"
     # wsh view doesn't output block ID, so detect via blocks list diff
     local before_ids
@@ -1171,15 +1171,16 @@ setup_yoyo_layout() {
     record_widget "files" "$block_id"
     sleep 0.5
 
-    # 4. Open system info (right-bottom)
-    log_layout "Opening system info..."
-    output=$(wsh run -c "sleep infinity" 2>&1) || true
-    block_id=$(parse_block_id "$output")
-    if [ -n "$block_id" ]; then
-        sleep 0.3
-        wsh setmeta -b "block:${block_id}" view=sysinfo "sysinfo:type=CPU + Mem" &>/dev/null || true
+    # 4. Open the GUI dashboard (center pane)
+    log_layout "Waiting for GUI server on port 5173..."
+    if wait_for_gui_ready 5173 15; then
+        log_layout "GUI server is ready, opening dashboard..."
+        output=$(wsh web open "http://localhost:5173" 2>&1) || true
+        block_id=$(parse_block_id "$output")
+        record_widget "gui" "$block_id"
+    else
+        log_layout "WARNING: GUI server not ready after 15s, skipping web view"
     fi
-    record_widget "system" "$block_id"
 
     log_layout "Layout setup complete"
     log_layout "Widget state: $(cat "$state_file" 2>/dev/null)"
