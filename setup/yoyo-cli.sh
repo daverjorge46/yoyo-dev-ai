@@ -112,7 +112,7 @@ launch_gui_background() {
 
 launch_yoyo_cli() {
     # Change to project directory if YOYO_PROJECT_DIR is set (from Wave environment)
-    if [ -n "$YOYO_PROJECT_DIR" ] && [ -d "$YOYO_PROJECT_DIR" ]; then
+    if [ -n "${YOYO_PROJECT_DIR:-}" ] && [ -d "${YOYO_PROJECT_DIR:-}" ]; then
         cd "$YOYO_PROJECT_DIR" || true
     fi
 
