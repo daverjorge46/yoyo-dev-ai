@@ -12,7 +12,7 @@
 set -euo pipefail
 
 # Yoyo Dev version
-readonly VERSION="6.2.0"
+readonly VERSION="7.0.0"
 
 # IMPORTANT: Save user's current working directory FIRST
 readonly USER_PROJECT_DIR="$(pwd)"

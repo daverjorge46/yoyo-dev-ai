@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Yoyo Dev v6.2 - Global Command Installation
+# Yoyo Dev v7.0 - Global Command Installation
 # Installs all Yoyo Dev commands globally:
 #   - yoyo         : Launch Claude Code + Browser GUI
 #   - yoyo-init    : Initialize Yoyo Dev in a project
@@ -20,7 +20,7 @@ readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 # Version
-readonly VERSION="6.2.0"
+readonly VERSION="7.0.0"
 
 echo ""
 echo -e "${BOLD}${CYAN}╔════════════════════════════════════════════════════════════════╗${RESET}"

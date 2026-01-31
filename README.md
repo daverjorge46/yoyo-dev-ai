@@ -11,13 +11,13 @@
 
 ### **Your AI learns. Your AI remembers. Your AI evolves.**
 
-*Multi-agent orchestration for AI-assisted software development*
+*AI-assisted development platform with personal AI assistant*
 
-[![Version](https://img.shields.io/badge/version-6.2.0-D29922?style=flat-square)](https://github.com/daverjorge46/yoyo-dev-ai)
+[![Version](https://img.shields.io/badge/version-7.0.0-D29922?style=flat-square)](https://github.com/daverjorge46/yoyo-dev-ai)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude-Code-8B5CF6?style=flat-square)](https://claude.com/claude-code)
 
-[Quick Start](#-quick-start) · [Commands](#-commands) · [Multi-Agent System](#-multi-agent-system) · [GUI Dashboard](#-gui-dashboard)
+[Quick Start](#-quick-start) · [Commands](#-commands) · [Yoyo AI](#-yoyo-ai-personal-assistant) · [Multi-Agent System](#-multi-agent-system) · [GUI Dashboard](#-gui-dashboard)
 
 </div>
 
@@ -25,7 +25,12 @@
 
 ## Overview
 
-**Yoyo Dev** is an AI-assisted development framework that supercharges Claude Code with:
+**Yoyo Dev AI** is a platform with two subsystems:
+
+| Subsystem | Command | Description |
+|-----------|---------|-------------|
+| **yoyo-dev** | `yoyo-dev` | Development environment -- Wave Terminal, Claude Code, multi-agent orchestration, GUI dashboard |
+| **yoyo-ai** | `yoyo-ai` | Personal AI assistant -- OpenClaw daemon, messaging, skills, always-on intelligence |
 
 | Feature | Description |
 |---------|-------------|
@@ -33,35 +38,34 @@
 | **Structured Workflows** | Consistent processes for planning, specification, and execution |
 | **Persistent Memory** | Context preservation across sessions |
 | **Browser GUI** | Real-time dashboard at `localhost:5173` |
+| **Personal AI Assistant** | OpenClaw-powered daemon with messaging channels and learned skills |
 
 ---
 
-## What's New in v6.2
+## What's New in v7.0
 
 <table>
 <tr>
 <td width="50%">
 
-### Yoyo-AI Orchestrator
+### Yoyo AI (Personal Assistant)
 
-- Intelligent task delegation to specialized agents
-- Automatic intent classification (Planning, Implementation, Research, Debug)
-- Parallel background task execution
-- Failure recovery with Oracle escalation
-- Todo-driven workflow with progress tracking
+- **OpenClaw integration** -- always-on AI daemon
+- Messaging channels (CLI, API, webhooks)
+- Learned skills and persistent memory
+- Managed via `yoyo-ai` command
+- New `--start`, `--stop`, `--status`, `--doctor` subcommands
 
 </td>
 <td width="50%">
 
-### Specialized Agents
+### Platform Unification
 
-| Agent | Role | Temperature |
-|-------|------|-------------|
-| **Oracle** | Strategic advisor | 0.1 |
-| **Librarian** | External research | 0.3 |
-| **Explore** | Codebase search | 0.5 |
-| **Frontend Engineer** | UI/UX specialist | 0.7 |
-| **Document Writer** | Technical writing | 0.5 |
+- **`yoyo-dev`** -- primary command (replaces `yoyo`)
+- **`yoyo-ai`** -- personal AI assistant daemon
+- **`yoyo`** -- deprecated alias for `yoyo-dev`
+- Multi-agent orchestration (Oracle, Librarian, Explore, Frontend, Writer)
+- `--no-openclaw` / `--skip-openclaw` flags for install/update
 
 </td>
 </tr>
@@ -103,18 +107,23 @@ yoyo-init --claude-code
 ### Launch
 
 ```bash
-# Claude Code + Browser GUI
-yoyo
+# Development environment (Claude Code + Wave Terminal + GUI)
+yoyo-dev
 
 # Without GUI
-yoyo --no-gui
+yoyo-dev --no-gui
 
 # GUI standalone
 yoyo-gui
 
+# Personal AI assistant
+yoyo-ai --start
+
 # Diagnose issues
 yoyo-doctor
 ```
+
+> **Note:** `yoyo` still works as a deprecated alias for `yoyo-dev`.
 
 ### Verify Installation
 
@@ -125,8 +134,11 @@ yoyo-doctor
 # Check MCP servers
 docker mcp server ls
 
-# Launch Yoyo Dev
-yoyo
+# Launch dev environment
+yoyo-dev
+
+# Check AI assistant status
+yoyo-ai --status
 ```
 
 > **Full Installation Guide:** [docs/INSTALLATION.md](docs/INSTALLATION.md)
@@ -241,6 +253,50 @@ Open PR link -> Review code -> Merge
 
 ---
 
+## Yoyo AI (Personal Assistant)
+
+**Yoyo AI** is a personal AI assistant powered by [OpenClaw](https://github.com/openclaw). It runs as a background daemon alongside your development environment.
+
+### Commands
+
+```bash
+yoyo-ai --start       # Start the OpenClaw daemon
+yoyo-ai --stop        # Stop the daemon
+yoyo-ai --status      # Check daemon health and port
+yoyo-ai --doctor      # Diagnose OpenClaw issues
+yoyo-ai --channels    # List available messaging channels
+yoyo-ai --update      # Update OpenClaw to latest version
+yoyo-ai --help        # Full reference
+```
+
+### Configuration
+
+Yoyo AI config is stored in `.yoyo-dev/config.yml` under the `yoyo_ai` key:
+
+```yaml
+yoyo_ai:
+  enabled: true
+  openclaw:
+    installed: true
+    port: 18789
+    daemon:
+      auto_start: false
+      service_type: "auto"
+    update:
+      auto_check: true
+```
+
+### Installation
+
+OpenClaw is installed automatically during `yoyo-init` (step 9). To skip, use `--no-openclaw`. To install later:
+
+```bash
+npm install -g openclaw@latest
+openclaw onboard --install-daemon
+```
+
+---
+
 ## Multi-Agent System
 
 ### How It Works
@@ -315,7 +371,7 @@ Attempt 3: Test fails -> Escalate to Oracle
 Launch the browser GUI:
 
 ```bash
-yoyo        # Claude Code + GUI
+yoyo-dev    # Claude Code + GUI
 yoyo-gui    # GUI standalone
 ```
 
@@ -368,7 +424,7 @@ your-project/
 ### Main Config: `.yoyo-dev/config.yml`
 
 ```yaml
-yoyo_dev_version: 6.2.0
+yoyo_dev_version: 7.0.0
 
 orchestration:
   enabled: true
@@ -402,6 +458,18 @@ workflows:
       escalate_to: oracle
     frontend_delegation:
       enabled: true
+
+# Yoyo AI (OpenClaw Personal Assistant)
+yoyo_ai:
+  enabled: true
+  openclaw:
+    installed: true
+    port: 18789
+    daemon:
+      auto_start: false
+      service_type: "auto"
+    update:
+      auto_check: true
 ```
 
 > **Full Config Reference:** [docs/configuration.md](docs/configuration.md)
@@ -419,6 +487,9 @@ yoyo-update --no-overwrite
 
 # Skip MCP check
 yoyo-update --skip-mcp-check
+
+# Skip OpenClaw update
+yoyo-update --skip-openclaw
 ```
 
 **Protected Files** (never overwritten):
@@ -490,7 +561,7 @@ lsof -i :5173
 pkill -f "vite"
 
 # Restart
-yoyo
+yoyo-dev
 ```
 </details>
 
@@ -578,7 +649,7 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ---
 
-**Version:** 6.2.0 · **Status:** Production Ready · **Last Updated:** 2026-01-04
+**Version:** 7.0.0 · **Status:** Production Ready · **Last Updated:** 2026-01-31
 
 *Your AI learns. Your AI remembers. Your AI evolves.*
 

@@ -6,11 +6,16 @@ This file provides guidance to Claude Code when working on the **Yoyo Dev framew
 
 ## Repository Overview
 
-**Yoyo Dev** is an AI-assisted development framework providing:
+**Yoyo Dev AI** is a platform with two subsystems:
+- **yoyo-dev** - Development environment (Wave Terminal, Claude Code, GUI, orchestration)
+- **yoyo-ai** - Personal AI assistant (OpenClaw daemon, messaging, skills)
+
+Providing:
 - Structured workflows for product planning, specification, and task execution
 - Multi-agent orchestration system with specialized agents
 - Claude Code and Cursor IDE integration
 - Persistent memory and skill learning systems
+- Personal AI assistant via OpenClaw
 
 ## Framework Architecture
 
@@ -22,7 +27,9 @@ yoyo-dev/                         # Framework root (this repository)
 ├── README.md                     # User-facing documentation
 ├── setup/                        # Installation and launcher scripts
 │   ├── install.sh                # Project installation
-│   ├── yoyo.sh                   # Claude Code launcher
+│   ├── yoyo.sh                   # Dev environment launcher (yoyo-dev)
+│   ├── yoyo-ai.sh                # Personal AI assistant manager (yoyo-ai)
+│   ├── yoyo-compat.sh            # Deprecated `yoyo` compatibility shim
 │   ├── yoyo-gui.sh               # Browser GUI launcher
 │   ├── yoyo-update.sh            # Update script
 │   └── templates/                # Generated file templates
@@ -58,10 +65,11 @@ yoyo-dev/                         # Framework root (this repository)
 
 | Component | Technology | Purpose |
 |-----------|------------|---------|
-| CLI Launcher | Bash | `yoyo`, `yoyo-gui`, `yoyo-update` commands |
+| CLI Launcher | Bash | `yoyo-dev`, `yoyo-ai`, `yoyo-gui`, `yoyo-update` commands |
 | Orchestration | TypeScript | Intent classification, agent routing |
 | Browser GUI | React + Vite | Dashboard on port 5173 |
 | Memory System | SQLite + JSON | Persistent context storage |
+| Personal AI | OpenClaw (npm) | Daemon-based AI assistant on port 18789 |
 
 ## Global Orchestration Mode
 
@@ -209,7 +217,7 @@ bash -n setup/*.sh
 ### Main Config (`.yoyo-dev/config.yml`)
 
 ```yaml
-yoyo_dev_version: "6.2.0"
+yoyo_dev_version: "7.0.0"
 
 orchestration:
   enabled: true
@@ -224,6 +232,18 @@ tech_stack:
   framework: "react-typescript"
   database: "convex"
   styling: "tailwindcss"
+
+# Yoyo AI (OpenClaw Personal Assistant)
+yoyo_ai:
+  enabled: true
+  openclaw:
+    installed: true
+    port: 18789
+    daemon:
+      auto_start: false
+      service_type: "auto"
+    update:
+      auto_check: true
 ```
 
 ### Claude Settings (`.claude/settings.json`)
@@ -244,7 +264,7 @@ Contains hook configuration for orchestration system.
 
 4. **Hook changes** - `.claude/hooks/orchestrate.cjs` is the bundled orchestration hook
 
-5. **Version updates** - Update VERSION in: `setup/install.sh`, `setup/yoyo-update.sh`, `.yoyo-dev/config.yml`
+5. **Version updates** - Update VERSION in: `setup/install.sh`, `setup/yoyo-update.sh`, `setup/yoyo.sh`, and all other `setup/*.sh` scripts
 
 ## Quick Reference
 
@@ -254,7 +274,9 @@ Contains hook configuration for orchestration system.
 |--------|---------|
 | `setup/install.sh` | Install Yoyo Dev in a project |
 | `setup/yoyo-update.sh` | Update existing installation |
-| `setup/yoyo.sh` | Launch Claude Code + GUI |
+| `setup/yoyo.sh` | Launch dev environment (`yoyo-dev` command) |
+| `setup/yoyo-ai.sh` | Manage personal AI assistant (`yoyo-ai` command) |
+| `setup/yoyo-compat.sh` | Deprecated `yoyo` compatibility shim |
 | `setup/yoyo-gui.sh` | Launch browser GUI only |
 
 ### Key Flags
@@ -263,11 +285,13 @@ Contains hook configuration for orchestration system.
 - `--claude-code` - Enable Claude Code integration
 - `--no-claude-md` - Skip CLAUDE.md generation
 - `--no-auto-mcp` - Skip MCP server setup
+- `--no-openclaw` - Skip OpenClaw AI assistant installation
 
 **yoyo-update.sh:**
 - `--no-overwrite` - Keep all customizations
 - `--regenerate-claude` - Regenerate project CLAUDE.md
 - `--skip-mcp-check` - Skip MCP verification
+- `--skip-openclaw` - Skip OpenClaw update
 
 ---
 

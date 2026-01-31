@@ -34,7 +34,7 @@ else
     # Fallback banner function
     ui_yoyo_banner() {
         echo ""
-        echo -e "${UI_YELLOW}YOYO AI${UI_RESET} v${1:-6.2.0}"
+        echo -e "${UI_YELLOW}YOYO AI${UI_RESET} v${1:-7.0.0}"
         echo ""
     }
     # Fallback dashboard function
@@ -53,7 +53,7 @@ fi
 # Configuration
 # ============================================================================
 
-readonly VERSION="6.2.0"
+readonly VERSION="7.0.0"
 readonly USER_PROJECT_DIR="$(pwd)"
 
 # BASE installation location (can be overridden with YOYO_BASE_DIR env var)

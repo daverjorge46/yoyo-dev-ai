@@ -9,7 +9,7 @@ set -euo pipefail
 # Configuration
 # ============================================================================
 
-readonly VERSION="6.2.0"
+readonly VERSION="7.0.0"
 readonly DEFAULT_BASE_DIR="$HOME/.yoyo-dev-base"
 YOYO_BASE_DIR="${YOYO_BASE_DIR:-$DEFAULT_BASE_DIR}"
 

@@ -11,7 +11,7 @@ set -e  # Exit on error
 # Configuration
 # ============================================================================
 
-VERSION="6.2.0"
+VERSION="7.0.0"
 
 # BASE installation location (can be overridden with YOYO_BASE_DIR env var)
 DEFAULT_BASE_DIR="$HOME/.yoyo-dev-base"

@@ -370,10 +370,10 @@ _get_terminal_width() {
 
 # Print the branded YOYO AI ASCII banner with double-line border
 # Usage: ui_yoyo_banner [version]
-# Version defaults to "v6.2.0" if not provided
+# Version defaults to "v7.0.0" if not provided
 # Automatically switches to compact mode for terminals < 80 columns
 ui_yoyo_banner() {
-    local version="${1:-v6.2.0}"
+    local version="${1:-v7.0.0}"
     local tagline="Your AI learns. Your AI remembers. Your AI evolves."
     local term_width
     term_width=$(_get_terminal_width)
@@ -493,7 +493,7 @@ _ui_yoyo_banner_full() {
     echo -e "${BOX_DBL_VL}${UI_RESET}"
 
     # Version and tagline line
-    # Format: "  v6.2.0  |  Your AI learns..."
+    # Format: "  v7.0.0  |  Your AI learns..."
     local separator_char="|"
     local info_prefix_len=$((2 + ${#version} + 2 + 1 + 2))  # spaces + version + spaces + | + spaces
 

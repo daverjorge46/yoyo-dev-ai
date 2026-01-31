@@ -46,7 +46,7 @@ fi
 # Configuration
 # ============================================================================
 
-VERSION="6.2.0"
+VERSION="7.0.0"
 GUI_PORT="${YOYO_GUI_PORT:-5173}"
 GUI_ENABLED="${YOYO_GUI_ENABLED:-true}"
 BANNER_ENABLED="${YOYO_BANNER_ENABLED:-true}"
