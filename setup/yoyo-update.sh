@@ -592,25 +592,32 @@ echo ""
 
 # Step: Reinstall global commands (yoyo, yoyo-cli, etc.)
 ((CURRENT_STEP++))
-ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying global commands (yoyo, yoyo-cli)..."
+ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying global commands (yoyo-dev, yoyo-ai, yoyo-cli)..."
 
 if [ -f "$BASE_YOYO_DEV/setup/install-global-command.sh" ]; then
-    # Check if yoyo-cli is available
-    if ! command -v yoyo-cli &>/dev/null; then
-        show_progress "yoyo-cli not found, installing global commands..."
+    # Check all critical commands (yoyo-dev, yoyo-ai, yoyo-cli)
+    NEED_REINSTALL=false
+    for critical_cmd in yoyo-dev yoyo-ai yoyo-cli; do
+        if ! command -v "$critical_cmd" &>/dev/null; then
+            show_progress "$critical_cmd not found"
+            NEED_REINSTALL=true
+        else
+            # Verify symlink is valid
+            CMD_PATH=$(command -v "$critical_cmd" 2>/dev/null)
+            if [ -L "$CMD_PATH" ] && [ ! -e "$CMD_PATH" ]; then
+                show_progress "$critical_cmd symlink broken"
+                NEED_REINSTALL=true
+            fi
+        fi
+    done
+
+    if [ "$NEED_REINSTALL" = true ]; then
+        show_progress "Installing/reinstalling global commands..."
         bash "$BASE_YOYO_DEV/setup/install-global-command.sh" 2>&1 | grep -E "Installing|OK|SKIP|FAILED" | head -10
         ui_success "Global commands installed"
     else
-        # Verify symlinks are valid
-        YOYO_CLI_PATH=$(command -v yoyo-cli 2>/dev/null)
-        if [ -L "$YOYO_CLI_PATH" ] && [ ! -e "$YOYO_CLI_PATH" ]; then
-            show_progress "yoyo-cli symlink broken, reinstalling..."
-            bash "$BASE_YOYO_DEV/setup/install-global-command.sh" 2>&1 | grep -E "Installing|OK|SKIP|FAILED" | head -10
-            ui_success "Global commands reinstalled"
-        else
-            show_progress "yoyo-cli is available at $YOYO_CLI_PATH"
-            ui_success "Global commands verified"
-        fi
+        show_progress "All critical commands verified (yoyo-dev, yoyo-ai, yoyo-cli)"
+        ui_success "Global commands verified"
     fi
 else
     ui_warning "install-global-command.sh not found, skipping global command installation"
@@ -1011,37 +1018,24 @@ YOYO_AI_EOF
             ui_warning "OpenClaw update failed - continuing"
         fi
     else
-        # Not installed - offer to install
+        # Not installed - auto-install (mandatory in V7)
         if node_ver=$(check_node_version 22 2>/dev/null); then
-            show_progress "OpenClaw not installed (Node.js v${node_ver} available)"
-            echo ""
-            echo -e "  Would you like to install OpenClaw (yoyo-ai)?"
-            echo ""
-            echo -e "    ${UI_PRIMARY}1.${UI_RESET} Install OpenClaw (recommended)"
-            echo -e "    ${UI_PRIMARY}2.${UI_RESET} Skip"
-            echo ""
-            echo -n "  Choice [1]: "
-            read -r oc_choice
-            oc_choice="${oc_choice:-1}"
-
-            if [ "$oc_choice" = "1" ]; then
-                ui_info "Installing OpenClaw..."
-                if npm install -g openclaw@latest 2>&1 | tail -1; then
-                    ui_success "OpenClaw installed"
-                    openclaw onboard --install-daemon 2>&1 | tail -3 || true
-                    # Update config
-                    if [ -f ".yoyo-dev/config.yml" ]; then
-                        sed -i.bak 's/installed: false/installed: true/' .yoyo-dev/config.yml 2>/dev/null
-                        rm -f .yoyo-dev/config.yml.bak
-                    fi
-                else
-                    ui_warning "Installation failed"
+            show_progress "OpenClaw not installed - installing (mandatory in yoyo-dev-ai V7)"
+            ui_info "Installing OpenClaw (yoyo-ai)..."
+            if npm install -g openclaw@latest 2>&1 | tail -1; then
+                ui_success "OpenClaw installed"
+                openclaw onboard --install-daemon 2>&1 | tail -3 || true
+                # Update config
+                if [ -f ".yoyo-dev/config.yml" ]; then
+                    sed -i.bak 's/installed: false/installed: true/' .yoyo-dev/config.yml 2>/dev/null
+                    rm -f .yoyo-dev/config.yml.bak
                 fi
+                track_file_change "OpenClaw (freshly installed)"
             else
-                ui_info "Skipping OpenClaw installation"
+                ui_warning "OpenClaw installation failed - run 'npm install -g openclaw@latest' manually"
             fi
         else
-            show_progress "Skipping OpenClaw (Node.js >= 22 required)"
+            ui_warning "OpenClaw (yoyo-ai) requires Node.js >= 22 - please upgrade Node.js to enable yoyo-ai"
         fi
     fi
     echo ""

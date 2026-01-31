@@ -84,6 +84,8 @@ while [[ $# -gt 0 ]]; do
             ;;
         --no-openclaw)
             INSTALL_OPENCLAW=false
+            echo -e "${UI_YOYO_YELLOW}WARNING:${UI_RESET} --no-openclaw is deprecated in V7. yoyo-ai (OpenClaw) is a mandatory component of yoyo-dev-ai."
+            echo -e "         The installation will continue without yoyo-ai, but some features will be unavailable."
             shift
             ;;
         --non-interactive)
