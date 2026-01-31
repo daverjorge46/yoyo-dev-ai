@@ -50,3 +50,8 @@ dist/
 # Each developer has their own local Claude Code setup
 # The canonical source for agents/commands/hooks is in the yoyo-dev framework itself
 .claude/
+
+# Claude Code Binary Downloads
+# claude/ contains downloaded Claude Code binaries (large files)
+# These should not be tracked in the repository
+claude/
