@@ -9,12 +9,12 @@
     "icon": "terminal",
     "label": "Yoyo-Cli",
     "color": "#00BCD4",
-    "description": "Launch yoyo-dev-ai framework with Claude Code in terminal",
+    "description": "Toggle yoyo-cli terminal pane",
     "blockdef": {
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "clear && cd \"${YOYO_PROJECT_DIR:-$PWD}\" && (command -v yoyo-cli >/dev/null && yoyo-cli || [ -f \"$HOME/.yoyo-dev-base/setup/yoyo-cli.sh\" ] && \"$HOME/.yoyo-dev-base/setup/yoyo-cli.sh\" || [ -f \"$HOME/yoyo-dev/setup/yoyo-cli.sh\" ] && \"$HOME/yoyo-dev/setup/yoyo-cli.sh\" || command -v claude >/dev/null && claude || bash)"
+        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev-base/setup/wave-toggle.sh\"; [ -f \"$TOGGLE\" ] || TOGGLE=\"$HOME/yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" yoyo-cli --self-delete"
       }
     }
   },
@@ -22,11 +22,12 @@
     "icon": "folder-open",
     "label": "Files",
     "color": "#E85D04",
-    "description": "Project file browser",
+    "description": "Toggle project file browser pane",
     "blockdef": {
       "meta": {
-        "view": "preview",
-        "file": "~"
+        "view": "term",
+        "controller": "shell",
+        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev-base/setup/wave-toggle.sh\"; [ -f \"$TOGGLE\" ] || TOGGLE=\"$HOME/yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" files --self-delete"
       }
     }
   },
@@ -34,12 +35,12 @@
     "icon": "gauge",
     "label": "GUI",
     "color": "#E85D04",
-    "description": "Yoyo Dev Dashboard",
+    "description": "Toggle Yoyo Dev Dashboard pane",
     "blockdef": {
       "meta": {
-        "view": "web",
-        "url": "http://localhost:5173",
-        "pinnedurl": "http://localhost:5173"
+        "view": "term",
+        "controller": "shell",
+        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev-base/setup/wave-toggle.sh\"; [ -f \"$TOGGLE\" ] || TOGGLE=\"$HOME/yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" gui --self-delete"
       }
     }
   },
@@ -47,11 +48,12 @@
     "icon": "chart-line",
     "label": "System",
     "color": "#E85D04",
-    "description": "System resource monitor",
+    "description": "Toggle system resource monitor pane",
     "blockdef": {
       "meta": {
-        "view": "sysinfo",
-        "sysinfo:type": "CPU + Mem"
+        "view": "term",
+        "controller": "shell",
+        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev-base/setup/wave-toggle.sh\"; [ -f \"$TOGGLE\" ] || TOGGLE=\"$HOME/yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" system --self-delete"
       }
     }
   }

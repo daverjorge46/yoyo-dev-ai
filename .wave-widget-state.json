@@ -1,0 +1,14 @@
+{
+  "gui": {
+    "block_id": "ae4b8992-53f5-48c8-b5fe-0a25a6cf1bac",
+    "visible": true
+  },
+  "files": {
+    "block_id": "e8fd5b38-b33d-4bda-acfa-e5225b99dd00",
+    "visible": true
+  },
+  "system": {
+    "block_id": "b3b680cb-3339-464c-869d-6f0de03f2086",
+    "visible": false
+  }
+}

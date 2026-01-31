@@ -982,6 +982,19 @@ deploy_wave_config() {
         fi
     done
 
+    # Deploy wave-toggle.sh script (used by widget buttons for toggle behavior)
+    local toggle_source="${base_dir}/setup/wave-toggle.sh"
+    local toggle_target="${HOME}/.yoyo-dev-base/setup/wave-toggle.sh"
+    if [ -f "$toggle_source" ]; then
+        mkdir -p "$(dirname "$toggle_target")"
+        cp "$toggle_source" "$toggle_target"
+        chmod +x "$toggle_target"
+        ((deployed_count++))
+        ui_info "Deployed: wave-toggle.sh"
+    else
+        ui_warning "Source file not found: wave-toggle.sh"
+    fi
+
     # Write version file
     echo "$WAVE_CONFIG_VERSION" > "$WAVE_VERSION_FILE"
     chmod 600 "$WAVE_VERSION_FILE"
@@ -1035,16 +1048,60 @@ wait_for_wave_ready() {
     return 1
 }
 
+# Wait for GUI server to be ready on a given port
+# Uses curl to check if the server is responding
+wait_for_gui_ready() {
+    local port="${1:-5173}"
+    local max_wait="${2:-15}"
+    local waited=0
+
+    while [ $waited -lt $max_wait ]; do
+        if curl -s -o /dev/null --max-time 1 "http://localhost:$port" 2>/dev/null; then
+            return 0
+        fi
+        sleep 1
+        ((waited++))
+    done
+
+    return 1
+}
+
 # Setup yoyo-dev layout in Wave Terminal
 # This runs in background after Wave opens (every time)
 # Layout: Left=yoyo-cli terminal, Center=GUI browser, Right-top=Files, Right-bottom=System
+# Records block IDs in widget state file for toggle support
 setup_yoyo_layout() {
     local project_dir="${1:-$PWD}"
     local layout_log="${HOME}/.yoyo-dev-base/.wave-layout.log"
+    local state_file="${HOME}/.yoyo-dev-base/.wave-widget-state.json"
+    local meta_key="yoyo:widget"
 
     # Log function for debugging
     log_layout() {
         echo "[$(date '+%H:%M:%S')] $1" >> "$layout_log" 2>/dev/null || true
+    }
+
+    # Parse block ID from wsh output (e.g. "run block created: block:UUID")
+    parse_block_id() {
+        echo "$1" | grep -oP 'block:[a-f0-9-]+' | head -1 | sed 's/^block://'
+    }
+
+    # Update widget state in the state file
+    # Args: $1 = widget name, $2 = block_id
+    record_widget() {
+        local widget="$1"
+        local block_id="$2"
+        if [ -n "$block_id" ] && command -v jq &>/dev/null; then
+            local tmp="${state_file}.tmp"
+            jq --arg w "$widget" --arg bid "$block_id" \
+                '.[$w] = {"block_id": $bid, "visible": true}' \
+                "$state_file" > "$tmp" && mv "$tmp" "$state_file"
+            # Tag the block with widget name for fallback identification
+            wsh setmeta -b "block:${block_id}" "${meta_key}=${widget}" &>/dev/null || true
+            log_layout "Recorded ${widget} block: ${block_id}"
+        else
+            log_layout "WARNING: Could not record ${widget} (no block_id or jq missing)"
+        fi
     }
 
     log_layout "Starting layout setup for: $project_dir"
@@ -1068,30 +1125,63 @@ setup_yoyo_layout() {
 
     log_layout "wsh is available"
 
+    # Initialize widget state file
+    mkdir -p "${HOME}/.yoyo-dev-base"
+    echo '{}' > "$state_file"
+
     # Set up the yoyo-dev layout using wsh commands
     # The layout is created by opening blocks - Wave positions them automatically
+    local output block_id
 
     # 1. Launch yoyo-cli in a new terminal block (left pane)
-    #    Use wsh run with -c flag to execute the command in a new terminal
     log_layout "Launching yoyo-cli terminal..."
-    wsh run -c "clear && cd '$project_dir' && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)" &>/dev/null || true
+    output=$(wsh run -c "clear && cd '$project_dir' && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)" 2>&1) || true
+    block_id=$(parse_block_id "$output")
+    record_widget "yoyo-cli" "$block_id"
     sleep 1
 
     # 2. Open the GUI dashboard (center pane)
-    log_layout "Opening GUI dashboard..."
-    wsh web open "http://localhost:5173" &>/dev/null || true
+    log_layout "Waiting for GUI server on port 5173..."
+    if wait_for_gui_ready 5173 15; then
+        log_layout "GUI server is ready, opening dashboard..."
+        output=$(wsh web open "http://localhost:5173" 2>&1) || true
+        block_id=$(parse_block_id "$output")
+        record_widget "gui" "$block_id"
+    else
+        log_layout "WARNING: GUI server not ready after 15s, skipping web view"
+    fi
     sleep 0.5
 
     # 3. Open the file browser with project directory (right-top)
     log_layout "Opening file browser for: $project_dir"
+    # wsh view doesn't output block ID, so detect via blocks list diff
+    local before_ids
+    before_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
     wsh view "$project_dir" &>/dev/null || true
+    sleep 0.5
+    local after_ids new_id
+    after_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
+    block_id=""
+    for new_id in $after_ids; do
+        if ! echo "$before_ids" | grep -qF "$new_id"; then
+            block_id="$new_id"
+            break
+        fi
+    done
+    record_widget "files" "$block_id"
     sleep 0.5
 
     # 4. Open system info (right-bottom)
     log_layout "Opening system info..."
-    wsh sysinfo &>/dev/null || true
+    output=$(wsh run -c "echo sysinfo" 2>&1) || true
+    block_id=$(parse_block_id "$output")
+    if [ -n "$block_id" ]; then
+        wsh setmeta -b "block:${block_id}" view=sysinfo "sysinfo:type=CPU + Mem" &>/dev/null || true
+    fi
+    record_widget "system" "$block_id"
 
     log_layout "Layout setup complete"
+    log_layout "Widget state: $(cat "$state_file" 2>/dev/null)"
     return 0
 }
 
