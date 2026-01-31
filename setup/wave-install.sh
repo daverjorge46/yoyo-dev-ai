@@ -1081,8 +1081,9 @@ wait_for_gui_ready() {
 
 # Setup yoyo-dev layout in Wave Terminal
 # This runs in background after Wave opens (every time)
-# Layout: Left=yoyo-cli terminal, Center=GUI browser, Right-top=Files, Right-bottom=System
-# Records block IDs in widget state file for toggle support
+# Fixed layout: Left=yoyo-cli(~40%), Center=GUI browser(~40%), Right=Files(~20%), Bottom=terminal
+# Deletes any previous yoyo-tagged blocks and recreates from scratch for deterministic positioning.
+# Records block IDs in widget state file for toggle support.
 setup_yoyo_layout() {
     local project_dir="${1:-$PWD}"
     local layout_log="${HOME}/.yoyo-dev-base/.wave-layout.log"
@@ -1097,6 +1098,21 @@ setup_yoyo_layout() {
     # Parse block ID from wsh output (e.g. "run block created: block:UUID")
     parse_block_id() {
         echo "$1" | grep -oP 'block:[a-f0-9-]+' | head -1 | sed 's/^block://'
+    }
+
+    # Detect new block ID by diffing block lists before/after creation
+    # Args: $1 = before_ids (newline-separated)
+    detect_new_block() {
+        local before_ids="$1"
+        local after_ids new_id
+        after_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
+        for new_id in $after_ids; do
+            if ! echo "$before_ids" | grep -qF "$new_id"; then
+                echo "$new_id"
+                return 0
+            fi
+        done
+        return 1
     }
 
     # Update widget state in the state file
@@ -1115,6 +1131,23 @@ setup_yoyo_layout() {
         else
             log_layout "WARNING: Could not record ${widget} (no block_id or jq missing)"
         fi
+    }
+
+    # Delete all existing yoyo-tagged blocks for a clean slate
+    cleanup_existing_blocks() {
+        local all_blocks bid meta_val
+        all_blocks=$(wsh blocks list --json --timeout=3000 2>/dev/null) || true
+        if [ -z "$all_blocks" ] || [ "$all_blocks" = "null" ]; then
+            return 0
+        fi
+        for bid in $(echo "$all_blocks" | jq -r '.[].blockid' 2>/dev/null); do
+            meta_val=$(wsh getmeta -b "block:${bid}" "${meta_key}" 2>/dev/null) || true
+            if [ -n "$meta_val" ]; then
+                log_layout "Deleting existing block: ${bid} (widget: ${meta_val})"
+                wsh deleteblock -b "block:${bid}" &>/dev/null || true
+                sleep 0.3
+            fi
+        done
     }
 
     log_layout "Starting layout setup for: $project_dir"
@@ -1138,111 +1171,61 @@ setup_yoyo_layout() {
 
     log_layout "wsh is available"
 
-    # Initialize widget state file (preserve if exists, create if not)
+    # Initialize widget state file (fresh start)
     mkdir -p "${HOME}/.yoyo-dev-base"
-    [ -f "$state_file" ] || echo '{}' > "$state_file"
+    echo '{}' > "$state_file"
 
-    # Detect existing blocks restored from a previous Wave session.
-    # Returns the block ID if a block with the given widget metadata tag exists.
-    find_existing_widget_block() {
-        local widget="$1"
-        local bid
-        # Scan all blocks for our metadata tag
-        local all_blocks
-        all_blocks=$(wsh blocks list --json --timeout=3000 2>/dev/null) || true
-        if [ -z "$all_blocks" ] || [ "$all_blocks" = "null" ]; then
-            return 1
-        fi
-        for bid in $(echo "$all_blocks" | jq -r '.[].blockid' 2>/dev/null); do
-            local meta_val
-            meta_val=$(wsh getmeta -b "block:${bid}" "${meta_key}" 2>/dev/null) || true
-            if [ "$meta_val" = "$widget" ]; then
-                echo "$bid"
-                return 0
-            fi
-        done
-        return 1
-    }
+    # Clean slate: remove any previous yoyo blocks for deterministic layout
+    log_layout "Cleaning up existing yoyo blocks..."
+    cleanup_existing_blocks
+    sleep 0.5
 
-    # Set up the yoyo-dev layout using wsh commands
-    # The layout is created by opening blocks - Wave positions them automatically
-    # Creation order determines layout: left→right, top→bottom
-    # Blocks restored from a previous session are detected and reused.
-    local output block_id existing_id
+    # ─── Create the 4-panel fixed layout ───
+    # Creation order controls Wave's auto-placement:
+    #   1. yoyo-cli terminal (takes full space initially)
+    #   2. GUI dashboard (splits right of yoyo-cli)
+    #   3. File browser (splits right of GUI)
+    #   4. Bash terminal (splits below the top row)
+    local output block_id before_ids
 
-    # 1. Launch yoyo-cli in a new terminal block (left pane, ~60%)
-    log_layout "Launching yoyo-cli terminal..."
-    existing_id=$(find_existing_widget_block "yoyo-cli") || true
-    if [ -n "$existing_id" ]; then
-        log_layout "Found existing yoyo-cli block: $existing_id (skipping creation)"
-        block_id="$existing_id"
-    else
-        output=$(wsh run -c "clear && cd '$project_dir' && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)" 2>&1) || true
-        block_id=$(parse_block_id "$output")
-    fi
+    # 1. Launch yoyo-cli terminal (left pane, ~40%)
+    log_layout "Creating yoyo-cli terminal..."
+    output=$(wsh run -c "clear && cd '$project_dir' && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)" 2>&1) || true
+    block_id=$(parse_block_id "$output")
     record_widget "yoyo-cli" "$block_id"
     sleep 1
 
-    # 2. Open system info (right-top)
-    log_layout "Opening system info..."
-    existing_id=$(find_existing_widget_block "system") || true
-    if [ -n "$existing_id" ]; then
-        log_layout "Found existing system block: $existing_id (skipping creation)"
-        block_id="$existing_id"
-    else
-        output=$(wsh run -c "sleep infinity" 2>&1) || true
+    # 2. Open GUI dashboard (center pane, ~40%)
+    log_layout "Waiting for GUI server on port 5173..."
+    if wait_for_gui_ready 5173 15; then
+        log_layout "GUI server is ready, opening dashboard..."
+        output=$(wsh web open "http://localhost:5173" 2>&1) || true
         block_id=$(parse_block_id "$output")
-        if [ -n "$block_id" ]; then
-            sleep 0.3
-            wsh setmeta -b "block:${block_id}" view=sysinfo "sysinfo:type=CPU + Mem" &>/dev/null || true
-        fi
-    fi
-    record_widget "system" "$block_id"
-    sleep 0.5
-
-    # 3. Open the file browser with project directory (right-bottom, under system)
-    log_layout "Opening file browser for: $project_dir"
-    existing_id=$(find_existing_widget_block "files") || true
-    if [ -n "$existing_id" ]; then
-        log_layout "Found existing files block: $existing_id (skipping creation)"
-        block_id="$existing_id"
+        record_widget "gui" "$block_id"
     else
-        # wsh view doesn't output block ID, so detect via blocks list diff
-        local before_ids
-        before_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
-        wsh view "$project_dir" &>/dev/null || true
-        sleep 0.5
-        local after_ids new_id
-        after_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
-        block_id=""
-        for new_id in $after_ids; do
-            if ! echo "$before_ids" | grep -qF "$new_id"; then
-                block_id="$new_id"
-                break
-            fi
-        done
+        log_layout "WARNING: GUI server not ready after 15s, creating placeholder"
+        output=$(wsh run -c "echo 'GUI not available yet. Visit http://localhost:5173'; sleep infinity" 2>&1) || true
+        block_id=$(parse_block_id "$output")
+        record_widget "gui" "$block_id"
     fi
+    sleep 0.8
+
+    # 3. Open file browser (right pane, ~20%)
+    log_layout "Opening file browser for: $project_dir"
+    before_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
+    wsh view "$project_dir" &>/dev/null || true
+    sleep 0.8
+    block_id=$(detect_new_block "$before_ids") || true
     record_widget "files" "$block_id"
     sleep 0.5
 
-    # 4. Open the GUI dashboard (center pane)
-    existing_id=$(find_existing_widget_block "gui") || true
-    if [ -n "$existing_id" ]; then
-        log_layout "Found existing gui block: $existing_id (skipping creation)"
-        record_widget "gui" "$existing_id"
-    else
-        log_layout "Waiting for GUI server on port 5173..."
-        if wait_for_gui_ready 5173 15; then
-            log_layout "GUI server is ready, opening dashboard..."
-            output=$(wsh web open "http://localhost:5173" 2>&1) || true
-            block_id=$(parse_block_id "$output")
-            record_widget "gui" "$block_id"
-        else
-            log_layout "WARNING: GUI server not ready after 15s, skipping web view"
-        fi
-    fi
+    # 4. Open bash terminal (bottom strip)
+    log_layout "Creating bash terminal..."
+    output=$(wsh run -c "cd '$project_dir' && bash" 2>&1) || true
+    block_id=$(parse_block_id "$output")
+    record_widget "terminal" "$block_id"
 
-    log_layout "Layout setup complete"
+    log_layout "Layout setup complete (4 panels: yoyo-cli, gui, files, terminal)"
     log_layout "Widget state: $(cat "$state_file" 2>/dev/null)"
     return 0
 }

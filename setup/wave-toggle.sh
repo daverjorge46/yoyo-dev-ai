@@ -3,7 +3,7 @@
 # Toggles visibility of widget panes instead of creating duplicates
 #
 # Usage: wave-toggle.sh <widget-name> [--self-delete]
-# Widget names: yoyo-cli, files, gui, system, terminal
+# Widget names: yoyo-cli, files, gui, terminal
 #
 # When invoked from a widget button's blockdef, use --self-delete so the
 # ephemeral term block created by the widget click is removed after toggling.
@@ -189,16 +189,6 @@ create_widget_block() {
             output=$(wsh web open "http://localhost:5173" 2>&1) || true
             block_id=$(parse_block_id "$output")
             ;;
-        system)
-            # Create a term block and immediately convert it to sysinfo view
-            output=$(wsh run -c "sleep infinity" 2>&1) || true
-            block_id=$(parse_block_id "$output")
-            if [ -n "$block_id" ]; then
-                sleep 0.3
-                # Convert the term block to sysinfo view
-                wsh setmeta -b "block:${block_id}" view=sysinfo "sysinfo:type=CPU + Mem" &>/dev/null || true
-            fi
-            ;;
         terminal)
             output=$(wsh run -c "cd '$project_dir' && bash" 2>&1) || true
             block_id=$(parse_block_id "$output")
@@ -309,16 +299,16 @@ main() {
 
     if [ -z "$widget" ]; then
         echo "Usage: wave-toggle.sh <widget-name> [--self-delete]" >&2
-        echo "Widget names: yoyo-cli, files, gui, system, terminal" >&2
+        echo "Widget names: yoyo-cli, files, gui, terminal" >&2
         exit 1
     fi
 
     # Validate widget name
     case "$widget" in
-        yoyo-cli|files|gui|system|terminal) ;;
+        yoyo-cli|files|gui|terminal) ;;
         *)
             echo "Unknown widget: $widget" >&2
-            echo "Valid names: yoyo-cli, files, gui, system, terminal" >&2
+            echo "Valid names: yoyo-cli, files, gui, terminal" >&2
             exit 1
             ;;
     esac

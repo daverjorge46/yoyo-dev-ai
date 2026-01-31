@@ -44,19 +44,6 @@
       }
     }
   },
-  "yoyo@sysinfo": {
-    "icon": "chart-line",
-    "label": "System",
-    "color": "#E85D04",
-    "description": "Toggle system resource monitor pane",
-    "blockdef": {
-      "meta": {
-        "view": "term",
-        "controller": "shell",
-        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev-base/setup/wave-toggle.sh\"; [ -f \"$TOGGLE\" ] || TOGGLE=\"$HOME/yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" system --self-delete"
-      }
-    }
-  },
   "yoyo@terminal": {
     "icon": "rectangle-terminal",
     "label": "Terminal",
