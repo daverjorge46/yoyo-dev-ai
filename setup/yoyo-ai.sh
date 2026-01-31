@@ -53,6 +53,7 @@ fi
 readonly VERSION="1.0.0"
 readonly OPENCLAW_PORT="${OPENCLAW_PORT:-18789}"
 readonly OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG:-$HOME/.openclaw/openclaw.json}"
+readonly OPENCLAW_TOKEN_FILE="$HOME/.openclaw/.gateway-token"
 
 # ============================================================================
 # Node.js Validation
@@ -118,9 +119,45 @@ is_gateway_installed() {
 }
 
 is_gateway_running() {
-    # Check if gateway is responding on its port
-    curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${OPENCLAW_PORT}" 2>/dev/null | grep -q "426\|200\|101" 2>/dev/null || \
+    # Check if gateway port is listening
+    ss -tlnH "sport = :${OPENCLAW_PORT}" 2>/dev/null | grep -q "${OPENCLAW_PORT}" 2>/dev/null || \
         systemctl --user is-active openclaw-gateway.service &>/dev/null 2>&1
+}
+
+ensure_gateway_token() {
+    # Generate a persistent local token if one doesn't exist
+    if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
+        export OPENCLAW_GATEWAY_TOKEN
+        OPENCLAW_GATEWAY_TOKEN="$(cat "$OPENCLAW_TOKEN_FILE")"
+    else
+        local token
+        token="yoyo-$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+        mkdir -p "$(dirname "$OPENCLAW_TOKEN_FILE")"
+        echo "$token" > "$OPENCLAW_TOKEN_FILE"
+        chmod 600 "$OPENCLAW_TOKEN_FILE"
+        export OPENCLAW_GATEWAY_TOKEN="$token"
+        ui_success "Gateway token generated"
+    fi
+
+    # Ensure systemd service has the token if service file exists
+    local service_file="$HOME/.config/systemd/user/openclaw-gateway.service"
+    if [ -f "$service_file" ]; then
+        if ! grep -q "OPENCLAW_GATEWAY_TOKEN" "$service_file" 2>/dev/null; then
+            # Add token env var to the service
+            sed -i "/^\[Service\]/a Environment=OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}" "$service_file"
+            systemctl --user daemon-reload 2>/dev/null || true
+        fi
+    fi
+}
+
+ensure_gateway_mode() {
+    # Ensure gateway.mode=local is set in config
+    if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
+        if ! grep -q '"mode"' "$OPENCLAW_CONFIG_PATH" 2>/dev/null; then
+            # Add gateway.mode via openclaw config set if available, or patch JSON
+            openclaw config set gateway.mode local 2>/dev/null || true
+        fi
+    fi
 }
 
 ensure_initialized() {
@@ -147,7 +184,11 @@ ensure_initialized() {
         echo ""
     fi
 
-    # Step 3: Ensure gateway service is installed
+    # Step 3: Ensure gateway.mode=local and auth token
+    ensure_gateway_mode
+    ensure_gateway_token
+
+    # Step 4: Ensure gateway service is installed
     if ! is_gateway_installed; then
         ui_info "Installing gateway service..."
         openclaw gateway install 2>&1 || {
@@ -175,6 +216,9 @@ daemon_start() {
         return 1
     fi
 
+    # Ensure token is loaded
+    ensure_gateway_token
+
     ui_info "Starting OpenClaw gateway..."
 
     # Try systemd service first
@@ -190,10 +234,16 @@ daemon_start() {
     # Fallback: start gateway directly in background
     openclaw gateway --port "$OPENCLAW_PORT" &>/dev/null &
     disown
-    sleep 2
+    sleep 6
 
     if is_gateway_running; then
         ui_success "Gateway started on port ${OPENCLAW_PORT}"
+        echo ""
+        echo -e "  ${UI_DIM}Dashboard:${UI_RESET} ${UI_PRIMARY}http://127.0.0.1:${OPENCLAW_PORT}${UI_RESET}"
+        if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
+            echo -e "  ${UI_DIM}Token:${UI_RESET}     ${UI_DIM}$(cat "$OPENCLAW_TOKEN_FILE")${UI_RESET}"
+        fi
+        echo ""
     else
         ui_warning "Gateway may not have started correctly"
         echo -e "  Try manually: ${UI_PRIMARY}openclaw gateway --port ${OPENCLAW_PORT}${UI_RESET}"
