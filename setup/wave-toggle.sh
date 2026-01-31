@@ -113,35 +113,31 @@ create_widget_block() {
             block_id=$(parse_block_id "$output")
             ;;
         files)
-            # wsh view doesn't print block ID to stdout
-            # Use wsh run with a preview view instead
-            output=$(wsh run -c "wsh view '$project_dir'" 2>&1) || true
-            block_id=$(parse_block_id "$output")
-            # If that didn't work, try wsh view directly and detect via blocks list
-            if [ -z "$block_id" ]; then
-                local before_ids
-                before_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
-                wsh view "$project_dir" &>/dev/null || true
-                sleep 0.5
-                local after_ids new_id
-                after_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
-                # Find ID in after that's not in before
-                for new_id in $after_ids; do
-                    if ! echo "$before_ids" | grep -qF "$new_id"; then
-                        block_id="$new_id"
-                        break
-                    fi
-                done
-            fi
+            # wsh view doesn't print block ID to stdout, so detect via blocks list diff
+            local before_ids
+            before_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
+            wsh view "$project_dir" &>/dev/null || true
+            sleep 0.5
+            local after_ids new_id
+            after_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
+            # Find ID in after that's not in before
+            for new_id in $after_ids; do
+                if ! echo "$before_ids" | grep -qF "$new_id"; then
+                    block_id="$new_id"
+                    break
+                fi
+            done
             ;;
         gui)
             output=$(wsh web open "http://localhost:5173" 2>&1) || true
             block_id=$(parse_block_id "$output")
             ;;
         system)
-            output=$(wsh run -c "echo sysinfo-placeholder" 2>&1) || true
+            # Create a term block and immediately convert it to sysinfo view
+            output=$(wsh run -c "sleep infinity" 2>&1) || true
             block_id=$(parse_block_id "$output")
             if [ -n "$block_id" ]; then
+                sleep 0.3
                 # Convert the term block to sysinfo view
                 wsh setmeta -b "block:${block_id}" view=sysinfo "sysinfo:type=CPU + Mem" &>/dev/null || true
             fi

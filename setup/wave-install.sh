@@ -1173,9 +1173,10 @@ setup_yoyo_layout() {
 
     # 4. Open system info (right-bottom)
     log_layout "Opening system info..."
-    output=$(wsh run -c "echo sysinfo" 2>&1) || true
+    output=$(wsh run -c "sleep infinity" 2>&1) || true
     block_id=$(parse_block_id "$output")
     if [ -n "$block_id" ]; then
+        sleep 0.3
         wsh setmeta -b "block:${block_id}" view=sysinfo "sysinfo:type=CPU + Mem" &>/dev/null || true
     fi
     record_widget "system" "$block_id"
