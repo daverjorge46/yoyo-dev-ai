@@ -127,6 +127,7 @@ REGENERATE_CLAUDE_MD=false
 VERBOSE=false
 SKIP_MCP_CHECK=false
 SKIP_WAVE_CONFIG=false
+SKIP_OPENCLAW=false
 
 # Track files changed during update
 declare -a CHANGED_FILES=()
@@ -175,6 +176,10 @@ while [[ $# -gt 0 ]]; do
             SKIP_WAVE_CONFIG=true
             shift
             ;;
+        --skip-openclaw)
+            SKIP_OPENCLAW=true
+            shift
+            ;;
         --regenerate-claude)
             REGENERATE_CLAUDE_MD=true
             shift
@@ -204,6 +209,7 @@ Options:
   ${UI_PRIMARY}--no-overwrite${UI_RESET}                 Keep all existing framework files
   ${UI_PRIMARY}--skip-mcp-check${UI_RESET}               Skip MCP server verification
   ${UI_PRIMARY}--skip-wave-config${UI_RESET}             Skip Wave Terminal configuration update
+  ${UI_PRIMARY}--skip-openclaw${UI_RESET}                Skip OpenClaw update
   ${UI_PRIMARY}--regenerate-claude${UI_RESET}            Regenerate project CLAUDE.md from template
   ${UI_PRIMARY}-v, --verbose${UI_RESET}                  Show detailed update information
   ${UI_PRIMARY}-h, --help${UI_RESET}                     Show this help message
@@ -536,7 +542,7 @@ update_with_progress() {
     echo "$files_copied"
 }
 
-TOTAL_STEPS=12
+TOTAL_STEPS=13
 CURRENT_STEP=0
 
 # Note: BASE_YOYO_DEV was defined earlier in Welcome Screen section
@@ -956,6 +962,93 @@ else
     ((CURRENT_STEP++))
     ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping MCP server check..."
     show_progress "Skipped (--skip-mcp-check)"
+    echo ""
+fi
+
+# Step 13: Update OpenClaw (yoyo-ai)
+if [ "$SKIP_OPENCLAW" = false ]; then
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Updating OpenClaw (yoyo-ai)..."
+
+    # Source functions.sh for check_node_version
+    if [ -f "$SCRIPT_DIR/functions.sh" ]; then
+        source "$SCRIPT_DIR/functions.sh"
+    fi
+
+    # Add yoyo_ai config section if missing (migration for existing installs)
+    if [ -f ".yoyo-dev/config.yml" ] && ! grep -q "^yoyo_ai:" .yoyo-dev/config.yml 2>/dev/null; then
+        show_progress "Adding yoyo_ai config section"
+        cat >> .yoyo-dev/config.yml << 'YOYO_AI_EOF'
+
+# Yoyo AI (OpenClaw Personal Assistant)
+yoyo_ai:
+  enabled: true
+  openclaw:
+    installed: false
+    port: 18789
+    config_path: "~/.openclaw/openclaw.json"
+    daemon:
+      auto_start: false
+      service_type: "auto"
+    update:
+      auto_check: true
+YOYO_AI_EOF
+        track_file_change ".yoyo-dev/config.yml (yoyo_ai section added)"
+    fi
+
+    if command -v openclaw &>/dev/null; then
+        local current_oc_ver
+        current_oc_ver=$(openclaw --version 2>/dev/null || echo "unknown")
+        show_progress "Current OpenClaw version" "$current_oc_ver"
+        show_progress "Updating OpenClaw..."
+
+        if npm update -g openclaw@latest 2>&1 | tail -1; then
+            local new_oc_ver
+            new_oc_ver=$(openclaw --version 2>/dev/null || echo "unknown")
+            ui_success "OpenClaw updated to ${new_oc_ver}"
+            track_file_change "OpenClaw (${current_oc_ver} → ${new_oc_ver})"
+        else
+            ui_warning "OpenClaw update failed - continuing"
+        fi
+    else
+        # Not installed - offer to install
+        if node_ver=$(check_node_version 22 2>/dev/null); then
+            show_progress "OpenClaw not installed (Node.js v${node_ver} available)"
+            echo ""
+            echo -e "  Would you like to install OpenClaw (yoyo-ai)?"
+            echo ""
+            echo -e "    ${UI_PRIMARY}1.${UI_RESET} Install OpenClaw (recommended)"
+            echo -e "    ${UI_PRIMARY}2.${UI_RESET} Skip"
+            echo ""
+            echo -n "  Choice [1]: "
+            read -r oc_choice
+            oc_choice="${oc_choice:-1}"
+
+            if [ "$oc_choice" = "1" ]; then
+                ui_info "Installing OpenClaw..."
+                if npm install -g openclaw@latest 2>&1 | tail -1; then
+                    ui_success "OpenClaw installed"
+                    openclaw onboard --install-daemon 2>&1 | tail -3 || true
+                    # Update config
+                    if [ -f ".yoyo-dev/config.yml" ]; then
+                        sed -i.bak 's/installed: false/installed: true/' .yoyo-dev/config.yml 2>/dev/null
+                        rm -f .yoyo-dev/config.yml.bak
+                    fi
+                else
+                    ui_warning "Installation failed"
+                fi
+            else
+                ui_info "Skipping OpenClaw installation"
+            fi
+        else
+            show_progress "Skipping OpenClaw (Node.js >= 22 required)"
+        fi
+    fi
+    echo ""
+else
+    ((CURRENT_STEP++))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping OpenClaw update..."
+    echo -e "     ${UI_YOYO_YELLOW}⊘${UI_RESET} ${UI_YOYO_YELLOW}Skipped${UI_RESET} ${UI_DIM}(--skip-openclaw)${UI_RESET}"
     echo ""
 fi
 

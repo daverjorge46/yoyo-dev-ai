@@ -37,6 +37,7 @@ PROJECT_TYPE=""
 AUTO_INSTALL_MCP=true
 GENERATE_CLAUDE_MD=true
 INTERACTIVE=true
+INSTALL_OPENCLAW=true
 
 # Tech Stack Configuration
 TECH_STACK_FRAMEWORK=""
@@ -81,6 +82,10 @@ while [[ $# -gt 0 ]]; do
             GENERATE_CLAUDE_MD=false
             shift
             ;;
+        --no-openclaw)
+            INSTALL_OPENCLAW=false
+            shift
+            ;;
         --non-interactive)
             INTERACTIVE=false
             shift
@@ -101,6 +106,7 @@ Options:
   ${UI_PRIMARY}--project-type=TYPE${UI_RESET}         Use specific project type
   ${UI_PRIMARY}--no-auto-mcp${UI_RESET}               Skip automatic MCP server installation
   ${UI_PRIMARY}--no-claude-md${UI_RESET}              Skip project CLAUDE.md generation
+  ${UI_PRIMARY}--no-openclaw${UI_RESET}               Skip OpenClaw AI assistant installation
   ${UI_PRIMARY}--non-interactive${UI_RESET}           Run without prompts (use defaults)
   ${UI_PRIMARY}-h, --help${UI_RESET}                  Show this help message
 
@@ -377,7 +383,7 @@ echo ""
 # Installation Steps
 # ============================================================================
 
-TOTAL_STEPS=9
+TOTAL_STEPS=10
 CURRENT_STEP=0
 
 # Step 1: Create directories
@@ -591,6 +597,87 @@ fi
 
 ui_success "Installation verified"
 echo ""
+
+# Step 9: Install OpenClaw (yoyo-ai)
+if [ "$INSTALL_OPENCLAW" = true ]; then
+    ((++CURRENT_STEP))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Installing OpenClaw (yoyo-ai)..."
+
+    # Source functions.sh for check_node_version
+    if [ -f "$SCRIPT_DIR/functions.sh" ]; then
+        source "$SCRIPT_DIR/functions.sh"
+    fi
+
+    OPENCLAW_INSTALLED=false
+    NODE_OK=false
+
+    # Check Node.js >= 22
+    if node_ver=$(check_node_version 22 2>/dev/null); then
+        NODE_OK=true
+        echo -e "  ${UI_SUCCESS}✓${UI_RESET} Node.js v${node_ver}"
+    else
+        if [ "$node_ver" = "not_installed" ]; then
+            ui_warning "Node.js not installed - skipping OpenClaw"
+        else
+            ui_warning "Node.js v${node_ver} too old (need >= 22) - skipping OpenClaw"
+        fi
+    fi
+
+    if [ "$NODE_OK" = true ]; then
+        # Check if already installed
+        if command -v openclaw &>/dev/null; then
+            echo -e "  ${UI_SUCCESS}✓${UI_RESET} OpenClaw already installed ($(openclaw --version 2>/dev/null || echo 'unknown'))"
+            OPENCLAW_INSTALLED=true
+        else
+            echo -e "  ${UI_DIM}Installing openclaw@latest...${UI_RESET}"
+            if npm install -g openclaw@latest 2>&1 | tail -1; then
+                OPENCLAW_INSTALLED=true
+                ui_success "OpenClaw installed"
+            else
+                ui_warning "OpenClaw installation failed - you can install later with: npm install -g openclaw@latest"
+            fi
+        fi
+
+        # Run onboarding if freshly installed
+        if [ "$OPENCLAW_INSTALLED" = true ]; then
+            echo -e "  ${UI_DIM}Running OpenClaw onboarding...${UI_RESET}"
+            openclaw onboard --install-daemon 2>&1 | tail -3 || {
+                ui_warning "Onboarding had issues - run 'yoyo-ai --doctor' to diagnose"
+            }
+        fi
+    fi
+
+    # Add yoyo_ai section to config
+    if [ -f "$INSTALL_DIR/config.yml" ] && ! grep -q "^yoyo_ai:" "$INSTALL_DIR/config.yml" 2>/dev/null; then
+        cat >> "$INSTALL_DIR/config.yml" << 'YOYO_AI_EOF'
+
+# Yoyo AI (OpenClaw Personal Assistant)
+yoyo_ai:
+  enabled: true
+  openclaw:
+    installed: false
+    port: 18789
+    config_path: "~/.openclaw/openclaw.json"
+    daemon:
+      auto_start: false
+      service_type: "auto"
+    update:
+      auto_check: true
+YOYO_AI_EOF
+    fi
+
+    # Update installed flag
+    if [ "$OPENCLAW_INSTALLED" = true ] && [ -f "$INSTALL_DIR/config.yml" ]; then
+        sed -i.bak 's/installed: false/installed: true/' "$INSTALL_DIR/config.yml" 2>/dev/null
+        rm -f "$INSTALL_DIR/config.yml.bak"
+    fi
+
+    echo ""
+else
+    ((++CURRENT_STEP))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Skipping OpenClaw installation..."
+    echo ""
+fi
 
 # ============================================================================
 # Install Global Commands

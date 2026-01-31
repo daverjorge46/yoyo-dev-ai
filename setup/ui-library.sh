@@ -187,6 +187,9 @@ export ICON_CIRCLE='◉'
 export ICON_CLIPBOARD='📋'
 export ICON_BRANCH='🌿'
 
+# OpenClaw / Yoyo AI icon
+export ICON_OPENCLAW='🐾'
+
 # Agent-specific icons
 export ICON_AGENT_YOYO_AI='🤖'
 export ICON_AGENT_ARTHAS_ORACLE='🔮'
@@ -1871,6 +1874,164 @@ ui_update_summary_panel() {
     echo ""
 }
 
+# ============================================================================
+# Yoyo AI (OpenClaw) Branded Banner
+# ============================================================================
+
+# Print the branded YOYO AI assistant banner
+# Usage: ui_yoyo_ai_banner [version]
+ui_yoyo_ai_banner() {
+    local version="${1:-v1.0.0}"
+    local tagline="Your personal AI assistant - powered by OpenClaw"
+    local term_width
+    term_width=$(_get_terminal_width)
+
+    local banner_width=70
+    if [ "$term_width" -lt 80 ]; then
+        # Compact banner
+        local border_width=40
+        echo ""
+        echo -ne "${UI_MAUVE}${BOX_DBL_TL}"
+        for ((i=0; i<border_width; i++)); do echo -n "${BOX_DBL_H}"; done
+        echo -e "${BOX_DBL_TR}${UI_RESET}"
+
+        echo -ne "${UI_MAUVE}${BOX_DBL_V}${UI_RESET}"
+        echo -ne "  ${UI_MAUVE}${UI_BOLD}${ICON_OPENCLAW} YOYO AI${UI_RESET}  "
+        echo -ne "${UI_SUBTEXT0}${version}${UI_RESET}"
+        local content_len=$((2 + 10 + 2 + ${#version}))
+        local padding=$((border_width - content_len))
+        [ "$padding" -gt 0 ] && printf "%${padding}s" ""
+        echo -e "${UI_MAUVE}${BOX_DBL_V}${UI_RESET}"
+
+        echo -ne "${UI_MAUVE}${BOX_DBL_BL}"
+        for ((i=0; i<border_width; i++)); do echo -n "${BOX_DBL_H}"; done
+        echo -e "${BOX_DBL_BR}${UI_RESET}"
+        echo -e "${UI_SUBTEXT0}${tagline}${UI_RESET}"
+        echo ""
+        return
+    fi
+
+    # Cap at terminal width
+    if [ "$banner_width" -gt $((term_width - 2)) ]; then
+        banner_width=$((term_width - 2))
+    fi
+
+    # ASCII art for "YOYO AI" (reusing same art, different color)
+    local art_line1="  ██╗   ██╗ ██████╗ ██╗   ██╗ ██████╗      █████╗ ██╗       "
+    local art_line2="  ╚██╗ ██╔╝██╔═══██╗╚██╗ ██╔╝██╔═══██╗    ██╔══██╗██║       "
+    local art_line3="   ╚████╔╝ ██║   ██║ ╚████╔╝ ██║   ██║    ███████║██║       "
+    local art_line4="    ╚██╔╝  ██║   ██║  ╚██╔╝  ██║   ██║    ██╔══██║██║       "
+    local art_line5="     ██║   ╚██████╔╝   ██║   ╚██████╔╝    ██║  ██║██║       "
+    local art_line6="     ╚═╝    ╚═════╝    ╚═╝    ╚═════╝     ╚═╝  ╚═╝╚═╝       "
+    local art_display_width=63
+
+    _print_ai_banner_line() {
+        local content="$1"
+        local display_width="$2"
+        local padding=$((banner_width - display_width))
+        echo -ne "${UI_MAUVE}${BOX_DBL_V}${UI_RESET}"
+        echo -ne "${UI_MAUVE}${content}${UI_RESET}"
+        [ "$padding" -gt 0 ] && printf "%${padding}s" ""
+        echo -e "${UI_MAUVE}${BOX_DBL_V}${UI_RESET}"
+    }
+
+    echo ""
+    echo -ne "${UI_MAUVE}${BOX_DBL_TL}"
+    for ((i=0; i<banner_width; i++)); do echo -n "${BOX_DBL_H}"; done
+    echo -e "${BOX_DBL_TR}${UI_RESET}"
+
+    _print_ai_banner_line "$art_line1" "$art_display_width"
+    _print_ai_banner_line "$art_line2" "$art_display_width"
+    _print_ai_banner_line "$art_line3" "$art_display_width"
+    _print_ai_banner_line "$art_line4" "$art_display_width"
+    _print_ai_banner_line "$art_line5" "$art_display_width"
+    _print_ai_banner_line "$art_line6" "$art_display_width"
+
+    echo -ne "${UI_MAUVE}${BOX_DBL_VR}"
+    for ((i=0; i<banner_width; i++)); do echo -n "${BOX_DBL_H}"; done
+    echo -e "${BOX_DBL_VL}${UI_RESET}"
+
+    local separator_char="|"
+    local info_prefix_len=$((2 + ${#version} + 2 + 1 + 2))
+    echo -ne "${UI_MAUVE}${BOX_DBL_V}${UI_RESET}"
+    echo -ne "${UI_MAUVE}  ${version}${UI_RESET}"
+    echo -ne "${UI_OVERLAY0}  ${separator_char}  ${UI_RESET}"
+    echo -ne "${UI_SUBTEXT1}${tagline}${UI_RESET}"
+    local total_content_len=$((info_prefix_len + ${#tagline}))
+    local padding=$((banner_width - total_content_len))
+    [ "$padding" -gt 0 ] && printf "%${padding}s" ""
+    echo -e "${UI_MAUVE}${BOX_DBL_V}${UI_RESET}"
+
+    echo -ne "${UI_MAUVE}${BOX_DBL_BL}"
+    for ((i=0; i<banner_width; i++)); do echo -n "${BOX_DBL_H}"; done
+    echo -e "${BOX_DBL_BR}${UI_RESET}"
+    echo ""
+}
+
+# Display yoyo-ai daemon status panel
+# Usage: ui_yoyo_ai_status_panel running|stopped [port] [pid]
+ui_yoyo_ai_status_panel() {
+    local status="${1:-unknown}"
+    local port="${2:-18789}"
+    local pid="${3:-}"
+    local width=69
+
+    echo ""
+    echo -ne "${UI_MAUVE}${BOX_TL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_TR}${UI_RESET}"
+
+    # Header
+    echo -ne "${UI_MAUVE}${BOX_V}${UI_RESET}"
+    echo -ne "  ${ICON_OPENCLAW} ${UI_MAUVE}${UI_BOLD}YOYO AI STATUS${UI_RESET}"
+    local header_len=$((2 + 2 + 14))
+    local header_pad=$((width - header_len))
+    printf "%${header_pad}s" ""
+    echo -e "${UI_MAUVE}${BOX_V}${UI_RESET}"
+
+    echo -ne "${UI_MAUVE}${BOX_VR}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_VL}${UI_RESET}"
+
+    # Status row
+    local status_color="$UI_ERROR"
+    local status_icon="$ICON_ERROR"
+    if [ "$status" = "running" ]; then
+        status_color="$UI_SUCCESS"
+        status_icon="$ICON_SUCCESS"
+    fi
+
+    echo -ne "${UI_MAUVE}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_TEXT}Daemon:       ${status_color}${status_icon} ${status}${UI_RESET}"
+    local s_len=$((2 + 14 + 2 + ${#status}))
+    local s_pad=$((width - s_len))
+    printf "%${s_pad}s" ""
+    echo -e "${UI_MAUVE}${BOX_V}${UI_RESET}"
+
+    # Port row
+    echo -ne "${UI_MAUVE}${BOX_V}${UI_RESET}"
+    echo -ne "  ${UI_TEXT}Port:         ${UI_SUBTEXT1}${port}${UI_RESET}"
+    local p_len=$((2 + 14 + ${#port}))
+    local p_pad=$((width - p_len))
+    printf "%${p_pad}s" ""
+    echo -e "${UI_MAUVE}${BOX_V}${UI_RESET}"
+
+    # PID row (if running)
+    if [ -n "$pid" ]; then
+        echo -ne "${UI_MAUVE}${BOX_V}${UI_RESET}"
+        echo -ne "  ${UI_TEXT}PID:          ${UI_SUBTEXT1}${pid}${UI_RESET}"
+        local pid_len=$((2 + 14 + ${#pid}))
+        local pid_pad=$((width - pid_len))
+        printf "%${pid_pad}s" ""
+        echo -e "${UI_MAUVE}${BOX_V}${UI_RESET}"
+    fi
+
+    echo -ne "${UI_MAUVE}${BOX_BL}"
+    for ((i=0; i<width; i++)); do printf "${BOX_H}"; done
+    echo -e "${BOX_BR}${UI_RESET}"
+    echo ""
+}
+
 # Export all functions
 export -f supports_truecolor
 export -f ui_line ui_box_header ui_section ui_success ui_error ui_warning ui_info
@@ -1885,3 +2046,4 @@ export -f ui_is_interactive ui_update_progress ui_progress_complete ui_update_st
 export -f ui_update_banner _ui_update_banner_compact _ui_update_banner_full
 export -f ui_phase_indicator ui_protected_data_panel ui_source_destination_panel
 export -f ui_update_summary_panel
+export -f ui_yoyo_ai_banner ui_yoyo_ai_status_panel

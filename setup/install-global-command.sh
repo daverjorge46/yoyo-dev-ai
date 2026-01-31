@@ -33,7 +33,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Define commands to install
 declare -A COMMANDS=(
-    ["yoyo"]="yoyo.sh"
+    ["yoyo-dev"]="yoyo.sh"
+    ["yoyo-ai"]="yoyo-ai.sh"
+    ["yoyo"]="yoyo-compat.sh"
     ["yoyo-cli"]="yoyo-cli.sh"
     ["yoyo-init"]="init.sh"
     ["yoyo-update"]="yoyo-update.sh"
@@ -188,7 +190,7 @@ fi
 echo -e "${BOLD}Testing commands:${RESET}"
 echo ""
 
-for cmd in yoyo yoyo-cli yoyo-init yoyo-update yoyo-gui yoyo-doctor; do
+for cmd in yoyo-dev yoyo-ai yoyo yoyo-cli yoyo-init yoyo-update yoyo-gui yoyo-doctor; do
     if command -v $cmd &> /dev/null; then
         echo -e "  ${GREEN}✓${RESET} ${CYAN}$cmd${RESET} is available"
     else
@@ -201,9 +203,16 @@ echo "────────────────────────�
 echo ""
 echo -e "${BOLD}Available Commands:${RESET}"
 echo ""
-echo -e "  ${GREEN}yoyo${RESET}              Launch Wave Terminal with yoyo-dev-ai"
-echo -e "  ${GREEN}yoyo --no-wave${RESET}    Launch Claude Code without Wave Terminal"
-echo -e "  ${GREEN}yoyo --help${RESET}       Show command reference"
+echo -e "  ${GREEN}yoyo-dev${RESET}          Launch Wave Terminal with yoyo-dev-ai"
+echo -e "  ${GREEN}yoyo-dev --no-wave${RESET}  Launch Claude Code without Wave Terminal"
+echo -e "  ${GREEN}yoyo-dev --help${RESET}   Show dev environment reference"
+echo ""
+echo -e "  ${GREEN}yoyo-ai${RESET}           Personal AI assistant (OpenClaw)"
+echo -e "  ${GREEN}yoyo-ai --start${RESET}   Start AI daemon"
+echo -e "  ${GREEN}yoyo-ai --stop${RESET}    Stop AI daemon"
+echo -e "  ${GREEN}yoyo-ai --help${RESET}    Show AI assistant reference"
+echo ""
+echo -e "  ${GREEN}yoyo${RESET}              ${DIM}(deprecated alias for yoyo-dev)${RESET}"
 echo ""
 echo -e "  ${GREEN}yoyo-cli${RESET}          Launch Claude Code in CLI mode (for Wave widget)"
 echo ""

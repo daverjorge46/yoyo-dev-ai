@@ -101,6 +101,31 @@ EOF
     fi
 }
 
+# Check Node.js version meets minimum requirement
+# Usage: check_node_version 22
+# Returns 0 if version is sufficient, 1 otherwise
+check_node_version() {
+    local required_major="${1:-22}"
+
+    if ! command -v node &>/dev/null; then
+        echo "not_installed"
+        return 1
+    fi
+
+    local node_version
+    node_version=$(node --version 2>/dev/null | sed 's/^v//')
+    local node_major
+    node_major=$(echo "$node_version" | cut -d. -f1)
+
+    if [ "$node_major" -ge "$required_major" ] 2>/dev/null; then
+        echo "$node_version"
+        return 0
+    else
+        echo "$node_version"
+        return 1
+    fi
+}
+
 # Function to install from GitHub
 install_from_github() {
     local target_dir="$1"
