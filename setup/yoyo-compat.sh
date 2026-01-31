@@ -1,12 +1,13 @@
 #!/bin/bash
 
-# Yoyo Dev Compatibility Wrapper
-# Deprecated: use 'yoyo-dev' instead of 'yoyo'
+# Yoyo Dev - Deprecated 'yoyo' command
+# Use 'yoyo-dev' instead.
 
-echo -e "\033[1;33m⚠\033[0m  \033[2m'yoyo' is deprecated. Use 'yoyo-dev' instead.\033[0m"
+echo -e "\033[1;33m⚠\033[0m  '\033[1myoyo\033[0m' is deprecated and will be removed in a future version."
+echo -e "   Use \033[1;32myoyo-dev\033[0m instead."
 echo ""
 
-# Resolve to the actual yoyo.sh (yoyo-dev) script
+# Forward to yoyo-dev (yoyo.sh)
 SCRIPT_PATH="${BASH_SOURCE[0]}"
 if [ -L "$SCRIPT_PATH" ]; then
     SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH")"

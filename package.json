@@ -29,7 +29,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/yoyo-ai/yoyo-dev.git"
+    "url": "https://github.com/yoyo-dev-ai/yoyo-dev-ai.git"
   },
   "dependencies": {
     "@types/js-yaml": "^4.0.9",

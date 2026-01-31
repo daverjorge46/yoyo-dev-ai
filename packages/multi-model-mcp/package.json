@@ -1,5 +1,5 @@
 {
-  "name": "@yoyo-dev/multi-model-mcp",
+  "name": "@yoyo-dev-ai/multi-model-mcp",
   "version": "1.0.0",
   "description": "MCP server for multi-model LLM access (OpenAI, Google, Ollama)",
   "type": "module",

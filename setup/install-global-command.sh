@@ -35,7 +35,6 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 declare -A COMMANDS=(
     ["yoyo-dev"]="yoyo.sh"
     ["yoyo-ai"]="yoyo-ai.sh"
-    ["yoyo"]="yoyo-compat.sh"
     ["yoyo-cli"]="yoyo-cli.sh"
     ["yoyo-init"]="init.sh"
     ["yoyo-update"]="yoyo-update.sh"
@@ -43,9 +42,10 @@ declare -A COMMANDS=(
     ["yoyo-doctor"]="yoyo-doctor.sh"
 )
 
-# Legacy alias (kept for backwards compatibility)
+# Legacy aliases (kept for backwards compatibility)
 declare -A LEGACY_COMMANDS=(
     ["yoyo-install"]="init.sh"
+    ["yoyo"]="yoyo-compat.sh"
 )
 
 # Determine installation directory
@@ -156,11 +156,12 @@ fi
 echo "────────────────────────────────────────────────────────────────"
 echo ""
 
-if [ $INSTALLED_COUNT -eq ${#COMMANDS[@]} ]; then
-    echo -e "${GREEN}✅ All commands installed successfully${RESET}"
+TOTAL_EXPECTED=$(( ${#COMMANDS[@]} + ${#LEGACY_COMMANDS[@]} ))
+if [ $INSTALLED_COUNT -ge ${#COMMANDS[@]} ]; then
+    echo -e "${GREEN}All commands installed successfully${RESET}"
     echo ""
 elif [ $INSTALLED_COUNT -gt 0 ]; then
-    echo -e "${YELLOW}⚠️  $INSTALLED_COUNT of ${#COMMANDS[@]} commands installed${RESET}"
+    echo -e "${YELLOW}$INSTALLED_COUNT of $TOTAL_EXPECTED commands installed${RESET}"
     echo ""
 else
     echo -e "${RED}❌ Installation failed${RESET}"
@@ -190,7 +191,7 @@ fi
 echo -e "${BOLD}Testing commands:${RESET}"
 echo ""
 
-for cmd in yoyo-dev yoyo-ai yoyo yoyo-cli yoyo-init yoyo-update yoyo-gui yoyo-doctor; do
+for cmd in yoyo-dev yoyo-ai yoyo-cli yoyo-init yoyo-update yoyo-gui yoyo-doctor yoyo; do
     if command -v $cmd &> /dev/null; then
         echo -e "  ${GREEN}✓${RESET} ${CYAN}$cmd${RESET} is available"
     else
@@ -212,7 +213,7 @@ echo -e "  ${GREEN}yoyo-ai --start${RESET}   Start AI daemon"
 echo -e "  ${GREEN}yoyo-ai --stop${RESET}    Stop AI daemon"
 echo -e "  ${GREEN}yoyo-ai --help${RESET}    Show AI assistant reference"
 echo ""
-echo -e "  ${GREEN}yoyo${RESET}              ${DIM}(deprecated alias for yoyo-dev)${RESET}"
+echo -e "  ${DIM}yoyo${RESET}              ${DIM}(deprecated → use yoyo-dev)${RESET}"
 echo ""
 echo -e "  ${GREEN}yoyo-cli${RESET}          Launch Claude Code in CLI mode (for Wave widget)"
 echo ""

@@ -1,13 +1,13 @@
 {
-  "name": "yoyo-dev",
+  "name": "yoyo-dev-ai",
   "displayName": "Yoyo Dev - AI Workflow Framework",
   "description": "Systematic AI-assisted development with Claude Code: product planning, feature specs, task execution, design systems, and code review workflows",
   "version": "0.2.0",
-  "publisher": "yoyo-dev",
+  "publisher": "yoyo-dev-ai",
   "icon": "icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/yoyo-dev/yoyo-dev"
+    "url": "https://github.com/yoyo-dev-ai/yoyo-dev-ai"
   },
   "engines": {
     "vscode": "^1.85.0"

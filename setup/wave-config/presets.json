@@ -1,5 +1,5 @@
 {
-  "bg@yoyo-dev": {
+  "bg@yoyo-dev-ai": {
     "display:name": "Yoyo Dev",
     "display:order": 1,
     "bg:*": true,
@@ -8,7 +8,7 @@
     "bg:activebordercolor": "#00BCD4",
     "bg:bordercolor": "#1e3a4a"
   },
-  "bg@yoyo-dev-vibrant": {
+  "bg@yoyo-dev-ai-vibrant": {
     "display:name": "Yoyo Dev Vibrant",
     "display:order": 2,
     "bg:*": true,
@@ -17,7 +17,7 @@
     "bg:activebordercolor": "#00E5FF",
     "bg:bordercolor": "#00BCD4"
   },
-  "bg@yoyo-dev-subtle": {
+  "bg@yoyo-dev-ai-subtle": {
     "display:name": "Yoyo Dev Subtle",
     "display:order": 3,
     "bg:*": true,
@@ -26,13 +26,13 @@
     "bg:activebordercolor": "#00BCD4",
     "bg:bordercolor": "#21262d"
   },
-  "tab@yoyo-dev": {
+  "tab@yoyo-dev-ai": {
     "display:name": "Yoyo Dev Workspace",
     "display:order": 1,
     "bg": "linear-gradient(135deg, #0a0e14 0%, #0d1620 40%, #0a1628 70%, #061018 100%)",
     "bg:opacity": 0.98,
     "bg:activebordercolor": "#E85D04",
     "bg:bordercolor": "#1e3a4a",
-    "tab:preset": "bg@yoyo-dev"
+    "tab:preset": "bg@yoyo-dev-ai"
   }
 }

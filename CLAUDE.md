@@ -22,7 +22,7 @@ Providing:
 ### Directory Structure
 
 ```
-yoyo-dev/                         # Framework root (this repository)
+yoyo-dev-ai/                      # Framework root (this repository)
 ├── CLAUDE.md                     # This file - framework development context
 ├── README.md                     # User-facing documentation
 ├── setup/                        # Installation and launcher scripts
@@ -252,7 +252,7 @@ Contains hook configuration for orchestration system.
 
 ## Important Notes for Framework Development
 
-1. **Changes go in yoyo-dev root** - Not in `.yoyo-dev/` (that's the installed framework)
+1. **Changes go in yoyo-dev-ai root** - Not in `.yoyo-dev/` (that's the installed framework)
 
 2. **Test installation scripts** - After modifying `setup/*.sh`, test with:
    ```bash

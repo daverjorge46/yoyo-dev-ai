@@ -1,5 +1,5 @@
 {
-  "term:theme": "yoyo-dev",
+  "term:theme": "yoyo-dev-ai",
   "web:defaulturl": "http://localhost:5173",
   "term:fontsize": 14,
   "term:fontfamily": "JetBrains Mono, Fira Code, Consolas, monospace",
@@ -9,7 +9,7 @@
   "widget:showhelp": false,
   "telemetry:enabled": false,
   "autocomplete:enabled": true,
-  "tab:preset": "bg@yoyo-dev",
+  "tab:preset": "bg@yoyo-dev-ai",
   "window:showmenubar": true,
   "waveai:showcloudmodes": false
 }

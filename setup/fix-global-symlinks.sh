@@ -1,178 +1,146 @@
 #!/bin/bash
 
-# Yoyo Dev - Fix Global Command Symlinks
-# This script fixes the broken symlinks in /usr/local/bin/
-# that point to non-existent paths.
+# Yoyo Dev v7.0 - Fix Global Command Symlinks
+# Detects install directory and recreates all V7 command symlinks.
 
 set -euo pipefail
 
-# Color codes
 readonly GREEN='\033[0;32m'
 readonly YELLOW='\033[1;33m'
 readonly RED='\033[0;31m'
 readonly CYAN='\033[0;36m'
 readonly BOLD='\033[1m'
+readonly DIM='\033[2m'
 readonly RESET='\033[0m'
 
 echo ""
-echo -e "${BOLD}${CYAN}🔧 Fixing Yoyo Dev Global Command Symlinks${RESET}"
+echo -e "${BOLD}${CYAN}Yoyo Dev v7.0 - Fix Global Command Symlinks${RESET}"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
-# Determine base installation directory
-# Check in order: standard location, environment variable, legacy location
+# Determine BASE installation
 if [ -d "$HOME/.yoyo-dev-base" ]; then
     BASE_DIR="$HOME/.yoyo-dev-base"
-elif [ -n "$YOYO_BASE_DIR" ] && [ -d "$YOYO_BASE_DIR" ]; then
+elif [ -n "${YOYO_BASE_DIR:-}" ] && [ -d "${YOYO_BASE_DIR}" ]; then
     BASE_DIR="$YOYO_BASE_DIR"
-elif [ -d "$HOME/yoyo-dev" ]; then
-    BASE_DIR="$HOME/yoyo-dev"
 else
-    echo -e "${RED}ERROR: Base installation not found${RESET}"
-    echo ""
-    echo "Checked locations:"
-    echo "  - $HOME/.yoyo-dev-base (standard)"
-    echo "  - \$YOYO_BASE_DIR environment variable"
-    echo "  - $HOME/yoyo-dev (legacy)"
-    echo ""
-    echo "Please install Yoyo Dev first or set YOYO_BASE_DIR."
+    echo -e "${RED}ERROR: Base installation not found at ~/.yoyo-dev-base${RESET}"
+    echo "Please install Yoyo Dev first."
     exit 1
 fi
 
-# Check required scripts exist
-for script in yoyo.sh yoyo-cli.sh yoyo-update.sh; do
-    if [ ! -f "$BASE_DIR/setup/$script" ]; then
-        echo -e "${YELLOW}WARNING: $script not found at $BASE_DIR/setup/$script${RESET}"
+echo -e "${CYAN}BASE:${RESET} $BASE_DIR"
+
+# Detect install directory (where existing symlinks live)
+INSTALL_DIR=""
+for dir in "$HOME/.local/bin" "/usr/local/bin" "$HOME/bin"; do
+    if [ -L "$dir/yoyo-update" ] || [ -L "$dir/yoyo" ] || [ -L "$dir/yoyo-dev" ]; then
+        INSTALL_DIR="$dir"
+        break
     fi
 done
 
-echo -e "${CYAN}📍 Base installation:${RESET} $BASE_DIR"
-echo ""
-
-# Check current symlink state
-echo -e "${BOLD}Current Symlink State:${RESET}"
-echo ""
-
-if [ -L "/usr/local/bin/yoyo" ]; then
-    CURRENT_YOYO_TARGET=$(readlink -f /usr/local/bin/yoyo 2>/dev/null || echo "broken")
-    CURRENT_YOYO_LINK=$(readlink /usr/local/bin/yoyo)
-    echo -e "  ${YELLOW}yoyo:${RESET}"
-    echo -e "    Link: $CURRENT_YOYO_LINK"
-    if [ -f "$CURRENT_YOYO_TARGET" ]; then
-        echo -e "    Status: ${GREEN}✓ Valid${RESET}"
+# Fallback: use same logic as install-global-command.sh
+if [ -z "$INSTALL_DIR" ]; then
+    if [ -w "/usr/local/bin" ]; then
+        INSTALL_DIR="/usr/local/bin"
+    elif [ -d "$HOME/.local/bin" ]; then
+        INSTALL_DIR="$HOME/.local/bin"
     else
-        echo -e "    Status: ${RED}✗ Broken (target doesn't exist)${RESET}"
+        mkdir -p "$HOME/.local/bin"
+        INSTALL_DIR="$HOME/.local/bin"
     fi
-elif [ -f "/usr/local/bin/yoyo" ]; then
-    echo -e "  ${YELLOW}yoyo:${RESET} Regular file (not a symlink)"
-else
-    echo -e "  ${YELLOW}yoyo:${RESET} ${RED}Not found${RESET}"
 fi
 
-echo ""
-
-if [ -L "/usr/local/bin/yoyo-update" ]; then
-    CURRENT_UPDATE_TARGET=$(readlink -f /usr/local/bin/yoyo-update 2>/dev/null || echo "broken")
-    CURRENT_UPDATE_LINK=$(readlink /usr/local/bin/yoyo-update)
-    echo -e "  ${YELLOW}yoyo-update:${RESET}"
-    echo -e "    Link: $CURRENT_UPDATE_LINK"
-    if [ -f "$CURRENT_UPDATE_TARGET" ]; then
-        echo -e "    Status: ${GREEN}✓ Valid${RESET}"
-    else
-        echo -e "    Status: ${RED}✗ Broken (target doesn't exist)${RESET}"
-    fi
-elif [ -f "/usr/local/bin/yoyo-update" ]; then
-    echo -e "  ${YELLOW}yoyo-update:${RESET} Regular file (not a symlink)"
-else
-    echo -e "  ${YELLOW}yoyo-update:${RESET} ${RED}Not found${RESET}"
+NEED_SUDO=false
+if [ "$INSTALL_DIR" = "/usr/local/bin" ] && [ ! -w "/usr/local/bin" ]; then
+    NEED_SUDO=true
 fi
 
-echo ""
-echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
-
-# Ask for confirmation
-echo -e "${BOLD}This will:${RESET}"
-echo "  1. Fix /usr/local/bin/yoyo → $BASE_DIR/setup/yoyo.sh"
-echo "  2. Fix /usr/local/bin/yoyo-cli → $BASE_DIR/setup/yoyo-cli.sh"
-echo "  3. Fix /usr/local/bin/yoyo-update → $BASE_DIR/setup/yoyo-update.sh"
-echo ""
-read -p "Continue? [Y/n] " -n 1 -r
+echo -e "${CYAN}Install dir:${RESET} $INSTALL_DIR"
 echo ""
 
-if [[ ! $REPLY =~ ^[Yy]$ ]] && [[ -n $REPLY ]]; then
-    echo "Cancelled."
-    exit 0
-fi
+# V7 commands (main)
+declare -A COMMANDS=(
+    ["yoyo-dev"]="yoyo.sh"
+    ["yoyo-ai"]="yoyo-ai.sh"
+    ["yoyo-cli"]="yoyo-cli.sh"
+    ["yoyo-init"]="init.sh"
+    ["yoyo-update"]="yoyo-update.sh"
+    ["yoyo-gui"]="yoyo-gui.sh"
+    ["yoyo-doctor"]="yoyo-doctor.sh"
+)
 
-echo ""
+# Legacy (deprecated)
+declare -A LEGACY=(
+    ["yoyo"]="yoyo-compat.sh"
+)
 
-# Function to fix a symlink
+FIXED=0
+SKIPPED=0
+FAILED=0
+
 fix_symlink() {
     local cmd="$1"
     local script="$2"
-    local script_path="$BASE_DIR/setup/$script"
+    local target="$BASE_DIR/setup/$script"
+    local link="$INSTALL_DIR/$cmd"
 
-    echo -e "${CYAN}→${RESET} Fixing $cmd command..."
-
-    if [ ! -f "$script_path" ]; then
-        echo -e "  ${YELLOW}⚠${RESET}  Script not found: $script_path (skipping)"
-        return 1
+    if [ ! -f "$target" ]; then
+        echo -e "  ${YELLOW}SKIP${RESET} $cmd ($script not found)"
+        SKIPPED=$((SKIPPED + 1))
+        return
     fi
 
-    if sudo ln -sf "$script_path" "/usr/local/bin/$cmd"; then
-        echo -e "  ${GREEN}✓${RESET} Symlink created: /usr/local/bin/$cmd → $script_path"
+    chmod +x "$target" 2>/dev/null || true
+
+    # Check if already correct
+    if [ -L "$link" ] && [ "$(readlink "$link")" = "$target" ] && [ -e "$link" ]; then
+        echo -e "  ${GREEN}OK${RESET}   $cmd (already correct)"
+        return
+    fi
+
+    # Create/fix symlink
+    if [ "$NEED_SUDO" = true ]; then
+        sudo ln -sf "$target" "$link"
     else
-        echo -e "  ${RED}✗${RESET} Failed to create symlink (sudo required)"
-        return 1
+        ln -sf "$target" "$link"
     fi
 
-    if sudo chmod +x "$script_path"; then
-        echo -e "  ${GREEN}✓${RESET} Made executable: $script_path"
+    if [ -L "$link" ] && [ -e "$link" ]; then
+        echo -e "  ${GREEN}FIXED${RESET} $cmd -> $target"
+        FIXED=$((FIXED + 1))
     else
-        echo -e "  ${YELLOW}⚠${RESET}  Could not set executable permission"
+        echo -e "  ${RED}FAIL${RESET} $cmd"
+        FAILED=$((FAILED + 1))
     fi
-
-    echo ""
-    return 0
 }
 
-# Fix all symlinks
-fix_symlink "yoyo" "yoyo.sh"
-fix_symlink "yoyo-cli" "yoyo-cli.sh"
-fix_symlink "yoyo-update" "yoyo-update.sh"
+echo -e "${BOLD}Main Commands:${RESET}"
+for cmd in yoyo-dev yoyo-ai yoyo-cli yoyo-init yoyo-update yoyo-gui yoyo-doctor; do
+    fix_symlink "$cmd" "${COMMANDS[$cmd]}"
+done
+
+echo ""
+echo -e "${BOLD}Legacy (deprecated):${RESET}"
+for cmd in yoyo; do
+    fix_symlink "$cmd" "${LEGACY[$cmd]}"
+done
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo ""
 
-# Verify fix
-echo -e "${BOLD}Verification:${RESET}"
-echo ""
+if [ $FAILED -eq 0 ]; then
+    echo -e "${GREEN}Done.${RESET} Fixed: $FIXED, Skipped: $SKIPPED"
+else
+    echo -e "${RED}Done with errors.${RESET} Fixed: $FIXED, Failed: $FAILED"
+fi
 
-verify_symlink() {
-    local cmd="$1"
-    local target
-    if [ -L "/usr/local/bin/$cmd" ]; then
-        target=$(readlink -f "/usr/local/bin/$cmd" 2>/dev/null || echo "broken")
-        if [ -f "$target" ]; then
-            echo -e "  ${GREEN}✓${RESET} $cmd command: $target"
-            return 0
-        fi
-    fi
-    echo -e "  ${YELLOW}⚠${RESET} $cmd command: Not available or broken"
-    return 1
-}
+# PATH check
+if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
+    echo ""
+    echo -e "${YELLOW}Add to your shell profile:${RESET}"
+    echo -e "  export PATH=\"$INSTALL_DIR:\$PATH\""
+fi
 
-verify_symlink "yoyo"
-verify_symlink "yoyo-cli"
-verify_symlink "yoyo-update"
-
-echo ""
-echo -e "${GREEN}${BOLD}✅ Global commands fixed successfully!${RESET}"
-echo ""
-echo -e "${CYAN}Test the fix:${RESET}"
-echo "  $ yoyo --version"
-echo "  $ yoyo-cli --help"
-echo "  $ yoyo --help"
 echo ""

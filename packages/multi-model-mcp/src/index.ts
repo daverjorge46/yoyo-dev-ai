@@ -8,7 +8,7 @@
  * - Ollama (local models)
  *
  * Usage:
- *   npx @yoyo-dev/multi-model-mcp
+ *   npx @yoyo-dev-ai/multi-model-mcp
  *
  * Environment variables:
  *   OPENAI_API_KEY - OpenAI API key
