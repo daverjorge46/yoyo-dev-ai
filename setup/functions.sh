@@ -257,3 +257,76 @@ install_from_github() {
         done
     fi
 }
+
+# ============================================================================
+# OpenClaw (yoyo-ai) Shared Helpers
+# ============================================================================
+
+# Default OpenClaw configuration
+OPENCLAW_PORT="${OPENCLAW_PORT:-18789}"
+OPENCLAW_TOKEN_FILE="${OPENCLAW_TOKEN_FILE:-$HOME/.openclaw/.gateway-token}"
+OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json}"
+
+# Generate or load a persistent gateway token
+# Exports OPENCLAW_GATEWAY_TOKEN
+ensure_openclaw_token() {
+    if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
+        OPENCLAW_GATEWAY_TOKEN="$(cat "$OPENCLAW_TOKEN_FILE")"
+        export OPENCLAW_GATEWAY_TOKEN
+    else
+        local token
+        token="yoyo-$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+        mkdir -p "$(dirname "$OPENCLAW_TOKEN_FILE")"
+        echo "$token" > "$OPENCLAW_TOKEN_FILE"
+        chmod 600 "$OPENCLAW_TOKEN_FILE"
+        export OPENCLAW_GATEWAY_TOKEN="$token"
+    fi
+}
+
+# Inject OPENCLAW_GATEWAY_TOKEN into systemd service file if missing, then daemon-reload
+patch_openclaw_systemd_service() {
+    local service_file="$HOME/.config/systemd/user/openclaw-gateway.service"
+    if [ -f "$service_file" ]; then
+        if ! grep -q "OPENCLAW_GATEWAY_TOKEN" "$service_file" 2>/dev/null; then
+            sed -i "/^\[Service\]/a Environment=OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}" "$service_file"
+            systemctl --user daemon-reload 2>/dev/null || true
+        fi
+    fi
+}
+
+# Ensure gateway.mode=local is set in openclaw.json
+set_openclaw_gateway_mode() {
+    if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
+        if ! grep -q '"mode"' "$OPENCLAW_CONFIG_PATH" 2>/dev/null; then
+            openclaw config set gateway.mode local 2>/dev/null || true
+        fi
+    fi
+}
+
+# Run full openclaw onboarding with token auth and daemon install
+# Requires OPENCLAW_GATEWAY_TOKEN to be set (call ensure_openclaw_token first)
+run_openclaw_onboard() {
+    openclaw onboard \
+        --non-interactive \
+        --accept-risk \
+        --flow quickstart \
+        --mode local \
+        --gateway-port "${OPENCLAW_PORT}" \
+        --gateway-auth token \
+        --gateway-token "${OPENCLAW_GATEWAY_TOKEN}" \
+        --install-daemon 2>&1 | tail -3 || true
+
+    # Patch systemd service with token if onboard created it
+    patch_openclaw_systemd_service
+}
+
+# Print dashboard URL and token to stdout
+# Accepts optional ui helper function names; falls back to echo
+show_openclaw_dashboard_info() {
+    echo ""
+    echo -e "  \033[2mDashboard:\033[0m \033[0;36mhttp://127.0.0.1:${OPENCLAW_PORT}\033[0m"
+    if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
+        echo -e "  \033[2mToken:\033[0m     \033[2m$(cat "$OPENCLAW_TOKEN_FILE")\033[0m"
+    fi
+    echo ""
+}

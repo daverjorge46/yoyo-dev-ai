@@ -640,9 +640,9 @@ if [ "$NODE_OK" = true ]; then
     # Run onboarding if installed
     if [ "$OPENCLAW_INSTALLED" = true ]; then
         echo -e "  ${UI_DIM}Running OpenClaw onboarding...${UI_RESET}"
-        openclaw onboard --install-daemon 2>&1 | tail -3 || {
-            ui_warning "Onboarding had issues — run 'yoyo-ai --doctor' to diagnose"
-        }
+        ensure_openclaw_token
+        run_openclaw_onboard
+        show_openclaw_dashboard_info
     fi
 fi
 

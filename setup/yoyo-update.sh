@@ -1020,6 +1020,17 @@ if command -v openclaw &>/dev/null; then
         ui_warning "OpenClaw update failed — continuing"
         YOYO_AI_STATUS="failed:npm update failed"
     fi
+
+    # Token migration: ensure gateway token exists for existing installs
+    if [ ! -f "$HOME/.openclaw/.gateway-token" ]; then
+        show_progress "Generating gateway token for existing install..."
+        ensure_openclaw_token
+        patch_openclaw_systemd_service
+        show_progress "Gateway token created"
+    fi
+
+    # Ensure gateway mode is set
+    set_openclaw_gateway_mode
 else
     # Not installed — auto-install (mandatory in V7)
     if node_ver=$(check_node_version 22 2>/dev/null); then
@@ -1027,7 +1038,9 @@ else
         ui_info "Installing OpenClaw (yoyo-ai)..."
         if npm install -g openclaw@latest 2>&1 | tail -1; then
             ui_success "OpenClaw installed"
-            openclaw onboard --install-daemon 2>&1 | tail -3 || true
+            ensure_openclaw_token
+            run_openclaw_onboard
+            show_openclaw_dashboard_info
             # Update config
             if [ -f ".yoyo-dev/config.yml" ]; then
                 sed -i.bak 's/installed: false/installed: true/' .yoyo-dev/config.yml 2>/dev/null

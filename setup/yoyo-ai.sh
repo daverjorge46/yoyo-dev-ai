@@ -125,39 +125,12 @@ is_gateway_running() {
 }
 
 ensure_gateway_token() {
-    # Generate a persistent local token if one doesn't exist
-    if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
-        export OPENCLAW_GATEWAY_TOKEN
-        OPENCLAW_GATEWAY_TOKEN="$(cat "$OPENCLAW_TOKEN_FILE")"
-    else
-        local token
-        token="yoyo-$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
-        mkdir -p "$(dirname "$OPENCLAW_TOKEN_FILE")"
-        echo "$token" > "$OPENCLAW_TOKEN_FILE"
-        chmod 600 "$OPENCLAW_TOKEN_FILE"
-        export OPENCLAW_GATEWAY_TOKEN="$token"
-        ui_success "Gateway token generated"
-    fi
-
-    # Ensure systemd service has the token if service file exists
-    local service_file="$HOME/.config/systemd/user/openclaw-gateway.service"
-    if [ -f "$service_file" ]; then
-        if ! grep -q "OPENCLAW_GATEWAY_TOKEN" "$service_file" 2>/dev/null; then
-            # Add token env var to the service
-            sed -i "/^\[Service\]/a Environment=OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}" "$service_file"
-            systemctl --user daemon-reload 2>/dev/null || true
-        fi
-    fi
+    ensure_openclaw_token
+    patch_openclaw_systemd_service
 }
 
 ensure_gateway_mode() {
-    # Ensure gateway.mode=local is set in config
-    if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
-        if ! grep -q '"mode"' "$OPENCLAW_CONFIG_PATH" 2>/dev/null; then
-            # Add gateway.mode via openclaw config set if available, or patch JSON
-            openclaw config set gateway.mode local 2>/dev/null || true
-        fi
-    fi
+    set_openclaw_gateway_mode
 }
 
 ensure_initialized() {
@@ -172,31 +145,27 @@ ensure_initialized() {
         echo ""
     fi
 
-    # Step 2: Ensure config exists (openclaw setup)
+    # Step 2: If no config, run full onboarding; otherwise just ensure token/mode/service
     if [ ! -f "$OPENCLAW_CONFIG_PATH" ]; then
-        ui_info "Running initial setup..."
-        openclaw setup --non-interactive 2>&1 || openclaw setup 2>&1 || {
-            ui_warning "Setup needs manual configuration"
-            echo -e "  Run: ${UI_PRIMARY}openclaw setup${UI_RESET}"
-            return 1
-        }
-        ui_success "Configuration created"
+        ui_info "Running OpenClaw onboarding..."
+        ensure_openclaw_token
+        run_openclaw_onboard
+        ui_success "OpenClaw onboarded"
         echo ""
-    fi
+    else
+        # Config exists — just ensure token, mode, and service
+        ensure_gateway_mode
+        ensure_gateway_token
 
-    # Step 3: Ensure gateway.mode=local and auth token
-    ensure_gateway_mode
-    ensure_gateway_token
-
-    # Step 4: Ensure gateway service is installed
-    if ! is_gateway_installed; then
-        ui_info "Installing gateway service..."
-        openclaw gateway install 2>&1 || {
-            ui_warning "Gateway service installation failed — will run gateway directly"
-            return 0
-        }
-        ui_success "Gateway service installed"
-        echo ""
+        if ! is_gateway_installed; then
+            ui_info "Installing gateway service..."
+            openclaw gateway install 2>&1 || {
+                ui_warning "Gateway service installation failed — will run gateway directly"
+                return 0
+            }
+            ui_success "Gateway service installed"
+            echo ""
+        fi
     fi
 
     return 0
@@ -227,6 +196,7 @@ daemon_start() {
         sleep 1
         if is_gateway_running; then
             ui_success "Gateway started on port ${OPENCLAW_PORT}"
+            show_openclaw_dashboard_info
             return 0
         fi
     fi
@@ -238,12 +208,7 @@ daemon_start() {
 
     if is_gateway_running; then
         ui_success "Gateway started on port ${OPENCLAW_PORT}"
-        echo ""
-        echo -e "  ${UI_DIM}Dashboard:${UI_RESET} ${UI_PRIMARY}http://127.0.0.1:${OPENCLAW_PORT}${UI_RESET}"
-        if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
-            echo -e "  ${UI_DIM}Token:${UI_RESET}     ${UI_DIM}$(cat "$OPENCLAW_TOKEN_FILE")${UI_RESET}"
-        fi
-        echo ""
+        show_openclaw_dashboard_info
     else
         ui_warning "Gateway may not have started correctly"
         echo -e "  Try manually: ${UI_PRIMARY}openclaw gateway --port ${OPENCLAW_PORT}${UI_RESET}"
