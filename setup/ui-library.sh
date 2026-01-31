@@ -374,7 +374,7 @@ _get_terminal_width() {
 # Automatically switches to compact mode for terminals < 80 columns
 ui_yoyo_banner() {
     local version="${1:-v7.0.0}"
-    local tagline="Your AI learns. Your AI remembers. Your AI evolves."
+    local tagline="AI-Assisted Development Environment"
     local term_width
     term_width=$(_get_terminal_width)
 
@@ -405,10 +405,10 @@ _ui_yoyo_banner_compact() {
 
     # Content line with YOYO AI and version
     echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_DBL_V}${UI_RESET}"
-    echo -ne "  ${UI_YOYO_YELLOW}${UI_BOLD}YOYO AI${UI_RESET}  "
+    echo -ne "  ${UI_YOYO_YELLOW}${UI_BOLD}YOYO DEV${UI_RESET}  "
     echo -ne "${UI_SUBTEXT0}${version}${UI_RESET}"
-    # Padding calculation: 2 (left margin) + 7 (YOYO AI) + 2 (spaces) + version length
-    local content_len=$((2 + 7 + 2 + ${#version}))
+    # Padding calculation: 2 (left margin) + 8 (YOYO DEV) + 2 (spaces) + version length
+    local content_len=$((2 + 8 + 2 + ${#version}))
     local padding=$((border_width - content_len))
     if [ "$padding" -gt 0 ]; then
         printf "%${padding}s" ""
@@ -442,17 +442,17 @@ _ui_yoyo_banner_full() {
         banner_width=$((term_width - 2))
     fi
 
-    # ASCII art lines for "YOYO AI" (6 lines tall)
-    # Each line is designed to be 63 visible characters
-    local art_line1="  ██╗   ██╗ ██████╗ ██╗   ██╗ ██████╗      █████╗ ██╗       "
-    local art_line2="  ╚██╗ ██╔╝██╔═══██╗╚██╗ ██╔╝██╔═══██╗    ██╔══██╗██║       "
-    local art_line3="   ╚████╔╝ ██║   ██║ ╚████╔╝ ██║   ██║    ███████║██║       "
-    local art_line4="    ╚██╔╝  ██║   ██║  ╚██╔╝  ██║   ██║    ██╔══██║██║       "
-    local art_line5="     ██║   ╚██████╔╝   ██║   ╚██████╔╝    ██║  ██║██║       "
-    local art_line6="     ╚═╝    ╚═════╝    ╚═╝    ╚═════╝     ╚═╝  ╚═╝╚═╝       "
+    # ASCII art lines for "YOYO DEV" (6 lines tall)
+    # Each line is designed to be 67 visible characters
+    local art_line1=" ██╗   ██╗ ██████╗ ██╗   ██╗ ██████╗    ██████╗ ███████╗██╗   ██╗"
+    local art_line2=" ╚██╗ ██╔╝██╔═══██╗╚██╗ ██╔╝██╔═══██╗   ██╔══██╗██╔════╝██║   ██║"
+    local art_line3="  ╚████╔╝ ██║   ██║ ╚████╔╝ ██║   ██║   ██║  ██║█████╗  ██║   ██║"
+    local art_line4="   ╚██╔╝  ██║   ██║  ╚██╔╝  ██║   ██║   ██║  ██║██╔══╝  ╚██╗ ██╔╝"
+    local art_line5="    ██║   ╚██████╔╝   ██║   ╚██████╔╝   ██████╔╝███████╗ ╚████╔╝ "
+    local art_line6="    ╚═╝    ╚═════╝    ╚═╝    ╚═════╝    ╚═════╝ ╚══════╝  ╚═══╝  "
 
     # Display width of ASCII art (visual characters, not bytes)
-    local art_display_width=63
+    local art_display_width=67
 
     # Helper to print a padded line inside the banner
     _print_banner_art_line() {
