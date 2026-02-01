@@ -1081,8 +1081,39 @@ wait_for_gui_ready() {
 
 # Setup yoyo-dev layout in Wave Terminal
 # This runs in background after Wave opens (every time)
-# Fixed layout: Left=yoyo-cli(~40%), Center=GUI browser(~40%), Right=Files(~20%), Bottom=terminal
-# Deletes any previous yoyo-tagged blocks and recreates from scratch for deterministic positioning.
+#
+# Desired layout:
+#   +-------------------+-------------------+-------------+
+#   |                   |                   |    Files    |
+#   |    yoyo-cli       |       GUI         |   (top-R)   |
+#   |    (~40%)         |     (center)      +-------------+
+#   |                   |                   |  Terminal   |
+#   |                   |                   |  (bot-R)    |
+#   +-------------------+-------------------+-------------+
+#
+# How it works:
+#   Wave Terminal (as of v0.10-0.13) has no wsh command for explicit layout
+#   positioning. The wsh run/view/web commands create blocks that get auto-placed
+#   using a balanced-fill algorithm (maxChildren=5). With 4 blocks, auto-placement
+#   creates a flat 4-column row, not the nested layout we need.
+#
+#   To achieve the desired layout, we:
+#     1. Create all 4 blocks via wsh (capturing their block IDs)
+#     2. Queue PendingBackendActions (insertatindex) into Wave's LayoutState
+#        via its SQLite database. This is the same mechanism Wave's own
+#        ApplyPortableLayout() uses internally.
+#     3. The frontend processes these actions on the next render cycle,
+#        producing the exact tree structure we specify.
+#
+#   Layout tree structure:
+#     Root (row):
+#       [0] yoyo-cli  (size ~40)
+#       [1] GUI        (size ~40)
+#       [2] column     (size ~20):
+#         [2,0] Files
+#         [2,1] Terminal
+#
+# Deletes any previous yoyo-tagged blocks and recreates from scratch.
 # Records block IDs in widget state file for toggle support.
 setup_yoyo_layout() {
     local project_dir="${1:-$PWD}"
@@ -1150,6 +1181,130 @@ setup_yoyo_layout() {
         done
     }
 
+    # Delete the default block that Wave creates for a new tab
+    cleanup_default_block() {
+        local all_blocks bid view_type meta_val block_count
+        all_blocks=$(wsh blocks list --json --timeout=3000 2>/dev/null) || true
+        if [ -z "$all_blocks" ] || [ "$all_blocks" = "null" ]; then
+            return 0
+        fi
+        block_count=$(echo "$all_blocks" | jq 'length' 2>/dev/null) || true
+        # Only clean up if there's a single default block (fresh tab)
+        if [ "$block_count" = "1" ]; then
+            bid=$(echo "$all_blocks" | jq -r '.[0].blockid' 2>/dev/null) || true
+            if [ -n "$bid" ]; then
+                log_layout "Deleting default block: ${bid}"
+                wsh deleteblock -b "block:${bid}" &>/dev/null || true
+                sleep 0.3
+            fi
+        fi
+    }
+
+    # Locate the Wave SQLite database
+    # Wave stores data in $WAVETERM_DATA_HOME/db/waveterm.db
+    # Default: ~/.local/share/waveterm/db/waveterm.db (Linux XDG convention)
+    get_wave_db_path() {
+        local wave_data_dir=""
+        # Try wsh wavepath first (most reliable)
+        wave_data_dir=$(wsh wavepath 2>/dev/null) || true
+        if [ -n "$wave_data_dir" ] && [ -f "${wave_data_dir}/db/waveterm.db" ]; then
+            echo "${wave_data_dir}/db/waveterm.db"
+            return 0
+        fi
+        # Try WAVETERM_DATA_HOME env var
+        if [ -n "${WAVETERM_DATA_HOME:-}" ] && [ -f "${WAVETERM_DATA_HOME}/db/waveterm.db" ]; then
+            echo "${WAVETERM_DATA_HOME}/db/waveterm.db"
+            return 0
+        fi
+        # Try standard XDG path (Linux)
+        local xdg_data="${XDG_DATA_HOME:-${HOME}/.local/share}"
+        if [ -f "${xdg_data}/waveterm/db/waveterm.db" ]; then
+            echo "${xdg_data}/waveterm/db/waveterm.db"
+            return 0
+        fi
+        # Try macOS path
+        if [ -f "${HOME}/Library/Application Support/waveterm/db/waveterm.db" ]; then
+            echo "${HOME}/Library/Application Support/waveterm/db/waveterm.db"
+            return 0
+        fi
+        return 1
+    }
+
+    # Get the active tab's layout state OID from Wave's SQLite database
+    # Returns the layout state ID on stdout
+    get_active_layout_state_id() {
+        local db_path="$1"
+        # Get the first window, then its workspace, then the active tab, then its layout state
+        sqlite3 "$db_path" "
+            SELECT json_extract(t.data, '$.layoutstate')
+            FROM db_tab t
+            JOIN db_workspace w ON json_extract(w.data, '$.activetabid') = t.oid
+            JOIN db_window win ON json_extract(win.data, '$.workspaceid') = w.oid
+            LIMIT 1;
+        " 2>/dev/null
+    }
+
+    # Queue layout actions into Wave's LayoutState PendingBackendActions
+    # This uses Wave's own mechanism for backend-to-frontend layout updates.
+    # Args: $1=db_path, $2=layout_state_id, $3=JSON array of LayoutActionData
+    queue_layout_actions() {
+        local db_path="$1"
+        local layout_id="$2"
+        local actions_json="$3"
+
+        # Read current data, merge pending actions, write back with version bump
+        sqlite3 "$db_path" "
+            UPDATE db_layoutstate
+            SET data = json_set(
+                json_set(data, '$.rootnode', null),
+                '$.pendingbackendactions', json('${actions_json}')
+            ),
+            version = version + 1
+            WHERE oid = '${layout_id}';
+        " 2>/dev/null
+    }
+
+    # Apply the desired layout tree via PendingBackendActions
+    # This queues insertatindex actions that the Wave frontend will process
+    # to produce the exact panel arrangement we want.
+    apply_yoyo_layout() {
+        local db_path="$1"
+        local layout_id="$2"
+        local cli_block="$3"
+        local gui_block="$4"
+        local files_block="$5"
+        local term_block="$6"
+
+        # Build the layout actions JSON:
+        # 1. Clear existing tree
+        # 2. Insert yoyo-cli at [0] with size 40 (focused)
+        # 3. Insert GUI at [1] with size 40
+        # 4. Insert Files at [2] with size 20
+        # 5. Insert Terminal at [2,1] (creates a column split within node [2])
+        #
+        # The IndexArr encodes the tree path:
+        #   [0] = first child of root
+        #   [1] = second child of root
+        #   [2] = third child of root
+        #   [2,1] = second child of node [2] (this forces [2] to become a column parent)
+        local actions_json
+        actions_json=$(jq -n \
+            --arg cli "$cli_block" \
+            --arg gui "$gui_block" \
+            --arg files "$files_block" \
+            --arg term "$term_block" \
+            '[
+                {"actiontype": "clear", "actionid": "yoyo-clear"},
+                {"actiontype": "insertatindex", "actionid": "yoyo-cli", "blockid": $cli, "indexarr": [0], "nodesize": 40, "focused": true},
+                {"actiontype": "insertatindex", "actionid": "yoyo-gui", "blockid": $gui, "indexarr": [1], "nodesize": 40},
+                {"actiontype": "insertatindex", "actionid": "yoyo-files", "blockid": $files, "indexarr": [2], "nodesize": 20},
+                {"actiontype": "insertatindex", "actionid": "yoyo-term", "blockid": $term, "indexarr": [2,1]}
+            ]')
+
+        log_layout "Queuing layout actions: $actions_json"
+        queue_layout_actions "$db_path" "$layout_id" "$actions_json"
+    }
+
     log_layout "Starting layout setup for: $project_dir"
 
     # Wait for Wave to be ready (longer timeout since Wave may not have exec'd yet)
@@ -1180,52 +1335,95 @@ setup_yoyo_layout() {
     cleanup_existing_blocks
     sleep 0.5
 
-    # ─── Create the 4-panel fixed layout ───
-    # Creation order controls Wave's auto-placement:
-    #   1. yoyo-cli terminal (takes full space initially)
-    #   2. GUI dashboard (splits right of yoyo-cli)
-    #   3. File browser (splits right of GUI)
-    #   4. Bash terminal (splits below the top row)
-    local output block_id before_ids
+    # Remove the default block Wave creates for a new tab
+    cleanup_default_block
+    sleep 0.3
 
-    # 1. Launch yoyo-cli terminal (left pane, ~40%)
+    # ─── Create the 4 widget blocks ───
+    # We create all blocks first (they get auto-placed by Wave), then
+    # fix the layout tree via PendingBackendActions in the SQLite DB.
+    local output block_id before_ids
+    local cli_block_id="" gui_block_id="" files_block_id="" term_block_id=""
+
+    # 1. Launch yoyo-cli terminal
     log_layout "Creating yoyo-cli terminal..."
     output=$(wsh run -c "clear && cd '$project_dir' && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)" 2>&1) || true
-    block_id=$(parse_block_id "$output")
-    record_widget "yoyo-cli" "$block_id"
+    cli_block_id=$(parse_block_id "$output")
+    record_widget "yoyo-cli" "$cli_block_id"
     sleep 1
 
-    # 2. Open GUI dashboard (center pane, ~40%)
+    # 2. Open GUI dashboard
     log_layout "Waiting for GUI server on port 5173..."
     if wait_for_gui_ready 5173 15; then
         log_layout "GUI server is ready, opening dashboard..."
         output=$(wsh web open "http://localhost:5173" 2>&1) || true
-        block_id=$(parse_block_id "$output")
-        record_widget "gui" "$block_id"
+        gui_block_id=$(parse_block_id "$output")
+        record_widget "gui" "$gui_block_id"
     else
         log_layout "WARNING: GUI server not ready after 15s, creating placeholder"
         output=$(wsh run -c "echo 'GUI not available yet. Visit http://localhost:5173'; sleep infinity" 2>&1) || true
-        block_id=$(parse_block_id "$output")
-        record_widget "gui" "$block_id"
+        gui_block_id=$(parse_block_id "$output")
+        record_widget "gui" "$gui_block_id"
     fi
     sleep 0.8
 
-    # 3. Open file browser (right pane, ~20%)
+    # 3. Open file browser (top-right)
     log_layout "Opening file browser for: $project_dir"
     before_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
     wsh view "$project_dir" &>/dev/null || true
     sleep 0.8
-    block_id=$(detect_new_block "$before_ids") || true
-    record_widget "files" "$block_id"
+    files_block_id=$(detect_new_block "$before_ids") || true
+    record_widget "files" "$files_block_id"
     sleep 0.5
 
-    # 4. Open bash terminal (bottom strip)
+    # 4. Open bash terminal (bottom-right)
     log_layout "Creating bash terminal..."
     output=$(wsh run -c "cd '$project_dir' && bash" 2>&1) || true
-    block_id=$(parse_block_id "$output")
-    record_widget "terminal" "$block_id"
+    term_block_id=$(parse_block_id "$output")
+    record_widget "terminal" "$term_block_id"
 
-    log_layout "Layout setup complete (4 panels: yoyo-cli, gui, files, terminal)"
+    log_layout "All blocks created: cli=${cli_block_id} gui=${gui_block_id} files=${files_block_id} term=${term_block_id}"
+
+    # ─── Apply the precise layout via Wave's SQLite DB ───
+    # This overrides Wave's auto-placement with our desired tree structure.
+    local wave_db_path="" layout_state_id=""
+    local layout_applied=false
+
+    if command -v sqlite3 &>/dev/null; then
+        wave_db_path=$(get_wave_db_path) || true
+        if [ -n "$wave_db_path" ] && [ -f "$wave_db_path" ]; then
+            log_layout "Wave DB found: $wave_db_path"
+            layout_state_id=$(get_active_layout_state_id "$wave_db_path") || true
+            if [ -n "$layout_state_id" ]; then
+                log_layout "Layout state ID: $layout_state_id"
+                # Verify we have all block IDs
+                if [ -n "$cli_block_id" ] && [ -n "$gui_block_id" ] && [ -n "$files_block_id" ] && [ -n "$term_block_id" ]; then
+                    log_layout "Applying precise layout via PendingBackendActions..."
+                    if apply_yoyo_layout "$wave_db_path" "$layout_state_id" \
+                        "$cli_block_id" "$gui_block_id" "$files_block_id" "$term_block_id"; then
+                        layout_applied=true
+                        log_layout "Layout actions queued successfully"
+                    else
+                        log_layout "WARNING: Failed to queue layout actions"
+                    fi
+                else
+                    log_layout "WARNING: Missing block IDs, skipping layout fixup"
+                fi
+            else
+                log_layout "WARNING: Could not determine layout state ID"
+            fi
+        else
+            log_layout "WARNING: Wave DB not found, falling back to auto-placement"
+        fi
+    else
+        log_layout "WARNING: sqlite3 not available, falling back to auto-placement"
+    fi
+
+    if [ "$layout_applied" = true ]; then
+        log_layout "Layout setup complete with precise positioning"
+    else
+        log_layout "Layout setup complete with Wave auto-placement (sqlite3 fixup unavailable)"
+    fi
     log_layout "Widget state: $(cat "$state_file" 2>/dev/null)"
     return 0
 }

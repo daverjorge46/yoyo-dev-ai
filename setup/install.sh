@@ -650,7 +650,7 @@ fi
 if [ -f "$INSTALL_DIR/config.yml" ] && ! grep -q "^yoyo_ai:" "$INSTALL_DIR/config.yml" 2>/dev/null; then
     cat >> "$INSTALL_DIR/config.yml" << 'YOYO_AI_EOF'
 
-# Yoyo AI (OpenClaw Personal Assistant)
+# Yoyo AI (OpenClaw Business and Personal AI Assistant)
 yoyo_ai:
   enabled: true
   openclaw:

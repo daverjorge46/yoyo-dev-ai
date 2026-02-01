@@ -8,14 +8,14 @@ This file provides guidance to Claude Code when working on the **Yoyo Dev framew
 
 **Yoyo Dev AI** is a platform with two subsystems:
 - **yoyo-dev** - Development environment (Wave Terminal, Claude Code, GUI, orchestration)
-- **yoyo-ai** - Personal AI assistant (OpenClaw daemon, messaging, skills)
+- **yoyo-ai** - Business and Personal AI Assistant (OpenClaw daemon, messaging, skills)
 
 Providing:
 - Structured workflows for product planning, specification, and task execution
 - Multi-agent orchestration system with specialized agents
 - Claude Code and Cursor IDE integration
 - Persistent memory and skill learning systems
-- Personal AI assistant via OpenClaw
+- Business and Personal AI Assistant via OpenClaw
 
 ## Framework Architecture
 
@@ -28,7 +28,7 @@ yoyo-dev-ai/                      # Framework root (this repository)
 ├── setup/                        # Installation and launcher scripts
 │   ├── install.sh                # Project installation
 │   ├── yoyo.sh                   # Dev environment launcher (yoyo-dev)
-│   ├── yoyo-ai.sh                # Personal AI assistant manager (yoyo-ai)
+│   ├── yoyo-ai.sh                # Business and Personal AI Assistant manager (yoyo-ai)
 │   ├── yoyo-compat.sh            # Deprecated `yoyo` compatibility shim
 │   ├── yoyo-gui.sh               # Browser GUI launcher
 │   ├── yoyo-update.sh            # Update script
@@ -69,7 +69,7 @@ yoyo-dev-ai/                      # Framework root (this repository)
 | Orchestration | TypeScript | Intent classification, agent routing |
 | Browser GUI | React + Vite | Dashboard on port 5173 |
 | Memory System | SQLite + JSON | Persistent context storage |
-| Personal AI | OpenClaw (npm) | Daemon-based AI assistant on port 18789 |
+| Business & Personal AI | OpenClaw (npm) | Business and Personal AI Assistant on port 18789 |
 
 ## Global Orchestration Mode
 
@@ -233,7 +233,7 @@ tech_stack:
   database: "convex"
   styling: "tailwindcss"
 
-# Yoyo AI (OpenClaw Personal Assistant)
+# Yoyo AI (OpenClaw Business and Personal AI Assistant)
 yoyo_ai:
   enabled: true
   openclaw:
@@ -275,7 +275,7 @@ Contains hook configuration for orchestration system.
 | `setup/install.sh` | Install Yoyo Dev in a project |
 | `setup/yoyo-update.sh` | Update existing installation |
 | `setup/yoyo.sh` | Launch dev environment (`yoyo-dev` command) |
-| `setup/yoyo-ai.sh` | Manage personal AI assistant (`yoyo-ai` command) |
+| `setup/yoyo-ai.sh` | Manage Business and Personal AI Assistant (`yoyo-ai` command) |
 | `setup/yoyo-compat.sh` | Deprecated `yoyo` compatibility shim |
 | `setup/yoyo-gui.sh` | Launch browser GUI only |
 
