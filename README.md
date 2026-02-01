@@ -11,13 +11,13 @@
 
 ### **Your AI learns. Your AI remembers. Your AI evolves.**
 
-*AI-assisted development platform with personal AI assistant*
+*AI-assisted development platform with Business and Personal AI Assistant*
 
 [![Version](https://img.shields.io/badge/version-7.0.0-D29922?style=flat-square)](https://github.com/daverjorge46/yoyo-dev-ai)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](LICENSE)
 [![Claude Code](https://img.shields.io/badge/Claude-Code-8B5CF6?style=flat-square)](https://claude.com/claude-code)
 
-[Quick Start](#-quick-start) · [Commands](#-commands) · [Yoyo AI](#-yoyo-ai-personal-assistant) · [Multi-Agent System](#-multi-agent-system) · [GUI Dashboard](#-gui-dashboard)
+[Quick Start](#-quick-start) · [Commands](#-commands) · [Yoyo AI](#-yoyo-ai-business-and-personal-ai-assistant) · [Multi-Agent System](#-multi-agent-system) · [GUI Dashboard](#-gui-dashboard)
 
 </div>
 
@@ -30,7 +30,7 @@
 | Subsystem | Command | Description |
 |-----------|---------|-------------|
 | **yoyo-dev** | `yoyo-dev` | Development environment -- Wave Terminal, Claude Code, multi-agent orchestration, GUI dashboard |
-| **yoyo-ai** | `yoyo-ai` | Personal AI assistant -- OpenClaw daemon, messaging, skills, always-on intelligence |
+| **yoyo-ai** | `yoyo-ai` | Business and Personal AI Assistant -- OpenClaw daemon, messaging, skills, always-on intelligence |
 
 | Feature | Description |
 |---------|-------------|
@@ -38,7 +38,7 @@
 | **Structured Workflows** | Consistent processes for planning, specification, and execution |
 | **Persistent Memory** | Context preservation across sessions |
 | **Browser GUI** | Real-time dashboard at `localhost:5173` |
-| **Personal AI Assistant** | OpenClaw-powered daemon with messaging channels and learned skills |
+| **Business and Personal AI Assistant** | OpenClaw-powered daemon with messaging channels and learned skills |
 
 ---
 
@@ -48,7 +48,7 @@
 <tr>
 <td width="50%">
 
-### Yoyo AI (Personal Assistant)
+### Yoyo AI (Business and Personal AI Assistant)
 
 - **OpenClaw integration** -- always-on AI daemon
 - Messaging channels (CLI, API, webhooks)
@@ -62,7 +62,7 @@
 ### Platform Unification
 
 - **`yoyo-dev`** -- primary command (replaces `yoyo`)
-- **`yoyo-ai`** -- personal AI assistant daemon
+- **`yoyo-ai`** -- Business and Personal AI Assistant daemon
 - **`yoyo`** -- deprecated alias for `yoyo-dev`
 - Multi-agent orchestration (Oracle, Librarian, Explore, Frontend, Writer)
 - Mandatory yoyo-ai (OpenClaw) in all installations
@@ -116,7 +116,7 @@ yoyo-dev --no-gui
 # GUI standalone
 yoyo-gui
 
-# Personal AI assistant
+# Business and Personal AI Assistant
 yoyo-ai --start
 
 # Diagnose issues
@@ -137,7 +137,7 @@ docker mcp server ls
 # Launch dev environment
 yoyo-dev
 
-# Check AI assistant status
+# Check AI Assistant status
 yoyo-ai --status
 ```
 
@@ -253,9 +253,9 @@ Open PR link -> Review code -> Merge
 
 ---
 
-## Yoyo AI (Personal Assistant)
+## Yoyo AI (Business and Personal AI Assistant)
 
-**Yoyo AI** is a personal AI assistant powered by [OpenClaw](https://github.com/openclaw). It runs as a background daemon alongside your development environment.
+**Yoyo AI** is a Business and Personal AI Assistant powered by [OpenClaw](https://github.com/openclaw). It runs as a background daemon alongside your development environment.
 
 ### Commands
 
@@ -459,7 +459,7 @@ workflows:
     frontend_delegation:
       enabled: true
 
-# Yoyo AI (OpenClaw Personal Assistant)
+# Yoyo AI (OpenClaw Business and Personal AI Assistant)
 yoyo_ai:
   enabled: true
   openclaw:

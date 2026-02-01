@@ -986,7 +986,7 @@ if [ -f ".yoyo-dev/config.yml" ] && ! grep -q "^yoyo_ai:" .yoyo-dev/config.yml 2
     show_progress "Adding yoyo_ai config section"
     cat >> .yoyo-dev/config.yml << 'YOYO_AI_EOF'
 
-# Yoyo AI (OpenClaw Personal Assistant)
+# Yoyo AI (OpenClaw Business and Personal AI Assistant)
 yoyo_ai:
   enabled: true
   openclaw:

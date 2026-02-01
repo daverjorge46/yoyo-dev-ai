@@ -884,13 +884,13 @@ show_help() {
     echo -e "    ${UI_PRIMARY}--force${UI_RESET}              ${UI_DIM}Override existing lock (kill running process)${UI_RESET}"
     echo ""
 
-    echo -e "  ${UI_SUCCESS}YOYO AI (Personal Assistant)${UI_RESET}"
+    echo -e "  ${UI_SUCCESS}YOYO AI (Business and Personal AI Assistant)${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
     echo ""
     echo -e "  ${UI_PRIMARY}yoyo-ai --start${UI_RESET}    ${UI_DIM}Start AI daemon (OpenClaw)${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --stop${UI_RESET}     ${UI_DIM}Stop AI daemon${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --status${UI_RESET}   ${UI_DIM}Check daemon status${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --help${UI_RESET}     ${UI_DIM}Full AI assistant reference${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --help${UI_RESET}     ${UI_DIM}Full AI Assistant reference${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_DIM}Documentation: https://github.com/daverjorge46/yoyo-dev-ai${UI_RESET}"

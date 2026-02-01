@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Yoyo AI Launcher v1.0
-# OpenClaw Personal AI Assistant - branded wrapper
+# OpenClaw Business and Personal AI Assistant - branded wrapper
 # Subcommands: --start, --stop, --update, --status, --doctor, --channels, --help
 
 set -euo pipefail
@@ -428,7 +428,7 @@ show_help() {
     echo -e "  ${UI_BOLD}ABOUT${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
     echo ""
-    echo -e "  Yoyo AI is your personal AI assistant powered by OpenClaw."
+    echo -e "  Yoyo AI is your Business and Personal AI Assistant powered by OpenClaw."
     echo -e "  It runs as a background daemon and provides messaging, skills,"
     echo -e "  and integrations across your development workflow."
     echo ""
@@ -440,7 +440,7 @@ show_help() {
 show_version() {
     echo ""
     echo -e "${UI_MAUVE}Yoyo AI${UI_RESET} v${VERSION}"
-    echo -e "${UI_DIM}Personal AI Assistant (OpenClaw)${UI_RESET}"
+    echo -e "${UI_DIM}Business and Personal AI Assistant (OpenClaw)${UI_RESET}"
     echo ""
 }
 
