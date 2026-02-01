@@ -3,16 +3,16 @@
     "block_id": "ffb9f9c4-b25d-400c-b4cc-13383f3181c5",
     "visible": true
   },
-  "terminal": {
-    "block_id": "2ae5c71d-3948-4589-8fc1-0e1ec1c3d572",
+  "gui": {
+    "block_id": "118e2445-b565-418f-a977-bad9d62a2570",
     "visible": true
   },
   "yoyo-cli": {
-    "block_id": "a733da55-c845-4a57-9291-0386c636570b",
+    "block_id": "49c74902-04c7-4609-82bd-28dd6a919647",
     "visible": true
   },
-  "gui": {
-    "block_id": "118e2445-b565-418f-a977-bad9d62a2570",
+  "terminal": {
+    "block_id": "73bdd7e8-531b-4ccb-ad18-9e9a8d4f5285",
     "visible": true
   }
 }
