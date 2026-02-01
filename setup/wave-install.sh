@@ -1084,11 +1084,11 @@ wait_for_gui_ready() {
 #
 # Desired layout:
 #   +-------------------+-------------------+-------------+
-#   |                   |                   |    Files    |
-#   |    yoyo-cli       |       GUI         |   (top-R)   |
-#   |    (~40%)         |     (center)      +-------------+
-#   |                   |                   |  Terminal   |
-#   |                   |                   |  (bot-R)    |
+#   |                   |       GUI         |             |
+#   |    yoyo-cli       |    (center-top)   |    Files    |
+#   |    (~40%)         +-------------------+   (~20%)    |
+#   |                   |     Terminal      |             |
+#   |                   |   (center-bot)    |             |
 #   +-------------------+-------------------+-------------+
 #
 # How it works:
@@ -1108,10 +1108,10 @@ wait_for_gui_ready() {
 #   Layout tree structure:
 #     Root (row):
 #       [0] yoyo-cli  (size ~40)
-#       [1] GUI        (size ~40)
-#       [2] column     (size ~20):
-#         [2,0] Files
-#         [2,1] Terminal
+#       [1] column     (size ~40):
+#         [1,0] GUI
+#         [1,1] Terminal
+#       [2] Files      (size ~20)
 #
 # Deletes any previous yoyo-tagged blocks and recreates from scratch.
 # Records block IDs in widget state file for toggle support.
@@ -1147,15 +1147,22 @@ setup_yoyo_layout() {
     }
 
     # Update widget state in the state file
-    # Args: $1 = widget name, $2 = block_id
+    # Args: $1 = widget name, $2 = block_id, $3 = position (optional)
     record_widget() {
         local widget="$1"
         local block_id="$2"
+        local position="${3:-}"
         if [ -n "$block_id" ] && command -v jq &>/dev/null; then
             local tmp="${state_file}.tmp"
-            jq --arg w "$widget" --arg bid "$block_id" \
-                '.[$w] = {"block_id": $bid, "visible": true}' \
-                "$state_file" > "$tmp" && mv "$tmp" "$state_file"
+            if [ -n "$position" ]; then
+                jq --arg w "$widget" --arg bid "$block_id" --arg pos "$position" \
+                    '.[$w] = {"block_id": $bid, "visible": true, "position": $pos}' \
+                    "$state_file" > "$tmp" && mv "$tmp" "$state_file"
+            else
+                jq --arg w "$widget" --arg bid "$block_id" \
+                    '.[$w] = {"block_id": $bid, "visible": true}' \
+                    "$state_file" > "$tmp" && mv "$tmp" "$state_file"
+            fi
             # Tag the block with widget name for fallback identification
             wsh setmeta -b "block:${block_id}" "${meta_key}=${widget}" &>/dev/null || true
             log_layout "Recorded ${widget} block: ${block_id}"
@@ -1280,13 +1287,13 @@ setup_yoyo_layout() {
         # 2. Insert yoyo-cli at [0] with size 40 (focused)
         # 3. Insert GUI at [1] with size 40
         # 4. Insert Files at [2] with size 20
-        # 5. Insert Terminal at [2,1] (creates a column split within node [2])
+        # 5. Insert Terminal at [1,1] (creates a column split within node [1] = center)
         #
         # The IndexArr encodes the tree path:
-        #   [0] = first child of root
-        #   [1] = second child of root
-        #   [2] = third child of root
-        #   [2,1] = second child of node [2] (this forces [2] to become a column parent)
+        #   [0] = first child of root → yoyo-cli (left, full height)
+        #   [1] = second child of root → GUI (center)
+        #   [2] = third child of root → Files (right, full height)
+        #   [1,1] = second child of node [1] → Terminal below GUI (center column split)
         local actions_json
         actions_json=$(jq -n \
             --arg cli "$cli_block" \
@@ -1298,11 +1305,76 @@ setup_yoyo_layout() {
                 {"actiontype": "insertatindex", "actionid": "yoyo-cli", "blockid": $cli, "indexarr": [0], "nodesize": 40, "focused": true},
                 {"actiontype": "insertatindex", "actionid": "yoyo-gui", "blockid": $gui, "indexarr": [1], "nodesize": 40},
                 {"actiontype": "insertatindex", "actionid": "yoyo-files", "blockid": $files, "indexarr": [2], "nodesize": 20},
-                {"actiontype": "insertatindex", "actionid": "yoyo-term", "blockid": $term, "indexarr": [2,1]}
+                {"actiontype": "insertatindex", "actionid": "yoyo-term", "blockid": $term, "indexarr": [1,1]}
             ]')
 
         log_layout "Queuing layout actions: $actions_json"
         queue_layout_actions "$db_path" "$layout_id" "$actions_json"
+    }
+
+    # Find a block by its yoyo:widget metadata value.
+    # Returns the block ID on stdout or empty + return 1.
+    find_block_by_meta_internal() {
+        local widget="$1"
+        local all_blocks bid meta_val
+        all_blocks=$(wsh blocks list --json --timeout=3000 2>/dev/null) || true
+        if [ -z "$all_blocks" ] || [ "$all_blocks" = "null" ]; then
+            return 1
+        fi
+        for bid in $(echo "$all_blocks" | jq -r '.[].blockid' 2>/dev/null); do
+            meta_val=$(wsh getmeta -b "block:${bid}" "${meta_key}" 2>/dev/null) || true
+            if [ "$meta_val" = "$widget" ]; then
+                echo "$bid"
+                return 0
+            fi
+        done
+        return 1
+    }
+
+    # Check if an existing yoyo-dev workspace with all 4 widgets is still alive.
+    # If so, reuse it and skip recreation entirely.
+    # Returns 0 (true) if all 4 expected widgets are found and their blocks exist.
+    detect_existing_workspace() {
+        local all_blocks bid meta_val
+        local found_cli=false found_gui=false found_files=false found_terminal=false
+
+        all_blocks=$(wsh blocks list --json --timeout=3000 2>/dev/null) || true
+        if [ -z "$all_blocks" ] || [ "$all_blocks" = "null" ]; then
+            return 1
+        fi
+
+        for bid in $(echo "$all_blocks" | jq -r '.[].blockid' 2>/dev/null); do
+            meta_val=$(wsh getmeta -b "block:${bid}" "${meta_key}" 2>/dev/null) || true
+            case "$meta_val" in
+                yoyo-cli)  found_cli=true ;;
+                gui)       found_gui=true ;;
+                files)     found_files=true ;;
+                terminal)  found_terminal=true ;;
+            esac
+        done
+
+        if [ "$found_cli" = true ] && [ "$found_gui" = true ] && \
+           [ "$found_files" = true ] && [ "$found_terminal" = true ]; then
+            return 0
+        fi
+        return 1
+    }
+
+    # Rebuild widget state file from existing yoyo-tagged blocks
+    restore_widget_state() {
+        local all_blocks bid meta_val
+        all_blocks=$(wsh blocks list --json --timeout=3000 2>/dev/null) || true
+        if [ -z "$all_blocks" ] || [ "$all_blocks" = "null" ]; then
+            return 1
+        fi
+
+        echo '{}' > "$state_file"
+        for bid in $(echo "$all_blocks" | jq -r '.[].blockid' 2>/dev/null); do
+            meta_val=$(wsh getmeta -b "block:${bid}" "${meta_key}" 2>/dev/null) || true
+            if [ -n "$meta_val" ]; then
+                record_widget "$meta_val" "$bid"
+            fi
+        done
     }
 
     log_layout "Starting layout setup for: $project_dir"
@@ -1326,8 +1398,20 @@ setup_yoyo_layout() {
 
     log_layout "wsh is available"
 
-    # Initialize widget state file (fresh start)
+    # Initialize state directory
     mkdir -p "${HOME}/.yoyo-dev-base"
+
+    # ─── Workspace reuse: skip recreation if all 4 widgets exist ───
+    if detect_existing_workspace; then
+        log_layout "Existing yoyo-dev workspace detected with all 4 widgets — reusing"
+        restore_widget_state
+        log_layout "Widget state restored: $(cat "$state_file" 2>/dev/null)"
+        return 0
+    fi
+
+    log_layout "No complete existing workspace found — creating fresh layout"
+
+    # Initialize widget state file (fresh start)
     echo '{}' > "$state_file"
 
     # Clean slate: remove any previous yoyo blocks for deterministic layout
@@ -1349,7 +1433,7 @@ setup_yoyo_layout() {
     log_layout "Creating yoyo-cli terminal..."
     output=$(wsh run -c "clear && cd '$project_dir' && (command -v yoyo-cli >/dev/null && yoyo-cli || command -v claude >/dev/null && claude || bash)" 2>&1) || true
     cli_block_id=$(parse_block_id "$output")
-    record_widget "yoyo-cli" "$cli_block_id"
+    record_widget "yoyo-cli" "$cli_block_id" "left"
     sleep 1
 
     # 2. Open GUI dashboard
@@ -1358,29 +1442,29 @@ setup_yoyo_layout() {
         log_layout "GUI server is ready, opening dashboard..."
         output=$(wsh web open "http://localhost:5173" 2>&1) || true
         gui_block_id=$(parse_block_id "$output")
-        record_widget "gui" "$gui_block_id"
+        record_widget "gui" "$gui_block_id" "center-top"
     else
         log_layout "WARNING: GUI server not ready after 15s, creating placeholder"
         output=$(wsh run -c "echo 'GUI not available yet. Visit http://localhost:5173'; sleep infinity" 2>&1) || true
         gui_block_id=$(parse_block_id "$output")
-        record_widget "gui" "$gui_block_id"
+        record_widget "gui" "$gui_block_id" "center-top"
     fi
     sleep 0.8
 
-    # 3. Open file browser (top-right)
+    # 3. Open file browser (right, full height)
     log_layout "Opening file browser for: $project_dir"
     before_ids=$(wsh blocks list --json --timeout=3000 2>/dev/null | jq -r '.[].blockid' 2>/dev/null) || true
     wsh view "$project_dir" &>/dev/null || true
     sleep 0.8
     files_block_id=$(detect_new_block "$before_ids") || true
-    record_widget "files" "$files_block_id"
+    record_widget "files" "$files_block_id" "right"
     sleep 0.5
 
-    # 4. Open bash terminal (bottom-right)
+    # 4. Open bash terminal (center-bottom, below GUI)
     log_layout "Creating bash terminal..."
     output=$(wsh run -c "cd '$project_dir' && bash" 2>&1) || true
     term_block_id=$(parse_block_id "$output")
-    record_widget "terminal" "$term_block_id"
+    record_widget "terminal" "$term_block_id" "center-bottom"
 
     log_layout "All blocks created: cli=${cli_block_id} gui=${gui_block_id} files=${files_block_id} term=${term_block_id}"
 
@@ -1417,6 +1501,42 @@ setup_yoyo_layout() {
         fi
     else
         log_layout "WARNING: sqlite3 not available, falling back to auto-placement"
+    fi
+
+    # ─── Layout validation ───
+    # After applying the layout, wait briefly for Wave to process the pending
+    # actions, then verify that all 4 yoyo-tagged blocks still exist.
+    # If any are missing (e.g. Wave discarded them), attempt one re-apply.
+    if [ "$layout_applied" = true ]; then
+        log_layout "Layout applied — validating blocks after short delay..."
+        sleep 2
+
+        local valid=true
+        for expected_widget in yoyo-cli gui files terminal; do
+            local found_bid
+            found_bid=$(find_block_by_meta_internal "$expected_widget") || true
+            if [ -z "$found_bid" ]; then
+                log_layout "VALIDATION WARNING: widget '$expected_widget' block not found"
+                valid=false
+            fi
+        done
+
+        if [ "$valid" = true ]; then
+            log_layout "Layout validation passed — all 4 blocks present"
+        else
+            log_layout "Layout validation failed — attempting one re-apply"
+            # Re-read layout state (may have changed after Wave processed actions)
+            layout_state_id=$(get_active_layout_state_id "$wave_db_path") || true
+            if [ -n "$layout_state_id" ] && \
+               [ -n "$cli_block_id" ] && [ -n "$gui_block_id" ] && \
+               [ -n "$files_block_id" ] && [ -n "$term_block_id" ]; then
+                apply_yoyo_layout "$wave_db_path" "$layout_state_id" \
+                    "$cli_block_id" "$gui_block_id" "$files_block_id" "$term_block_id" || true
+                log_layout "Re-applied layout actions"
+            else
+                log_layout "WARNING: Cannot re-apply — missing layout state or block IDs"
+            fi
+        fi
     fi
 
     if [ "$layout_applied" = true ]; then
