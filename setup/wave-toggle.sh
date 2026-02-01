@@ -88,13 +88,16 @@ block_exists() {
     if [ -z "$block_id" ]; then
         return 1
     fi
-    # First attempt
-    if wsh getmeta -b "block:${block_id}" view 2>/dev/null | grep -q . 2>/dev/null; then
+    # First attempt — check that the block has a view (any non-empty response)
+    local result
+    result=$(wsh getmeta -b "block:${block_id}" view 2>/dev/null) || true
+    if [ -n "$result" ]; then
         return 0
     fi
-    # Retry after brief delay
-    sleep 0.3
-    wsh getmeta -b "block:${block_id}" view 2>/dev/null | grep -q . 2>/dev/null
+    # Retry after brief delay (Wave API may be slow on startup)
+    sleep 0.5
+    result=$(wsh getmeta -b "block:${block_id}" view 2>/dev/null) || true
+    [ -n "$result" ]
 }
 
 # Find a block by its yoyo:widget metadata tag (fallback when state file is stale).
@@ -255,13 +258,29 @@ toggle_widget() {
     block_id=$(resolve_widget_block "$widget") || true
 
     if [ -n "$block_id" ]; then
-        # Block exists - toggle OFF (delete it)
-        wsh deleteblock -b "block:${block_id}" &>/dev/null || true
+        # Block exists — toggle OFF (delete it)
+        # Use a retry to handle Wave API latency
+        wsh deleteblock -b "block:${block_id}" 2>/dev/null || {
+            sleep 0.3
+            wsh deleteblock -b "block:${block_id}" 2>/dev/null || true
+        }
         clear_widget_state "$widget"
         return 0
     fi
 
-    # No existing block - toggle ON (create it)
+    # Verify there truly isn't a matching block by doing a fresh metadata scan.
+    # This guards against the race where the state file was cleared but the block
+    # still exists (e.g., after a layout re-setup).
+    local fresh_id
+    fresh_id=$(find_block_by_meta "$widget") || true
+    if [ -n "$fresh_id" ]; then
+        # Found a stale block — toggle OFF
+        wsh deleteblock -b "block:${fresh_id}" 2>/dev/null || true
+        clear_widget_state "$widget"
+        return 0
+    fi
+
+    # No existing block — toggle ON (create it)
     local new_id
     new_id=$(create_widget_block "$widget") || {
         echo "Failed to create widget block: $widget" >&2
@@ -327,6 +346,8 @@ main() {
 
     # Use flock to prevent concurrent toggles from rapid button clicks.
     # The lock is per-widget to allow different widgets to toggle in parallel.
+    # The self-delete of the ephemeral block is INSIDE the lock to prevent
+    # races where a second click sees the first ephemeral block as the widget.
     mkdir -p "$STATE_DIR"
     local widget_lock="${LOCK_FILE}.${widget}"
     (
@@ -338,17 +359,20 @@ main() {
 
         toggle_widget "$widget"
 
-    ) 200>"$widget_lock"
-
-    # Clean up: delete the ephemeral block created by the widget button click.
-    # Run in a background subshell with a small delay so the toggle fully
-    # completes before the block disappears.
-    if [ "$self_delete" = true ] && [ -n "${SELF_BLOCK}" ]; then
-        (
+        # Clean up: delete the ephemeral block created by the widget button click.
+        # We MUST delete this block because widget buttons always create a new term
+        # block to run the initscript. Without cleanup, each button click would
+        # leave behind a visible orphaned terminal.
+        #
+        # The self-delete runs inside the lock and synchronously to ensure:
+        #   1. The toggle operation has fully completed
+        #   2. A rapid second click won't see this ephemeral block as the widget
+        if [ "$self_delete" = true ] && [ -n "${SELF_BLOCK}" ]; then
             sleep 0.3
             wsh deleteblock -b "block:${SELF_BLOCK}" 2>/dev/null || true
-        ) &
-    fi
+        fi
+
+    ) 200>"$widget_lock"
 }
 
 main "$@"

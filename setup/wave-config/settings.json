@@ -4,7 +4,7 @@
   "term:fontsize": 14,
   "term:fontfamily": "JetBrains Mono, Fira Code, Consolas, monospace",
   "window:nativetitlebar": true,
-  "window:savelastwindow": true,
+  "window:savelastwindow": false,
   "window:opacity": 1.0,
   "widget:showhelp": false,
   "telemetry:enabled": false,
