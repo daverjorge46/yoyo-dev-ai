@@ -7,12 +7,12 @@
     "block_id": "118e2445-b565-418f-a977-bad9d62a2570",
     "visible": true
   },
-  "yoyo-cli": {
-    "block_id": "49c74902-04c7-4609-82bd-28dd6a919647",
-    "visible": true
-  },
   "terminal": {
     "block_id": "73bdd7e8-531b-4ccb-ad18-9e9a8d4f5285",
+    "visible": true
+  },
+  "yoyo-cli": {
+    "block_id": "10124e20-d908-4d40-91e8-970f57afb244",
     "visible": true
   }
 }

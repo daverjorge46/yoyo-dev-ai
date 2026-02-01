@@ -260,13 +260,15 @@ Open PR link -> Review code -> Merge
 ### Commands
 
 ```bash
-yoyo-ai --start       # Start the OpenClaw daemon
-yoyo-ai --stop        # Stop the daemon
-yoyo-ai --status      # Check daemon health and port
-yoyo-ai --doctor      # Diagnose OpenClaw issues
-yoyo-ai --channels    # List available messaging channels
-yoyo-ai --update      # Update OpenClaw to latest version
-yoyo-ai --help        # Full reference
+yoyo-ai --start         # Start the OpenClaw daemon
+yoyo-ai --stop          # Stop the daemon
+yoyo-ai --status        # Check daemon health and port
+yoyo-ai --doctor        # Diagnose OpenClaw issues
+yoyo-ai --channels      # List available messaging channels
+yoyo-ai --update        # Update OpenClaw to latest version
+yoyo-ai --theme-apply   # Apply YoYo branding to dashboard
+yoyo-ai --theme-remove  # Restore OpenClaw defaults
+yoyo-ai --help          # Full reference
 ```
 
 ### Configuration
@@ -294,6 +296,36 @@ OpenClaw is installed automatically during `yoyo-init` (step 9) as a mandatory c
 npm install -g openclaw@latest
 openclaw onboard --install-daemon
 ```
+
+### Dashboard Customization
+
+The YoYo Dev AI theme is automatically applied to the OpenClaw dashboard during installation, giving it an orange/gold color scheme and YoYo branding to match the rest of the platform.
+
+**Theme Management:**
+
+```bash
+# Re-apply YoYo theme (after OpenClaw updates)
+yoyo-ai --theme-apply
+
+# Restore original OpenClaw branding
+yoyo-ai --theme-remove
+
+# Check theme status
+yoyo-ai --doctor
+```
+
+The theme customization:
+- Updates colors to match YoYo's orange/gold palette (`#E85D04`, `#D29922`)
+- Applies JetBrains Mono typography
+- Changes page title to "YoYo Dev AI"
+- Replaces favicon with YoYo logo
+- Persists across OpenClaw updates (auto-reapplied)
+- Non-invasive (doesn't modify OpenClaw source)
+- Fully reversible
+
+**Technical Details:**
+
+The theme works by injecting a custom CSS file (`yoyo-theme.css`) into OpenClaw's control panel HTML. The original `index.html` is backed up before modification. Theme files are located in `setup/openclaw-theme/`.
 
 ---
 

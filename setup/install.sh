@@ -642,6 +642,7 @@ if [ "$NODE_OK" = true ]; then
         echo -e "  ${UI_DIM}Running OpenClaw onboarding...${UI_RESET}"
         ensure_openclaw_token
         run_openclaw_onboard
+        apply_yoyo_theme
         show_openclaw_dashboard_info
     fi
 fi

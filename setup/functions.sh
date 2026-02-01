@@ -339,6 +339,28 @@ run_openclaw_onboard() {
     date -Iseconds > "$OPENCLAW_ONBOARD_MARKER"
 }
 
+# Apply YoYo Dev AI theme to OpenClaw dashboard
+apply_yoyo_theme() {
+    local theme_inject_script="${YOYO_DEV_BASE_DIR}/setup/openclaw-theme/inject.sh"
+
+    if [ ! -f "$theme_inject_script" ]; then
+        echo -e "  \033[1;33m⚠ Theme script not found, skipping customization\033[0m" >&2
+        return 0
+    fi
+
+    # Check if OpenClaw is installed
+    if ! command -v openclaw &> /dev/null; then
+        return 0
+    fi
+
+    # Run theme injection script silently
+    if bash "$theme_inject_script" > /dev/null 2>&1; then
+        echo -e "  \033[0;32m✓ YoYo Dev AI theme applied to dashboard\033[0m"
+    else
+        echo -e "  \033[1;33m⚠ Failed to apply theme (OpenClaw may need update)\033[0m" >&2
+    fi
+}
+
 # Print dashboard URL (with token) to stdout
 show_openclaw_dashboard_info() {
     local token=""

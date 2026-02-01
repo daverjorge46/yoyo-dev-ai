@@ -1040,6 +1040,7 @@ else
             ui_success "OpenClaw installed"
             ensure_openclaw_token
             run_openclaw_onboard
+            apply_yoyo_theme
             show_openclaw_dashboard_info
             # Update config
             if [ -f ".yoyo-dev/config.yml" ]; then

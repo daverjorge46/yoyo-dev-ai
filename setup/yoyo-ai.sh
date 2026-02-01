@@ -335,6 +335,10 @@ cmd_update() {
     new_version=$(get_openclaw_version)
     ui_success "OpenClaw updated to ${new_version}"
 
+    # Re-apply YoYo theme after update
+    echo ""
+    apply_yoyo_theme
+
     # Restart daemon if it was running
     if is_daemon_running; then
         echo ""
@@ -342,6 +346,71 @@ cmd_update() {
         daemon_stop
         sleep 1
         daemon_start
+    fi
+}
+
+cmd_theme_apply() {
+    ui_yoyo_ai_banner "v${VERSION}"
+
+    if ! is_openclaw_installed; then
+        ui_error "OpenClaw is not installed"
+        echo ""
+        echo -e "  Install first: ${UI_PRIMARY}yoyo-ai --start${UI_RESET}"
+        echo ""
+        exit 1
+    fi
+
+    local theme_script="${SCRIPT_DIR}/openclaw-theme/inject.sh"
+    if [ ! -f "$theme_script" ]; then
+        ui_error "Theme script not found"
+        echo ""
+        echo -e "  Expected: ${theme_script}"
+        exit 1
+    fi
+
+    echo -e "  ${UI_BOLD}Applying YoYo Dev AI Theme${UI_RESET}"
+    echo ""
+
+    if bash "$theme_script"; then
+        echo ""
+        ui_success "Theme applied successfully"
+        echo ""
+        echo -e "  Refresh your browser to see the changes"
+        echo ""
+    else
+        ui_error "Failed to apply theme"
+        exit 1
+    fi
+}
+
+cmd_theme_remove() {
+    ui_yoyo_ai_banner "v${VERSION}"
+
+    if ! is_openclaw_installed; then
+        ui_error "OpenClaw is not installed"
+        exit 1
+    fi
+
+    local theme_script="${SCRIPT_DIR}/openclaw-theme/remove.sh"
+    if [ ! -f "$theme_script" ]; then
+        ui_error "Theme removal script not found"
+        echo ""
+        echo -e "  Expected: ${theme_script}"
+        exit 1
+    fi
+
+    echo -e "  ${UI_BOLD}Removing YoYo Dev AI Theme${UI_RESET}"
+    echo ""
+
+    if bash "$theme_script"; then
+        echo ""
+        ui_success "Theme removed successfully"
+        echo ""
+        echo -e "  Refresh your browser to see OpenClaw defaults"
+        echo ""
+    else
+        ui_error "Failed to remove theme"
+        exit 1
     fi
 }
 
@@ -396,6 +465,21 @@ cmd_doctor() {
         echo -e "${UI_WARNING}○${UI_RESET} not found"
     fi
 
+    # Check theme status
+    echo -n "  YoYo Theme:         "
+    if is_openclaw_installed; then
+        local npm_root
+        npm_root="$(npm root -g 2>/dev/null || echo "")"
+        local control_ui_dir="$npm_root/openclaw/dist/control-ui"
+        if [ -f "$control_ui_dir/yoyo-theme.css" ]; then
+            echo -e "${UI_SUCCESS}✓${UI_RESET} applied"
+        else
+            echo -e "${UI_WARNING}○${UI_RESET} not applied (use --theme-apply)"
+        fi
+    else
+        echo -e "${UI_DIM}—${UI_RESET} (OpenClaw not installed)"
+    fi
+
     echo ""
 }
 
@@ -421,6 +505,8 @@ show_help() {
     echo -e "  ${UI_PRIMARY}yoyo-ai --update${UI_RESET}       ${UI_DIM}Update OpenClaw to latest${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET}       ${UI_DIM}Run diagnostics${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --channels${UI_RESET}     ${UI_DIM}Manage messaging channels${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --theme-apply${UI_RESET}  ${UI_DIM}Apply YoYo branding to dashboard${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --theme-remove${UI_RESET} ${UI_DIM}Restore OpenClaw defaults${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --help${UI_RESET}         ${UI_DIM}Show this help${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --version${UI_RESET}      ${UI_DIM}Show version${UI_RESET}"
     echo ""
@@ -505,6 +591,12 @@ main() {
         --channels)
             shift
             cmd_channels "$@"
+            ;;
+        --theme-apply)
+            cmd_theme_apply
+            ;;
+        --theme-remove)
+            cmd_theme_remove
             ;;
         --help|-h)
             show_help
