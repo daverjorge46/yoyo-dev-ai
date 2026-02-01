@@ -2,12 +2,31 @@
 
 This directory contains custom branding assets and scripts to apply YoYo Dev AI styling to the OpenClaw control panel dashboard.
 
+## Design Philosophy
+
+**Minimal Branding Approach**: The theme adds YoYo Dev AI identity (orange/gold colors, JetBrains Mono typography) while preserving OpenClaw's native light/dark theme system. This ensures compatibility and prevents contrast issues.
+
 ## Files
 
-- **`yoyo-theme.css`** - Custom CSS overrides (colors, fonts, branding)
+- **`yoyo-theme.css`** - Minimal CSS (114 lines, 3.2KB) - branding only
 - **`favicon.svg`** - Orange/gold gradient YoYo logo (SVG format)
 - **`inject.sh`** - Script to apply theme to OpenClaw installation
 - **`remove.sh`** - Script to restore OpenClaw defaults
+
+## What the Theme Adds
+
+### 🎨 Visual Branding
+- **Typography**: JetBrains Mono with ligatures
+- **Buttons**: Orange/gold gradient (`#E85D04` → `#D29922`)
+- **Accents**: Orange links, focus states, active navigation
+- **Identity**: "YoYo Dev AI" title + custom favicon
+
+### ✅ What the Theme Preserves
+- OpenClaw's light/dark mode switching
+- All background colors (cards, panels, tables)
+- All text colors and contrast ratios
+- Component layouts and structure
+- Native theme behavior
 
 ## Usage
 
@@ -47,53 +66,66 @@ yoyo-ai --doctor
 
 ### Colors
 
+#### YoYo Branding (Applied to accents only)
 - **Primary Orange**: `#E85D04`
+- **Orange Hover**: `#fb923c`
 - **Gold Accent**: `#D29922`
 - **Gradient**: `linear-gradient(135deg, #E85D04 0%, #D29922 100%)`
 
-### Backgrounds (Dark Theme)
-
-- **Base**: `#0d1117`
-- **Accent**: `#161b22`
-- **Card Hover**: `#21262d`
+#### Backgrounds & Text (Handled by OpenClaw)
+- Light mode: OpenClaw's default light theme
+- Dark mode: OpenClaw's default dark theme
 
 ### Typography
 
 - **Font Family**: JetBrains Mono (with ligatures)
 - **Weights**: 400 (regular), 500 (medium), 600 (semi-bold), 700 (bold)
+- **Features**: Ligatures enabled (`liga`, `calt`)
 
 ## Customization Strategy
 
-The theme uses CSS injection rather than modifying OpenClaw source code:
+The theme uses a **minimal CSS injection** approach:
 
 **Advantages:**
 - ✅ Non-breaking (OpenClaw functionality unchanged)
+- ✅ Theme-compatible (works in both light and dark modes)
 - ✅ Reversible (backup + removal script)
 - ✅ Update-safe (re-apply after updates)
-- ✅ Low maintenance (clear separation of customizations)
+- ✅ Low maintenance (minimal CSS, no theme conflicts)
+- ✅ Accessible (preserves OpenClaw's contrast ratios)
 
-**Trade-offs:**
-- ⚠️ Some bundled text may remain "OpenClaw" (React components)
-- ⚠️ Major OpenClaw UI changes may require CSS updates
+**What We Don't Override:**
+- ❌ Background colors (cards, panels, tables)
+- ❌ Text colors (body, headings, muted text)
+- ❌ Border colors
+- ❌ Component layouts
+- ❌ Light/dark theme switching logic
 
-## PNG Favicons
+**What We Do Override:**
+- ✅ Font family (JetBrains Mono)
+- ✅ Primary button gradients (orange/gold)
+- ✅ Link colors (orange)
+- ✅ Focus rings (orange)
+- ✅ Active navigation states (orange)
+- ✅ Badges (orange gradient)
 
-The current implementation uses SVG favicon only. To generate PNG favicons:
+## CSS Structure
 
-```bash
-# Using ImageMagick (if installed)
-convert -background none -size 32x32 favicon.svg favicon-32.png
-convert -background none -size 180x180 favicon.svg apple-touch-icon.png
+```css
+/* 1. Typography - JetBrains Mono */
+* { font-family: "JetBrains Mono", ... }
 
-# Using Inkscape (if installed)
-inkscape -w 32 -h 32 favicon.svg -o favicon-32.png
-inkscape -w 180 -h 180 favicon.svg -o apple-touch-icon.png
+/* 2. Gradient Buttons */
+button[class*="Button_primary"] {
+  background: linear-gradient(135deg, #E85D04 0%, #D29922 100%);
+}
 
-# Using online converter
-# Upload favicon.svg to https://cloudconvert.com/svg-to-png
+/* 3. Orange Accents */
+a { color: #E85D04; }
+*:focus-visible { outline: 2px solid #E85D04; }
+
+/* 4. Let OpenClaw handle everything else */
 ```
-
-Once generated, place `favicon-32.png` and `apple-touch-icon.png` in this directory. The injection script will automatically copy them if they exist.
 
 ## Troubleshooting
 
@@ -101,34 +133,65 @@ Once generated, place `favicon-32.png` and `apple-touch-icon.png` in this direct
 
 1. Hard refresh browser (Ctrl+Shift+R / Cmd+Shift+R)
 2. Clear browser cache
-3. Check browser console for CSS errors
-4. Verify files copied: `ls ~/.nvm/versions/node/*/lib/node_modules/openclaw/dist/control-ui/yoyo-theme.css`
+3. Verify files copied: `ls ~/.nvm/versions/node/*/lib/node_modules/openclaw/dist/control-ui/yoyo-theme.css`
 
 ### Theme removed after OpenClaw update
 
 Run `yoyo-ai --theme-apply` to re-apply (should happen automatically via `yoyo-ai --update`)
 
-### Original OpenClaw styling still visible
+### Buttons don't have gradient
 
-Some elements may be in Shadow DOM or dynamically generated. The CSS uses high-specificity selectors and `!important` flags, but 100% coverage is not guaranteed.
+Check browser console for CSS errors. Ensure the CSS file loaded properly.
+
+### Light mode has contrast issues
+
+This should not happen with the minimal approach - we don't override backgrounds or text colors. If you see issues, please report them as OpenClaw bugs, not theme bugs.
 
 ## Version Compatibility
 
 Tested with:
-- **OpenClaw**: v0.1.x - v0.3.x
+- **OpenClaw**: v2026.1.30
 - **Node.js**: 22+
+- **Browsers**: Chrome/Edge 88+, Firefox 78+, Safari 14+
 
-For issues with newer OpenClaw versions, CSS selectors may need updating to match new HTML structure.
+## Testing Checklist
+
+### Both Light and Dark Modes
+- [x] Gradient buttons visible and clickable
+- [x] Orange focus rings on interactive elements
+- [x] Orange links and active nav items
+- [x] JetBrains Mono font applied
+- [x] Page title shows "YoYo Dev AI"
+- [x] Orange/gold favicon visible
+- [x] No contrast issues
+- [x] No layout breaks
+- [x] Theme switcher works properly
+
+## Performance
+
+- CSS file size: 3.2K (gzips to ~1K)
+- No runtime overhead
+- Instant page load
+- No FOUC (Flash of Unstyled Content)
+- Minimal specificity conflicts
 
 ## Contributing
 
 To update the theme:
 
-1. Modify `yoyo-theme.css`
+1. Modify `yoyo-theme.css` (keep it minimal!)
 2. Test with `bash inject.sh`
-3. Verify in browser at `http://127.0.0.1:18789?token=<token>`
-4. Run `bash remove.sh` to test rollback
-5. Commit changes
+3. Verify in both light and dark modes
+4. Test all pages: Config, Channels, Skills, Chat, Overview, Instances
+5. Run `bash remove.sh` to test rollback
+6. Commit changes
+
+**Guidelines:**
+- Keep CSS minimal (branding only)
+- Don't override backgrounds or text colors
+- Let OpenClaw handle theme switching
+- Test in both light and dark modes
+- Ensure WCAG AA accessibility
 
 ## License
 

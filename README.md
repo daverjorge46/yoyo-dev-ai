@@ -259,16 +259,47 @@ Open PR link -> Review code -> Merge
 
 ### Commands
 
+**YoYo Commands** (Custom functionality):
 ```bash
 yoyo-ai --start         # Start the OpenClaw daemon
 yoyo-ai --stop          # Stop the daemon
 yoyo-ai --status        # Check daemon health and port
-yoyo-ai --doctor        # Diagnose OpenClaw issues
-yoyo-ai --channels      # List available messaging channels
 yoyo-ai --update        # Update OpenClaw to latest version
+yoyo-ai --doctor        # Diagnose OpenClaw issues
 yoyo-ai --theme-apply   # Apply YoYo branding to dashboard
 yoyo-ai --theme-remove  # Restore OpenClaw defaults
-yoyo-ai --help          # Full reference
+yoyo-ai --help          # Show all available commands
+```
+
+**OpenClaw Commands** (Pass-through to OpenClaw):
+```bash
+yoyo-ai onboard         # Interactive setup wizard
+yoyo-ai config          # Configure credentials & settings
+yoyo-ai models          # Manage AI models
+yoyo-ai channels        # Manage messaging channels
+yoyo-ai skills          # Manage AI skills
+yoyo-ai message         # Send messages via channels
+yoyo-ai dashboard       # Open web control panel
+yoyo-ai logs            # View gateway logs
+yoyo-ai agent           # Run agent commands
+
+# All OpenClaw commands work with yoyo-ai
+# Run 'yoyo-ai --help' for full list
+```
+
+**Examples:**
+```bash
+# Configure WhatsApp channel
+yoyo-ai channels login
+
+# Send a message
+yoyo-ai message send --target +1234567890 --message "Hello from YoYo AI"
+
+# Manage AI models
+yoyo-ai models
+
+# View logs
+yoyo-ai logs --follow
 ```
 
 ### Configuration

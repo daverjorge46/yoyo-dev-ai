@@ -498,17 +498,47 @@ show_help() {
     echo -e "  ${UI_BOLD}USAGE${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
     echo ""
-    echo -e "  ${UI_PRIMARY}yoyo-ai${UI_RESET}                ${UI_DIM}Show status (start if stopped)${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --start${UI_RESET}        ${UI_DIM}Start the AI daemon${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --stop${UI_RESET}         ${UI_DIM}Stop the AI daemon${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --status${UI_RESET}       ${UI_DIM}Show daemon status${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --update${UI_RESET}       ${UI_DIM}Update OpenClaw to latest${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET}       ${UI_DIM}Run diagnostics${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --channels${UI_RESET}     ${UI_DIM}Manage messaging channels${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --theme-apply${UI_RESET}  ${UI_DIM}Apply YoYo branding to dashboard${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --theme-remove${UI_RESET} ${UI_DIM}Restore OpenClaw defaults${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --help${UI_RESET}         ${UI_DIM}Show this help${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --version${UI_RESET}      ${UI_DIM}Show version${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai${UI_RESET}                  ${UI_DIM}Show status (start if stopped)${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai <command>${UI_RESET}        ${UI_DIM}Run any OpenClaw command${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_BOLD}YOYO COMMANDS${UI_RESET} ${UI_DIM}(Custom YoYo functionality)${UI_RESET}"
+    echo -e "  ─────────────────────────────────────────────────────────────────"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --start${UI_RESET}          ${UI_DIM}Start the AI daemon${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --stop${UI_RESET}           ${UI_DIM}Stop the AI daemon${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --status${UI_RESET}         ${UI_DIM}Show daemon status${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --update${UI_RESET}         ${UI_DIM}Update OpenClaw to latest${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET}         ${UI_DIM}Run diagnostics${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --theme-apply${UI_RESET}    ${UI_DIM}Apply YoYo branding${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --theme-remove${UI_RESET}   ${UI_DIM}Restore OpenClaw defaults${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_BOLD}OPENCLAW COMMANDS${UI_RESET} ${UI_DIM}(Pass-through to OpenClaw)${UI_RESET}"
+    echo -e "  ─────────────────────────────────────────────────────────────────"
+    echo -e "  ${UI_PRIMARY}yoyo-ai onboard${UI_RESET}          ${UI_DIM}Interactive setup wizard${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai config${UI_RESET}           ${UI_DIM}Configure credentials & settings${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai models${UI_RESET}           ${UI_DIM}Manage AI models${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai channels${UI_RESET}         ${UI_DIM}Manage messaging channels${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai skills${UI_RESET}           ${UI_DIM}Manage AI skills${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai message${UI_RESET}          ${UI_DIM}Send messages${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai dashboard${UI_RESET}        ${UI_DIM}Open control panel${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai logs${UI_RESET}             ${UI_DIM}View gateway logs${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai agent${UI_RESET}            ${UI_DIM}Run agent commands${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_DIM}All OpenClaw commands are available. Run ${UI_PRIMARY}openclaw --help${UI_RESET}${UI_DIM} for full list.${UI_RESET}"
+    echo ""
+
+    echo -e "  ${UI_BOLD}EXAMPLES${UI_RESET}"
+    echo -e "  ─────────────────────────────────────────────────────────────────"
+    echo -e "  ${UI_DIM}# Start the AI assistant${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --start${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_DIM}# Configure WhatsApp channel${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai channels login${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_DIM}# Send a message${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai message send --target +1234567890 --message \"Hello\"${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_DIM}# Manage AI models${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai models${UI_RESET}"
     echo ""
 
     echo -e "  ${UI_BOLD}ABOUT${UI_RESET}"
@@ -605,10 +635,23 @@ main() {
             show_version
             ;;
         *)
-            ui_error "Unknown option: $1"
-            echo ""
-            echo -e "  Use ${UI_PRIMARY}yoyo-ai --help${UI_RESET} for available options"
-            exit 1
+            # Pass through all other commands to OpenClaw
+            if ! is_openclaw_installed; then
+                ui_error "OpenClaw is not installed"
+                echo ""
+                echo -e "  Install with: ${UI_PRIMARY}yoyo-ai --start${UI_RESET}"
+                exit 1
+            fi
+
+            # Show YoYo banner for pass-through commands
+            if [[ ! "$1" =~ ^- ]]; then
+                ui_yoyo_ai_banner "v${VERSION}"
+                echo -e "  ${UI_DIM}Running: ${UI_PRIMARY}openclaw $*${UI_RESET}"
+                echo ""
+            fi
+
+            # Execute OpenClaw command
+            openclaw "$@"
             ;;
     esac
 }
