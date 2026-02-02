@@ -101,6 +101,16 @@ EOF
     fi
 }
 
+# Detect if running inside WSL (Windows Subsystem for Linux)
+is_wsl() {
+    grep -qi microsoft /proc/version 2>/dev/null
+}
+
+# Check if systemd is available and running
+has_systemd() {
+    command -v systemctl &>/dev/null && [ -d /run/systemd/system ] 2>/dev/null
+}
+
 # Check Node.js version meets minimum requirement
 # Usage: check_node_version 22
 # Returns 0 if version is sufficient, 1 otherwise
@@ -286,6 +296,10 @@ ensure_openclaw_token() {
 
 # Inject OPENCLAW_GATEWAY_TOKEN into systemd service file if missing, then daemon-reload
 patch_openclaw_systemd_service() {
+    # Skip if systemd is not available (e.g., WSL without systemd)
+    if ! has_systemd; then
+        return 0
+    fi
     local service_file="$HOME/.config/systemd/user/openclaw-gateway.service"
     if [ -f "$service_file" ]; then
         if ! grep -q "OPENCLAW_GATEWAY_TOKEN" "$service_file" 2>/dev/null; then

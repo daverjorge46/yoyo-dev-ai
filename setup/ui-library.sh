@@ -1882,7 +1882,7 @@ ui_update_summary_panel() {
 # Usage: ui_yoyo_ai_banner [version]
 ui_yoyo_ai_banner() {
     local version="${1:-v1.0.0}"
-    local tagline="Your Business and Personal AI Assistant - powered by OpenClaw"
+    local tagline="Your Business and Personal AI Assistant - powered by DAVECORPORATE and OpenClaw"
     local term_width
     term_width=$(_get_terminal_width)
 

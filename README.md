@@ -77,13 +77,25 @@
 
 ### Prerequisites
 
-```
- Docker Desktop 4.32+ with MCP Toolkit enabled
- Claude Code CLI installed and configured
- Node.js 22 LTS
-```
+| Requirement | Details |
+|-------------|---------|
+| **Node.js 22 LTS** | Required for Claude Code CLI and OpenClaw |
+| **Git** | For cloning the repository |
+| **Docker Desktop 4.32+** | Optional, for MCP Toolkit servers |
 
-### Installation
+### Component Selection
+
+During installation you choose what to install:
+
+| Option | What You Get |
+|--------|-------------|
+| **Both (recommended)** | yoyo-dev (dev environment) + yoyo-ai (AI assistant) |
+| **yoyo-ai only** | Business and Personal AI Assistant (OpenClaw) |
+| **yoyo-dev only** | Development environment (Claude Code, Wave Terminal, GUI) |
+
+---
+
+### Linux / macOS Installation
 
 Yoyo Dev uses a **two-phase installation** model:
 
@@ -100,15 +112,83 @@ git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base
 # Step 2: Initialize in your project
 cd /path/to/your-project
 yoyo-init --claude-code
+# The installer will ask you to choose: Both / yoyo-ai only / yoyo-dev only
+# It also installs Claude Code CLI automatically if not present
 ```
 
 > **Note:** The `.yoyo-dev/` directory is created during project initialization. Each project gets its own isolated workspace.
+
+---
+
+### Windows Installation
+
+Windows users install via a PowerShell bootstrap script that sets up WSL2 (Windows Subsystem for Linux) with Ubuntu, then installs everything inside WSL.
+
+**Requirements:** Windows 10 version 2004+ or Windows 11, Administrator privileges.
+
+```powershell
+# Step 1: Download the installer (one-time)
+# Option A: Clone the repo first
+git clone https://github.com/daverjorge46/yoyo-dev-ai.git
+cd yoyo-dev-ai\setup
+
+# Option B: Or download just the script
+# https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/install-windows.ps1
+
+# Step 2: Run from PowerShell as Administrator
+powershell -ExecutionPolicy Bypass -File install-windows.ps1
+
+# Or from CMD as Administrator:
+powershell -ExecutionPolicy Bypass -File setup\install-windows.ps1
+```
+
+The Windows installer will:
+1. Install/enable **WSL2** with **Ubuntu**
+2. Update Ubuntu and install **Node.js 22**, git, curl
+3. Ask you to choose components: **Both** / **yoyo-ai only** / **yoyo-dev only**
+4. Clone Yoyo Dev AI into WSL (`~/.yoyo-dev-base`)
+5. Install **Claude Code CLI** (if yoyo-dev selected)
+6. Install **OpenClaw** (if yoyo-ai selected)
+7. Install global `yoyo-dev` and `yoyo-ai` commands
+
+**After installation, open WSL and initialize your project:**
+
+```bash
+# Open WSL (type 'wsl' in CMD/PowerShell, or open Ubuntu from Start menu)
+wsl
+
+# Navigate to your project (Windows drives are at /mnt/c/)
+cd /mnt/c/Users/YourName/your-project
+
+# Initialize Yoyo Dev
+yoyo-init --claude-code
+
+# Launch (use --no-wave on WSL; install Wave Terminal natively on Windows)
+yoyo-dev --no-wave
+```
+
+**Non-interactive mode (CI/automation):**
+
+```powershell
+# Install both components without prompts
+powershell -ExecutionPolicy Bypass -File install-windows.ps1 -NonInteractive -Components both
+
+# Install only yoyo-ai
+powershell -ExecutionPolicy Bypass -File install-windows.ps1 -NonInteractive -Components yoyo-ai
+```
+
+> **Note:** Wave Terminal should be installed natively on Windows (not inside WSL). Download from [waveterm.dev](https://waveterm.dev/download).
+
+---
 
 ### Launch
 
 ```bash
 # Development environment (Claude Code + Wave Terminal + GUI)
 yoyo-dev
+
+# Without Wave Terminal (recommended for WSL)
+yoyo-dev --no-wave
 
 # Without GUI
 yoyo-dev --no-gui
@@ -131,7 +211,10 @@ yoyo-doctor
 # Run diagnostic
 yoyo-doctor
 
-# Check MCP servers
+# Check Claude Code CLI
+claude --version
+
+# Check MCP servers (requires Docker)
 docker mcp server ls
 
 # Launch dev environment
@@ -139,6 +222,16 @@ yoyo-dev
 
 # Check AI Assistant status
 yoyo-ai --status
+```
+
+### CLI Flags for Installation
+
+```bash
+# Component selection
+yoyo-init --claude-code                    # Interactive (prompts for components)
+yoyo-init --claude-code --yoyo-ai-only     # Install only yoyo-ai
+yoyo-init --claude-code --yoyo-dev-only    # Install only yoyo-dev
+yoyo-init --claude-code --non-interactive  # Use defaults (both components)
 ```
 
 > **Full Installation Guide:** [docs/INSTALLATION.md](docs/INSTALLATION.md)
@@ -623,6 +716,54 @@ pkill -f "vite"
 
 # Restart
 yoyo-dev
+```
+</details>
+
+<details>
+<summary><strong>Windows: WSL not ready after install</strong></summary>
+
+If Ubuntu was just installed, it needs first-time setup:
+1. Open **Ubuntu** from the Start menu
+2. Create your username and password when prompted
+3. Type `exit` when done
+4. Re-run `install-windows.ps1`
+</details>
+
+<details>
+<summary><strong>Windows: Wave Terminal on WSL</strong></summary>
+
+Wave Terminal should be installed **natively on Windows**, not inside WSL.
+- Download from [waveterm.dev](https://waveterm.dev/download)
+- Use `yoyo-dev --no-wave` when running inside WSL
+</details>
+
+<details>
+<summary><strong>WSL: yoyo-ai daemon not starting (no systemd)</strong></summary>
+
+Some WSL configurations don't have systemd enabled. The daemon falls back to running as a background process automatically.
+
+```bash
+# Check if systemd is available
+systemctl --version 2>/dev/null && echo "systemd OK" || echo "no systemd"
+
+# Enable systemd in WSL (optional, requires WSL restart)
+echo -e "[boot]\nsystemd=true" | sudo tee /etc/wsl.conf
+# Then restart WSL from PowerShell: wsl --shutdown
+
+# Or just use the daemon without systemd (works automatically)
+yoyo-ai --start
+```
+</details>
+
+<details>
+<summary><strong>Claude Code CLI not found</strong></summary>
+
+```bash
+# Install via npm
+npm install -g @anthropic-ai/claude-code
+
+# Verify
+claude --version
 ```
 </details>
 

@@ -116,13 +116,22 @@ is_daemon_running() {
 
 is_gateway_installed() {
     # Check if gateway service is installed (systemd user service exists)
-    systemctl --user is-enabled openclaw-gateway.service &>/dev/null 2>&1
+    # Skip on systems without systemd (e.g., WSL)
+    has_systemd && systemctl --user is-enabled openclaw-gateway.service &>/dev/null 2>&1
 }
 
 is_gateway_running() {
     # Check if gateway port is listening
-    ss -tlnH "sport = :${OPENCLAW_PORT}" 2>/dev/null | grep -q "${OPENCLAW_PORT}" 2>/dev/null || \
-        systemctl --user is-active openclaw-gateway.service &>/dev/null 2>&1
+    if command -v ss &>/dev/null; then
+        ss -tlnH "sport = :${OPENCLAW_PORT}" 2>/dev/null | grep -q "${OPENCLAW_PORT}" 2>/dev/null && return 0
+    elif command -v netstat &>/dev/null; then
+        netstat -tlnp 2>/dev/null | grep -q ":${OPENCLAW_PORT}" && return 0
+    fi
+    # Fallback: check systemd service
+    has_systemd && systemctl --user is-active openclaw-gateway.service &>/dev/null 2>&1 && return 0
+    # Fallback: check process
+    pgrep -f "openclaw.*gateway" &>/dev/null && return 0
+    return 1
 }
 
 ensure_gateway_token() {
@@ -138,10 +147,19 @@ ensure_initialized() {
     # Step 1: Ensure OpenClaw is installed
     if ! is_openclaw_installed; then
         ui_info "Installing OpenClaw..."
-        npm install -g openclaw@latest 2>&1 | tail -1 || {
-            ui_error "Failed to install OpenClaw"
-            return 1
-        }
+        if ! npm install -g openclaw@latest 2>&1 | tail -1; then
+            # Retry after cleaning stale npm directories (ENOTEMPTY fix)
+            ui_warning "Install failed — cleaning stale modules and retrying..."
+            local npm_global_modules
+            npm_global_modules="$(npm root -g 2>/dev/null)"
+            if [ -n "$npm_global_modules" ]; then
+                rm -rf "${npm_global_modules}/openclaw" "${npm_global_modules}"/.openclaw-* 2>/dev/null || true
+            fi
+            npm install -g openclaw@latest 2>&1 | tail -1 || {
+                ui_error "Failed to install OpenClaw"
+                return 1
+            }
+        fi
         ui_success "OpenClaw installed"
         echo ""
     fi
@@ -164,7 +182,7 @@ ensure_initialized() {
         ensure_gateway_mode
         ensure_gateway_token
 
-        if ! is_gateway_installed; then
+        if has_systemd && ! is_gateway_installed; then
             ui_info "Installing gateway service..."
             openclaw gateway install 2>&1 || {
                 ui_warning "Gateway service installation failed — will run gateway directly"
@@ -172,6 +190,9 @@ ensure_initialized() {
             }
             ui_success "Gateway service installed"
             echo ""
+        elif ! has_systemd; then
+            # No systemd (e.g., WSL) — gateway will run as background process
+            true
         fi
     fi
 
@@ -197,8 +218,8 @@ daemon_start() {
 
     ui_info "Starting OpenClaw gateway..."
 
-    # Try systemd service first
-    if is_gateway_installed; then
+    # Try systemd service first (only if systemd is available)
+    if has_systemd && is_gateway_installed; then
         systemctl --user start openclaw-gateway.service 2>&1 || true
         sleep 1
         if is_gateway_running; then
@@ -231,8 +252,8 @@ daemon_stop() {
 
     ui_info "Stopping OpenClaw gateway..."
 
-    # Try systemd service first
-    if is_gateway_installed; then
+    # Try systemd service first (only if available)
+    if has_systemd && is_gateway_installed; then
         systemctl --user stop openclaw-gateway.service 2>&1 || true
     fi
 
@@ -544,7 +565,7 @@ show_help() {
     echo -e "  ${UI_BOLD}ABOUT${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
     echo ""
-    echo -e "  Yoyo AI is your Business and Personal AI Assistant powered by OpenClaw."
+    echo -e "  Yoyo AI is your Business and Personal AI Assistant powered by DAVECORPORATE and OpenClaw."
     echo -e "  It runs as a background daemon and provides messaging, skills,"
     echo -e "  and integrations across your development workflow."
     echo ""

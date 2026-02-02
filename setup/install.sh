@@ -37,6 +37,8 @@ PROJECT_TYPE=""
 AUTO_INSTALL_MCP=true
 GENERATE_CLAUDE_MD=true
 INTERACTIVE=true
+# Component selection: "both", "yoyo-dev", "yoyo-ai"
+INSTALL_COMPONENTS="both"
 # Tech Stack Configuration
 TECH_STACK_FRAMEWORK=""
 TECH_STACK_DATABASE=""
@@ -84,6 +86,14 @@ while [[ $# -gt 0 ]]; do
             INTERACTIVE=false
             shift
             ;;
+        --yoyo-ai-only)
+            INSTALL_COMPONENTS="yoyo-ai"
+            shift
+            ;;
+        --yoyo-dev-only)
+            INSTALL_COMPONENTS="yoyo-dev"
+            shift
+            ;;
         -h|--help)
             cat << EOF
 
@@ -100,6 +110,8 @@ Options:
   ${UI_PRIMARY}--project-type=TYPE${UI_RESET}         Use specific project type
   ${UI_PRIMARY}--no-auto-mcp${UI_RESET}               Skip automatic MCP server installation
   ${UI_PRIMARY}--no-claude-md${UI_RESET}              Skip project CLAUDE.md generation
+  ${UI_PRIMARY}--yoyo-ai-only${UI_RESET}              Install only yoyo-ai (OpenClaw)
+  ${UI_PRIMARY}--yoyo-dev-only${UI_RESET}             Install only yoyo-dev (dev environment)
   ${UI_PRIMARY}--non-interactive${UI_RESET}           Run without prompts (use defaults)
   ${UI_PRIMARY}-h, --help${UI_RESET}                  Show this help message
 
@@ -125,6 +137,12 @@ done
 
 ui_clear_screen "$VERSION"
 ui_box_header "PROJECT INSTALLATION" 70 "$UI_PRIMARY"
+
+# Detect WSL environment
+IS_WSL=false
+if grep -qi microsoft /proc/version 2>/dev/null; then
+    IS_WSL=true
+fi
 
 # Get project info
 CURRENT_DIR=$(pwd)
@@ -205,8 +223,33 @@ echo ""
 if [ "$INTERACTIVE" = true ]; then
     ui_section "Configuration Options" "$ICON_WRENCH"
 
-    # IDE Integration
-    if [ "$CLAUDE_CODE" = false ] && [ "$CURSOR" = false ]; then
+    # Component Selection (first question)
+    echo ""
+    echo -e "${UI_BOLD}What would you like to install?${UI_RESET}"
+    echo ""
+    ui_option "1" "Both (recommended)" "yoyo-dev (Dev Environment) + yoyo-ai (AI Assistant)" true
+    ui_option "2" "yoyo-ai only" "Business and Personal AI Assistant (OpenClaw)"
+    ui_option "3" "yoyo-dev only" "Development environment (Claude Code, Wave, GUI)"
+
+    echo -n "  Choice [1]: "
+    read -r component_choice
+    component_choice=${component_choice:-1}
+
+    case $component_choice in
+        1) INSTALL_COMPONENTS="both" ;;
+        2) INSTALL_COMPONENTS="yoyo-ai" ;;
+        3) INSTALL_COMPONENTS="yoyo-dev" ;;
+        *) INSTALL_COMPONENTS="both" ;;
+    esac
+
+    # IDE Integration (only if installing yoyo-dev)
+    if [ "$INSTALL_COMPONENTS" = "yoyo-ai" ]; then
+        # yoyo-ai only — skip IDE/tech-stack/MCP questions
+        CLAUDE_CODE=false
+        CURSOR=false
+        AUTO_INSTALL_MCP=false
+        GENERATE_CLAUDE_MD=false
+    elif [ "$CLAUDE_CODE" = false ] && [ "$CURSOR" = false ]; then
         echo ""
         echo -e "${UI_BOLD}Which IDE integration would you like?${UI_RESET}"
         echo ""
@@ -236,8 +279,8 @@ if [ "$INTERACTIVE" = true ]; then
         esac
     fi
 
-    # MCP Server Installation
-    if [ "$AUTO_INSTALL_MCP" = true ]; then
+    # MCP Server Installation (skip for yoyo-ai only)
+    if [ "$INSTALL_COMPONENTS" != "yoyo-ai" ] && [ "$AUTO_INSTALL_MCP" = true ]; then
         echo ""
         if ui_ask "Install Docker MCP servers automatically?" "y"; then
             AUTO_INSTALL_MCP=true
@@ -246,7 +289,8 @@ if [ "$INTERACTIVE" = true ]; then
         fi
     fi
 
-    # Tech Stack Selection
+    # Tech Stack Selection (skip for yoyo-ai only)
+    if [ "$INSTALL_COMPONENTS" != "yoyo-ai" ]; then
     echo ""
     echo -e "${UI_BOLD}What is your project's tech stack?${UI_RESET}"
     echo ""
@@ -318,6 +362,8 @@ if [ "$INTERACTIVE" = true ]; then
         *) TECH_STACK_STYLING="other" ;;
     esac
 
+    fi  # end INSTALL_COMPONENTS != yoyo-ai (tech stack)
+
     echo ""
 fi
 
@@ -329,6 +375,7 @@ ui_section "Installation Summary" "$ICON_PACKAGE"
 
 summary_items=()
 summary_items+=("Project: $PROJECT_NAME")
+summary_items+=("Components: $INSTALL_COMPONENTS")
 
 if [ "$CLAUDE_CODE" = true ]; then
     summary_items+=("IDE: Claude Code")
@@ -376,10 +423,35 @@ echo ""
 # Installation Steps
 # ============================================================================
 
-TOTAL_STEPS=10
+TOTAL_STEPS=11
 CURRENT_STEP=0
 
-# Step 1: Create directories
+# Step 1: Install Claude Code CLI (if needed for yoyo-dev)
+if [ "$INSTALL_COMPONENTS" != "yoyo-ai" ]; then
+    ((++CURRENT_STEP))
+    ui_step $CURRENT_STEP $TOTAL_STEPS "Checking Claude Code CLI..."
+
+    if command -v claude &>/dev/null; then
+        ui_success "Claude Code CLI already installed"
+    else
+        ui_info "Installing Claude Code CLI..."
+        if command -v npm &>/dev/null; then
+            if npm install -g @anthropic-ai/claude-code 2>&1 | tail -1; then
+                ui_success "Claude Code CLI installed"
+            else
+                ui_warning "Claude Code CLI installation via npm failed"
+                echo -e "  ${UI_DIM}Install manually: ${UI_PRIMARY}npm install -g @anthropic-ai/claude-code${UI_RESET}"
+                echo -e "  ${UI_DIM}Or visit: ${UI_PRIMARY}https://docs.anthropic.com/en/docs/claude-code${UI_RESET}"
+            fi
+        else
+            ui_warning "npm not found — Claude Code CLI requires Node.js and npm"
+            echo -e "  ${UI_DIM}Install Node.js first, then: ${UI_PRIMARY}npm install -g @anthropic-ai/claude-code${UI_RESET}"
+        fi
+    fi
+    echo ""
+fi
+
+# Step 2: Create directories
 ((++CURRENT_STEP))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Creating project directories..."
 
@@ -591,18 +663,21 @@ fi
 ui_success "Installation verified"
 echo ""
 
-# Step 9: Install OpenClaw (yoyo-ai) — mandatory in V7
-((++CURRENT_STEP))
-ui_step $CURRENT_STEP $TOTAL_STEPS "Installing OpenClaw (yoyo-ai)..."
+# Step: Install OpenClaw (yoyo-ai) — unless yoyo-dev only
+OPENCLAW_INSTALLED=false
+YOYO_AI_STATUS="skipped"
+NODE_OK=false
 
-# Source functions.sh for check_node_version
+# Source functions.sh for check_node_version and helpers
 if [ -f "$SCRIPT_DIR/functions.sh" ]; then
     source "$SCRIPT_DIR/functions.sh"
 fi
 
-OPENCLAW_INSTALLED=false
+if [ "$INSTALL_COMPONENTS" != "yoyo-dev" ]; then
+((++CURRENT_STEP))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Installing OpenClaw (yoyo-ai)..."
+
 YOYO_AI_STATUS="failed:unknown"
-NODE_OK=false
 
 # Check Node.js >= 22
 if node_ver=$(check_node_version 22 2>/dev/null); then
@@ -672,6 +747,8 @@ if [ "$OPENCLAW_INSTALLED" = true ] && [ -f "$INSTALL_DIR/config.yml" ]; then
     rm -f "$INSTALL_DIR/config.yml.bak"
 fi
 
+fi  # end INSTALL_COMPONENTS != yoyo-dev (OpenClaw)
+
 echo ""
 
 # ============================================================================
@@ -711,17 +788,33 @@ ui_component_status_panel "$YOYO_DEV_STATUS" "$YOYO_AI_STATUS"
 
 ui_section "Next Steps" "$ICON_ROCKET"
 
-echo -e "  ${UI_PRIMARY}1.${UI_RESET} Launch Claude Code with Yoyo Dev:"
-echo -e "     ${UI_DIM}\$ yoyo${UI_RESET} ${UI_DIM}# Opens Claude Code + Browser GUI${UI_RESET}"
-echo ""
+if [ "$IS_WSL" = true ]; then
+    echo -e "  ${UI_PRIMARY}1.${UI_RESET} Launch Claude Code (WSL mode - no Wave Terminal):"
+    echo -e "     ${UI_DIM}\$ yoyo-dev --no-wave${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}2.${UI_RESET} Start the AI assistant:"
+    echo -e "     ${UI_DIM}\$ yoyo-ai --start${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}3.${UI_RESET} Start planning your product:"
+    echo -e "     ${UI_DIM}Use ${UI_SUCCESS}/plan-product${UI_RESET}${UI_DIM} in Claude Code${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}4.${UI_RESET} View all commands:"
+    echo -e "     ${UI_DIM}Use ${UI_SUCCESS}/yoyo-help${UI_RESET}${UI_DIM} in Claude Code${UI_RESET}"
+    echo ""
+    ui_info "Running in WSL. Wave Terminal should be installed on Windows, not inside WSL."
+    echo -e "  ${UI_DIM}Download Wave: https://waveterm.dev/download${UI_RESET}"
+    echo ""
+else
+    echo -e "  ${UI_PRIMARY}1.${UI_RESET} Launch Claude Code with Yoyo Dev:"
+    echo -e "     ${UI_DIM}\$ yoyo${UI_RESET} ${UI_DIM}# Opens Claude Code + Browser GUI${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}2.${UI_RESET} Start planning your product:"
+    echo -e "     ${UI_DIM}Use ${UI_SUCCESS}/plan-product${UI_RESET}${UI_DIM} in Claude Code${UI_RESET}"
+    echo ""
+    echo -e "  ${UI_PRIMARY}3.${UI_RESET} View all commands:"
+    echo -e "     ${UI_DIM}Use ${UI_SUCCESS}/yoyo-help${UI_RESET}${UI_DIM} in Claude Code${UI_RESET}"
+    echo ""
+fi
 
-echo -e "  ${UI_PRIMARY}2.${UI_RESET} Start planning your product:"
-echo -e "     ${UI_DIM}Use ${UI_SUCCESS}/plan-product${UI_RESET}${UI_DIM} in Claude Code${UI_RESET}"
-echo ""
-
-echo -e "  ${UI_PRIMARY}3.${UI_RESET} View all commands:"
-echo -e "     ${UI_DIM}Use ${UI_SUCCESS}/yoyo-help${UI_RESET}${UI_DIM} in Claude Code${UI_RESET}"
-echo ""
-
-ui_info "For help, run: ${UI_PRIMARY}yoyo --help${UI_RESET}"
+ui_info "For help, run: ${UI_PRIMARY}yoyo-dev --help${UI_RESET}"
 echo ""
