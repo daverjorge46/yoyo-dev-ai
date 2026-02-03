@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { getDatabase, generateId } from '../lib/database.js';
+import { openclawProxy } from '../services/openclawProxy.js';
 
 export const chatRouter = new Hono();
 
@@ -44,9 +45,51 @@ chatRouter.post('/message', async (c) => {
     VALUES (?, ?, ?, ?, ?)
   `).run(userMessageId, 'user', content, JSON.stringify(attachments), timestamp);
 
-  // Generate AI response (mock for now, would integrate with OpenClaw)
+  // Send message to OpenClaw gateway
+  let assistantContent = '';
+  let suggestedActions: Array<{ id: string; label: string; action: string }> = [];
+
+  try {
+    // Check if OpenClaw is healthy
+    const isHealthy = await openclawProxy.isHealthy();
+
+    if (isHealthy) {
+      // Send message to OpenClaw
+      const response = await openclawProxy.sendMessage(content, {
+        attachments: attachments.map(a => ({ name: a.name, type: a.type })),
+      });
+
+      if (response.success && response.data) {
+        assistantContent = response.data.response;
+        if (response.data.suggestedActions) {
+          suggestedActions = response.data.suggestedActions.map((a, i) => ({
+            id: `action_${i}`,
+            label: a.label,
+            action: a.action,
+          }));
+        }
+      } else {
+        // OpenClaw returned an error
+        assistantContent = `I'm having trouble processing your request. OpenClaw returned: ${response.error || 'Unknown error'}. Please try again or check if OpenClaw is running properly.`;
+      }
+    } else {
+      // OpenClaw not available
+      assistantContent = `OpenClaw gateway is not available. Please make sure it's running with: \`yoyo-ai start\`\n\nYour message was: "${content}"`;
+      suggestedActions = [
+        { id: 'action_1', label: 'Retry', action: 'retry' },
+        { id: 'action_2', label: 'Check Status', action: 'check_status' },
+      ];
+    }
+  } catch (error) {
+    console.error('Error communicating with OpenClaw:', error);
+    assistantContent = `Error communicating with OpenClaw: ${error instanceof Error ? error.message : 'Unknown error'}. Please check if the gateway is running.`;
+    suggestedActions = [
+      { id: 'action_1', label: 'Retry', action: 'retry' },
+    ];
+  }
+
+  // Store assistant response
   const assistantMessageId = generateId('msg_');
-  const assistantResponse = generateMockResponse(content);
 
   db.prepare(`
     INSERT INTO chat_history (id, role, content, suggested_actions, timestamp)
@@ -54,8 +97,8 @@ chatRouter.post('/message', async (c) => {
   `).run(
     assistantMessageId,
     'assistant',
-    assistantResponse.content,
-    JSON.stringify(assistantResponse.suggestedActions),
+    assistantContent,
+    JSON.stringify(suggestedActions),
     Date.now()
   );
 
@@ -70,8 +113,8 @@ chatRouter.post('/message', async (c) => {
     assistantMessage: {
       id: assistantMessageId,
       role: 'assistant',
-      content: assistantResponse.content,
-      suggestedActions: assistantResponse.suggestedActions,
+      content: assistantContent,
+      suggestedActions,
       timestamp: new Date().toISOString(),
     },
   });
@@ -81,9 +124,9 @@ chatRouter.post('/voice', async (c) => {
   const formData = await c.req.formData();
   const audio = formData.get('audio') as File;
 
-  // In a real implementation, this would transcribe the audio
-  // For now, return a mock transcription
-  const transcription = 'This is a mock transcription of your voice message.';
+  // In a real implementation, this would transcribe the audio via OpenClaw or STT service
+  // For now, return a message about voice support
+  const transcription = '[Voice message received - transcription not yet implemented]';
 
   // Process as a regular message
   const db = getDatabase();
@@ -95,9 +138,28 @@ chatRouter.post('/voice', async (c) => {
     VALUES (?, ?, ?, ?)
   `).run(userMessageId, 'user', transcription, timestamp);
 
-  // Generate response
+  // Get response from OpenClaw
+  let assistantContent = '';
+  let suggestedActions: Array<{ id: string; label: string; action: string }> = [];
+
+  try {
+    const isHealthy = await openclawProxy.isHealthy();
+
+    if (isHealthy) {
+      const response = await openclawProxy.sendMessage(transcription);
+      if (response.success && response.data) {
+        assistantContent = response.data.response;
+      } else {
+        assistantContent = 'Voice message received, but I could not process it. Please try typing your message instead.';
+      }
+    } else {
+      assistantContent = 'OpenClaw gateway is not available. Please start it with: yoyo-ai start';
+    }
+  } catch (error) {
+    assistantContent = 'Error processing voice message. Please try again.';
+  }
+
   const assistantMessageId = generateId('msg_');
-  const assistantResponse = generateMockResponse(transcription);
 
   db.prepare(`
     INSERT INTO chat_history (id, role, content, suggested_actions, timestamp)
@@ -105,8 +167,8 @@ chatRouter.post('/voice', async (c) => {
   `).run(
     assistantMessageId,
     'assistant',
-    assistantResponse.content,
-    JSON.stringify(assistantResponse.suggestedActions),
+    assistantContent,
+    JSON.stringify(suggestedActions),
     Date.now()
   );
 
@@ -121,8 +183,8 @@ chatRouter.post('/voice', async (c) => {
     assistantMessage: {
       id: assistantMessageId,
       role: 'assistant',
-      content: assistantResponse.content,
-      suggestedActions: assistantResponse.suggestedActions,
+      content: assistantContent,
+      suggestedActions,
       timestamp: new Date().toISOString(),
     },
   });
@@ -133,25 +195,3 @@ chatRouter.delete('/history', (c) => {
   db.prepare('DELETE FROM chat_history').run();
   return c.json({ success: true });
 });
-
-// Mock response generator
-function generateMockResponse(input: string): { content: string; suggestedActions: any[] } {
-  const responses = [
-    {
-      content: `I understand you're asking about "${input.slice(0, 50)}...". I can help you with that! Here's what I can do:\n\n1. Analyze the request\n2. Create a task for it\n3. Schedule an automation\n\nWould you like me to proceed with any of these options?`,
-      suggestedActions: [
-        { id: 'action_1', label: 'Create Task', action: 'create_task' },
-        { id: 'action_2', label: 'Schedule', action: 'schedule' },
-      ],
-    },
-    {
-      content: `Great question! Based on your request, I've analyzed several options. Here's my recommendation:\n\n\`\`\`javascript\n// Example code\nconst result = await processRequest("${input.slice(0, 20)}");\nconsole.log(result);\n\`\`\`\n\nLet me know if you'd like me to explain further or take action.`,
-      suggestedActions: [
-        { id: 'action_1', label: 'Run Code', action: 'run_code' },
-        { id: 'action_2', label: 'Explain More', action: 'explain' },
-      ],
-    },
-  ];
-
-  return responses[Math.floor(Math.random() * responses.length)];
-}

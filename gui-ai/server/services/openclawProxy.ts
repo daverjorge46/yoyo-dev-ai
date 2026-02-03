@@ -1,6 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { spawn, exec } from 'child_process';
+import { promisify } from 'util';
+
+const execAsync = promisify(exec);
 
 const YOYO_AI_HOME = process.env.YOYO_AI_HOME || path.join(os.homedir(), '.yoyo-ai');
 const OPENCLAW_PORT = process.env.OPENCLAW_PORT || '18789';
@@ -31,133 +35,256 @@ export class OpenClawProxy {
     }
   }
 
-  private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
-  ): Promise<OpenClawResponse<T>> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      ...(options.headers as Record<string, string>),
-    };
-
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
-    }
-
-    try {
-      const response = await fetch(`${this.baseUrl}${endpoint}`, {
-        ...options,
-        headers,
-        signal: AbortSignal.timeout(30000), // 30 second timeout
-      });
-
-      if (!response.ok) {
-        return {
-          success: false,
-          error: `HTTP ${response.status}: ${response.statusText}`,
-        };
-      }
-
-      const data = await response.json();
-      return { success: true, data };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
-  }
-
+  /**
+   * Check if OpenClaw gateway is running using the CLI
+   */
   async isHealthy(): Promise<boolean> {
-    const result = await this.request('/health');
-    return result.success;
+    try {
+      const { stdout } = await execAsync('openclaw health', {
+        timeout: 15000,
+        env: { ...process.env, PATH: process.env.PATH },
+      });
+      // If health returns without error and contains "WhatsApp" or any channel info, it's healthy
+      return stdout.includes('WhatsApp') || stdout.includes('Gateway') || stdout.includes('Agents');
+    } catch (error) {
+      console.error('OpenClaw health check failed:', error);
+      return false;
+    }
   }
 
+  /**
+   * Get OpenClaw status using the CLI
+   */
   async getStatus(): Promise<OpenClawResponse<{
     version: string;
     status: string;
     channels: string[];
+    whatsapp?: { linked: boolean; phone?: string };
   }>> {
-    return this.request('/status');
+    try {
+      const { stdout } = await execAsync('openclaw health', {
+        timeout: 15000,
+        env: { ...process.env, PATH: process.env.PATH },
+      });
+
+      // Parse the health output
+      const whatsappMatch = stdout.match(/WhatsApp:\s*(\w+)/i);
+      const phoneMatch = stdout.match(/Web Channel:\s*(\+\d+)/);
+
+      const status = {
+        version: '2026.x',
+        status: 'running',
+        channels: [] as string[],
+        whatsapp: undefined as { linked: boolean; phone?: string } | undefined,
+      };
+
+      if (whatsappMatch) {
+        status.channels.push('whatsapp');
+        status.whatsapp = {
+          linked: whatsappMatch[1].toLowerCase() === 'linked',
+          phone: phoneMatch ? phoneMatch[1] : undefined,
+        };
+      }
+
+      return { success: true, data: status };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get status',
+      };
+    }
   }
 
-  // Chat/Agent methods
-  async sendMessage(message: string, context?: Record<string, unknown>): Promise<OpenClawResponse<{
+  /**
+   * Send a message to the OpenClaw agent using the CLI
+   */
+  async sendMessage(
+    message: string,
+    context?: Record<string, unknown>
+  ): Promise<OpenClawResponse<{
     response: string;
     suggestedActions?: Array<{ label: string; action: string }>;
   }>> {
-    return this.request('/agent/message', {
-      method: 'POST',
-      body: JSON.stringify({ message, context }),
+    return new Promise((resolve) => {
+      // Escape message for shell
+      const escapedMessage = message.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
+
+      // Use openclaw agent command
+      const agentProcess = spawn('openclaw', [
+        'agent',
+        '--message', message,
+        '--json',
+      ], {
+        timeout: 120000, // 2 minute timeout
+        env: { ...process.env },
+      });
+
+      let stdout = '';
+      let stderr = '';
+
+      agentProcess.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+
+      agentProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+
+      agentProcess.on('close', (code) => {
+        if (code === 0 && stdout) {
+          try {
+            // Try to parse JSON output
+            const jsonMatch = stdout.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              const result = JSON.parse(jsonMatch[0]);
+              resolve({
+                success: true,
+                data: {
+                  response: result.response || result.content || result.message || stdout,
+                  suggestedActions: result.suggestedActions,
+                },
+              });
+            } else {
+              // No JSON, use raw output
+              resolve({
+                success: true,
+                data: {
+                  response: stdout.trim(),
+                },
+              });
+            }
+          } catch {
+            // JSON parse failed, use raw output
+            resolve({
+              success: true,
+              data: {
+                response: stdout.trim(),
+              },
+            });
+          }
+        } else {
+          resolve({
+            success: false,
+            error: stderr || `Command exited with code ${code}`,
+          });
+        }
+      });
+
+      agentProcess.on('error', (error) => {
+        resolve({
+          success: false,
+          error: error.message,
+        });
+      });
+
+      // Timeout after 2 minutes
+      setTimeout(() => {
+        agentProcess.kill();
+        resolve({
+          success: false,
+          error: 'Request timed out',
+        });
+      }, 120000);
     });
   }
 
+  /**
+   * Stream a message to the OpenClaw agent (falls back to non-streaming)
+   */
   async streamMessage(
     message: string,
     context?: Record<string, unknown>,
     onChunk?: (chunk: string) => void
   ): Promise<OpenClawResponse<string>> {
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      'Accept': 'text/event-stream',
-    };
-
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    // For now, just use the regular sendMessage
+    // Streaming would require WebSocket implementation
+    const result = await this.sendMessage(message, context);
+    if (result.success && result.data) {
+      onChunk?.(result.data.response);
+      return { success: true, data: result.data.response };
     }
-
-    try {
-      const response = await fetch(`${this.baseUrl}/agent/message/stream`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ message, context }),
-      });
-
-      if (!response.ok || !response.body) {
-        return { success: false, error: 'Stream failed' };
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let fullResponse = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        fullResponse += chunk;
-        onChunk?.(chunk);
-      }
-
-      return { success: true, data: fullResponse };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Stream error',
-      };
-    }
+    return { success: false, error: result.error };
   }
 
-  // Channels/Messaging methods
+  /**
+   * Get channels status using CLI
+   */
   async getChannels(): Promise<OpenClawResponse<Array<{
     id: string;
     type: string;
     name: string;
     connected: boolean;
   }>>> {
-    return this.request('/channels');
+    try {
+      const { stdout } = await execAsync('openclaw health', {
+        timeout: 15000,
+        env: { ...process.env, PATH: process.env.PATH },
+      });
+
+      const channels = [];
+
+      // Parse WhatsApp status
+      const whatsappMatch = stdout.match(/WhatsApp:\s*(\w+)/i);
+      if (whatsappMatch) {
+        const phoneMatch = stdout.match(/Web Channel:\s*(\+\d+)/);
+        channels.push({
+          id: 'whatsapp-1',
+          type: 'whatsapp',
+          name: 'WhatsApp',
+          connected: whatsappMatch[1].toLowerCase() === 'linked',
+          phone: phoneMatch ? phoneMatch[1] : undefined,
+        });
+      }
+
+      return { success: true, data: channels };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get channels',
+      };
+    }
   }
 
+  /**
+   * Get sessions using CLI
+   */
+  async getSessions(): Promise<OpenClawResponse<Array<{
+    id: string;
+    kind: string;
+    age: string;
+    model: string;
+    tokens: string;
+  }>>> {
+    try {
+      const { stdout } = await execAsync('openclaw sessions --json 2>/dev/null', {
+        timeout: 10000,
+      });
+
+      try {
+        const result = JSON.parse(stdout);
+        return { success: true, data: result.sessions || [] };
+      } catch {
+        // Parse text output if JSON fails
+        return { success: true, data: [] };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to get sessions',
+      };
+    }
+  }
+
+  // Legacy methods for compatibility (not implemented via CLI)
   async sendToChannel(
     channelId: string,
     target: string,
     message: string
   ): Promise<OpenClawResponse<{ messageId: string }>> {
-    return this.request(`/channels/${channelId}/send`, {
-      method: 'POST',
-      body: JSON.stringify({ target, message }),
-    });
+    return {
+      success: false,
+      error: 'Direct channel messaging not implemented in GUI. Use the CLI: openclaw message send',
+    };
   }
 
   async getChannelMessages(
@@ -170,21 +297,16 @@ export class OpenClawProxy {
     content: string;
     timestamp: string;
   }>>> {
-    const params = new URLSearchParams();
-    if (options?.limit) params.set('limit', String(options.limit));
-    if (options?.before) params.set('before', options.before);
-
-    return this.request(`/channels/${channelId}/messages?${params}`);
+    return { success: false, error: 'Not implemented' };
   }
 
-  // Skills/Automation methods
   async listSkills(): Promise<OpenClawResponse<Array<{
     id: string;
     name: string;
     description: string;
     params: Record<string, unknown>;
   }>>> {
-    return this.request('/skills');
+    return { success: false, error: 'Not implemented' };
   }
 
   async executeSkill(
@@ -194,10 +316,7 @@ export class OpenClawProxy {
     taskId: string;
     status: string;
   }>> {
-    return this.request(`/skills/${skillId}/execute`, {
-      method: 'POST',
-      body: JSON.stringify(params),
-    });
+    return { success: false, error: 'Not implemented' };
   }
 
   async getTaskStatus(taskId: string): Promise<OpenClawResponse<{
@@ -207,28 +326,21 @@ export class OpenClawProxy {
     result?: unknown;
     error?: string;
   }>> {
-    return this.request(`/tasks/${taskId}`);
+    return { success: false, error: 'Not implemented' };
   }
 
-  // Connection/Auth methods
   async initiateOAuth(provider: string, redirectUrl: string): Promise<OpenClawResponse<{
     authUrl: string;
     state: string;
   }>> {
-    return this.request('/connections/oauth/initiate', {
-      method: 'POST',
-      body: JSON.stringify({ provider, redirectUrl }),
-    });
+    return { success: false, error: 'Not implemented' };
   }
 
   async completeOAuth(provider: string, code: string, state: string): Promise<OpenClawResponse<{
     connectionId: string;
     account: string;
   }>> {
-    return this.request('/connections/oauth/complete', {
-      method: 'POST',
-      body: JSON.stringify({ provider, code, state }),
-    });
+    return { success: false, error: 'Not implemented' };
   }
 
   async getConnections(): Promise<OpenClawResponse<Array<{
@@ -237,13 +349,11 @@ export class OpenClawProxy {
     account: string;
     connected: boolean;
   }>>> {
-    return this.request('/connections');
+    return { success: false, error: 'Not implemented' };
   }
 
   async disconnectConnection(connectionId: string): Promise<OpenClawResponse<void>> {
-    return this.request(`/connections/${connectionId}`, {
-      method: 'DELETE',
-    });
+    return { success: false, error: 'Not implemented' };
   }
 }
 
