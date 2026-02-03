@@ -76,10 +76,10 @@ yoyo-dev-ai/                      # Framework root (this repository)
 
 Two separate GUI applications:
 
-| GUI | Directory | Dev Port | Prod Port | Command |
-|-----|-----------|----------|-----------|---------|
-| **Yoyo Dev** | `gui/` | 5173 | 3456 | `yoyo-gui` |
-| **Yoyo AI** | `gui-ai/` | 5174 | 3457 | `yoyo-ai --dashboard` |
+| GUI | Directory | Port | Command |
+|-----|-----------|------|---------|
+| **Yoyo Dev** | `gui/` | 5173 | `yoyo-gui` |
+| **Yoyo AI** | `gui-ai/` | 5174 | `yoyo-gui --ai` or `yoyo-ai --gui` |
 
 This separation allows running both GUIs simultaneously without port conflicts.
 

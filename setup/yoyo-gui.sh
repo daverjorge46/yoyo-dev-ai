@@ -114,38 +114,29 @@ get_network_ip() {
 
 show_help() {
     echo ""
-    echo -e "${UI_BOLD}${UI_PRIMARY}Yoyo Dev GUI v${VERSION}${UI_RESET}"
+    echo -e "${UI_BOLD}${UI_PRIMARY}Yoyo GUI Launcher v${VERSION}${UI_RESET}"
     echo ""
     echo -e "${UI_BOLD}Usage:${UI_RESET}"
-    echo -e "  ${UI_SUCCESS}yoyo-gui${UI_RESET}                Launch browser-based dashboard (production)"
-    echo -e "  ${UI_SUCCESS}yoyo-gui --dev${UI_RESET}          Development mode with hot reload (port 5173)"
-    echo -e "  ${UI_SUCCESS}yoyo-gui --port 8080${UI_RESET}    Use custom port (production mode)"
-    echo -e "  ${UI_SUCCESS}yoyo-gui --no-open${UI_RESET}      Don't auto-open browser (default)"
-    echo -e "  ${UI_SUCCESS}yoyo-gui --no-banner${UI_RESET}    Skip branded banner (for CI/scripts)"
-    echo -e "  ${UI_SUCCESS}yoyo-gui --background${UI_RESET}   Run in background"
+    echo -e "  ${UI_SUCCESS}yoyo-gui${UI_RESET}           Launch Yoyo Dev GUI (port 5173)"
+    echo -e "  ${UI_SUCCESS}yoyo-gui --ai${UI_RESET}      Launch Yoyo AI GUI (port 5174)"
     echo ""
     echo -e "${UI_BOLD}Options:${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}-d, --dev${UI_RESET}           Development mode with hot reload (port 5173)"
-    echo -e "  ${UI_PRIMARY}-p, --port PORT${UI_RESET}     Server port for production mode (default: 3456)"
-    echo -e "  ${UI_PRIMARY}--no-open${UI_RESET}           Don't automatically open browser (default)"
-    echo -e "  ${UI_PRIMARY}--no-banner${UI_RESET}         Skip branded startup banner"
-    echo -e "  ${UI_PRIMARY}--background${UI_RESET}        Run server in background (for yoyo integration)"
+    echo -e "  ${UI_PRIMARY}--ai${UI_RESET}                Launch Yoyo AI GUI instead of Yoyo Dev"
     echo -e "  ${UI_PRIMARY}--stop${UI_RESET}              Stop background GUI server"
     echo -e "  ${UI_PRIMARY}--status${UI_RESET}            Check if GUI server is running"
+    echo -e "  ${UI_PRIMARY}--no-open${UI_RESET}           Don't automatically open browser"
+    echo -e "  ${UI_PRIMARY}--background${UI_RESET}        Run server in background"
     echo -e "  ${UI_PRIMARY}-h, --help${UI_RESET}          Show this help message"
     echo -e "  ${UI_PRIMARY}-v, --version${UI_RESET}       Show version"
     echo ""
-    echo -e "${UI_BOLD}Features:${UI_RESET}"
-    echo -e "  ${MAGENTA:-$UI_PRIMARY}*${UI_RESET} Real-time project status dashboard"
-    echo -e "  ${MAGENTA:-$UI_PRIMARY}*${UI_RESET} Specifications and tasks viewer"
-    echo -e "  ${MAGENTA:-$UI_PRIMARY}*${UI_RESET} Memory system browser"
-    echo -e "  ${MAGENTA:-$UI_PRIMARY}*${UI_RESET} Skills and patterns library"
-    echo -e "  ${MAGENTA:-$UI_PRIMARY}*${UI_RESET} REST API for integrations"
+    echo -e "${UI_BOLD}GUIs:${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}Yoyo Dev${UI_RESET}  Development dashboard (specs, tasks, roadmap) - port 5173"
+    echo -e "  ${UI_PRIMARY}Yoyo AI${UI_RESET}   AI Assistant dashboard (chat, memory, skills) - port 5174"
     echo ""
     echo -e "${UI_BOLD}Related Commands:${UI_RESET}"
-    echo -e "  ${UI_SUCCESS}yoyo-dev${UI_RESET}           Launch Claude Code + GUI (dev mode on port 5173)"
-    echo -e "  ${UI_SUCCESS}yoyo-ai --dashboard${UI_RESET} Launch Yoyo AI Dashboard (port 5174)"
-    echo -e "  ${UI_SUCCESS}yoyo-update${UI_RESET}        Update Yoyo Dev installation"
+    echo -e "  ${UI_SUCCESS}yoyo-dev${UI_RESET}       Launch Claude Code + Yoyo Dev GUI"
+    echo -e "  ${UI_SUCCESS}yoyo-ai${UI_RESET}        Launch Yoyo AI Assistant + GUI"
+    echo -e "  ${UI_SUCCESS}yoyo-update${UI_RESET}    Update Yoyo Dev installation"
     echo ""
 }
 
@@ -167,12 +158,8 @@ parse_args() {
                 show_version
                 exit 0
                 ;;
-            -p|--port)
-                PORT="$2"
-                shift 2
-                ;;
-            -d|--dev)
-                DEV_MODE=true
+            --ai)
+                AI_MODE=true
                 shift
                 ;;
             --no-open)
@@ -244,12 +231,52 @@ check_node() {
     return 0
 }
 
+# Get the appropriate GUI directory based on mode
+get_gui_dir() {
+    if [ "$AI_MODE" = true ]; then
+        echo "$GUI_AI_DIR"
+    else
+        echo "$GUI_DEV_DIR"
+    fi
+}
+
+# Get mode name for display
+get_mode_name() {
+    if [ "$AI_MODE" = true ]; then
+        echo "Yoyo AI"
+    else
+        echo "Yoyo Dev"
+    fi
+}
+
+# Get ports based on mode
+get_dev_port() {
+    if [ "$AI_MODE" = true ]; then
+        echo "5174"
+    else
+        echo "5173"
+    fi
+}
+
+get_prod_port() {
+    if [ "$AI_MODE" = true ]; then
+        echo "3457"
+    else
+        echo "3456"
+    fi
+}
+
 check_gui_installed() {
-    if [ ! -d "$GUI_DIR" ]; then
+    local gui_dir
+    gui_dir=$(get_gui_dir)
+    local mode_name
+    mode_name=$(get_mode_name)
+
+    if [ ! -d "$gui_dir" ]; then
         echo ""
-        echo -e "${UI_ERROR}ERROR: GUI not found${UI_RESET}"
+        echo -e "${UI_ERROR}ERROR: ${mode_name} GUI not found${UI_RESET}"
         echo ""
-        echo "Expected location: $GUI_DIR"
+        echo "Expected location: $gui_dir"
         echo ""
         echo "Please update your Yoyo Dev installation:"
         echo "  yoyo-update"
@@ -257,9 +284,9 @@ check_gui_installed() {
         return 1
     fi
 
-    if [ ! -f "$GUI_DIR/package.json" ]; then
+    if [ ! -f "$gui_dir/package.json" ]; then
         echo ""
-        echo -e "${UI_ERROR}ERROR: GUI package.json not found${UI_RESET}"
+        echo -e "${UI_ERROR}ERROR: ${mode_name} GUI package.json not found${UI_RESET}"
         echo ""
         echo "The GUI installation appears to be corrupted."
         echo "Please reinstall Yoyo Dev."
@@ -271,18 +298,26 @@ check_gui_installed() {
 }
 
 check_dependencies_installed() {
-    if [ ! -d "$GUI_DIR/node_modules" ]; then
+    local gui_dir
+    gui_dir=$(get_gui_dir)
+
+    if [ ! -d "$gui_dir/node_modules" ]; then
         return 1
     fi
     return 0
 }
 
 install_dependencies() {
+    local gui_dir
+    gui_dir=$(get_gui_dir)
+    local mode_name
+    mode_name=$(get_mode_name)
+
     echo ""
-    echo -e "${UI_PRIMARY}Installing GUI dependencies...${UI_RESET}"
+    echo -e "${UI_PRIMARY}Installing ${mode_name} GUI dependencies...${UI_RESET}"
     echo ""
 
-    cd "$GUI_DIR"
+    cd "$gui_dir"
 
     if command -v npm &> /dev/null; then
         npm install
@@ -418,27 +453,29 @@ launch_background() {
     local pid_file
     pid_file=$(get_pid_file)
 
+    local gui_dir mode_name dev_port prod_port
+    gui_dir=$(get_gui_dir)
+    mode_name=$(get_mode_name)
+    dev_port=$(get_dev_port)
+    prod_port=$(get_prod_port)
+
     # Check if already running FOR THIS PROJECT
     if is_gui_running; then
         local pid
         pid=$(cat "$pid_file" 2>/dev/null)
-        echo -e "${UI_DIM}GUI already running (PID: $pid)${UI_RESET}"
+        echo -e "${UI_DIM}${mode_name} GUI already running (PID: $pid)${UI_RESET}"
         return 0
     fi
 
-    # Kill any existing server on our ports (may be from different project)
-    kill_existing_on_port "$PORT"
+    # Kill any existing server on our ports
+    kill_existing_on_port "$prod_port"
+    kill_existing_on_port "$dev_port"
 
-    # In dev mode, also kill any existing Vite dev server on port 5173
-    if [ "$DEV_MODE" = true ]; then
-        kill_existing_on_port "$DEV_PORT"
-    fi
-
-    cd "$GUI_DIR"
+    cd "$gui_dir"
 
     # Set environment variables
     export YOYO_PROJECT_ROOT="$project_root"
-    export PORT="$PORT"
+    export PORT="$prod_port"
 
     # Create log file
     local log_file="/tmp/yoyo-gui.log"
@@ -446,63 +483,32 @@ launch_background() {
     local network_ip
     network_ip=$(get_network_ip)
 
-    if [ "$DEV_MODE" = true ]; then
-        # Dev mode: run npm run dev in background
-        # This starts both Vite (5173) and API server concurrently
-        nohup npm run dev > "$log_file" 2>&1 &
-        local server_pid=$!
-        echo "$server_pid" > "$pid_file"
+    # Always run in dev mode for simplicity (hot reload)
+    nohup npm run dev > "$log_file" 2>&1 &
+    local server_pid=$!
+    echo "$server_pid" > "$pid_file"
 
-        # Wait a bit longer for dev mode to start (npm needs time)
-        sleep 3
+    # Wait for dev mode to start
+    sleep 3
 
-        if is_gui_running; then
-            echo -e "${UI_SUCCESS}GUI (dev mode) started${UI_RESET}"
-            echo -e "   Local:   ${UI_PRIMARY}http://localhost:$DEV_PORT${UI_RESET}"
-            if [ -n "$network_ip" ]; then
-                echo -e "   Network: ${UI_PRIMARY}http://${network_ip}:$DEV_PORT${UI_RESET}"
-            fi
-
-            # Open browser if requested
-            if [ "$OPEN_BROWSER" = true ]; then
-                sleep 1
-                open_browser "http://localhost:$DEV_PORT"
-            fi
-            return 0
-        else
-            echo -e "${UI_ERROR}Failed to start GUI dev server${UI_RESET}"
-            echo "   Check log: $log_file"
-            rm -f "$pid_file"
-            return 1
+    if is_gui_running; then
+        echo -e "${UI_SUCCESS}${mode_name} GUI started${UI_RESET}"
+        echo -e "   Local:   ${UI_PRIMARY}http://localhost:${dev_port}${UI_RESET}"
+        if [ -n "$network_ip" ]; then
+            echo -e "   Network: ${UI_PRIMARY}http://${network_ip}:${dev_port}${UI_RESET}"
         fi
+
+        # Open browser if requested
+        if [ "$OPEN_BROWSER" = true ]; then
+            sleep 1
+            open_browser "http://localhost:${dev_port}"
+        fi
+        return 0
     else
-        # Production mode: run tsx server directly
-        nohup npx tsx server/index.ts > "$log_file" 2>&1 &
-        local server_pid=$!
-        echo "$server_pid" > "$pid_file"
-
-        # Wait a moment to check if it started
-        sleep 2
-
-        if is_gui_running; then
-            echo -e "${UI_SUCCESS}GUI started${UI_RESET}"
-            echo -e "   Local:   ${UI_PRIMARY}http://localhost:$PORT${UI_RESET}"
-            if [ -n "$network_ip" ]; then
-                echo -e "   Network: ${UI_PRIMARY}http://${network_ip}:$PORT${UI_RESET}"
-            fi
-
-            # Open browser if requested
-            if [ "$OPEN_BROWSER" = true ]; then
-                sleep 1
-                open_browser "http://localhost:$PORT"
-            fi
-            return 0
-        else
-            echo -e "${UI_ERROR}Failed to start GUI server${UI_RESET}"
-            echo "   Check log: $log_file"
-            rm -f "$pid_file"
-            return 1
-        fi
+        echo -e "${UI_ERROR}Failed to start ${mode_name} GUI${UI_RESET}"
+        echo "   Check log: $log_file"
+        rm -f "$pid_file"
+        return 1
     fi
 }
 
@@ -529,134 +535,57 @@ find_project_root() {
 # Launch Functions
 # ============================================================================
 
-launch_dev() {
+launch_gui() {
     local project_root="$1"
-    local DEV_CLIENT_PORT=5173  # Vite dev server port
+
+    local gui_dir mode_name dev_port prod_port
+    gui_dir=$(get_gui_dir)
+    mode_name=$(get_mode_name)
+    dev_port=$(get_dev_port)
+    prod_port=$(get_prod_port)
+
     local network_ip
     network_ip=$(get_network_ip)
 
     # Kill any existing servers on our ports to prevent EADDRINUSE
-    kill_existing_on_port "$PORT"
-    kill_existing_on_port "$DEV_CLIENT_PORT"
+    kill_existing_on_port "$dev_port"
+    kill_existing_on_port "$prod_port"
 
     # Show branded banner (if enabled, terminal is interactive, and UI library loaded)
     if [ "$BANNER_ENABLED" = true ] && is_interactive_terminal && [ "$UI_LIBRARY_LOADED" = true ]; then
-        ui_yoyo_banner "v${VERSION}"
+        if [ "$AI_MODE" = true ]; then
+            ui_yoyo_ai_banner "v${VERSION}" 2>/dev/null || ui_yoyo_banner "v${VERSION}"
+        else
+            ui_yoyo_banner "v${VERSION}"
+        fi
     else
         echo ""
-        echo -e "${UI_BOLD}${UI_PRIMARY}Yoyo Dev GUI - Development Mode${UI_RESET}"
+        echo -e "${UI_BOLD}${UI_PRIMARY}${mode_name} GUI${UI_RESET}"
     fi
 
     echo ""
     echo -e "  ${UI_SUCCESS}Project:${UI_RESET}  $project_root"
-    echo -e "  ${UI_SUCCESS}Frontend:${UI_RESET} http://localhost:${DEV_CLIENT_PORT}"
+    echo -e "  ${UI_SUCCESS}URL:${UI_RESET}      http://localhost:${dev_port}"
     if [ -n "$network_ip" ]; then
-        echo -e "  ${UI_SUCCESS}Network:${UI_RESET}  http://${network_ip}:${DEV_CLIENT_PORT}"
+        echo -e "  ${UI_SUCCESS}Network:${UI_RESET}  http://${network_ip}:${dev_port}"
     fi
-    echo -e "  ${UI_SUCCESS}API:${UI_RESET}      http://localhost:${PORT}"
-    echo -e "  ${UI_SUCCESS}Mode:${UI_RESET}     Development (hot reload)"
     echo ""
     echo -e "  ${UI_DIM}Press Ctrl+C to stop${UI_RESET}"
     echo ""
 
-    cd "$GUI_DIR"
+    cd "$gui_dir"
 
     # Set environment variables
     export YOYO_PROJECT_ROOT="$project_root"
-    export PORT="$PORT"
+    export PORT="$prod_port"
 
-    # Open browser to Vite dev server (not API server)
+    # Open browser
     if [ "$OPEN_BROWSER" = true ]; then
-        (sleep 3 && open_browser "http://localhost:${DEV_CLIENT_PORT}") &
+        (sleep 3 && open_browser "http://localhost:${dev_port}") &
     fi
 
-    # Run development server (concurrently runs both backend and frontend)
+    # Run development server (with hot reload)
     npm run dev
-}
-
-launch_production() {
-    local project_root="$1"
-
-    # Kill any existing server on our port to prevent EADDRINUSE
-    kill_existing_on_port "$PORT"
-
-    cd "$GUI_DIR"
-
-    # Check if client build exists
-    if [ ! -d "$GUI_DIR/dist/client" ] || [ ! -f "$GUI_DIR/dist/client/index.html" ]; then
-        echo ""
-        echo -e "${UI_WARNING}GUI client not built yet${UI_RESET}"
-        echo ""
-        echo "Options:"
-        echo "  1. Build now (takes ~30 seconds)"
-        echo "  2. Run in development mode (hot reload)"
-        echo "  3. Cancel"
-        echo ""
-        read -p "Choice [1/2/3]: " -n 1 -r
-        echo ""
-
-        case $REPLY in
-            1)
-                echo ""
-                echo -e "${UI_PRIMARY}Building GUI client...${UI_RESET}"
-                npm run build:client
-                echo ""
-                ;;
-            2)
-                echo ""
-                launch_dev "$project_root"
-                return
-                ;;
-            *)
-                echo "Cancelled."
-                exit 0
-                ;;
-        esac
-    fi
-
-    local network_ip
-    network_ip=$(get_network_ip)
-
-    # Show branded banner (if enabled, terminal is interactive, and UI library loaded)
-    if [ "$BANNER_ENABLED" = true ] && is_interactive_terminal && [ "$UI_LIBRARY_LOADED" = true ]; then
-        ui_yoyo_banner "v${VERSION}"
-    else
-        echo ""
-        echo -e "${UI_BOLD}${UI_PRIMARY}Yoyo Dev GUI${UI_RESET}"
-    fi
-
-    echo ""
-    echo -e "  ${UI_SUCCESS}Project:${UI_RESET} $project_root"
-    echo -e "  ${UI_SUCCESS}Server:${UI_RESET}  http://localhost:$PORT"
-    if [ -n "$network_ip" ]; then
-        echo -e "  ${UI_SUCCESS}Network:${UI_RESET} http://${network_ip}:$PORT"
-    fi
-    echo -e "  ${UI_SUCCESS}API:${UI_RESET}     http://localhost:$PORT/api"
-    echo ""
-    echo -e "  ${UI_DIM}Press Ctrl+C to stop${UI_RESET}"
-    echo ""
-
-    # Set environment variables
-    export YOYO_PROJECT_ROOT="$project_root"
-
-    # Open browser if requested
-    if [ "$OPEN_BROWSER" = true ]; then
-        (sleep 1 && open_browser "http://localhost:$PORT") &
-    fi
-
-    # Run production server using tsx (direct TypeScript execution)
-    if command -v npx &> /dev/null; then
-        npx tsx server/index.ts
-    else
-        # Fallback to node with built files
-        if [ -f "$GUI_DIR/dist/server/index.js" ]; then
-            node dist/server/index.js
-        else
-            echo -e "${UI_ERROR}ERROR: Cannot find server entry point${UI_RESET}"
-            echo "Try running: yoyo-gui --dev"
-            exit 1
-        fi
-    fi
 }
 
 open_browser() {
@@ -679,12 +608,8 @@ open_browser() {
 main() {
     parse_args "$@"
 
-    # Show branded header (skip in background mode for cleaner output)
-    if [ "$BACKGROUND_MODE" != true ] && [ "$BANNER_ENABLED" != true ]; then
-        # Simple header when banner is disabled
-        echo ""
-        echo -e " ${UI_PRIMARY}Yoyo Dev GUI${UI_RESET} - Browser-based Development Dashboard"
-    fi
+    local mode_name
+    mode_name=$(get_mode_name)
 
     # Check Node.js
     if ! check_node; then
@@ -715,14 +640,14 @@ main() {
     if ! check_dependencies_installed; then
         if [ "$BACKGROUND_MODE" = true ]; then
             # Auto-install in background mode
-            echo -e "${UI_DIM}Installing GUI dependencies...${UI_RESET}"
+            echo -e "${UI_DIM}Installing ${mode_name} GUI dependencies...${UI_RESET}"
             install_dependencies || {
                 echo -e "${UI_ERROR}Failed to install dependencies${UI_RESET}"
                 exit 1
             }
         else
             echo ""
-            echo -e "${UI_WARNING}GUI dependencies not installed${UI_RESET}"
+            echo -e "${UI_WARNING}${mode_name} GUI dependencies not installed${UI_RESET}"
             read -p "Install now? [Y/n] " -n 1 -r
             echo ""
 
@@ -735,15 +660,11 @@ main() {
         fi
     fi
 
-    # Launch appropriate mode
+    # Launch GUI
     if [ "$BACKGROUND_MODE" = true ]; then
-        # Background mode - start and return immediately
         launch_background "$project_root"
-    elif [ "$DEV_MODE" = true ]; then
-        launch_dev "$project_root"
     else
-        # For production, use tsx directly (faster startup, no build required)
-        launch_production "$project_root"
+        launch_gui "$project_root"
     fi
 }
 

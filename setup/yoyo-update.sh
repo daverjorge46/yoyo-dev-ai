@@ -1036,12 +1036,12 @@ echo ""
 CURRENT_STEP=$((CURRENT_STEP + 1))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Updating YoYo AI Dashboard GUI..."
 
-GUI_AI_DIR="$HOME/.yoyo-ai/gui-ai"
+GUI_AI_DIR="$INSTALL_DIR/gui-ai"
 GUI_SOURCE="$BASE_YOYO_DEV/gui-ai"
 
 if [ -d "$GUI_SOURCE" ]; then
-    # Create yoyo-ai home directory if needed
-    mkdir -p "$HOME/.yoyo-ai"
+    # Create install directory if needed
+    mkdir -p "$INSTALL_DIR"
 
     # Remove and reinstall GUI
     if [ -d "$GUI_AI_DIR" ]; then
