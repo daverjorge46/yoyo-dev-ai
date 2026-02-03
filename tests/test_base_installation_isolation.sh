@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Test: Base Installation Isolation
-# Validates that ~/yoyo-dev/ (base) is never modified by project operations
+# Validates that ~/.yoyo-dev/ (base) is never modified by project operations
 
 set -euo pipefail
 
@@ -56,7 +56,7 @@ fi
 test_start "project.sh should only write to \$INSTALL_DIR (./.yoyo-dev)"
 # Check that all copy operations use $INSTALL_DIR as destination
 if grep 'copy_file\|copy_directory\|mkdir' setup/project.sh | grep -v '#' | grep -q '~/yoyo-dev'; then
-    test_fail "Found operations that may write to ~/yoyo-dev/"
+    test_fail "Found operations that may write to ~/.yoyo-dev/"
 else
     test_pass
 fi
@@ -80,8 +80,8 @@ else
     test_pass
 fi
 
-# Test 6: No hardcoded ~/yoyo-dev/ writes in project.sh
-test_start "project.sh should not write to ~/yoyo-dev/ directly"
+# Test 6: No hardcoded ~/.yoyo-dev/ writes in project.sh
+test_start "project.sh should not write to ~/.yoyo-dev/ directly"
 # Look for patterns that would write to home directory
 if grep -E 'copy.*\$HOME/yoyo-dev|mkdir.*\$HOME/yoyo-dev|>.*\$HOME/yoyo-dev' setup/project.sh | grep -v '#'; then
     test_fail "Found operations writing to \$HOME/yoyo-dev/"
@@ -89,8 +89,8 @@ else
     test_pass
 fi
 
-# Test 7: No hardcoded ~/yoyo-dev/ writes in yoyo-update.sh
-test_start "yoyo-update.sh should not write to ~/yoyo-dev/ directly"
+# Test 7: No hardcoded ~/.yoyo-dev/ writes in yoyo-update.sh
+test_start "yoyo-update.sh should not write to ~/.yoyo-dev/ directly"
 if grep -E 'copy.*\$HOME/yoyo-dev|mkdir.*\$HOME/yoyo-dev|>.*\$HOME/yoyo-dev' setup/yoyo-update.sh | grep -v '#'; then
     test_fail "Found operations writing to \$HOME/yoyo-dev/"
 else
@@ -98,7 +98,7 @@ else
 fi
 
 # Test 8: Scripts reference base as read-only source
-test_start "Scripts should treat ~/yoyo-dev/ as read-only source"
+test_start "Scripts should treat ~/.yoyo-dev/ as read-only source"
 # Check that BASE_YOYO_DEV is only used in source position (no writes to base)
 if grep -E 'copy.*INSTALL_DIR.*BASE_YOYO_DEV|>.*BASE_YOYO_DEV' setup/project.sh setup/yoyo-update.sh 2>/dev/null | grep -q .; then
     WRITE_COUNT=$(grep -E 'copy.*INSTALL_DIR.*BASE_YOYO_DEV|>.*BASE_YOYO_DEV' setup/project.sh setup/yoyo-update.sh 2>/dev/null | wc -l)

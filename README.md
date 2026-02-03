@@ -101,13 +101,13 @@ Yoyo Dev uses a **two-phase installation** model:
 
 | Phase | Location | Purpose |
 |-------|----------|---------|
-| **BASE** | `~/.yoyo-dev-base` | Framework source (shared across projects) |
+| **BASE** | `~/.yoyo-dev` | Framework source (shared across projects) |
 | **PROJECT** | `.yoyo-dev/` | Project-specific data (specs, fixes, memory) |
 
 ```bash
 # Step 1: Install BASE (one-time)
-git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base
-~/.yoyo-dev-base/setup/install-global-command.sh
+git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev
+~/.yoyo-dev/setup/install-global-command.sh
 
 # Step 2: Initialize in your project
 cd /path/to/your-project
@@ -146,7 +146,7 @@ The Windows installer will:
 1. Install/enable **WSL2** with **Ubuntu**
 2. Update Ubuntu and install **Node.js 22**, git, curl
 3. Ask you to choose components: **Both** / **yoyo-ai only** / **yoyo-dev only**
-4. Clone Yoyo Dev AI into WSL (`~/.yoyo-dev-base`)
+4. Clone Yoyo Dev AI into WSL (`~/.yoyo-dev`)
 5. Install **Claude Code CLI** (if yoyo-dev selected)
 6. Install **OpenClaw** (if yoyo-ai selected)
 7. Install global `yoyo-dev` and `yoyo-ai` commands
@@ -673,7 +673,7 @@ npm run test:integration
 
 ```bash
 # Reinstall global commands
-~/.yoyo-dev-base/setup/install-global-command.sh
+~/.yoyo-dev/setup/install-global-command.sh
 
 # Add to PATH if needed
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc

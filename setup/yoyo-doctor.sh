@@ -10,8 +10,15 @@ set -euo pipefail
 # ============================================================================
 
 readonly VERSION="7.0.0"
-readonly DEFAULT_BASE_DIR="$HOME/.yoyo-dev-base"
-YOYO_BASE_DIR="${YOYO_BASE_DIR:-$DEFAULT_BASE_DIR}"
+# Resolve script location
+SCRIPT_PATH="${BASH_SOURCE[0]}"
+if [ -L "$SCRIPT_PATH" ]; then
+    SCRIPT_PATH="$(readlink -f "$SCRIPT_PATH")"
+fi
+SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
+
+# Load shared base detection
+source "$SCRIPT_DIR/lib/detect-base.sh"
 
 # Colors
 readonly CYAN='\033[0;36m'
@@ -56,33 +63,7 @@ section() {
     echo -e "${DIM}────────────────────────────────────────────────────────────────${RESET}"
 }
 
-# ============================================================================
-# Detect BASE Installation
-# ============================================================================
-
-detect_base_installation() {
-    # Priority order for finding BASE:
-    # 1. YOYO_BASE_DIR environment variable
-    # 2. ~/.yoyo-dev-base (new canonical location)
-    # 3. ~/yoyo-dev (legacy location)
-
-    if [ -d "$YOYO_BASE_DIR/instructions" ] && [ -d "$YOYO_BASE_DIR/standards" ]; then
-        echo "$YOYO_BASE_DIR"
-        return 0
-    fi
-
-    if [ -d "$HOME/.yoyo-dev-base/instructions" ] && [ -d "$HOME/.yoyo-dev-base/standards" ]; then
-        echo "$HOME/.yoyo-dev-base"
-        return 0
-    fi
-
-    if [ -d "$HOME/yoyo-dev/instructions" ] && [ -d "$HOME/yoyo-dev/standards" ]; then
-        echo "$HOME/yoyo-dev"
-        return 0
-    fi
-
-    return 1
-}
+# detect_base_installation() is provided by setup/lib/detect-base.sh (sourced above)
 
 # ============================================================================
 # Parse Arguments
@@ -116,7 +97,7 @@ ${BOLD}Options:${RESET}
   ${CYAN}-h, --help${RESET}       Show this help message
 
 ${BOLD}What it checks:${RESET}
-  - BASE installation at ~/.yoyo-dev-base
+  - BASE installation at ~/.yoyo-dev
   - PROJECT installation in current directory
   - Global commands (yoyo, yoyo-init, etc.)
   - Prerequisites (Docker, Claude Code, Node.js)
@@ -155,11 +136,11 @@ if BASE_FOUND=$(detect_base_installation); then
     check_pass "BASE installation found at: $BASE_FOUND"
 
     # Check if it's the canonical location
-    if [ "$BASE_FOUND" = "$HOME/.yoyo-dev-base" ]; then
-        check_pass "Using canonical location (~/.yoyo-dev-base)"
+    if [ "$BASE_FOUND" = "$HOME/.yoyo-dev" ]; then
+        check_pass "Using canonical location (~/.yoyo-dev)"
     elif [ "$BASE_FOUND" = "$HOME/yoyo-dev" ]; then
         check_warn "Using legacy location (~/yoyo-dev)"
-        check_info "Consider moving to ~/.yoyo-dev-base"
+        check_info "Consider moving to ~/.yoyo-dev"
     else
         check_info "Using custom location via YOYO_BASE_DIR"
     fi
@@ -204,8 +185,8 @@ else
     check_fail "BASE installation not found"
     echo ""
     echo -e "  ${DIM}To install BASE:${RESET}"
-    echo -e "    ${CYAN}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base${RESET}"
-    echo -e "    ${CYAN}~/.yoyo-dev-base/setup/install-global-command.sh${RESET}"
+    echo -e "    ${CYAN}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev${RESET}"
+    echo -e "    ${CYAN}~/.yoyo-dev/setup/install-global-command.sh${RESET}"
 fi
 
 # ============================================================================
@@ -428,8 +409,8 @@ if [ $FAILED -gt 0 ] || [ $WARNINGS -gt 0 ]; then
 
     if [ -z "$BASE_FOUND" ]; then
         echo -e "  ${CYAN}Install BASE:${RESET}"
-        echo -e "    git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base"
-        echo -e "    ~/.yoyo-dev-base/setup/install-global-command.sh"
+        echo -e "    git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev"
+        echo -e "    ~/.yoyo-dev/setup/install-global-command.sh"
         echo ""
     fi
 

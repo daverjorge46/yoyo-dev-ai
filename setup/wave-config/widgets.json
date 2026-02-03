@@ -14,7 +14,7 @@
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev-base/setup/wave-toggle.sh\"; [ -f \"$TOGGLE\" ] || TOGGLE=\"$HOME/yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" yoyo-cli --self-delete"
+        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" yoyo-cli --self-delete"
       }
     }
   },
@@ -27,7 +27,7 @@
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev-base/setup/wave-toggle.sh\"; [ -f \"$TOGGLE\" ] || TOGGLE=\"$HOME/yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" files --self-delete"
+        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" files --self-delete"
       }
     }
   },
@@ -40,7 +40,7 @@
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev-base/setup/wave-toggle.sh\"; [ -f \"$TOGGLE\" ] || TOGGLE=\"$HOME/yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" gui --self-delete"
+        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" gui --self-delete"
       }
     }
   },
@@ -53,7 +53,7 @@
       "meta": {
         "view": "term",
         "controller": "shell",
-        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev-base/setup/wave-toggle.sh\"; [ -f \"$TOGGLE\" ] || TOGGLE=\"$HOME/yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" terminal --self-delete"
+        "cmd:initscript": "export PATH=\"${WAVETERM_WSHBINDIR:-$HOME/.local/share/waveterm/bin}:$PATH\"; TOGGLE=\"$HOME/.yoyo-dev/setup/wave-toggle.sh\"; bash \"$TOGGLE\" terminal --self-delete"
       }
     }
   }

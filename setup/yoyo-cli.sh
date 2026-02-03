@@ -79,14 +79,8 @@ get_network_ip() {
     fi
 }
 
-detect_base_installation() {
-    local base_dir="${YOYO_DEV_DIR:-$HOME/.yoyo-dev-base}"
-    if [ -d "$base_dir" ]; then
-        echo "$base_dir"
-        return 0
-    fi
-    return 1
-}
+# Load shared base detection
+source "$SCRIPT_DIR/lib/detect-base.sh"
 
 # ============================================================================
 # GUI Launch
@@ -152,7 +146,7 @@ launch_yoyo_cli() {
             # BASE not found
             ui_error "BASE installation not found"
             echo ""
-            echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev-base"
+            echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev"
             echo ""
             exit 1
         else

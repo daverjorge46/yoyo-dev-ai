@@ -272,11 +272,12 @@ install_from_github() {
 # OpenClaw (yoyo-ai) Shared Helpers
 # ============================================================================
 
-# Default OpenClaw configuration
+# Default OpenClaw configuration (canonical home: ~/.yoyo-ai, ~/.openclaw is symlink)
+YOYO_AI_HOME="${YOYO_AI_HOME:-$HOME/.yoyo-ai}"
 OPENCLAW_PORT="${OPENCLAW_PORT:-18789}"
-OPENCLAW_TOKEN_FILE="${OPENCLAW_TOKEN_FILE:-$HOME/.openclaw/.gateway-token}"
-OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-$HOME/.openclaw/openclaw.json}"
-OPENCLAW_ONBOARD_MARKER="${OPENCLAW_ONBOARD_MARKER:-$HOME/.openclaw/.yoyo-onboarded}"
+OPENCLAW_TOKEN_FILE="${OPENCLAW_TOKEN_FILE:-$YOYO_AI_HOME/.gateway-token}"
+OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-$YOYO_AI_HOME/openclaw.json}"
+OPENCLAW_ONBOARD_MARKER="${OPENCLAW_ONBOARD_MARKER:-$YOYO_AI_HOME/.yoyo-onboarded}"
 
 # Generate or load a persistent gateway token
 # Exports OPENCLAW_GATEWAY_TOKEN

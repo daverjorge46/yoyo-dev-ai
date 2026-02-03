@@ -68,42 +68,8 @@ fi
 
 VERSION="7.0.0"
 
-# BASE installation location (can be overridden with YOYO_BASE_DIR env var)
-DEFAULT_BASE_DIR="$HOME/.yoyo-dev-base"
-YOYO_BASE_DIR="${YOYO_BASE_DIR:-$DEFAULT_BASE_DIR}"
-
-# Detect BASE installation
-detect_base_installation() {
-    # Priority order for finding BASE:
-    # 1. YOYO_BASE_DIR environment variable
-    # 2. ~/.yoyo-dev-base (new canonical location)
-    # 3. ~/yoyo-dev (legacy location)
-    # 4. Script parent directory (running from cloned repo)
-
-    if [ -d "$YOYO_BASE_DIR/instructions" ] && [ -d "$YOYO_BASE_DIR/standards" ]; then
-        echo "$YOYO_BASE_DIR"
-        return 0
-    fi
-
-    if [ -d "$HOME/.yoyo-dev-base/instructions" ] && [ -d "$HOME/.yoyo-dev-base/standards" ]; then
-        echo "$HOME/.yoyo-dev-base"
-        return 0
-    fi
-
-    if [ -d "$HOME/yoyo-dev/instructions" ] && [ -d "$HOME/yoyo-dev/standards" ]; then
-        echo "$HOME/yoyo-dev"
-        return 0
-    fi
-
-    # Check if running from symlink (script directory parent)
-    local script_parent="$(dirname "$SCRIPT_DIR")"
-    if [ -d "$script_parent/instructions" ] && [ -d "$script_parent/standards" ]; then
-        echo "$script_parent"
-        return 0
-    fi
-
-    return 1
-}
+# Load shared base detection (sets DEFAULT_BASE_DIR, YOYO_BASE_DIR, detect_base_installation)
+source "$SCRIPT_DIR/lib/detect-base.sh"
 
 # Phase configuration for progress display
 readonly PHASE_BASE_SYNC=1
@@ -244,10 +210,10 @@ if BASE_YOYO_DEV=$(detect_base_installation); then
 else
     ui_error "BASE installation not found"
     echo ""
-    echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev-base"
+    echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev"
     echo ""
     echo "  To install BASE:"
-    echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base${UI_RESET}"
+    echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev${UI_RESET}"
     echo ""
     exit 1
 fi
@@ -294,7 +260,7 @@ if [ ! -d "./.yoyo-dev" ]; then
         else
             ui_error "Initialization script not found at: $BASE_YOYO_DEV/setup/"
             echo ""
-            echo "  Please ensure Yoyo Dev BASE is properly installed at ~/.yoyo-dev-base/"
+            echo "  Please ensure Yoyo Dev BASE is properly installed at ~/.yoyo-dev/"
             echo ""
             exit 1
         fi
@@ -1022,7 +988,7 @@ if command -v openclaw &>/dev/null; then
     fi
 
     # Token migration: ensure gateway token exists for existing installs
-    if [ ! -f "$HOME/.openclaw/.gateway-token" ]; then
+    if [ ! -f "${YOYO_AI_HOME:-$HOME/.yoyo-ai}/.gateway-token" ]; then
         show_progress "Generating gateway token for existing install..."
         ensure_openclaw_token
         patch_openclaw_systemd_service

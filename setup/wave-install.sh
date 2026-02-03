@@ -984,7 +984,7 @@ deploy_wave_config() {
 
     # Deploy wave-toggle.sh script (used by widget buttons for toggle behavior)
     local toggle_source="${base_dir}/setup/wave-toggle.sh"
-    local toggle_target="${HOME}/.yoyo-dev-base/setup/wave-toggle.sh"
+    local toggle_target="${HOME}/.yoyo-dev/setup/wave-toggle.sh"
     if [ -f "$toggle_source" ]; then
         mkdir -p "$(dirname "$toggle_target")"
         cp "$toggle_source" "$toggle_target"
@@ -1117,8 +1117,8 @@ wait_for_gui_ready() {
 # Records block IDs in widget state file for toggle support.
 setup_yoyo_layout() {
     local project_dir="${1:-$PWD}"
-    local layout_log="${HOME}/.yoyo-dev-base/.wave-layout.log"
-    local state_file="${HOME}/.yoyo-dev-base/.wave-widget-state.json"
+    local layout_log="${HOME}/.yoyo-dev/.wave-layout.log"
+    local state_file="${HOME}/.yoyo-dev/.wave-widget-state.json"
     local meta_key="yoyo:widget"
 
     # Log function for debugging
@@ -1399,7 +1399,7 @@ setup_yoyo_layout() {
     log_layout "wsh is available"
 
     # Initialize state directory
-    mkdir -p "${HOME}/.yoyo-dev-base"
+    mkdir -p "${HOME}/.yoyo-dev"
 
     # ─── Workspace reuse: skip recreation if all 4 widgets exist ───
     if detect_existing_workspace; then

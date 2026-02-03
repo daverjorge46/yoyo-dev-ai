@@ -30,7 +30,7 @@ $Version = "7.0.0"
 $RepoURL = "https://github.com/daverjorge46/yoyo-dev-ai.git"
 $WSLDistro = "Ubuntu"
 $NodeMajor = 22
-$BaseInstallPath = "~/.yoyo-dev-base"
+$BaseInstallPath = "~/.yoyo-dev"
 
 # ============================================================================
 # UI Helpers

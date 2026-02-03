@@ -56,41 +56,8 @@ fi
 readonly VERSION="7.0.0"
 readonly USER_PROJECT_DIR="$(pwd)"
 
-# BASE installation location (can be overridden with YOYO_BASE_DIR env var)
-DEFAULT_BASE_DIR="$HOME/.yoyo-dev-base"
-YOYO_BASE_DIR="${YOYO_BASE_DIR:-$DEFAULT_BASE_DIR}"
-
-# Detect BASE installation
-detect_base_installation() {
-    # Priority order for finding BASE:
-    # 1. YOYO_BASE_DIR environment variable
-    # 2. ~/.yoyo-dev-base (new canonical location)
-    # 3. ~/yoyo-dev (legacy location)
-    # 4. Script parent directory (running from cloned repo)
-
-    if [ -d "$YOYO_BASE_DIR/instructions" ] && [ -d "$YOYO_BASE_DIR/standards" ]; then
-        echo "$YOYO_BASE_DIR"
-        return 0
-    fi
-
-    if [ -d "$HOME/.yoyo-dev-base/instructions" ] && [ -d "$HOME/.yoyo-dev-base/standards" ]; then
-        echo "$HOME/.yoyo-dev-base"
-        return 0
-    fi
-
-    if [ -d "$HOME/yoyo-dev/instructions" ] && [ -d "$HOME/yoyo-dev/standards" ]; then
-        echo "$HOME/yoyo-dev"
-        return 0
-    fi
-
-    # Check if running from within cloned repo
-    if [ -d "$YOYO_INSTALL_DIR/instructions" ] && [ -d "$YOYO_INSTALL_DIR/standards" ]; then
-        echo "$YOYO_INSTALL_DIR"
-        return 0
-    fi
-
-    return 1
-}
+# Load shared base detection (sets DEFAULT_BASE_DIR, YOYO_BASE_DIR, detect_base_installation)
+source "$SCRIPT_DIR/lib/detect-base.sh"
 
 GUI_ENABLED=true
 GUI_PORT=5173
@@ -618,7 +585,7 @@ launch_with_wave() {
     # Launch Wave Terminal
     # Wave will use the deployed configuration from ~/.config/waveterm/
     # Redirect stderr to suppress ANSI escape sequences from auto-update checks
-    exec "$wave_path" 2>"$HOME/.yoyo-dev-base/.wave-errors.log"
+    exec "$wave_path" 2>"$HOME/.yoyo-dev/.wave-errors.log"
 }
 
 # ============================================================================
@@ -662,11 +629,11 @@ launch_claude_code() {
             # BASE not found
             ui_error "BASE installation not found"
             echo ""
-            echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev-base"
+            echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev"
             echo ""
             echo "  To install BASE:"
-            echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base${UI_RESET}"
-            echo "    ${UI_PRIMARY}~/.yoyo-dev-base/setup/install-global-command.sh${UI_RESET}"
+            echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev${UI_RESET}"
+            echo "    ${UI_PRIMARY}~/.yoyo-dev/setup/install-global-command.sh${UI_RESET}"
             echo ""
             echo "  Then initialize this project:"
             echo "    ${UI_PRIMARY}yoyo-init --claude-code${UI_RESET}"
@@ -1110,11 +1077,11 @@ main() {
             # BASE not found
             ui_error "BASE installation not found"
             echo ""
-            echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev-base"
+            echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev"
             echo ""
             echo "  To install BASE:"
-            echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base${UI_RESET}"
-            echo "    ${UI_PRIMARY}~/.yoyo-dev-base/setup/install-global-command.sh${UI_RESET}"
+            echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev${UI_RESET}"
+            echo "    ${UI_PRIMARY}~/.yoyo-dev/setup/install-global-command.sh${UI_RESET}"
             echo ""
             echo "  Then initialize this project:"
             echo "    ${UI_PRIMARY}yoyo-init --claude-code${UI_RESET}"

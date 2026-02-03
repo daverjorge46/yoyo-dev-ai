@@ -2,7 +2,7 @@
 
 # Yoyo Dev Project Initialization Script v3
 # Initializes Yoyo Dev in a project directory
-# BASE installation: ~/.yoyo-dev-base
+# BASE installation: ~/.yoyo-dev
 # PROJECT installation: .yoyo-dev/
 
 set -e  # Exit on error
@@ -13,9 +13,8 @@ set -e  # Exit on error
 
 VERSION="7.0.0"
 
-# BASE installation location (can be overridden with YOYO_BASE_DIR env var)
-DEFAULT_BASE_DIR="$HOME/.yoyo-dev-base"
-YOYO_BASE_DIR="${YOYO_BASE_DIR:-$DEFAULT_BASE_DIR}"
+# Load shared base detection (sets DEFAULT_BASE_DIR, YOYO_BASE_DIR, detect_base_installation)
+source "$SCRIPT_DIR/lib/detect-base.sh"
 
 # Resolve script location (for when running from cloned repo before BASE install)
 SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
@@ -127,11 +126,11 @@ ${UI_BOLD}Yoyo Dev Project Initialization${UI_RESET}
 This script initializes Yoyo Dev in a project directory.
 
 ${UI_BOLD}Installation Model:${UI_RESET}
-  BASE:    ~/.yoyo-dev-base   (framework source, shared across projects)
+  BASE:    ~/.yoyo-dev   (framework source, shared across projects)
   PROJECT: .yoyo-dev/         (project-specific data)
 
 ${UI_BOLD}Options:${UI_RESET}
-  ${UI_PRIMARY}--install-base${UI_RESET}              Install/update BASE at ~/.yoyo-dev-base first
+  ${UI_PRIMARY}--install-base${UI_RESET}              Install/update BASE at ~/.yoyo-dev first
   ${UI_PRIMARY}--overwrite-instructions${UI_RESET}    Overwrite existing instruction files
   ${UI_PRIMARY}--overwrite-standards${UI_RESET}       Overwrite existing standards files
   ${UI_PRIMARY}--claude-code${UI_RESET}               Add Claude Code support
@@ -149,7 +148,7 @@ ${UI_BOLD}Examples:${UI_RESET}
 
 ${UI_BOLD}Environment Variables:${UI_RESET}
   YOYO_BASE_DIR                Override BASE installation location
-                               (default: ~/.yoyo-dev-base)
+                               (default: ~/.yoyo-dev)
 
 EOF
             exit 0
@@ -166,39 +165,10 @@ done
 # Detect BASE Installation
 # ============================================================================
 
-detect_base_installation() {
-    # Priority order for finding BASE:
-    # 1. YOYO_BASE_DIR environment variable
-    # 2. ~/.yoyo-dev-base (new canonical location)
-    # 3. ~/yoyo-dev (legacy location)
-    # 4. Script parent directory (running from cloned repo)
-
-    if [ -d "$YOYO_BASE_DIR/instructions" ] && [ -d "$YOYO_BASE_DIR/standards" ]; then
-        echo "$YOYO_BASE_DIR"
-        return 0
-    fi
-
-    if [ -d "$HOME/.yoyo-dev-base/instructions" ] && [ -d "$HOME/.yoyo-dev-base/standards" ]; then
-        echo "$HOME/.yoyo-dev-base"
-        return 0
-    fi
-
-    if [ -d "$HOME/yoyo-dev/instructions" ] && [ -d "$HOME/yoyo-dev/standards" ]; then
-        echo "$HOME/yoyo-dev"
-        return 0
-    fi
-
-    # Check if running from within cloned repo
-    if [ -d "$SCRIPT_PARENT_DIR/instructions" ] && [ -d "$SCRIPT_PARENT_DIR/standards" ]; then
-        echo "$SCRIPT_PARENT_DIR"
-        return 0
-    fi
-
-    return 1
-}
+# detect_base_installation() is provided by setup/lib/detect-base.sh (sourced above)
 
 install_base() {
-    local target_dir="$HOME/.yoyo-dev-base"
+    local target_dir="$HOME/.yoyo-dev"
 
     echo ""
     ui_info "Installing BASE framework to $target_dir..."
@@ -286,7 +256,7 @@ if BASE_YOYO_DEV=$(detect_base_installation); then
 else
     ui_warning "BASE installation not found"
     echo ""
-    echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev-base"
+    echo "  Yoyo Dev BASE should be installed at ~/.yoyo-dev"
     echo ""
 
     if [ "$INSTALL_BASE" = true ] || [ "$INTERACTIVE" = true ]; then
@@ -300,7 +270,7 @@ else
             ui_error "Cannot continue without BASE installation"
             echo ""
             echo "  To install BASE manually:"
-            echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base${UI_RESET}"
+            echo "    ${UI_PRIMARY}git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev${UI_RESET}"
             echo ""
             exit 1
         fi

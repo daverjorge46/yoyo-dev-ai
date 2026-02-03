@@ -12,11 +12,11 @@ Yoyo Dev uses a **two-phase installation** model:
 
 | Phase | Location | Purpose |
 |-------|----------|---------|
-| **BASE** | `~/.yoyo-dev-base` | Framework source (shared across all projects) |
+| **BASE** | `~/.yoyo-dev` | Framework source (shared across all projects) |
 | **PROJECT** | `.yoyo-dev/` | Project-specific data (specs, fixes, memory) |
 
 ```
-~/.yoyo-dev-base/              ← BASE (install once)
+~/.yoyo-dev/              ← BASE (install once)
 ├── instructions/
 ├── standards/
 ├── claude-code/
@@ -44,11 +44,11 @@ Yoyo Dev uses a **two-phase installation** model:
 ### Step 1: Install BASE (One-Time)
 
 ```bash
-# Clone the framework to ~/.yoyo-dev-base
-git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base
+# Clone the framework to ~/.yoyo-dev
+git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev
 
 # Install global commands
-~/.yoyo-dev-base/setup/install-global-command.sh
+~/.yoyo-dev/setup/install-global-command.sh
 ```
 
 This creates the following commands:
@@ -124,8 +124,8 @@ If `docker mcp --help` fails:
 **Step 1: Install BASE**
 
 ```bash
-git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base
-~/.yoyo-dev-base/setup/install-global-command.sh
+git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev
+~/.yoyo-dev/setup/install-global-command.sh
 ```
 
 **Step 2: Initialize Project**
@@ -147,7 +147,7 @@ If you haven't installed BASE yet, `yoyo-init` can do both:
 
 ```bash
 cd /path/to/your-project
-~/.yoyo-dev-base/setup/init.sh --install-base --claude-code
+~/.yoyo-dev/setup/init.sh --install-base --claude-code
 ```
 
 Or if you already have the repo cloned somewhere:
@@ -230,7 +230,7 @@ yoyo-doctor
 ```
 
 This checks:
-- BASE installation at `~/.yoyo-dev-base`
+- BASE installation at `~/.yoyo-dev`
 - PROJECT installation in current directory
 - Global commands (yoyo, yoyo-init, etc.)
 - Prerequisites (Docker, Claude Code, Node.js)
@@ -240,7 +240,7 @@ This checks:
 
 ```bash
 # Check BASE
-ls ~/.yoyo-dev-base/
+ls ~/.yoyo-dev/
 
 # Check PROJECT
 ls .yoyo-dev/
@@ -282,7 +282,7 @@ In Claude Code:
 ### Update BASE
 
 ```bash
-cd ~/.yoyo-dev-base
+cd ~/.yoyo-dev
 git pull
 ```
 
@@ -311,15 +311,15 @@ yoyo-update
 
 ```bash
 # Install BASE
-git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev-base
-~/.yoyo-dev-base/setup/install-global-command.sh
+git clone https://github.com/daverjorge46/yoyo-dev-ai.git ~/.yoyo-dev
+~/.yoyo-dev/setup/install-global-command.sh
 ```
 
 ### Issue: "Command not found"
 
 ```bash
 # Reinstall global commands
-~/.yoyo-dev-base/setup/install-global-command.sh
+~/.yoyo-dev/setup/install-global-command.sh
 
 # Add to PATH if needed
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
@@ -362,7 +362,7 @@ yoyo-doctor --verbose
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `YOYO_BASE_DIR` | `~/.yoyo-dev-base` | Override BASE installation location |
+| `YOYO_BASE_DIR` | `~/.yoyo-dev` | Override BASE installation location |
 | `YOYO_ORCHESTRATION` | `true` | Enable/disable global orchestration |
 
 ---
@@ -382,7 +382,7 @@ rm ~/.local/bin/yoyo-doctor
 ### Remove BASE Installation
 
 ```bash
-rm -rf ~/.yoyo-dev-base
+rm -rf ~/.yoyo-dev
 ```
 
 ### Remove PROJECT Installation

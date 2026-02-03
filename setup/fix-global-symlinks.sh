@@ -19,15 +19,13 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Determine BASE installation
-if [ -d "$HOME/.yoyo-dev-base" ]; then
-    BASE_DIR="$HOME/.yoyo-dev-base"
-elif [ -n "${YOYO_BASE_DIR:-}" ] && [ -d "${YOYO_BASE_DIR}" ]; then
-    BASE_DIR="$YOYO_BASE_DIR"
-else
-    echo -e "${RED}ERROR: Base installation not found at ~/.yoyo-dev-base${RESET}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/detect-base.sh"
+BASE_DIR="$(detect_base_installation)" || {
+    echo -e "${RED}ERROR: Base installation not found at ~/.yoyo-dev${RESET}"
     echo "Please install Yoyo Dev first."
     exit 1
-fi
+}
 
 echo -e "${CYAN}BASE:${RESET} $BASE_DIR"
 

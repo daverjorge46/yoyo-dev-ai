@@ -153,7 +153,7 @@ INSTALL_DIR="./.yoyo-dev"
 if [ "$CURRENT_DIR" = "$HOME" ]; then
     ui_error "Cannot install in home directory"
     echo ""
-    echo "  This would conflict with the base installation at ~/yoyo-dev/"
+    echo "  This would conflict with the base installation at ~/.yoyo-dev/"
     echo "  Please run this script from a project directory."
     echo ""
     exit 1

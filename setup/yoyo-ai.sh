@@ -51,10 +51,22 @@ fi
 # ============================================================================
 
 readonly VERSION="1.0.0"
+readonly YOYO_AI_HOME="${YOYO_AI_HOME:-$HOME/.yoyo-ai}"
 readonly OPENCLAW_PORT="${OPENCLAW_PORT:-18789}"
-readonly OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG:-$HOME/.openclaw/openclaw.json}"
-readonly OPENCLAW_TOKEN_FILE="$HOME/.openclaw/.gateway-token"
-readonly OPENCLAW_ONBOARD_MARKER="$HOME/.openclaw/.yoyo-onboarded"
+readonly OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG:-$YOYO_AI_HOME/openclaw.json}"
+readonly OPENCLAW_TOKEN_FILE="$YOYO_AI_HOME/.gateway-token"
+readonly OPENCLAW_ONBOARD_MARKER="$YOYO_AI_HOME/.yoyo-onboarded"
+
+# Migrate ~/.openclaw -> ~/.yoyo-ai (one-time)
+if [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ] && [ ! -d "$YOYO_AI_HOME" ]; then
+    mv "$HOME/.openclaw" "$YOYO_AI_HOME" 2>/dev/null && \
+        echo "[migrate] Moved ~/.openclaw -> $YOYO_AI_HOME" >&2
+fi
+# Ensure ~/.yoyo-ai exists and create ~/.openclaw symlink
+mkdir -p "$YOYO_AI_HOME"
+if [ ! -e "$HOME/.openclaw" ]; then
+    ln -sf "$YOYO_AI_HOME" "$HOME/.openclaw"
+fi
 
 # ============================================================================
 # Node.js Validation

@@ -15,8 +15,8 @@ set -euo pipefail
 # Constants
 # ============================================================================
 
-readonly STATE_FILE="${HOME}/.yoyo-dev-base/.wave-widget-state.json"
-readonly STATE_DIR="${HOME}/.yoyo-dev-base"
+readonly STATE_FILE="${HOME}/.yoyo-dev/.wave-widget-state.json"
+readonly STATE_DIR="${HOME}/.yoyo-dev"
 readonly LOCK_FILE="${STATE_DIR}/.wave-toggle.lock"
 readonly META_KEY="yoyo:widget"
 
