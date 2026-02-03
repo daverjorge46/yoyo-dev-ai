@@ -1,0 +1,49 @@
+{
+  "specId": "2026-02-03-yoyo-ai-dashboard-gui",
+  "name": "YoYo AI Dashboard GUI",
+  "status": "planning",
+  "createdAt": "2026-02-03T00:00:00Z",
+  "updatedAt": "2026-02-03T00:00:00Z",
+  "currentPhase": 0,
+  "phases": [
+    {
+      "id": 1,
+      "name": "Foundation",
+      "status": "pending",
+      "tasks": 25
+    },
+    {
+      "id": 2,
+      "name": "Dashboard & Chat",
+      "status": "pending",
+      "tasks": 28
+    },
+    {
+      "id": 3,
+      "name": "Tasks & Automation",
+      "status": "pending",
+      "tasks": 36
+    },
+    {
+      "id": 4,
+      "name": "Quick Actions & Connections",
+      "status": "pending",
+      "tasks": 26
+    },
+    {
+      "id": 5,
+      "name": "Documents & Messages",
+      "status": "pending",
+      "tasks": 20
+    },
+    {
+      "id": 6,
+      "name": "Polish & Integration",
+      "status": "pending",
+      "tasks": 26
+    }
+  ],
+  "totalTasks": 161,
+  "completedTasks": 0,
+  "progress": 0
+}
