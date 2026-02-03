@@ -53,9 +53,11 @@ fi
 readonly VERSION="1.0.0"
 readonly YOYO_AI_HOME="${YOYO_AI_HOME:-$HOME/.yoyo-ai}"
 readonly OPENCLAW_PORT="${OPENCLAW_PORT:-18789}"
+readonly WORKSPACE_PORT="${WORKSPACE_PORT:-3457}"
 readonly OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG:-$YOYO_AI_HOME/openclaw.json}"
 readonly OPENCLAW_TOKEN_FILE="$YOYO_AI_HOME/.gateway-token"
 readonly OPENCLAW_ONBOARD_MARKER="$YOYO_AI_HOME/.yoyo-onboarded"
+readonly YOYO_DEV_BASE="${YOYO_DEV_BASE:-$HOME/.yoyo-dev}"
 
 # Migrate ~/.openclaw -> ~/.yoyo-ai (one-time)
 if [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ] && [ ! -d "$YOYO_AI_HOME" ]; then
@@ -525,6 +527,127 @@ cmd_channels() {
     openclaw channels "$@"
 }
 
+# ============================================================================
+# Dashboard (YoYo AI Workspace GUI)
+# ============================================================================
+
+is_workspace_running() {
+    if command -v ss &>/dev/null; then
+        ss -tlnH "sport = :${WORKSPACE_PORT}" 2>/dev/null | grep -q "${WORKSPACE_PORT}" 2>/dev/null && return 0
+    elif command -v netstat &>/dev/null; then
+        netstat -tlnp 2>/dev/null | grep -q ":${WORKSPACE_PORT}" && return 0
+    fi
+    pgrep -f "yoyo-ai-workspace.*${WORKSPACE_PORT}" &>/dev/null && return 0
+    return 1
+}
+
+cmd_dashboard() {
+    local dev_mode=false
+    if [ "${1:-}" = "--dev" ]; then
+        dev_mode=true
+    fi
+
+    ui_yoyo_ai_banner "v${VERSION}"
+
+    # Check if GUI is installed
+    local gui_dir="${YOYO_DEV_BASE}/gui-ai"
+    if [ ! -d "$gui_dir" ]; then
+        ui_error "YoYo AI Workspace is not installed"
+        echo ""
+        echo -e "  Run ${UI_PRIMARY}yoyo-update${UI_RESET} to install the latest version"
+        echo ""
+        exit 1
+    fi
+
+    # Ensure gateway is running
+    if ! is_gateway_running; then
+        ui_info "Starting OpenClaw gateway first..."
+        ensure_initialized || true
+        daemon_start
+        sleep 2
+    fi
+
+    # Check if workspace is already running
+    if is_workspace_running && [ "$dev_mode" = false ]; then
+        ui_success "YoYo AI Workspace is already running"
+        echo ""
+        echo -e "  Dashboard: ${UI_PRIMARY}http://localhost:${WORKSPACE_PORT}${UI_RESET}"
+        echo ""
+
+        # Open browser
+        if command -v xdg-open &>/dev/null; then
+            xdg-open "http://localhost:${WORKSPACE_PORT}" 2>/dev/null &
+        elif command -v open &>/dev/null; then
+            open "http://localhost:${WORKSPACE_PORT}" 2>/dev/null &
+        fi
+        return 0
+    fi
+
+    cd "$gui_dir" || exit 1
+
+    if [ "$dev_mode" = true ]; then
+        ui_info "Starting YoYo AI Workspace in development mode..."
+        echo ""
+        echo -e "  Dashboard: ${UI_PRIMARY}http://localhost:5174${UI_RESET}"
+        echo ""
+        npm run dev
+    else
+        # Check if built
+        if [ ! -d "$gui_dir/dist/client" ]; then
+            ui_info "Building YoYo AI Workspace..."
+            npm run build || {
+                ui_error "Build failed"
+                exit 1
+            }
+        fi
+
+        ui_info "Starting YoYo AI Workspace..."
+
+        # Start server in background
+        PORT="${WORKSPACE_PORT}" NODE_ENV=production node dist/server/index.js &>/dev/null &
+        disown
+
+        sleep 2
+
+        if is_workspace_running; then
+            ui_success "YoYo AI Workspace started"
+            echo ""
+            echo -e "  Dashboard: ${UI_PRIMARY}http://localhost:${WORKSPACE_PORT}${UI_RESET}"
+            echo ""
+
+            # Open browser
+            if command -v xdg-open &>/dev/null; then
+                xdg-open "http://localhost:${WORKSPACE_PORT}" 2>/dev/null &
+            elif command -v open &>/dev/null; then
+                open "http://localhost:${WORKSPACE_PORT}" 2>/dev/null &
+            fi
+        else
+            ui_error "Failed to start workspace"
+            echo ""
+            echo -e "  Try: ${UI_PRIMARY}yoyo-ai --dashboard --dev${UI_RESET} for debug output"
+        fi
+    fi
+}
+
+cmd_dashboard_stop() {
+    ui_yoyo_ai_banner "v${VERSION}"
+
+    if ! is_workspace_running; then
+        ui_info "YoYo AI Workspace is not running"
+        return 0
+    fi
+
+    ui_info "Stopping YoYo AI Workspace..."
+    pkill -f "yoyo-ai-workspace\|gui-ai.*server" 2>/dev/null || true
+
+    # Also kill by port
+    if command -v fuser &>/dev/null; then
+        fuser -k "${WORKSPACE_PORT}/tcp" 2>/dev/null || true
+    fi
+
+    ui_success "Workspace stopped"
+}
+
 show_help() {
     ui_yoyo_ai_banner "v${VERSION}"
 
@@ -539,6 +662,8 @@ show_help() {
     echo -e "  ${UI_PRIMARY}yoyo-ai --start${UI_RESET}          ${UI_DIM}Start the AI daemon${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --stop${UI_RESET}           ${UI_DIM}Stop the AI daemon${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --status${UI_RESET}         ${UI_DIM}Show daemon status${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --dashboard${UI_RESET}      ${UI_DIM}Open YoYo AI Workspace GUI${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --dashboard-stop${UI_RESET} ${UI_DIM}Stop the Workspace GUI${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --update${UI_RESET}         ${UI_DIM}Update OpenClaw to latest${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET}         ${UI_DIM}Run diagnostics${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --theme-apply${UI_RESET}    ${UI_DIM}Apply YoYo branding${UI_RESET}"
@@ -660,6 +785,13 @@ main() {
             ;;
         --theme-remove)
             cmd_theme_remove
+            ;;
+        --dashboard)
+            shift
+            cmd_dashboard "$@"
+            ;;
+        --dashboard-stop)
+            cmd_dashboard_stop
             ;;
         --help|-h)
             show_help

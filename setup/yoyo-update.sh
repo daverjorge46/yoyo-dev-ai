@@ -506,7 +506,7 @@ update_with_progress() {
     echo "$files_copied"
 }
 
-TOTAL_STEPS=13
+TOTAL_STEPS=14
 CURRENT_STEP=0
 
 # Note: BASE_YOYO_DEV was defined earlier in Welcome Screen section
@@ -1030,6 +1030,53 @@ else
         echo -e "  ${UI_DIM}Install Node.js >= 22 and re-run to enable yoyo-ai${UI_RESET}"
     fi
 fi
+echo ""
+
+# Step: Update YoYo AI Dashboard GUI
+CURRENT_STEP=$((CURRENT_STEP + 1))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Updating YoYo AI Dashboard GUI..."
+
+GUI_AI_DIR="$HOME/.yoyo-ai/gui-ai"
+GUI_SOURCE="$BASE_YOYO_DEV/gui-ai"
+
+if [ -d "$GUI_SOURCE" ]; then
+    # Create yoyo-ai home directory if needed
+    mkdir -p "$HOME/.yoyo-ai"
+
+    # Remove and reinstall GUI
+    if [ -d "$GUI_AI_DIR" ]; then
+        show_progress "Removing existing GUI installation"
+        rm -rf "$GUI_AI_DIR"
+    fi
+
+    show_progress "Copying updated GUI files"
+    cp -r "$GUI_SOURCE" "$GUI_AI_DIR"
+
+    # Install dependencies and rebuild
+    if command -v npm &>/dev/null; then
+        show_progress "Installing GUI dependencies"
+        cd "$GUI_AI_DIR"
+        if npm install --silent 2>&1 | tail -2; then
+            show_progress "Building GUI for production"
+            if npm run build --silent 2>&1 | tail -2; then
+                ui_success "YoYo AI Dashboard GUI updated"
+                track_file_change "$GUI_AI_DIR (GUI rebuilt)"
+            else
+                ui_warning "GUI build failed - run 'npm run build' manually"
+            fi
+        else
+            ui_warning "GUI dependencies installation failed"
+        fi
+        cd "$CURRENT_DIR"
+    else
+        ui_warning "npm not found - GUI not rebuilt"
+        echo -e "  ${UI_DIM}Run 'npm install && npm run build' in $GUI_AI_DIR${UI_RESET}"
+    fi
+else
+    show_progress "GUI source not found at $GUI_SOURCE"
+    ui_info "YoYo AI Dashboard GUI not available in this version"
+fi
+
 echo ""
 
 # ============================================================================

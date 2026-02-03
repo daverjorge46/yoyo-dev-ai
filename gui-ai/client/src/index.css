@@ -1,0 +1,367 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Base styles */
+@layer base {
+  * {
+    @apply border-terminal-border;
+  }
+
+  body {
+    @apply bg-terminal-bg text-terminal-text;
+    font-feature-settings: 'liga' 1, 'calt' 1;
+  }
+
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    @apply w-2 h-2;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-terminal-bg;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-terminal-border rounded-sm;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-terminal-border-emphasis;
+  }
+
+  /* Selection colors */
+  ::selection {
+    @apply bg-primary-500/30 text-terminal-text;
+  }
+}
+
+/* Component styles */
+@layer components {
+  /* Terminal card base */
+  .terminal-card {
+    @apply bg-terminal-card border border-terminal-border rounded-md;
+  }
+
+  .terminal-card-hover {
+    @apply terminal-card transition-all duration-fast;
+    @apply hover:border-terminal-border-emphasis hover:bg-terminal-elevated;
+  }
+
+  .terminal-card-interactive {
+    @apply terminal-card-hover cursor-pointer;
+    @apply active:scale-[0.99];
+  }
+
+  /* Accent borders */
+  .terminal-card-accent {
+    @apply terminal-card border-l-2 border-l-primary-500;
+  }
+
+  .terminal-card-accent-gold {
+    @apply terminal-card border-l-2 border-l-accent-500;
+  }
+
+  /* Gradient top border */
+  .terminal-card-gradient-top {
+    @apply terminal-card relative overflow-hidden;
+  }
+
+  .terminal-card-gradient-top::before {
+    content: '';
+    @apply absolute top-0 left-0 right-0 h-[2px];
+    @apply bg-gradient-primary;
+  }
+
+  /* Highlight/glow effect */
+  .terminal-card-highlight {
+    @apply terminal-card shadow-glow-primary;
+  }
+
+  /* Button styles */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2;
+    @apply px-4 py-2 rounded-md font-medium text-sm;
+    @apply transition-all duration-fast;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-terminal-bg;
+  }
+
+  .btn-primary {
+    @apply btn bg-gradient-primary text-white;
+    @apply hover:shadow-glow-primary;
+    @apply focus:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-terminal-elevated text-terminal-text border border-terminal-border;
+    @apply hover:bg-terminal-surface hover:border-terminal-border-emphasis;
+    @apply focus:ring-terminal-border-emphasis;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent text-terminal-text-secondary;
+    @apply hover:bg-terminal-elevated hover:text-terminal-text;
+    @apply focus:ring-terminal-border;
+  }
+
+  .btn-danger {
+    @apply btn bg-error text-white;
+    @apply hover:bg-error-dark hover:shadow-glow-error;
+    @apply focus:ring-error;
+  }
+
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+
+  .btn-icon {
+    @apply p-2;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full px-3 py-2 rounded-md;
+    @apply bg-terminal-bg border border-terminal-border;
+    @apply text-terminal-text placeholder-terminal-text-muted;
+    @apply transition-colors duration-fast;
+    @apply focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500;
+  }
+
+  .input-error {
+    @apply input border-error focus:border-error focus:ring-error;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-500/20 text-primary-400;
+  }
+
+  .badge-accent {
+    @apply badge bg-accent-500/20 text-accent-400;
+  }
+
+  .badge-success {
+    @apply badge bg-success/20 text-success-light;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning/20 text-warning-light;
+  }
+
+  .badge-error {
+    @apply badge bg-error/20 text-error-light;
+  }
+
+  .badge-info {
+    @apply badge bg-info/20 text-info-light;
+  }
+
+  .badge-muted {
+    @apply badge bg-terminal-elevated text-terminal-text-secondary;
+  }
+
+  /* Status indicator */
+  .status-dot {
+    @apply w-2 h-2 rounded-full;
+  }
+
+  .status-dot-success {
+    @apply status-dot bg-success animate-pulse-subtle;
+  }
+
+  .status-dot-warning {
+    @apply status-dot bg-warning;
+  }
+
+  .status-dot-error {
+    @apply status-dot bg-error;
+  }
+
+  .status-dot-info {
+    @apply status-dot bg-info;
+  }
+
+  .status-dot-muted {
+    @apply status-dot bg-terminal-text-muted;
+  }
+
+  /* Panel layout */
+  .panel {
+    @apply h-full overflow-auto;
+  }
+
+  .panel-header {
+    @apply flex items-center justify-between px-4 py-3;
+    @apply border-b border-terminal-border;
+    @apply bg-terminal-card/50 backdrop-blur-sm;
+    @apply sticky top-0 z-10;
+  }
+
+  .panel-title {
+    @apply text-lg font-semibold text-terminal-text;
+  }
+
+  .panel-body {
+    @apply p-4;
+  }
+
+  /* Widget container */
+  .widget {
+    @apply terminal-card p-4;
+  }
+
+  .widget-title {
+    @apply text-sm font-semibold text-terminal-text mb-3;
+  }
+
+  /* Skeleton loading */
+  .skeleton {
+    @apply bg-terminal-elevated rounded animate-pulse;
+  }
+
+  .skeleton-text {
+    @apply skeleton h-4 w-full;
+  }
+
+  .skeleton-title {
+    @apply skeleton h-6 w-3/4;
+  }
+
+  .skeleton-avatar {
+    @apply skeleton h-10 w-10 rounded-full;
+  }
+
+  /* Empty state */
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-12 text-center;
+  }
+
+  .empty-state-icon {
+    @apply w-16 h-16 text-terminal-text-muted mb-4;
+  }
+
+  .empty-state-title {
+    @apply text-lg font-semibold text-terminal-text mb-2;
+  }
+
+  .empty-state-description {
+    @apply text-sm text-terminal-text-secondary max-w-sm;
+  }
+
+  /* Tooltip */
+  .tooltip {
+    @apply absolute z-50 px-2 py-1 text-xs;
+    @apply bg-terminal-elevated text-terminal-text;
+    @apply border border-terminal-border rounded shadow-md;
+    @apply animate-fade-in;
+  }
+
+  /* Dropdown menu */
+  .dropdown-menu {
+    @apply absolute z-50 min-w-[160px] py-1;
+    @apply bg-terminal-card border border-terminal-border rounded-md shadow-lg;
+    @apply animate-slide-down;
+  }
+
+  .dropdown-item {
+    @apply flex items-center gap-2 w-full px-3 py-2 text-sm;
+    @apply text-terminal-text-secondary;
+    @apply hover:bg-terminal-elevated hover:text-terminal-text;
+    @apply cursor-pointer transition-colors duration-fast;
+  }
+
+  .dropdown-item-danger {
+    @apply dropdown-item text-error-light hover:bg-error/10;
+  }
+
+  /* Chat message */
+  .chat-message {
+    @apply flex gap-3 p-4;
+  }
+
+  .chat-message-user {
+    @apply chat-message bg-terminal-elevated/50;
+  }
+
+  .chat-message-assistant {
+    @apply chat-message;
+  }
+
+  .chat-avatar {
+    @apply w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0;
+  }
+
+  .chat-avatar-user {
+    @apply chat-avatar bg-primary-500/20 text-primary-400;
+  }
+
+  .chat-avatar-assistant {
+    @apply chat-avatar bg-accent-500/20 text-accent-400;
+  }
+
+  /* Task card */
+  .task-card {
+    @apply terminal-card-interactive p-3;
+  }
+
+  .task-card-dragging {
+    @apply task-card shadow-glow-primary opacity-90;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    @apply h-1.5 bg-terminal-elevated rounded-full overflow-hidden;
+  }
+
+  .progress-bar-fill {
+    @apply h-full bg-gradient-primary rounded-full transition-all duration-slow;
+  }
+
+  /* Quick action card */
+  .quick-action-card {
+    @apply terminal-card-accent p-4;
+    @apply border-l-accent-500;
+  }
+
+  /* Connection card */
+  .connection-card {
+    @apply terminal-card-hover p-4;
+  }
+
+  .connection-card-connected {
+    @apply connection-card border-l-2 border-l-success;
+  }
+
+  .connection-card-disconnected {
+    @apply connection-card border-l-2 border-l-terminal-text-muted;
+  }
+}
+
+/* Utility classes */
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-primary bg-clip-text text-transparent;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-select {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+}

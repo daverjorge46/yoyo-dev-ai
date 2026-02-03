@@ -423,7 +423,7 @@ echo ""
 # Installation Steps
 # ============================================================================
 
-TOTAL_STEPS=11
+TOTAL_STEPS=12
 CURRENT_STEP=0
 
 # Step 1: Install Claude Code CLI (if needed for yoyo-dev)
@@ -750,6 +750,57 @@ fi
 fi  # end INSTALL_COMPONENTS != yoyo-dev (OpenClaw)
 
 echo ""
+
+# Step: Install YoYo AI Dashboard GUI
+if [ "$INSTALL_COMPONENTS" != "yoyo-dev" ]; then
+((++CURRENT_STEP))
+ui_step $CURRENT_STEP $TOTAL_STEPS "Installing YoYo AI Dashboard GUI..."
+
+GUI_AI_DIR="$HOME/.yoyo-ai/gui-ai"
+GUI_SOURCE="$BASE_YOYO_DEV/gui-ai"
+
+if [ "$IS_FROM_BASE" = true ] && [ -d "$GUI_SOURCE" ]; then
+    # Create yoyo-ai home directory
+    mkdir -p "$HOME/.yoyo-ai"
+
+    # Copy gui-ai from base installation
+    if [ -d "$GUI_AI_DIR" ]; then
+        echo -e "  ${UI_DIM}Removing existing GUI installation...${UI_RESET}"
+        rm -rf "$GUI_AI_DIR"
+    fi
+
+    echo -e "  ${UI_DIM}Copying GUI files...${UI_RESET}"
+    cp -r "$GUI_SOURCE" "$GUI_AI_DIR"
+
+    # Install dependencies and build
+    if command -v npm &>/dev/null; then
+        echo -e "  ${UI_DIM}Installing GUI dependencies...${UI_RESET}"
+        cd "$GUI_AI_DIR"
+        if npm install --silent 2>&1 | tail -3; then
+            echo -e "  ${UI_DIM}Building GUI for production...${UI_RESET}"
+            if npm run build --silent 2>&1 | tail -3; then
+                ui_success "YoYo AI Dashboard GUI installed"
+            else
+                ui_warning "GUI build failed - run 'npm run build' in $GUI_AI_DIR manually"
+            fi
+        else
+            ui_warning "GUI dependencies installation failed - run 'npm install' in $GUI_AI_DIR manually"
+        fi
+        cd "$CURRENT_DIR"
+    else
+        ui_warning "npm not found - GUI dependencies not installed"
+        echo -e "  ${UI_DIM}Install Node.js, then run 'npm install && npm run build' in $GUI_AI_DIR${UI_RESET}"
+    fi
+else
+    if [ "$IS_FROM_BASE" = false ]; then
+        ui_warning "GUI installation requires base installation"
+    else
+        ui_warning "GUI source not found at $GUI_SOURCE"
+    fi
+fi
+
+echo ""
+fi  # end GUI installation for yoyo-ai
 
 # ============================================================================
 # Install Global Commands
