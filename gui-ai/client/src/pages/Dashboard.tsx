@@ -2,13 +2,16 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import {
   MessageSquare,
-  Brain,
-  Zap,
-  Bot,
+  Radio,
+  History,
+  Clock,
   Activity,
   CheckCircle2,
   XCircle,
   Sparkles,
+  Server,
+  TrendingUp,
+  Coins,
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -19,26 +22,34 @@ function StatsCard({
   icon: Icon,
   label,
   value,
+  subvalue,
   color,
+  to,
 }: {
   icon: React.ElementType;
   label: string;
   value: number | string;
-  color: 'cyan' | 'teal' | 'emerald' | 'purple';
+  subvalue?: string;
+  color: 'cyan' | 'teal' | 'emerald' | 'purple' | 'amber';
+  to?: string;
 }) {
   const colorClasses = {
     cyan: 'bg-cyan-500/10 text-cyan-400',
     teal: 'bg-teal-500/10 text-teal-400',
     emerald: 'bg-emerald-500/10 text-emerald-400',
     purple: 'bg-purple-500/10 text-purple-400',
+    amber: 'bg-amber-500/10 text-amber-400',
   };
 
-  return (
-    <Card className="p-4">
+  const content = (
+    <Card className={`p-4 ${to ? 'hover:bg-terminal-elevated/50 transition-colors cursor-pointer' : ''}`}>
       <div className="flex items-start justify-between">
         <div>
           <p className="text-xs text-terminal-text-secondary mb-1">{label}</p>
           <p className="text-2xl font-bold text-terminal-text">{value}</p>
+          {subvalue && (
+            <p className="text-xs text-terminal-text-muted mt-1">{subvalue}</p>
+          )}
         </div>
         <div className={`p-2 rounded-md ${colorClasses[color]}`}>
           <Icon className="w-5 h-5" />
@@ -46,10 +57,15 @@ function StatsCard({
       </div>
     </Card>
   );
+
+  if (to) {
+    return <Link to={to}>{content}</Link>;
+  }
+  return content;
 }
 
 // OpenClaw status card
-function OpenClawStatusCard({ connected, port }: { connected: boolean; port: number }) {
+function OpenClawStatusCard({ connected, port, version }: { connected: boolean; port: number; version?: string }) {
   return (
     <Card className="p-6 border-l-4 border-l-cyan-500">
       <div className="flex items-center gap-4">
@@ -62,11 +78,11 @@ function OpenClawStatusCard({ connected, port }: { connected: boolean; port: num
         </div>
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-terminal-text">
-            OpenClaw Daemon
+            OpenClaw Gateway
           </h3>
           <p className="text-sm text-terminal-text-secondary">
             {connected
-              ? `Connected on port ${port}`
+              ? `Connected on port ${port}${version ? ` • v${version}` : ''}`
               : 'Not running - Start with: yoyo-ai start'}
           </p>
         </div>
@@ -114,6 +130,55 @@ function QuickActionButton({
   );
 }
 
+// Channel health card
+function ChannelHealthCard({ channels }: { channels: Array<{ type: string; status: string }> }) {
+  const connected = channels.filter(c => c.status === 'connected').length;
+  const total = channels.length;
+
+  if (total === 0) {
+    return (
+      <Card className="p-4">
+        <h3 className="text-sm font-semibold text-terminal-text mb-3 flex items-center gap-2">
+          <Radio className="w-4 h-4 text-cyan-400" />
+          Channel Health
+        </h3>
+        <p className="text-sm text-terminal-text-muted">No channels configured</p>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="p-4">
+      <h3 className="text-sm font-semibold text-terminal-text mb-3 flex items-center gap-2">
+        <Radio className="w-4 h-4 text-cyan-400" />
+        Channel Health
+      </h3>
+      <div className="space-y-2">
+        {channels.map((channel, index) => (
+          <div key={index} className="flex items-center justify-between">
+            <span className="text-sm text-terminal-text-secondary capitalize">{channel.type}</span>
+            <div className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full ${
+                channel.status === 'connected' ? 'bg-emerald-500' : 'bg-red-500'
+              }`} />
+              <span className={`text-xs ${
+                channel.status === 'connected' ? 'text-emerald-400' : 'text-red-400'
+              }`}>
+                {channel.status}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-3 pt-3 border-t border-terminal-border">
+        <Link to="/channels" className="text-xs text-cyan-400 hover:text-cyan-300">
+          View all channels →
+        </Link>
+      </div>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   // Fetch OpenClaw status
   const { data: openclawStatus, isLoading: loadingStatus } = useQuery({
@@ -133,14 +198,19 @@ export default function Dashboard() {
       const res = await fetch('/api/status/stats');
       if (!res.ok) {
         return {
-          conversations: 0,
-          memories: 0,
-          skills: 0,
-          agents: 6,
+          channels: 0,
+          channelsConnected: 0,
+          sessions: 0,
+          activeSessions: 0,
+          cronJobs: 0,
+          cronJobsEnabled: 0,
+          totalTokens: 0,
+          channelList: [],
         };
       }
       return res.json();
     },
+    refetchInterval: 10000,
   });
 
   const isLoading = loadingStatus || loadingStats;
@@ -171,66 +241,92 @@ export default function Dashboard() {
         <OpenClawStatusCard
           connected={openclawStatus?.connected ?? false}
           port={openclawStatus?.port ?? 18789}
+          version={openclawStatus?.version}
         />
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatsCard
-          icon={MessageSquare}
-          label="Conversations"
-          value={stats?.conversations ?? 0}
+          icon={Radio}
+          label="Channels"
+          value={stats?.channelsConnected ?? 0}
+          subvalue={`${stats?.channels ?? 0} total`}
           color="cyan"
+          to="/channels"
         />
         <StatsCard
-          icon={Brain}
-          label="Memories"
-          value={stats?.memories ?? 0}
+          icon={History}
+          label="Active Sessions"
+          value={stats?.activeSessions ?? 0}
+          subvalue={`${stats?.sessions ?? 0} total`}
           color="teal"
+          to="/sessions"
         />
         <StatsCard
-          icon={Zap}
-          label="Skills"
-          value={stats?.skills ?? 0}
+          icon={Clock}
+          label="Cron Jobs"
+          value={stats?.cronJobsEnabled ?? 0}
+          subvalue={`${stats?.cronJobs ?? 0} configured`}
           color="emerald"
+          to="/cron"
         />
         <StatsCard
-          icon={Bot}
-          label="Agents"
-          value={stats?.agents ?? 6}
-          color="purple"
+          icon={Coins}
+          label="Tokens Used"
+          value={stats?.totalTokens ? (stats.totalTokens > 1000 ? `${(stats.totalTokens / 1000).toFixed(1)}K` : stats.totalTokens) : 0}
+          subvalue="this month"
+          color="amber"
         />
       </div>
 
-      {/* Quick Actions */}
-      <div className="mb-8">
-        <h2 className="text-lg font-semibold text-terminal-text mb-4 flex items-center gap-2">
-          <Activity className="w-5 h-5 text-cyan-400" />
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <QuickActionButton
-            to="/chat"
-            icon={MessageSquare}
-            label="Start Chat"
-            description="Begin a conversation with Yoyo AI"
-          />
-          <QuickActionButton
-            to="/memory"
-            icon={Brain}
-            label="Browse Memory"
-            description="View and manage stored memories"
-          />
-          <QuickActionButton
-            to="/skills"
-            icon={Zap}
-            label="View Skills"
-            description="Explore learned skills and capabilities"
-          />
+      {/* Two column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        {/* Quick Actions - takes 2 columns */}
+        <div className="lg:col-span-2">
+          <h2 className="text-lg font-semibold text-terminal-text mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-cyan-400" />
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <QuickActionButton
+              to="/chat"
+              icon={MessageSquare}
+              label="Start Chat"
+              description="Begin a conversation with Yoyo AI"
+            />
+            <QuickActionButton
+              to="/channels"
+              icon={Radio}
+              label="Manage Channels"
+              description="Configure messaging integrations"
+            />
+            <QuickActionButton
+              to="/sessions"
+              icon={History}
+              label="View Sessions"
+              description="Monitor active conversations"
+            />
+            <QuickActionButton
+              to="/cron"
+              icon={Clock}
+              label="Scheduled Tasks"
+              description="Manage automated jobs"
+            />
+          </div>
+        </div>
+
+        {/* Channel Health - takes 1 column */}
+        <div>
+          <h2 className="text-lg font-semibold text-terminal-text mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-cyan-400" />
+            Status
+          </h2>
+          <ChannelHealthCard channels={stats?.channelList ?? []} />
         </div>
       </div>
 
-      {/* Recent Activity Placeholder */}
+      {/* Recent Activity */}
       <div>
         <h2 className="text-lg font-semibold text-terminal-text mb-4">Recent Activity</h2>
         <Card className="p-8 text-center">

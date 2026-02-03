@@ -2,10 +2,11 @@ import { Routes, Route } from 'react-router-dom';
 import { PanelLayout } from './components/layout/PanelLayout';
 import { Sidebar } from './components/layout/Sidebar';
 import Dashboard from './pages/Dashboard';
+import Channels from './pages/Channels';
+import Instances from './pages/Instances';
+import Sessions from './pages/Sessions';
+import CronJobs from './pages/CronJobs';
 import Chat from './pages/Chat';
-import Memory from './pages/Memory';
-import Skills from './pages/Skills';
-import Agents from './pages/Agents';
 import Settings from './pages/Settings';
 
 export default function App() {
@@ -13,10 +14,11 @@ export default function App() {
     <PanelLayout sidebar={<Sidebar />}>
       <Routes>
         <Route path="/" element={<Dashboard />} />
+        <Route path="/channels" element={<Channels />} />
+        <Route path="/instances" element={<Instances />} />
+        <Route path="/sessions" element={<Sessions />} />
+        <Route path="/cron" element={<CronJobs />} />
         <Route path="/chat" element={<Chat />} />
-        <Route path="/memory" element={<Memory />} />
-        <Route path="/skills" element={<Skills />} />
-        <Route path="/agents" element={<Agents />} />
         <Route path="/settings" element={<Settings />} />
       </Routes>
     </PanelLayout>

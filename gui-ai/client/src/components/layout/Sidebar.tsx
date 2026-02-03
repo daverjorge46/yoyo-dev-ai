@@ -2,20 +2,22 @@ import { NavLink } from 'react-router-dom';
 import {
   LayoutDashboard,
   MessageSquare,
-  Brain,
-  Sparkles,
-  Bot,
+  Radio,
+  Server,
+  History,
+  Clock,
   Settings,
-  Zap,
+  Sparkles,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 const navItems = [
-  { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+  { to: '/', icon: LayoutDashboard, label: 'Overview' },
+  { to: '/channels', icon: Radio, label: 'Channels' },
+  { to: '/instances', icon: Server, label: 'Instances' },
+  { to: '/sessions', icon: History, label: 'Sessions' },
+  { to: '/cron', icon: Clock, label: 'Cron Jobs' },
   { to: '/chat', icon: MessageSquare, label: 'Chat' },
-  { to: '/memory', icon: Brain, label: 'Memory' },
-  { to: '/skills', icon: Zap, label: 'Skills' },
-  { to: '/agents', icon: Bot, label: 'Agents' },
 ];
 
 export function Sidebar() {

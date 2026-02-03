@@ -1,20 +1,21 @@
 import React from 'react';
 
 interface BadgeProps {
-  variant?: 'primary' | 'accent' | 'success' | 'warning' | 'error' | 'info' | 'muted';
+  variant?: 'primary' | 'accent' | 'success' | 'warning' | 'error' | 'info' | 'muted' | 'default';
   children: React.ReactNode;
   className?: string;
 }
 
-export function Badge({ variant = 'muted', children, className = '' }: BadgeProps) {
+export function Badge({ variant = 'default', children, className = '' }: BadgeProps) {
   const variantClasses = {
     primary: 'bg-primary-500/20 text-primary-400',
     accent: 'bg-accent-500/20 text-accent-400',
-    success: 'bg-success/20 text-success-light',
-    warning: 'bg-warning/20 text-warning-light',
-    error: 'bg-error/20 text-error-light',
-    info: 'bg-info/20 text-info-light',
-    muted: 'bg-terminal-elevated text-terminal-text-secondary',
+    success: 'bg-emerald-500/20 text-emerald-400',
+    warning: 'bg-amber-500/20 text-amber-400',
+    error: 'bg-red-500/20 text-red-400',
+    info: 'bg-blue-500/20 text-blue-400',
+    muted: 'bg-terminal-elevated text-terminal-text-muted',
+    default: 'bg-terminal-elevated text-terminal-text-secondary',
   };
 
   return (

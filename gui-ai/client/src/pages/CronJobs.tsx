@@ -1,0 +1,311 @@
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  Clock,
+  Play,
+  Pause,
+  Trash2,
+  Plus,
+  RefreshCw,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Calendar,
+  Activity,
+} from 'lucide-react';
+import { Card } from '../components/common/Card';
+import { Button } from '../components/common/Button';
+import { PageLoader } from '../components/common/LoadingSpinner';
+import { Badge } from '../components/common/Badge';
+
+interface CronJob {
+  id: string;
+  name: string;
+  schedule: string;
+  command: string;
+  enabled: boolean;
+  lastRun?: number;
+  lastResult?: 'success' | 'error';
+  lastError?: string;
+  nextRun?: number;
+  runCount: number;
+}
+
+function formatSchedule(cron: string): string {
+  // Simple cron expression interpreter
+  const parts = cron.split(' ');
+  if (parts.length !== 5) return cron;
+
+  const [min, hour, dom, mon, dow] = parts;
+
+  if (min === '*' && hour === '*') return 'Every minute';
+  if (min === '0' && hour === '*') return 'Every hour';
+  if (min === '0' && hour === '0' && dom === '*') return 'Every day at midnight';
+  if (min === '0' && hour === '0' && dow === '1') return 'Every Monday at midnight';
+  if (min === '0' && hour === '9' && dom === '*') return 'Every day at 9 AM';
+
+  return cron;
+}
+
+function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+
+  if (seconds < 60) return 'just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
+  return `${Math.floor(seconds / 86400)}d ago`;
+}
+
+function formatNextRun(timestamp: number): string {
+  const seconds = Math.floor((timestamp - Date.now()) / 1000);
+
+  if (seconds < 0) return 'overdue';
+  if (seconds < 60) return 'in < 1m';
+  if (seconds < 3600) return `in ${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `in ${Math.floor(seconds / 3600)}h`;
+  return `in ${Math.floor(seconds / 86400)}d`;
+}
+
+function CronJobCard({ job }: { job: CronJob }) {
+  const queryClient = useQueryClient();
+
+  const toggleMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/openclaw/cron/${job.id}/${job.enabled ? 'disable' : 'enable'}`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Failed to toggle cron job');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cron-jobs'] });
+    },
+  });
+
+  const runNowMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/openclaw/cron/${job.id}/run`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Failed to run cron job');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cron-jobs'] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async () => {
+      const res = await fetch(`/api/openclaw/cron/${job.id}`, {
+        method: 'DELETE',
+      });
+      if (!res.ok) throw new Error('Failed to delete cron job');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cron-jobs'] });
+    },
+  });
+
+  return (
+    <Card className={`p-4 ${!job.enabled ? 'opacity-60' : ''}`}>
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${job.enabled ? 'bg-cyan-500/10' : 'bg-terminal-elevated'}`}>
+            <Clock className={`w-5 h-5 ${job.enabled ? 'text-cyan-400' : 'text-terminal-text-muted'}`} />
+          </div>
+          <div>
+            <h3 className="font-semibold text-terminal-text">{job.name}</h3>
+            <p className="text-xs text-terminal-text-secondary">{formatSchedule(job.schedule)}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {job.lastResult === 'success' && (
+            <Badge variant="success">
+              <CheckCircle2 className="w-3 h-3" />
+              Success
+            </Badge>
+          )}
+          {job.lastResult === 'error' && (
+            <Badge variant="error">
+              <XCircle className="w-3 h-3" />
+              Failed
+            </Badge>
+          )}
+          <Badge variant={job.enabled ? 'default' : 'warning'}>
+            {job.enabled ? 'Enabled' : 'Disabled'}
+          </Badge>
+        </div>
+      </div>
+
+      {/* Command */}
+      <div className="mb-3 p-2 bg-terminal-bg rounded text-xs font-mono text-terminal-text-secondary overflow-x-auto">
+        {job.command}
+      </div>
+
+      {/* Error message */}
+      {job.lastError && (
+        <p className="text-xs text-red-400 mb-3">{job.lastError}</p>
+      )}
+
+      {/* Stats */}
+      <div className="flex items-center gap-4 text-xs text-terminal-text-muted mb-4">
+        {job.lastRun && (
+          <span className="flex items-center gap-1">
+            <Activity className="w-3 h-3" />
+            Last run: {formatTimeAgo(job.lastRun)}
+          </span>
+        )}
+        {job.nextRun && job.enabled && (
+          <span className="flex items-center gap-1">
+            <Calendar className="w-3 h-3" />
+            Next: {formatNextRun(job.nextRun)}
+          </span>
+        )}
+        <span className="flex items-center gap-1">
+          <RefreshCw className="w-3 h-3" />
+          {job.runCount} runs
+        </span>
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-2 pt-3 border-t border-terminal-border">
+        <Button
+          size="sm"
+          variant="secondary"
+          icon={job.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+          loading={toggleMutation.isPending}
+          onClick={() => toggleMutation.mutate()}
+        >
+          {job.enabled ? 'Disable' : 'Enable'}
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={<Play className="w-4 h-4" />}
+          loading={runNowMutation.isPending}
+          onClick={() => runNowMutation.mutate()}
+        >
+          Run Now
+        </Button>
+        <div className="flex-1" />
+        <Button
+          size="sm"
+          variant="ghost"
+          icon={<Trash2 className="w-4 h-4 text-red-400" />}
+          loading={deleteMutation.isPending}
+          onClick={() => {
+            if (confirm(`Delete cron job "${job.name}"?`)) {
+              deleteMutation.mutate();
+            }
+          }}
+        />
+      </div>
+    </Card>
+  );
+}
+
+export default function CronJobs() {
+  const [showAddModal, setShowAddModal] = useState(false);
+
+  const { data: cronJobs, isLoading } = useQuery<CronJob[]>({
+    queryKey: ['cron-jobs'],
+    queryFn: async () => {
+      const res = await fetch('/api/openclaw/cron');
+      if (!res.ok) {
+        if (res.status === 503) return [];
+        throw new Error('Failed to fetch cron jobs');
+      }
+      return res.json();
+    },
+    refetchInterval: 30000,
+  });
+
+  const { data: openclawStatus } = useQuery({
+    queryKey: ['openclaw-status'],
+    queryFn: async () => {
+      const res = await fetch('/api/status/openclaw');
+      if (!res.ok) return { connected: false };
+      return res.json();
+    },
+  });
+
+  if (isLoading) {
+    return <PageLoader />;
+  }
+
+  const enabledCount = cronJobs?.filter(j => j.enabled).length ?? 0;
+  const total = cronJobs?.length ?? 0;
+
+  return (
+    <div className="p-6">
+      {/* Header */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-terminal-text flex items-center gap-3">
+              <Clock className="w-7 h-7 text-cyan-400" />
+              Cron Jobs
+            </h1>
+            <p className="text-sm text-terminal-text-secondary mt-1">
+              Schedule automated tasks and recurring jobs
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="text-sm text-terminal-text-secondary">
+              <span className="text-emerald-400 font-medium">{enabledCount}</span>
+              <span className="text-terminal-text-muted"> / {total} enabled</span>
+            </div>
+            <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>
+              Add Job
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* OpenClaw status warning */}
+      {!openclawStatus?.connected && (
+        <Card className="p-4 mb-6 border-l-4 border-l-amber-500 bg-amber-500/5">
+          <div className="flex items-center gap-3">
+            <AlertTriangle className="w-5 h-5 text-amber-400" />
+            <div>
+              <h3 className="font-medium text-terminal-text">OpenClaw not connected</h3>
+              <p className="text-sm text-terminal-text-secondary">
+                Start OpenClaw daemon to manage cron jobs: <code className="text-cyan-400">yoyo-ai start</code>
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Cron jobs grid */}
+      {cronJobs && cronJobs.length > 0 ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {cronJobs.map((job) => (
+            <CronJobCard key={job.id} job={job} />
+          ))}
+        </div>
+      ) : (
+        <Card className="p-12 text-center">
+          <div className="text-terminal-text-muted mb-4">
+            <Clock className="w-16 h-16 mx-auto opacity-50" />
+          </div>
+          <h3 className="text-lg font-semibold text-terminal-text mb-2">
+            No cron jobs
+          </h3>
+          <p className="text-sm text-terminal-text-secondary max-w-md mx-auto mb-4">
+            {openclawStatus?.connected
+              ? 'Schedule automated tasks to run at specific intervals.'
+              : 'Start OpenClaw daemon to manage cron jobs.'}
+          </p>
+          {openclawStatus?.connected && (
+            <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>
+              Add Cron Job
+            </Button>
+          )}
+        </Card>
+      )}
+    </div>
+  );
+}

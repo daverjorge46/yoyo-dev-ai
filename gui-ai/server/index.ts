@@ -18,6 +18,7 @@ import { connectionsRouter } from './routes/connections.js';
 import { analyticsRouter } from './routes/analytics.js';
 import { quickActionsRouter } from './routes/quick-actions.js';
 import { settingsRouter } from './routes/settings.js';
+import { openclawRouter } from './routes/openclaw.js';
 
 // Services
 import { WebSocketManager } from './services/websocket.js';
@@ -91,6 +92,7 @@ app.route('/api/connections', connectionsRouter);
 app.route('/api/analytics', analyticsRouter);
 app.route('/api/quick-actions', quickActionsRouter);
 app.route('/api/settings', settingsRouter);
+app.route('/api/openclaw', openclawRouter);
 
 // Serve static files in production
 if (!isDev) {
