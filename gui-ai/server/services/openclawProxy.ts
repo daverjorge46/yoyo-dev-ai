@@ -109,14 +109,18 @@ export class OpenClawProxy {
       // Escape message for shell
       const escapedMessage = message.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
 
-      // Use openclaw agent command
+      // Use openclaw agent command with default agent
+      // --agent main uses the main agent session
+      // --session-id creates a GUI-specific session
+      const sessionId = 'yoyo-ai-gui';
       const agentProcess = spawn('openclaw', [
         'agent',
         '--message', message,
+        '--session-id', sessionId,
         '--json',
       ], {
         timeout: 120000, // 2 minute timeout
-        env: { ...process.env },
+        env: { ...process.env, PATH: process.env.PATH },
       });
 
       let stdout = '';
@@ -133,14 +137,37 @@ export class OpenClawProxy {
       agentProcess.on('close', (code) => {
         if (code === 0 && stdout) {
           try {
-            // Try to parse JSON output
+            // Try to parse JSON output from openclaw agent --json
             const jsonMatch = stdout.match(/\{[\s\S]*\}/);
             if (jsonMatch) {
               const result = JSON.parse(jsonMatch[0]);
+
+              // Extract the actual text response from OpenClaw's nested structure
+              let responseText = '';
+
+              // OpenClaw returns: { result: { payloads: [{ text: "..." }] } }
+              if (result.result?.payloads?.[0]?.text) {
+                responseText = result.result.payloads[0].text;
+              }
+              // Fallback to other possible formats
+              else if (result.response) {
+                responseText = result.response;
+              }
+              else if (result.content) {
+                responseText = result.content;
+              }
+              else if (result.message) {
+                responseText = result.message;
+              }
+              else {
+                // Last resort: use the whole output
+                responseText = stdout.trim();
+              }
+
               resolve({
                 success: true,
                 data: {
-                  response: result.response || result.content || result.message || stdout,
+                  response: responseText,
                   suggestedActions: result.suggestedActions,
                 },
               });
