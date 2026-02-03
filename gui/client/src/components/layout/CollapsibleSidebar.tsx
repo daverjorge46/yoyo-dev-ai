@@ -4,6 +4,7 @@
  * Terminal-styled navigation sidebar with icon-only collapse mode.
  * Displays navigation items with icons and labels.
  * When collapsed, shows only icons with tooltips.
+ * Supports different views for yoyo-dev and yoyo-ai modes.
  *
  * Accessibility:
  * - Navigation role with aria-label
@@ -19,7 +20,6 @@ import {
   LayoutGrid,
   Map,
   Brain,
-  Zap,
   History,
   Layers,
   MessageSquare,
@@ -29,7 +29,9 @@ import {
   Bot,
   HelpCircle,
   ClipboardList,
+  Sparkles,
 } from 'lucide-react';
+import { useGuiContext, type GuiFeatures } from '../../hooks/useGuiContext';
 
 // =============================================================================
 // Types
@@ -39,11 +41,19 @@ export interface NavItem {
   path: string;
   label: string;
   icon: React.ReactNode;
+  /** Feature key required for this item to be visible */
+  feature?: keyof GuiFeatures;
+  /** If true, item is always visible regardless of mode */
+  alwaysVisible?: boolean;
 }
 
 export interface NavGroup {
   name: string;
   items: NavItem[];
+  /** If true, group only shows in dev mode */
+  devOnly?: boolean;
+  /** If true, group only shows in ai mode */
+  aiOnly?: boolean;
 }
 
 export interface CollapsibleSidebarProps {
@@ -67,46 +77,73 @@ const navGroups: NavGroup[] = [
         path: '/',
         label: 'Dashboard',
         icon: <LayoutDashboard className="h-5 w-5" />,
+        alwaysVisible: true,
       },
       {
         path: '/roadmap',
         label: 'Roadmap',
         icon: <Map className="h-5 w-5" />,
+        feature: 'roadmap',
       },
     ],
   },
   {
     name: 'Planning',
+    devOnly: true,
     items: [
       {
         path: '/specs',
         label: 'Specs',
         icon: <FileText className="h-5 w-5" />,
+        feature: 'specs',
       },
       {
         path: '/fixes',
         label: 'Fixes',
         icon: <Wrench className="h-5 w-5" />,
+        feature: 'fixes',
       },
     ],
   },
   {
     name: 'Execution',
+    devOnly: true,
     items: [
       {
         path: '/tasks',
         label: 'Tasks',
         icon: <LayoutGrid className="h-5 w-5" />,
+        feature: 'specs', // Tasks depend on specs
       },
       {
         path: '/terminals',
         label: 'Terminals',
         icon: <Terminal className="h-5 w-5" />,
+        feature: 'terminals',
       },
       {
         path: '/chat',
         label: 'Chat',
         icon: <MessageSquare className="h-5 w-5" />,
+        feature: 'chat',
+      },
+    ],
+  },
+  {
+    name: 'Assistant',
+    aiOnly: true,
+    items: [
+      {
+        path: '/chat',
+        label: 'Chat',
+        icon: <MessageSquare className="h-5 w-5" />,
+        feature: 'chat',
+      },
+      {
+        path: '/agents',
+        label: 'Agents',
+        icon: <Bot className="h-5 w-5" />,
+        feature: 'agents',
       },
     ],
   },
@@ -117,36 +154,44 @@ const navGroups: NavGroup[] = [
         path: '/memory',
         label: 'Memory',
         icon: <Brain className="h-5 w-5" />,
+        feature: 'memory',
       },
       {
         path: '/skills',
         label: 'Skills',
-        icon: <Zap className="h-5 w-5" />,
+        icon: <Sparkles className="h-5 w-5" />,
+        feature: 'skills',
       },
       {
         path: '/patterns',
         label: 'Patterns',
         icon: <Layers className="h-5 w-5" />,
+        feature: 'memory', // Patterns are part of memory system
       },
       {
         path: '/agents',
         label: 'Agents',
         icon: <Bot className="h-5 w-5" />,
+        feature: 'agents',
       },
     ],
+    devOnly: true, // Full AI Tools section only in dev mode
   },
   {
     name: 'Review',
+    devOnly: true,
     items: [
       {
         path: '/qa',
         label: 'QA Reviews',
         icon: <ClipboardList className="h-5 w-5" />,
+        feature: 'qa',
       },
       {
         path: '/recaps',
         label: 'Recaps',
         icon: <History className="h-5 w-5" />,
+        alwaysVisible: true,
       },
     ],
   },
@@ -157,6 +202,7 @@ const navGroups: NavGroup[] = [
         path: '/help',
         label: 'Help',
         icon: <HelpCircle className="h-5 w-5" />,
+        alwaysVisible: true,
       },
     ],
   },
@@ -246,6 +292,29 @@ export function CollapsibleSidebar({
   onToggle,
   className = '',
 }: CollapsibleSidebarProps) {
+  const { context, isDevMode, isAiMode, hasFeature } = useGuiContext();
+  const modeLabel = isDevMode ? 'Dev' : 'AI';
+  const modeColor = isDevMode
+    ? 'text-primary dark:text-terminal-orange'
+    : 'text-accent dark:text-terminal-cyan';
+
+  // Filter navigation groups based on mode
+  const filteredGroups = navGroups
+    .filter((group) => {
+      if (group.devOnly && !isDevMode) return false;
+      if (group.aiOnly && !isAiMode) return false;
+      return true;
+    })
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        if (item.alwaysVisible) return true;
+        if (item.feature) return hasFeature(item.feature);
+        return true;
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
+
   return (
     <div
       className={`
@@ -273,18 +342,22 @@ export function CollapsibleSidebar({
             className="h-8 w-8 dark:hidden"
           />
           <div className="hidden dark:block relative">
-            <Terminal className="h-8 w-8 text-terminal-orange relative z-10" />
-            <div className="absolute inset-0 bg-terminal-orange/20 blur-lg rounded-full" />
+            {isDevMode ? (
+              <Terminal className="h-8 w-8 text-terminal-orange relative z-10" />
+            ) : (
+              <Sparkles className="h-8 w-8 text-terminal-cyan relative z-10" />
+            )}
+            <div className={`absolute inset-0 ${isDevMode ? 'bg-terminal-orange/20' : 'bg-terminal-cyan/20'} blur-lg rounded-full`} />
           </div>
         </div>
         {!collapsed && (
           <div>
             <span className="text-lg font-bold text-gray-900 dark:text-terminal-text truncate block">
               Yoyo{' '}
-              <span className="text-primary dark:text-terminal-orange">Dev</span>
+              <span className={modeColor}>{modeLabel}</span>
             </span>
             <span className="text-xs text-gray-500 dark:text-terminal-text-muted font-mono">
-              v6.2
+              v{context.version}
             </span>
           </div>
         )}
@@ -296,13 +369,13 @@ export function CollapsibleSidebar({
         role="navigation"
         aria-label="Main navigation"
       >
-        {navGroups.map((group, groupIndex) => (
+        {filteredGroups.map((group, groupIndex) => (
           <div key={group.name}>
             {groupIndex > 0 && <NavSeparator collapsed={collapsed} />}
             <div className="space-y-1">
               {group.items.map((item) => (
                 <NavItemLink
-                  key={item.path}
+                  key={`${group.name}-${item.path}`}
                   item={item}
                   collapsed={collapsed}
                   groupName={group.name}

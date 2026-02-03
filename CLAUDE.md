@@ -67,9 +67,18 @@ yoyo-dev-ai/                      # Framework root (this repository)
 |-----------|------------|---------|
 | CLI Launcher | Bash | `yoyo-dev`, `yoyo-ai`, `yoyo-gui`, `yoyo-update` commands |
 | Orchestration | TypeScript | Intent classification, agent routing |
-| Browser GUI | React + Vite | Dashboard on port 5173 |
+| Browser GUI | React + Vite | Unified dashboard with mode detection |
 | Memory System | SQLite + JSON | Persistent context storage |
 | Business & Personal AI | OpenClaw (npm) | Business and Personal AI Assistant on port 18789 |
+
+### GUI Ports
+
+| Mode | Dev Port | Prod Port | Description |
+|------|----------|-----------|-------------|
+| yoyo-dev | 5173 | 3456 | Development environment dashboard |
+| yoyo-ai | 5173 | 3456 | AI assistant dashboard (same ports, different views) |
+
+The GUI automatically detects the mode via `YOYO_GUI_MODE` environment variable and displays appropriate navigation and features.
 
 ## Global Orchestration Mode
 
