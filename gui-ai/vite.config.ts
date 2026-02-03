@@ -1,19 +1,15 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
-import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
   root: 'client',
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'client/src'),
-      '@server': path.resolve(__dirname, 'server'),
-      '@shared': path.resolve(__dirname, 'shared'),
-    },
+  build: {
+    outDir: '../dist/client',
+    emptyOutDir: true,
   },
   server: {
-    port: 5174,
+    port: 3456,
     proxy: {
       '/api': {
         target: 'http://localhost:3457',
@@ -24,9 +20,5 @@ export default defineConfig({
         ws: true,
       },
     },
-  },
-  build: {
-    outDir: '../dist/client',
-    emptyOutDir: true,
   },
 });
