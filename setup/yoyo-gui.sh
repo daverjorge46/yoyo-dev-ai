@@ -52,18 +52,21 @@ else
     UI_BOLD="$BOLD"
 fi
 
-# GUI location
-readonly GUI_DIR="$YOYO_INSTALL_DIR/gui"
+# GUI locations
+readonly GUI_DEV_DIR="$YOYO_INSTALL_DIR/gui"
+readonly GUI_AI_DIR="$YOYO_INSTALL_DIR/gui-ai"
 
 # Default options
-PORT=3456
-DEV_PORT=5173  # Vite dev server port
 DEV_MODE=false
+AI_MODE=false
 OPEN_BROWSER=false
 BACKGROUND_MODE=false
 BANNER_ENABLED=true
 PROJECT_ROOT=""  # Explicit project root (when passed from yoyo.sh)
-GUI_MODE="dev"   # GUI mode: 'dev' (yoyo-dev) or 'ai' (yoyo-ai)
+
+# Ports (set dynamically based on mode)
+# yoyo-dev: 5173 (dev), 3456 (prod)
+# yoyo-ai:  5174 (dev), 3457 (prod)
 
 # PID file for background mode
 get_pid_file() {
@@ -116,7 +119,6 @@ show_help() {
     echo -e "${UI_BOLD}Usage:${UI_RESET}"
     echo -e "  ${UI_SUCCESS}yoyo-gui${UI_RESET}                Launch browser-based dashboard (production)"
     echo -e "  ${UI_SUCCESS}yoyo-gui --dev${UI_RESET}          Development mode with hot reload (port 5173)"
-    echo -e "  ${UI_SUCCESS}yoyo-gui --mode ai${UI_RESET}      Launch Yoyo AI assistant dashboard"
     echo -e "  ${UI_SUCCESS}yoyo-gui --port 8080${UI_RESET}    Use custom port (production mode)"
     echo -e "  ${UI_SUCCESS}yoyo-gui --no-open${UI_RESET}      Don't auto-open browser (default)"
     echo -e "  ${UI_SUCCESS}yoyo-gui --no-banner${UI_RESET}    Skip branded banner (for CI/scripts)"
@@ -124,7 +126,6 @@ show_help() {
     echo ""
     echo -e "${UI_BOLD}Options:${UI_RESET}"
     echo -e "  ${UI_PRIMARY}-d, --dev${UI_RESET}           Development mode with hot reload (port 5173)"
-    echo -e "  ${UI_PRIMARY}-m, --mode MODE${UI_RESET}     GUI mode: 'dev' (default) or 'ai'"
     echo -e "  ${UI_PRIMARY}-p, --port PORT${UI_RESET}     Server port for production mode (default: 3456)"
     echo -e "  ${UI_PRIMARY}--no-open${UI_RESET}           Don't automatically open browser (default)"
     echo -e "  ${UI_PRIMARY}--no-banner${UI_RESET}         Skip branded startup banner"
@@ -133,10 +134,6 @@ show_help() {
     echo -e "  ${UI_PRIMARY}--status${UI_RESET}            Check if GUI server is running"
     echo -e "  ${UI_PRIMARY}-h, --help${UI_RESET}          Show this help message"
     echo -e "  ${UI_PRIMARY}-v, --version${UI_RESET}       Show version"
-    echo ""
-    echo -e "${UI_BOLD}GUI Modes:${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}dev${UI_RESET}  Yoyo Dev - Development environment (specs, tasks, roadmap)"
-    echo -e "  ${UI_PRIMARY}ai${UI_RESET}   Yoyo AI - Business & Personal AI Assistant (chat, skills, memory)"
     echo ""
     echo -e "${UI_BOLD}Features:${UI_RESET}"
     echo -e "  ${MAGENTA:-$UI_PRIMARY}*${UI_RESET} Real-time project status dashboard"
@@ -147,7 +144,7 @@ show_help() {
     echo ""
     echo -e "${UI_BOLD}Related Commands:${UI_RESET}"
     echo -e "  ${UI_SUCCESS}yoyo-dev${UI_RESET}           Launch Claude Code + GUI (dev mode on port 5173)"
-    echo -e "  ${UI_SUCCESS}yoyo-ai${UI_RESET}            Launch Yoyo AI Assistant"
+    echo -e "  ${UI_SUCCESS}yoyo-ai --dashboard${UI_RESET} Launch Yoyo AI Dashboard (port 5174)"
     echo -e "  ${UI_SUCCESS}yoyo-update${UI_RESET}        Update Yoyo Dev installation"
     echo ""
 }
@@ -200,15 +197,6 @@ parse_args() {
                 ;;
             --project-root)
                 PROJECT_ROOT="$2"
-                shift 2
-                ;;
-            -m|--mode)
-                GUI_MODE="$2"
-                if [[ "$GUI_MODE" != "dev" && "$GUI_MODE" != "ai" ]]; then
-                    echo -e "${UI_ERROR}Invalid mode: $GUI_MODE${UI_RESET}"
-                    echo "Valid modes: dev, ai"
-                    exit 1
-                fi
                 shift 2
                 ;;
             *)
@@ -450,8 +438,6 @@ launch_background() {
 
     # Set environment variables
     export YOYO_PROJECT_ROOT="$project_root"
-    export YOYO_GUI_MODE="$GUI_MODE"
-    export YOYO_GUI_PORT="$PORT"
     export PORT="$PORT"
 
     # Create log file
@@ -549,14 +535,6 @@ launch_dev() {
     local network_ip
     network_ip=$(get_network_ip)
 
-    # Determine display name based on mode
-    local mode_name="Yoyo Dev"
-    local mode_desc="Development Environment"
-    if [ "$GUI_MODE" = "ai" ]; then
-        mode_name="Yoyo AI"
-        mode_desc="Business & Personal AI Assistant"
-    fi
-
     # Kill any existing servers on our ports to prevent EADDRINUSE
     kill_existing_on_port "$PORT"
     kill_existing_on_port "$DEV_CLIENT_PORT"
@@ -566,18 +544,17 @@ launch_dev() {
         ui_yoyo_banner "v${VERSION}"
     else
         echo ""
-        echo -e "${UI_BOLD}${UI_PRIMARY}${mode_name} GUI - Development Mode${UI_RESET}"
+        echo -e "${UI_BOLD}${UI_PRIMARY}Yoyo Dev GUI - Development Mode${UI_RESET}"
     fi
 
     echo ""
-    echo -e "  ${UI_SUCCESS}Mode:${UI_RESET}     ${mode_name} (${mode_desc})"
     echo -e "  ${UI_SUCCESS}Project:${UI_RESET}  $project_root"
     echo -e "  ${UI_SUCCESS}Frontend:${UI_RESET} http://localhost:${DEV_CLIENT_PORT}"
     if [ -n "$network_ip" ]; then
         echo -e "  ${UI_SUCCESS}Network:${UI_RESET}  http://${network_ip}:${DEV_CLIENT_PORT}"
     fi
     echo -e "  ${UI_SUCCESS}API:${UI_RESET}      http://localhost:${PORT}"
-    echo -e "  ${UI_SUCCESS}Server:${UI_RESET}   Development (hot reload)"
+    echo -e "  ${UI_SUCCESS}Mode:${UI_RESET}     Development (hot reload)"
     echo ""
     echo -e "  ${UI_DIM}Press Ctrl+C to stop${UI_RESET}"
     echo ""
@@ -586,8 +563,6 @@ launch_dev() {
 
     # Set environment variables
     export YOYO_PROJECT_ROOT="$project_root"
-    export YOYO_GUI_MODE="$GUI_MODE"
-    export YOYO_GUI_PORT="$PORT"
     export PORT="$PORT"
 
     # Open browser to Vite dev server (not API server)
@@ -642,24 +617,15 @@ launch_production() {
     local network_ip
     network_ip=$(get_network_ip)
 
-    # Determine display name based on mode
-    local mode_name="Yoyo Dev"
-    local mode_desc="Development Environment"
-    if [ "$GUI_MODE" = "ai" ]; then
-        mode_name="Yoyo AI"
-        mode_desc="Business & Personal AI Assistant"
-    fi
-
     # Show branded banner (if enabled, terminal is interactive, and UI library loaded)
     if [ "$BANNER_ENABLED" = true ] && is_interactive_terminal && [ "$UI_LIBRARY_LOADED" = true ]; then
         ui_yoyo_banner "v${VERSION}"
     else
         echo ""
-        echo -e "${UI_BOLD}${UI_PRIMARY}${mode_name} GUI${UI_RESET}"
+        echo -e "${UI_BOLD}${UI_PRIMARY}Yoyo Dev GUI${UI_RESET}"
     fi
 
     echo ""
-    echo -e "  ${UI_SUCCESS}Mode:${UI_RESET}    ${mode_name} (${mode_desc})"
     echo -e "  ${UI_SUCCESS}Project:${UI_RESET} $project_root"
     echo -e "  ${UI_SUCCESS}Server:${UI_RESET}  http://localhost:$PORT"
     if [ -n "$network_ip" ]; then
@@ -672,8 +638,6 @@ launch_production() {
 
     # Set environment variables
     export YOYO_PROJECT_ROOT="$project_root"
-    export YOYO_GUI_MODE="$GUI_MODE"
-    export YOYO_GUI_PORT="$PORT"
 
     # Open browser if requested
     if [ "$OPEN_BROWSER" = true ]; then

@@ -9,7 +9,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    port: 3456,
+    port: 5174,  // Dev mode port for yoyo-ai GUI
     proxy: {
       '/api': {
         target: 'http://localhost:3457',

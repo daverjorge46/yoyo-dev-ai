@@ -38,7 +38,6 @@ import { orchestrationRoutes } from './routes/orchestration.js';
 import { helpRoutes } from './routes/help.js';
 import { changelogRoutes } from './routes/changelog.js';
 import { chatRoutes } from './routes/chat.js';
-import { contextRoutes } from './routes/context.js';
 import { terminalsRoutes } from './routes/terminals.js';
 import { worktreesRoutes } from './routes/worktrees.js';
 import { qaRoutes } from './routes/qa.js';
@@ -144,7 +143,6 @@ app.route('/api/agent-definitions', agentDefinitionsRoutes);
 app.route('/api/orchestration', orchestrationRoutes);
 app.route('/api/help', helpRoutes);
 app.route('/api/changelog', changelogRoutes);
-app.route('/api/context', contextRoutes);
 app.route('/api/chat', chatRoutes);
 app.route('/api/terminals', terminalsRoutes);
 app.route('/api/worktrees', worktreesRoutes);
@@ -199,14 +197,8 @@ export async function startServer(options: ServerOptions = {}) {
   // options.projectRoot can override if provided programmatically
   const effectiveProjectRoot = options.projectRoot ?? projectRoot;
 
-  // Determine GUI mode from environment
-  const guiMode = process.env.YOYO_GUI_MODE ?? 'dev';
-  const modeName = guiMode === 'ai' ? 'Yoyo AI' : 'Yoyo Dev';
-  const modeDesc = guiMode === 'ai' ? 'Business & Personal AI Assistant' : 'Development Environment';
-
-  console.log(`\n  ${modeName} GUI`);
-  console.log(`  ${'='.repeat(modeName.length + 4)}`);
-  console.log(`  Mode:    ${modeDesc}`);
+  console.log(`\n  Yoyo Dev GUI`);
+  console.log(`  ============`);
   console.log(`  Project: ${effectiveProjectRoot}`);
   console.log(`  Server:  http://0.0.0.0:${port} (network accessible)`);
   console.log(`  API:     http://localhost:${port}/api`);
