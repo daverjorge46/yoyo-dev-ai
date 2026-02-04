@@ -106,24 +106,24 @@ export class OpenClawProxy {
     suggestedActions?: Array<{ label: string; action: string }>;
   }>> {
     return new Promise((resolve) => {
-      // Escape message for shell
-      const escapedMessage = message.replace(/"/g, '\\"').replace(/\$/g, '\\$').replace(/`/g, '\\`');
-
       // Use openclaw agent command with default agent
       // --agent main uses the main agent session
       // --session-id creates a GUI-specific session
       const sessionId = 'yoyo-ai-gui';
+
+      // If model is specified, prepend /modelo command to change model
+      // OpenClaw uses /modelo [model] command to change models
+      let finalMessage = message;
+      if (context?.model && context.model !== 'default') {
+        finalMessage = `/modelo ${context.model}\n${message}`;
+      }
+
       const args = [
         'agent',
-        '--message', message,
+        '--message', finalMessage,
         '--session-id', sessionId,
         '--json',
       ];
-
-      // Add model parameter if specified
-      if (context?.model) {
-        args.push('--model', context.model);
-      }
 
       const agentProcess = spawn('openclaw', args, {
         timeout: 120000, // 2 minute timeout

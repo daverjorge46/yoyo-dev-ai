@@ -108,65 +108,94 @@ export function ModelSelector({
         />
       </button>
 
-      {/* Dropdown menu */}
+      {/* Dropdown menu - Full screen modal on mobile */}
       {isOpen && (
-        <div
-          className="
-            fixed inset-x-4 bottom-20
-            sm:absolute sm:inset-auto sm:bottom-full sm:left-0 sm:mb-2
-            min-w-[280px] max-h-[60vh] sm:max-h-[400px] overflow-auto
-            bg-white dark:bg-gray-900
-            border border-gray-200 dark:border-gray-700
-            rounded-xl shadow-2xl
-            z-[200]
-          "
-          role="listbox"
-          aria-label="Select model"
-        >
-          <div className="p-3">
-            <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 px-2 py-2 mb-2 border-b border-gray-200 dark:border-gray-700">
-              Select AI Model
+        <>
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 z-[199] sm:hidden"
+            onClick={() => setIsOpen(false)}
+          />
+
+          <div
+            className="
+              fixed inset-x-0 bottom-0 top-auto
+              sm:absolute sm:inset-auto sm:bottom-full sm:left-0 sm:mb-2
+              sm:min-w-[320px] sm:max-h-[400px]
+              max-h-[70vh]
+              overflow-hidden
+              bg-white dark:bg-gray-900
+              border-t sm:border border-gray-200 dark:border-gray-700
+              rounded-t-2xl sm:rounded-xl
+              shadow-2xl
+              z-[200]
+            "
+            role="listbox"
+            aria-label="Select model"
+          >
+            {/* Header */}
+            <div className="sticky top-0 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700 px-4 py-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Select AI Model
+                </h3>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-500"
+                >
+                  <span className="text-xl">&times;</span>
+                </button>
+              </div>
             </div>
 
-            {Object.entries(groupedModels).map(([provider, providerModels]) => (
-              <div key={provider} className="mb-3 last:mb-0">
-                <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-2">
-                  {provider}
-                </div>
-                {providerModels.map((model) => (
-                  <button
-                    key={model.id}
-                    onClick={() => handleSelect(model.id)}
-                    className={`
-                      w-full flex items-center justify-between gap-3
-                      px-3 py-3 rounded-lg text-left
-                      transition-colors
-                      ${
-                        selectedModel === model.id
-                          ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/30'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200'
-                      }
-                    `}
-                    role="option"
-                    aria-selected={selectedModel === model.id}
-                  >
-                    <div className="flex-1 min-w-0">
-                      <div className="text-base font-medium">{model.name}</div>
-                      {model.description && (
-                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                          {model.description}
+            {/* Scrollable content */}
+            <div className="overflow-auto max-h-[calc(70vh-80px)] sm:max-h-[320px] p-4">
+              {Object.entries(groupedModels).map(([provider, providerModels]) => (
+                <div key={provider} className="mb-6 last:mb-0">
+                  <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">
+                    {provider}
+                  </div>
+                  <div className="space-y-2">
+                    {providerModels.map((model) => (
+                      <button
+                        key={model.id}
+                        onClick={() => handleSelect(model.id)}
+                        className={`
+                          w-full flex items-center justify-between gap-4
+                          px-4 py-4 rounded-xl text-left
+                          transition-all
+                          ${
+                            selectedModel === model.id
+                              ? 'bg-primary-500 text-white shadow-lg'
+                              : 'bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                          }
+                        `}
+                        role="option"
+                        aria-selected={selectedModel === model.id}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="text-base font-semibold">{model.name}</div>
+                          {model.description && (
+                            <div className={`text-sm mt-1 ${
+                              selectedModel === model.id
+                                ? 'text-white/80'
+                                : 'text-gray-500 dark:text-gray-400'
+                            }`}>
+                              {model.description}
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    {selectedModel === model.id && (
-                      <Check className="w-5 h-5 flex-shrink-0 text-primary-500" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            ))}
+                        {selectedModel === model.id && (
+                          <Check className="w-6 h-6 flex-shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );
