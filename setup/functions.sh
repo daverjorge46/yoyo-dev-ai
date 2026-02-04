@@ -376,17 +376,49 @@ apply_yoyo_theme() {
     fi
 }
 
+# Get network IP for LAN access
+get_network_ip() {
+    local ip=""
+
+    # Method 1: ip route (most reliable on Linux)
+    if command -v ip &> /dev/null; then
+        ip=$(ip route get 1 2>/dev/null | awk '{print $7; exit}')
+    fi
+
+    # Method 2: hostname -I (fallback)
+    if [ -z "$ip" ] && command -v hostname &> /dev/null; then
+        ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    fi
+
+    # Method 3: ifconfig (macOS/older systems)
+    if [ -z "$ip" ] && command -v ifconfig &> /dev/null; then
+        ip=$(ifconfig 2>/dev/null | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | awk '{print $2}' | head -1)
+    fi
+
+    echo "$ip"
+}
+
 # Print dashboard URL (with token) to stdout
 show_openclaw_dashboard_info() {
     local token=""
     if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
         token="$(cat "$OPENCLAW_TOKEN_FILE")"
     fi
+
+    local network_ip
+    network_ip=$(get_network_ip)
+
     echo ""
     if [ -n "$token" ]; then
-        echo -e "  \033[2mDashboard:\033[0m \033[0;36mhttp://127.0.0.1:${OPENCLAW_PORT}?token=${token}\033[0m"
+        echo -e "  \033[2mLocal:\033[0m   \033[0;36mhttp://localhost:${OPENCLAW_PORT}?token=${token}\033[0m"
+        if [ -n "$network_ip" ]; then
+            echo -e "  \033[2mNetwork:\033[0m \033[0;36mhttp://${network_ip}:${OPENCLAW_PORT}?token=${token}\033[0m"
+        fi
     else
-        echo -e "  \033[2mDashboard:\033[0m \033[0;36mhttp://127.0.0.1:${OPENCLAW_PORT}\033[0m"
+        echo -e "  \033[2mLocal:\033[0m   \033[0;36mhttp://localhost:${OPENCLAW_PORT}\033[0m"
+        if [ -n "$network_ip" ]; then
+            echo -e "  \033[2mNetwork:\033[0m \033[0;36mhttp://${network_ip}:${OPENCLAW_PORT}\033[0m"
+        fi
     fi
     echo ""
 }

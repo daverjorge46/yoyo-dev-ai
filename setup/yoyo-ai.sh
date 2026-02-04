@@ -71,6 +71,31 @@ if [ ! -e "$HOME/.openclaw" ]; then
 fi
 
 # ============================================================================
+# Network Detection
+# ============================================================================
+
+get_network_ip() {
+    local ip=""
+
+    # Method 1: ip route (most reliable on Linux)
+    if command -v ip &> /dev/null; then
+        ip=$(ip route get 1 2>/dev/null | awk '{print $7; exit}')
+    fi
+
+    # Method 2: hostname -I (fallback)
+    if [ -z "$ip" ] && command -v hostname &> /dev/null; then
+        ip=$(hostname -I 2>/dev/null | awk '{print $1}')
+    fi
+
+    # Method 3: ifconfig (macOS/older systems)
+    if [ -z "$ip" ] && command -v ifconfig &> /dev/null; then
+        ip=$(ifconfig 2>/dev/null | grep -Eo 'inet (addr:)?([0-9]*\.){3}[0-9]*' | grep -v '127.0.0.1' | awk '{print $2}' | head -1)
+    fi
+
+    echo "$ip"
+}
+
+# ============================================================================
 # Node.js Validation
 # ============================================================================
 
@@ -298,6 +323,23 @@ cmd_start() {
     ensure_initialized || exit 1
 
     daemon_start
+
+    # Also launch the GUI
+    echo ""
+    ui_info "Launching Yoyo AI GUI..."
+    "${SCRIPT_DIR}/yoyo-gui.sh" --ai --background --no-banner &
+    disown
+    sleep 3
+
+    # Show URLs
+    local network_ip
+    network_ip=$(get_network_ip)
+    echo ""
+    ui_success "GUI available:"
+    echo -e "   Local:   ${UI_PRIMARY}http://localhost:5174${UI_RESET}"
+    if [ -n "$network_ip" ]; then
+        echo -e "   Network: ${UI_PRIMARY}http://${network_ip}:5174${UI_RESET}"
+    fi
 }
 
 cmd_stop() {
@@ -534,11 +576,23 @@ cmd_channels() {
 cmd_gui() {
     # Ensure gateway is running first
     if ! is_gateway_running; then
+        ui_yoyo_ai_banner "v${VERSION}"
         ui_info "Starting OpenClaw gateway first..."
         ensure_initialized || true
         daemon_start
         sleep 2
     fi
+
+    # Show network info
+    local network_ip
+    network_ip=$(get_network_ip)
+    echo ""
+    ui_info "Launching Yoyo AI GUI..."
+    echo -e "   Local:   ${UI_PRIMARY}http://localhost:5174${UI_RESET}"
+    if [ -n "$network_ip" ]; then
+        echo -e "   Network: ${UI_PRIMARY}http://${network_ip}:5174${UI_RESET}"
+    fi
+    echo ""
 
     # Launch GUI using yoyo-gui --ai
     exec "${SCRIPT_DIR}/yoyo-gui.sh" --ai "$@"

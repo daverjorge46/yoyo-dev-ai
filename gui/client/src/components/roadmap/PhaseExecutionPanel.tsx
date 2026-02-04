@@ -242,8 +242,9 @@ export function PhaseExecutionPanel({
   const isFailed = execution.status === 'failed';
   const isCancelled = execution.status === 'cancelled';
 
-  const completedItems = execution.items.filter((i) => i.status === 'completed').length;
-  const failedItems = execution.items.filter((i) => i.status === 'failed').length;
+  const items = execution.items ?? [];
+  const completedItems = items.filter((i) => i.status === 'completed').length;
+  const failedItems = items.filter((i) => i.status === 'failed').length;
 
   return (
     <AnimatePresence>
@@ -305,7 +306,7 @@ export function PhaseExecutionPanel({
                 Progress
               </span>
               <span className="text-sm text-gray-500">
-                {completedItems}/{execution.items.length} items
+                {completedItems}/{items.length} items
               </span>
             </div>
             <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
@@ -383,7 +384,7 @@ export function PhaseExecutionPanel({
 
           {/* Items List */}
           <div className="flex-1 overflow-y-auto p-4 space-y-2">
-            {execution.items.map((item) => (
+            {items.map((item) => (
               <ItemProgressRow
                 key={item.itemId}
                 item={item}

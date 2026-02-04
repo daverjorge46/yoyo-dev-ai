@@ -232,7 +232,7 @@ export function PhaseExecutionModal({
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-[600px] md:max-h-[80vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden"
+            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[95vw] max-w-[600px] max-h-[90vh] bg-white dark:bg-gray-900 rounded-xl shadow-2xl z-50 flex flex-col overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -257,8 +257,8 @@ export function PhaseExecutionModal({
               </button>
             </div>
 
-            {/* Content */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+            {/* Content - scrollable with min-height to ensure footer visibility */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 min-h-0">
               {/* Items Selection */}
               <div>
                 <div className="flex items-center justify-between mb-3">
@@ -276,7 +276,7 @@ export function PhaseExecutionModal({
                     Select all ({uncompletedItems.length})
                   </label>
                 </div>
-                <div className="max-h-48 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
+                <div className="max-h-40 overflow-y-auto border border-gray-200 dark:border-gray-700 rounded-lg">
                   {allItems.length === 0 ? (
                     <div className="p-4 text-center text-gray-500">
                       No items in this phase
@@ -378,8 +378,8 @@ export function PhaseExecutionModal({
               )}
             </div>
 
-            {/* Footer */}
-            <div className="flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+            {/* Footer - always visible */}
+            <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <div className="text-sm text-gray-500 dark:text-gray-400">
                 {selectedItemIds.size} item{selectedItemIds.size !== 1 ? 's' : ''} selected
               </div>

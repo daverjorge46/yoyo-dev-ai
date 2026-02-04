@@ -62,13 +62,7 @@ phaseExecutorRoutes.post(
 
       return c.json({
         success: true,
-        execution: {
-          id: execution.id,
-          phaseId: execution.phaseId,
-          status: execution.status,
-          itemCount: execution.items.length,
-          startedAt: execution.startedAt,
-        },
+        execution,
       }, 201);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to start execution';

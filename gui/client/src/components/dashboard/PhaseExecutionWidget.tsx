@@ -74,7 +74,8 @@ function StatusBadge({ status }: { status: PhaseExecutionState['status'] }) {
 
 function ExecutionRow({ execution }: { execution: PhaseExecutionState }) {
   const navigate = useNavigate();
-  const completedItems = execution.items.filter((i) => i.status === 'completed').length;
+  const items = execution.items ?? [];
+  const completedItems = items.filter((i) => i.status === 'completed').length;
 
   return (
     <button
@@ -88,7 +89,7 @@ function ExecutionRow({ execution }: { execution: PhaseExecutionState }) {
         <div className="flex items-center gap-2 mt-0.5">
           <StatusBadge status={execution.status} />
           <span className="text-xs text-gray-500 dark:text-terminal-text-muted">
-            {completedItems}/{execution.items.length} items
+            {completedItems}/{items.length} items
           </span>
         </div>
       </div>
