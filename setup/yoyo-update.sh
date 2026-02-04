@@ -506,13 +506,16 @@ update_with_progress() {
     echo "$files_copied"
 }
 
-TOTAL_STEPS=14
+TOTAL_STEPS=15
 CURRENT_STEP=0
 
 # Note: BASE_YOYO_DEV was defined earlier in Welcome Screen section
 
 # Backup directory path (used throughout)
 BACKUP_DIR=".yoyo-dev/backups/$(date +%Y%m%d_%H%M%S)"
+
+# Installation target directory (for GUI updates)
+INSTALL_DIR="./.yoyo-dev"
 
 # ============================================================================
 # PHASE 1: BASE Sync - Pull latest from repository
