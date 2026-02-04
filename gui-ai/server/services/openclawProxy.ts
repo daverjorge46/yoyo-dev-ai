@@ -100,7 +100,7 @@ export class OpenClawProxy {
    */
   async sendMessage(
     message: string,
-    context?: Record<string, unknown>
+    context?: Record<string, unknown> & { model?: string }
   ): Promise<OpenClawResponse<{
     response: string;
     suggestedActions?: Array<{ label: string; action: string }>;
@@ -113,12 +113,19 @@ export class OpenClawProxy {
       // --agent main uses the main agent session
       // --session-id creates a GUI-specific session
       const sessionId = 'yoyo-ai-gui';
-      const agentProcess = spawn('openclaw', [
+      const args = [
         'agent',
         '--message', message,
         '--session-id', sessionId,
         '--json',
-      ], {
+      ];
+
+      // Add model parameter if specified
+      if (context?.model) {
+        args.push('--model', context.model);
+      }
+
+      const agentProcess = spawn('openclaw', args, {
         timeout: 120000, // 2 minute timeout
         env: { ...process.env, PATH: process.env.PATH },
       });

@@ -19,6 +19,7 @@ import { analyticsRouter } from './routes/analytics.js';
 import { quickActionsRouter } from './routes/quick-actions.js';
 import { settingsRouter } from './routes/settings.js';
 import { openclawRouter } from './routes/openclaw.js';
+import { modelsRouter } from './routes/models.js';
 
 // Services
 import { WebSocketManager } from './services/websocket.js';
@@ -93,6 +94,7 @@ app.route('/api/analytics', analyticsRouter);
 app.route('/api/quick-actions', quickActionsRouter);
 app.route('/api/settings', settingsRouter);
 app.route('/api/openclaw', openclawRouter);
+app.route('/api/models', modelsRouter);
 
 // Serve static files in production
 if (!isDev) {
@@ -102,8 +104,11 @@ if (!isDev) {
   }));
 
   // SPA fallback
-  app.get('*', (c) => {
-    return c.html(Bun.file(path.join(__dirname, '../client/index.html')));
+  app.get('*', async (c) => {
+    const fs = await import('fs/promises');
+    const indexPath = path.join(__dirname, '../client/index.html');
+    const html = await fs.readFile(indexPath, 'utf-8');
+    return c.html(html);
   });
 }
 
