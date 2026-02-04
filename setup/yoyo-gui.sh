@@ -1,13 +1,15 @@
 #!/bin/bash
 
 # Yoyo Dev GUI Launcher
-# Launches the browser-based Yoyo Dev dashboard
+# Launches the browser-based Yoyo Dev or Yoyo AI dashboard
 #
 # Usage:
-#   yoyo-gui              Launch GUI on default port (3456)
-#   yoyo-gui --port 3000  Launch GUI on custom port
-#   yoyo-gui --dev        Launch in development mode (hot reload)
+#   yoyo-gui              Launch Yoyo Dev GUI (port 5173)
+#   yoyo-gui --dev        Launch Yoyo Dev GUI (port 5173)
+#   yoyo-gui --ai         Launch Yoyo AI GUI (port 5174)
 #   yoyo-gui --no-open    Don't auto-open browser
+#
+# Note: The script automatically kills any existing process on the target port
 
 set -euo pipefail
 
@@ -118,9 +120,11 @@ show_help() {
     echo ""
     echo -e "${UI_BOLD}Usage:${UI_RESET}"
     echo -e "  ${UI_SUCCESS}yoyo-gui${UI_RESET}           Launch Yoyo Dev GUI (port 5173)"
+    echo -e "  ${UI_SUCCESS}yoyo-gui --dev${UI_RESET}     Launch Yoyo Dev GUI (port 5173)"
     echo -e "  ${UI_SUCCESS}yoyo-gui --ai${UI_RESET}      Launch Yoyo AI GUI (port 5174)"
     echo ""
     echo -e "${UI_BOLD}Options:${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}--dev${UI_RESET}               Launch Yoyo Dev GUI (default)"
     echo -e "  ${UI_PRIMARY}--ai${UI_RESET}                Launch Yoyo AI GUI instead of Yoyo Dev"
     echo -e "  ${UI_PRIMARY}--stop${UI_RESET}              Stop background GUI server"
     echo -e "  ${UI_PRIMARY}--status${UI_RESET}            Check if GUI server is running"
@@ -160,6 +164,11 @@ parse_args() {
                 ;;
             --ai)
                 AI_MODE=true
+                shift
+                ;;
+            --dev)
+                # Explicit flag for Yoyo Dev GUI (default behavior, but allows explicit usage)
+                AI_MODE=false
                 shift
                 ;;
             --no-open)
@@ -428,21 +437,57 @@ show_gui_status() {
     fi
 }
 
-# Kill any existing GUI server on the API port (regardless of project)
+# Kill any existing process on the specified port (regardless of project)
 # This ensures we don't have stale servers from other projects blocking the port
 kill_existing_on_port() {
     local port="$1"
-    local existing_pid
+    local pids=""
 
-    # Find process listening on the port
-    existing_pid=$(lsof -ti ":$port" 2>/dev/null | head -1 || true)
+    # Method 1: lsof (most common)
+    if command -v lsof &> /dev/null; then
+        pids=$(lsof -ti ":$port" 2>/dev/null || true)
+    fi
 
-    if [ -n "$existing_pid" ]; then
-        echo -e "${UI_DIM}Stopping existing server on port $port (PID: $existing_pid)...${UI_RESET}"
-        kill "$existing_pid" 2>/dev/null || true
+    # Method 2: fuser (fallback)
+    if [ -z "$pids" ] && command -v fuser &> /dev/null; then
+        pids=$(fuser "$port/tcp" 2>/dev/null | tr -s ' ' '\n' | grep -v '^$' || true)
+    fi
+
+    # Method 3: ss + awk (fallback)
+    if [ -z "$pids" ] && command -v ss &> /dev/null; then
+        pids=$(ss -tlnp "sport = :$port" 2>/dev/null | grep -oP 'pid=\K[0-9]+' || true)
+    fi
+
+    if [ -n "$pids" ]; then
+        for pid in $pids; do
+            if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+                echo -e "${UI_DIM}Killing process on port $port (PID: $pid)...${UI_RESET}"
+                kill "$pid" 2>/dev/null || true
+            fi
+        done
+
+        # Wait a moment for graceful shutdown
         sleep 1
-        # Force kill if still running
-        kill -9 "$existing_pid" 2>/dev/null || true
+
+        # Force kill any remaining processes
+        for pid in $pids; do
+            if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
+                echo -e "${UI_DIM}Force killing PID $pid...${UI_RESET}"
+                kill -9 "$pid" 2>/dev/null || true
+            fi
+        done
+
+        # Wait for port to be released
+        local max_wait=5
+        local waited=0
+        while [ $waited -lt $max_wait ]; do
+            if ! lsof -ti ":$port" &>/dev/null && ! fuser "$port/tcp" &>/dev/null 2>&1; then
+                break
+            fi
+            sleep 1
+            waited=$((waited + 1))
+        done
+
         # Clean up any stale PID files
         rm -f /tmp/yoyo-gui-*.pid 2>/dev/null || true
     fi
