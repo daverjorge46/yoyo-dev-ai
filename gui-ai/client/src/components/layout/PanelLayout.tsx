@@ -64,8 +64,8 @@ export function PanelLayout({ children, detail, onDetailClose }: PanelLayoutProp
         onMobileClose={() => setMobileMenuOpen(false)}
       />
 
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+      {/* Main content area - add left margin on mobile for icon strip */}
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden ml-16 lg:ml-0">
         {/* Header */}
         <header className="flex items-center justify-between px-4 py-3 bg-white dark:bg-terminal-card border-b border-gray-200 dark:border-terminal-border">
           {/* Left side - Mobile menu button */}

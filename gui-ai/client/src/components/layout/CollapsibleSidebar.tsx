@@ -20,6 +20,8 @@ import {
   X,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
+import { useChatPanel } from '../../contexts/ChatPanelContext';
+import { MobileIconStrip } from './MobileIconStrip';
 
 // =============================================================================
 // Types
@@ -69,6 +71,57 @@ interface NavItemLinkProps {
 
 function NavItemLink({ item, collapsed, onClick }: NavItemLinkProps) {
   const { path, label, icon } = item;
+  const { isChatOpen, toggleChat } = useChatPanel();
+
+  // Special handling for Chat - render as toggle button
+  if (path === '/chat') {
+    return (
+      <button
+        onClick={() => {
+          toggleChat();
+          onClick?.();
+        }}
+        title={collapsed ? label : undefined}
+        aria-label={label}
+        aria-expanded={isChatOpen}
+        className={`
+          group relative flex items-center gap-3 px-3 py-2.5 rounded-md w-full
+          text-sm font-medium transition-all duration-150
+          ${
+            isChatOpen
+              ? 'bg-gradient-to-r from-primary/15 to-accent/10 text-primary dark:text-terminal-orange border-l-3 border-primary dark:border-terminal-orange -ml-0.5 pl-3.5 shadow-sm'
+              : 'text-gray-600 dark:text-terminal-text-secondary hover:bg-gray-100 dark:hover:bg-terminal-elevated hover:text-primary dark:hover:text-terminal-orange'
+          }
+          ${collapsed ? 'justify-center' : ''}
+        `.trim()}
+      >
+        {/* Icon */}
+        <span className="flex-shrink-0">{icon}</span>
+
+        {/* Label - hidden when collapsed */}
+        {!collapsed && <span className="truncate">{label}</span>}
+
+        {/* Tooltip for collapsed mode */}
+        {collapsed && (
+          <span
+            className="
+              absolute left-full ml-3 px-2 py-1
+              bg-terminal-card dark:bg-terminal-elevated
+              text-terminal-text
+              text-xs font-medium rounded-md
+              opacity-0 group-hover:opacity-100
+              pointer-events-none transition-opacity duration-150
+              whitespace-nowrap z-50
+              shadow-lg border border-terminal-border
+            "
+            role="tooltip"
+          >
+            {label}
+          </span>
+        )}
+      </button>
+    );
+  }
 
   return (
     <NavLink
@@ -283,6 +336,9 @@ export function CollapsibleSidebar({
       >
         {sidebarContent}
       </div>
+
+      {/* Mobile icon strip - visible when sidebar is closed */}
+      <MobileIconStrip visible={!mobileOpen} />
 
       {/* Desktop sidebar */}
       <div

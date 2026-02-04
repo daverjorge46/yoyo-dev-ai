@@ -68,20 +68,27 @@ export function PanelLayout({
       `.trim()}
       data-testid="panel-layout"
     >
-      {/* Sidebar Panel */}
-      <ResizablePanel
-        side="left"
-        width={state.sidebarWidth}
-        minWidth={PANEL_DEFAULTS.sidebarMinWidth}
-        maxWidth={PANEL_DEFAULTS.sidebarMaxWidth}
-        collapsed={state.sidebarCollapsed}
-        collapsedWidth={PANEL_DEFAULTS.collapsedWidth}
-        onWidthChange={setSidebarWidth}
-        onDoubleClick={resetSidebar}
-        data-testid="sidebar-panel"
-      >
+      {/* Sidebar Panel - Desktop only (mobile sidebar is rendered by CollapsibleSidebar as fixed overlay) */}
+      <div className="hidden lg:block">
+        <ResizablePanel
+          side="left"
+          width={state.sidebarWidth}
+          minWidth={PANEL_DEFAULTS.sidebarMinWidth}
+          maxWidth={PANEL_DEFAULTS.sidebarMaxWidth}
+          collapsed={state.sidebarCollapsed}
+          collapsedWidth={PANEL_DEFAULTS.collapsedWidth}
+          onWidthChange={setSidebarWidth}
+          onDoubleClick={resetSidebar}
+          data-testid="sidebar-panel"
+        >
+          {sidebar}
+        </ResizablePanel>
+      </div>
+
+      {/* Mobile: Render sidebar outside ResizablePanel for fixed positioning */}
+      <div className="lg:hidden">
         {sidebar}
-      </ResizablePanel>
+      </div>
 
       {/* Main Content Area */}
       <main
