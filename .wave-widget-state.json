@@ -4,15 +4,15 @@
     "visible": true
   },
   "yoyo-cli": {
-    "block_id": "80f3eef0-a689-4135-b60e-cecc3a4ab4a3",
+    "block_id": "941558b6-ca1c-44fd-a15a-22658fcc4174",
     "visible": true
   },
   "gui": {
-    "block_id": "8e72c0d1-1479-4dc8-b196-473ef302a296",
+    "block_id": "fea782c0-77f7-4ec5-9500-69bf9c76bf15",
     "visible": true
   },
   "terminal": {
-    "block_id": "42a27eea-2507-4ef4-b92e-7f343847c2a7",
+    "block_id": "bcfd6a43-a8ea-4722-9549-fc8c751fbb36",
     "visible": true
   }
 }
