@@ -112,24 +112,25 @@ export function ModelSelector({
       {isOpen && (
         <div
           className="
-            absolute bottom-full left-0 mb-2
-            min-w-[220px] max-h-[320px] overflow-auto
-            bg-terminal-bg
-            border border-terminal-border
-            rounded-lg shadow-lg
-            z-[100]
+            fixed inset-x-4 bottom-20
+            sm:absolute sm:inset-auto sm:bottom-full sm:left-0 sm:mb-2
+            min-w-[280px] max-h-[60vh] sm:max-h-[400px] overflow-auto
+            bg-white dark:bg-gray-900
+            border border-gray-200 dark:border-gray-700
+            rounded-xl shadow-2xl
+            z-[200]
           "
           role="listbox"
           aria-label="Select model"
         >
-          <div className="p-2">
-            <div className="text-xs font-medium text-terminal-text-muted px-2 py-1 mb-1">
-              Select Model
+          <div className="p-3">
+            <div className="text-sm font-semibold text-gray-700 dark:text-gray-200 px-2 py-2 mb-2 border-b border-gray-200 dark:border-gray-700">
+              Select AI Model
             </div>
 
             {Object.entries(groupedModels).map(([provider, providerModels]) => (
-              <div key={provider} className="mb-2 last:mb-0">
-                <div className="text-xs font-semibold text-terminal-text-muted uppercase px-2 py-1">
+              <div key={provider} className="mb-3 last:mb-0">
+                <div className="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wide px-2 py-2">
                   {provider}
                 </div>
                 {providerModels.map((model) => (
@@ -137,28 +138,28 @@ export function ModelSelector({
                     key={model.id}
                     onClick={() => handleSelect(model.id)}
                     className={`
-                      w-full flex items-center justify-between gap-2
-                      px-2 py-2 rounded-md text-left
+                      w-full flex items-center justify-between gap-3
+                      px-3 py-3 rounded-lg text-left
                       transition-colors
                       ${
                         selectedModel === model.id
-                          ? 'bg-primary-500/20 text-primary-400'
-                          : 'hover:bg-terminal-elevated text-terminal-text'
+                          ? 'bg-primary-500/20 text-primary-600 dark:text-primary-400 border border-primary-500/30'
+                          : 'hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-800 dark:text-gray-200'
                       }
                     `}
                     role="option"
                     aria-selected={selectedModel === model.id}
                   >
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium truncate">{model.name}</div>
+                      <div className="text-base font-medium">{model.name}</div>
                       {model.description && (
-                        <div className="text-xs text-terminal-text-muted truncate">
+                        <div className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
                           {model.description}
                         </div>
                       )}
                     </div>
                     {selectedModel === model.id && (
-                      <Check className="w-4 h-4 flex-shrink-0 text-primary-500" />
+                      <Check className="w-5 h-5 flex-shrink-0 text-primary-500" />
                     )}
                   </button>
                 ))}
