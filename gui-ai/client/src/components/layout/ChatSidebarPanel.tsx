@@ -32,6 +32,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
+import { ModelSelector, DEFAULT_MODELS, type Model } from '../common/ModelSelector';
 import { useTheme } from '../ThemeToggle';
 import type { ChatMessage } from '../../types';
 
@@ -189,6 +190,24 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState('default');
+
+  // Fetch available models
+  const { data: models = DEFAULT_MODELS } = useQuery<Model[]>({
+    queryKey: ['models'],
+    queryFn: async () => {
+      try {
+        const res = await fetch('/api/models');
+        if (!res.ok) return DEFAULT_MODELS;
+        const data = await res.json();
+        return data.models?.length > 0 ? data.models : DEFAULT_MODELS;
+      } catch {
+        return DEFAULT_MODELS;
+      }
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+    enabled: isOpen,
+  });
 
   // Fetch chat history
   const { data: messages = [] } = useQuery<ChatMessage[]>({
@@ -207,12 +226,17 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
     mutationFn: async ({
       content,
       files,
+      model,
     }: {
       content: string;
       files?: File[];
+      model?: string;
     }) => {
       const formData = new FormData();
       formData.append('content', content);
+      if (model && model !== 'default') {
+        formData.append('model', model);
+      }
       if (files) {
         files.forEach((file) => formData.append('attachments', file));
       }
@@ -316,12 +340,13 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
       sendMessage.mutate({
         content: input.trim(),
         files: attachments.length > 0 ? attachments : undefined,
+        model: selectedModel,
       });
 
       setInput('');
       setAttachments([]);
     },
-    [input, attachments, sendMessage]
+    [input, attachments, sendMessage, selectedModel]
   );
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -503,6 +528,13 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
                 >
                   <Paperclip className="w-5 h-5" />
                 </button>
+                <ModelSelector
+                  models={models}
+                  selectedModel={selectedModel}
+                  onSelectModel={setSelectedModel}
+                  disabled={sendMessage.isPending}
+                  compact
+                />
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}

@@ -27,6 +27,7 @@ chatRouter.post('/message', async (c) => {
   const db = getDatabase();
   const formData = await c.req.formData();
   const content = formData.get('content') as string;
+  const model = formData.get('model') as string | null;
   const attachmentFiles = formData.getAll('attachments') as File[];
 
   // Store user message
@@ -54,9 +55,10 @@ chatRouter.post('/message', async (c) => {
     const isHealthy = await openclawProxy.isHealthy();
 
     if (isHealthy) {
-      // Send message to OpenClaw
+      // Send message to OpenClaw with optional model
       const response = await openclawProxy.sendMessage(content, {
         attachments: attachments.map(a => ({ name: a.name, type: a.type })),
+        model: model || undefined,
       });
 
       if (response.success && response.data) {

@@ -20,6 +20,7 @@ import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { PageLoader } from '../components/common/LoadingSpinner';
+import { ModelSelector, DEFAULT_MODELS, type Model } from '../components/common/ModelSelector';
 import type { ChatMessage, Attachment } from '../types';
 
 // Voice recorder component
@@ -250,8 +251,25 @@ export default function Chat() {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
+  const [selectedModel, setSelectedModel] = useState('default');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Fetch available models
+  const { data: models = DEFAULT_MODELS } = useQuery<Model[]>({
+    queryKey: ['models'],
+    queryFn: async () => {
+      try {
+        const res = await fetch('/api/models');
+        if (!res.ok) return DEFAULT_MODELS;
+        const data = await res.json();
+        return data.models?.length > 0 ? data.models : DEFAULT_MODELS;
+      } catch {
+        return DEFAULT_MODELS;
+      }
+    },
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
 
   // Fetch chat history
   const { data: messages = [], isLoading } = useQuery<ChatMessage[]>({
@@ -269,12 +287,17 @@ export default function Chat() {
     mutationFn: async ({
       content,
       files,
+      model,
     }: {
       content: string;
       files?: File[];
+      model?: string;
     }) => {
       const formData = new FormData();
       formData.append('content', content);
+      if (model && model !== 'default') {
+        formData.append('model', model);
+      }
       if (files) {
         files.forEach((file) => formData.append('attachments', file));
       }
@@ -313,12 +336,13 @@ export default function Chat() {
       sendMessage.mutate({
         content: input.trim(),
         files: attachments.length > 0 ? attachments : undefined,
+        model: selectedModel,
       });
 
       setInput('');
       setAttachments([]);
     },
-    [input, attachments, sendMessage]
+    [input, attachments, sendMessage, selectedModel]
   );
 
   const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -453,6 +477,12 @@ export default function Chat() {
                 >
                   <Paperclip className="w-5 h-5" />
                 </button>
+                <ModelSelector
+                  models={models}
+                  selectedModel={selectedModel}
+                  onSelectModel={setSelectedModel}
+                  disabled={sendMessage.isPending}
+                />
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
