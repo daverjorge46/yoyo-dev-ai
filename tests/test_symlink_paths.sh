@@ -20,8 +20,8 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 echo ""
 
 # Test 1: Check base installation exists
-echo -n "Test 1: Base installation exists at ~/yoyo-dev/... "
-if [ -d "$HOME/yoyo-dev" ]; then
+echo -n "Test 1: Base installation exists at ~/.yoyo-dev/... "
+if [ -d "$HOME/.yoyo-dev" ]; then
     echo -e "${GREEN}PASS${RESET}"
     ((TESTS_PASSED++))
 else
@@ -31,7 +31,7 @@ fi
 
 # Test 2: Check yoyo.sh exists
 echo -n "Test 2: yoyo.sh exists in base installation... "
-if [ -f "$HOME/yoyo-dev/setup/yoyo.sh" ]; then
+if [ -f "$HOME/.yoyo-dev/setup/yoyo.sh" ]; then
     echo -e "${GREEN}PASS${RESET}"
     ((TESTS_PASSED++))
 else
@@ -41,7 +41,7 @@ fi
 
 # Test 3: Check yoyo-update.sh exists
 echo -n "Test 3: yoyo-update.sh exists in base installation... "
-if [ -f "$HOME/yoyo-dev/setup/yoyo-update.sh" ]; then
+if [ -f "$HOME/.yoyo-dev/setup/yoyo-update.sh" ]; then
     echo -e "${GREEN}PASS${RESET}"
     ((TESTS_PASSED++))
 else
@@ -76,10 +76,10 @@ else
 fi
 
 # Test 6: Check yoyo symlink points to correct base path
-echo -n "Test 6: yoyo symlink points to ~/yoyo-dev/setup/yoyo.sh... "
+echo -n "Test 6: yoyo symlink points to ~/.yoyo-dev/setup/yoyo.sh... "
 if [ -L "/usr/local/bin/yoyo" ]; then
     TARGET=$(readlink -f /usr/local/bin/yoyo 2>/dev/null)
-    EXPECTED="$HOME/yoyo-dev/setup/yoyo.sh"
+    EXPECTED="$HOME/.yoyo-dev/setup/yoyo.sh"
     if [ "$TARGET" = "$EXPECTED" ]; then
         echo -e "${GREEN}PASS${RESET}"
         ((TESTS_PASSED++))
@@ -120,10 +120,10 @@ else
 fi
 
 # Test 9: Check yoyo-update symlink points to correct base path
-echo -n "Test 9: yoyo-update points to ~/yoyo-dev/setup/yoyo-update.sh... "
+echo -n "Test 9: yoyo-update points to ~/.yoyo-dev/setup/yoyo-update.sh... "
 if [ -L "/usr/local/bin/yoyo-update" ]; then
     TARGET=$(readlink -f /usr/local/bin/yoyo-update 2>/dev/null)
-    EXPECTED="$HOME/yoyo-dev/setup/yoyo-update.sh"
+    EXPECTED="$HOME/.yoyo-dev/setup/yoyo-update.sh"
     if [ "$TARGET" = "$EXPECTED" ]; then
         echo -e "${GREEN}PASS${RESET}"
         ((TESTS_PASSED++))
@@ -139,7 +139,7 @@ fi
 
 # Test 10: Check yoyo.sh is executable
 echo -n "Test 10: yoyo.sh is executable... "
-if [ -x "$HOME/yoyo-dev/setup/yoyo.sh" ]; then
+if [ -x "$HOME/.yoyo-dev/setup/yoyo.sh" ]; then
     echo -e "${GREEN}PASS${RESET}"
     ((TESTS_PASSED++))
 else
