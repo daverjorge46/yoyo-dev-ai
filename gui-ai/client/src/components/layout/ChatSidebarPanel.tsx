@@ -25,6 +25,7 @@ import {
   Check,
   FileText,
   Image,
+  Loader2,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -187,6 +188,7 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
   const [attachments, setAttachments] = useState<File[]>([]);
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
+  const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
 
   // Fetch chat history
   const { data: messages = [] } = useQuery<ChatMessage[]>({
@@ -200,7 +202,7 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
     enabled: isOpen,
   });
 
-  // Send message mutation
+  // Send message mutation with optimistic update
   const sendMessage = useMutation({
     mutationFn: async ({
       content,
@@ -223,8 +225,16 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
       if (!res.ok) throw new Error('Failed to send message');
       return res.json();
     },
+    onMutate: async ({ content }) => {
+      // Show user message immediately (optimistic update)
+      setPendingUserMessage(content);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chat', 'history'] });
+    },
+    onSettled: () => {
+      // Clear pending message when done (success or error)
+      setPendingUserMessage(null);
     },
   });
 
@@ -257,12 +267,12 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
     };
   }, [handleKeyDown]);
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change or when pending message appears
   useEffect(() => {
     if (isOpen) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, pendingUserMessage, sendMessage.isPending]);
 
   // Handle resize
   const handleResizeStart = useCallback((e: React.MouseEvent) => {
@@ -412,7 +422,7 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
 
         {/* Messages */}
         <div className="flex-1 overflow-auto pl-2 bg-white dark:bg-gray-900">
-          {messages.length === 0 ? (
+          {messages.length === 0 && !pendingUserMessage ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-amber-500 flex items-center justify-center mb-4">
                 <Sparkles className="w-8 h-8 text-white" />
@@ -429,6 +439,45 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
               {messages.map((message) => (
                 <ChatMessageItem key={message.id} message={message} isDark={isDark} />
               ))}
+
+              {/* Pending user message (optimistic update) */}
+              {pendingUserMessage && (
+                <div className="flex gap-3 p-4 bg-gray-50 dark:bg-gray-800/50">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400">
+                    <User className="w-4 h-4" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">You</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
+                        {new Date().toLocaleTimeString()}
+                      </span>
+                    </div>
+                    <div className="prose prose-sm dark:prose-invert max-w-none">
+                      <p className="text-gray-900 dark:text-gray-100">{pendingUserMessage}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Thinking indicator */}
+              {sendMessage.isPending && (
+                <div className="flex gap-3 p-4">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400">
+                    <Sparkles className="w-4 h-4 animate-pulse" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">YoYo AI</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Thinking...</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div ref={messagesEndRef} />
             </div>
           )}

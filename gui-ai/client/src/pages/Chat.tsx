@@ -12,6 +12,7 @@ import {
   X,
   FileText,
   Image,
+  Loader2,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -248,6 +249,7 @@ export default function Chat() {
   const [input, setInput] = useState('');
   const [attachments, setAttachments] = useState<File[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [pendingUserMessage, setPendingUserMessage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -262,7 +264,7 @@ export default function Chat() {
     },
   });
 
-  // Send message mutation
+  // Send message mutation with optimistic update
   const sendMessage = useMutation({
     mutationFn: async ({
       content,
@@ -285,15 +287,23 @@ export default function Chat() {
       if (!res.ok) throw new Error('Failed to send message');
       return res.json();
     },
+    onMutate: async ({ content }) => {
+      // Show user message immediately (optimistic update)
+      setPendingUserMessage(content);
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['chat', 'history'] });
     },
+    onSettled: () => {
+      // Clear pending message when done (success or error)
+      setPendingUserMessage(null);
+    },
   });
 
-  // Scroll to bottom when messages change
+  // Scroll to bottom when messages change or when pending message appears
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, pendingUserMessage, sendMessage.isPending]);
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
@@ -355,7 +365,7 @@ export default function Chat() {
 
       {/* Messages */}
       <div className="flex-1 overflow-auto">
-        {messages.length === 0 ? (
+        {messages.length === 0 && !pendingUserMessage ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-6">
             <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
               <Sparkles className="w-8 h-8 text-white" />
@@ -373,6 +383,45 @@ export default function Chat() {
             {messages.map((message) => (
               <ChatMessageItem key={message.id} message={message} />
             ))}
+
+            {/* Pending user message (optimistic update) */}
+            {pendingUserMessage && (
+              <div className="flex gap-3 p-4 bg-terminal-elevated/30">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-primary-500/20 text-primary-400">
+                  <User className="w-4 h-4" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-terminal-text">You</span>
+                    <span className="text-xs text-terminal-text-muted">
+                      {new Date().toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div className="prose prose-invert prose-sm max-w-none">
+                    <p>{pendingUserMessage}</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Thinking indicator */}
+            {sendMessage.isPending && (
+              <div className="flex gap-3 p-4">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-accent-500/20 text-accent-400">
+                  <Sparkles className="w-4 h-4 animate-pulse" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-sm font-medium text-terminal-text">YoYo AI</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
+                    <span className="text-sm text-terminal-text-muted">Thinking...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
         )}
