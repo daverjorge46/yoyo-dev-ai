@@ -220,7 +220,7 @@ export default function Channels() {
             <div>
               <h3 className="font-medium text-terminal-text">OpenClaw not connected</h3>
               <p className="text-sm text-terminal-text-secondary">
-                Start OpenClaw daemon to manage channels: <code className="text-cyan-400">yoyo-ai start</code>
+                Start OpenClaw daemon to manage channels: <code className="text-cyan-400">yoyo-ai --start</code>
               </p>
             </div>
           </div>
