@@ -9,7 +9,6 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
-  Server,
   TrendingUp,
   Coins,
 } from 'lucide-react';
@@ -30,25 +29,25 @@ function StatsCard({
   label: string;
   value: number | string;
   subvalue?: string;
-  color: 'cyan' | 'teal' | 'emerald' | 'purple' | 'amber';
+  color: 'primary' | 'accent' | 'success' | 'info' | 'warning';
   to?: string;
 }) {
   const colorClasses = {
-    cyan: 'bg-cyan-500/10 text-cyan-400',
-    teal: 'bg-teal-500/10 text-teal-400',
-    emerald: 'bg-emerald-500/10 text-emerald-400',
-    purple: 'bg-purple-500/10 text-purple-400',
-    amber: 'bg-amber-500/10 text-amber-400',
+    primary: 'bg-primary/10 text-primary dark:text-terminal-orange',
+    accent: 'bg-accent/10 text-accent dark:text-terminal-yellow',
+    success: 'bg-success/10 text-success dark:text-terminal-green',
+    info: 'bg-info/10 text-info dark:text-terminal-blue',
+    warning: 'bg-warning/10 text-warning dark:text-terminal-yellow',
   };
 
   const content = (
-    <Card className={`p-4 ${to ? 'hover:bg-terminal-elevated/50 transition-colors cursor-pointer' : ''}`}>
+    <Card className={`p-4 ${to ? 'hover:bg-gray-50 dark:hover:bg-terminal-elevated/50 transition-colors cursor-pointer' : ''}`}>
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-xs text-terminal-text-secondary mb-1">{label}</p>
-          <p className="text-2xl font-bold text-terminal-text">{value}</p>
+          <p className="text-xs text-gray-500 dark:text-terminal-text-secondary mb-1">{label}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-terminal-text">{value}</p>
           {subvalue && (
-            <p className="text-xs text-terminal-text-muted mt-1">{subvalue}</p>
+            <p className="text-xs text-gray-400 dark:text-terminal-text-muted mt-1">{subvalue}</p>
           )}
         </div>
         <div className={`p-2 rounded-md ${colorClasses[color]}`}>
@@ -67,32 +66,32 @@ function StatsCard({
 // OpenClaw status card
 function OpenClawStatusCard({ connected, port, version }: { connected: boolean; port: number; version?: string }) {
   return (
-    <Card className="p-6 border-l-4 border-l-cyan-500">
-      <div className="flex items-center gap-4">
-        <div className={`p-3 rounded-lg ${connected ? 'bg-emerald-500/10' : 'bg-red-500/10'}`}>
+    <Card className="p-4 sm:p-6 border-l-4 border-l-primary dark:border-l-terminal-orange">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+        <div className={`p-3 rounded-lg self-start ${connected ? 'bg-success/10' : 'bg-error/10'}`}>
           {connected ? (
-            <CheckCircle2 className="w-8 h-8 text-emerald-400" />
+            <CheckCircle2 className="w-6 sm:w-8 h-6 sm:h-8 text-success dark:text-terminal-green" />
           ) : (
-            <XCircle className="w-8 h-8 text-red-400" />
+            <XCircle className="w-6 sm:w-8 h-6 sm:h-8 text-error dark:text-terminal-red" />
           )}
         </div>
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-terminal-text">
+        <div className="flex-1 min-w-0">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-terminal-text">
             OpenClaw Gateway
           </h3>
-          <p className="text-sm text-terminal-text-secondary">
+          <p className="text-xs sm:text-sm text-gray-500 dark:text-terminal-text-secondary truncate">
             {connected
               ? `Connected on port ${port}${version ? ` • v${version}` : ''}`
               : 'Not running - Start with: yoyo-ai start'}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-center">
           <div
             className={`w-3 h-3 rounded-full ${
-              connected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+              connected ? 'bg-success dark:bg-terminal-green animate-pulse' : 'bg-error dark:bg-terminal-red'
             }`}
           />
-          <span className={`text-sm font-medium ${connected ? 'text-emerald-400' : 'text-red-400'}`}>
+          <span className={`text-sm font-medium ${connected ? 'text-success dark:text-terminal-green' : 'text-error dark:text-terminal-red'}`}>
             {connected ? 'Online' : 'Offline'}
           </span>
         </div>
@@ -115,14 +114,14 @@ function QuickActionButton({
 }) {
   return (
     <Link to={to}>
-      <Card className="p-4 hover:bg-terminal-elevated transition-colors cursor-pointer group">
+      <Card className="p-4 hover:bg-gray-50 dark:hover:bg-terminal-elevated transition-colors cursor-pointer group h-full">
         <div className="flex items-center gap-4">
-          <div className="p-2 rounded-lg bg-cyan-500/10 group-hover:bg-cyan-500/20 transition-colors">
-            <Icon className="w-6 h-6 text-cyan-400" />
+          <div className="p-2 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+            <Icon className="w-5 sm:w-6 h-5 sm:h-6 text-primary dark:text-terminal-orange" />
           </div>
-          <div>
-            <h4 className="text-sm font-semibold text-terminal-text">{label}</h4>
-            <p className="text-xs text-terminal-text-secondary">{description}</p>
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm font-semibold text-gray-900 dark:text-terminal-text">{label}</h4>
+            <p className="text-xs text-gray-500 dark:text-terminal-text-secondary truncate">{description}</p>
           </div>
         </div>
       </Card>
@@ -132,37 +131,36 @@ function QuickActionButton({
 
 // Channel health card
 function ChannelHealthCard({ channels }: { channels: Array<{ type: string; status: string }> }) {
-  const connected = channels.filter(c => c.status === 'connected').length;
   const total = channels.length;
 
   if (total === 0) {
     return (
       <Card className="p-4">
-        <h3 className="text-sm font-semibold text-terminal-text mb-3 flex items-center gap-2">
-          <Radio className="w-4 h-4 text-cyan-400" />
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text mb-3 flex items-center gap-2">
+          <Radio className="w-4 h-4 text-primary dark:text-terminal-orange" />
           Channel Health
         </h3>
-        <p className="text-sm text-terminal-text-muted">No channels configured</p>
+        <p className="text-sm text-gray-400 dark:text-terminal-text-muted">No channels configured</p>
       </Card>
     );
   }
 
   return (
     <Card className="p-4">
-      <h3 className="text-sm font-semibold text-terminal-text mb-3 flex items-center gap-2">
-        <Radio className="w-4 h-4 text-cyan-400" />
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text mb-3 flex items-center gap-2">
+        <Radio className="w-4 h-4 text-primary dark:text-terminal-orange" />
         Channel Health
       </h3>
       <div className="space-y-2">
         {channels.map((channel, index) => (
           <div key={index} className="flex items-center justify-between">
-            <span className="text-sm text-terminal-text-secondary capitalize">{channel.type}</span>
+            <span className="text-sm text-gray-600 dark:text-terminal-text-secondary capitalize">{channel.type}</span>
             <div className="flex items-center gap-2">
               <div className={`w-2 h-2 rounded-full ${
-                channel.status === 'connected' ? 'bg-emerald-500' : 'bg-red-500'
+                channel.status === 'connected' ? 'bg-success dark:bg-terminal-green' : 'bg-error dark:bg-terminal-red'
               }`} />
               <span className={`text-xs ${
-                channel.status === 'connected' ? 'text-emerald-400' : 'text-red-400'
+                channel.status === 'connected' ? 'text-success dark:text-terminal-green' : 'text-error dark:text-terminal-red'
               }`}>
                 {channel.status}
               </span>
@@ -170,8 +168,8 @@ function ChannelHealthCard({ channels }: { channels: Array<{ type: string; statu
           </div>
         ))}
       </div>
-      <div className="mt-3 pt-3 border-t border-terminal-border">
-        <Link to="/channels" className="text-xs text-cyan-400 hover:text-cyan-300">
+      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-terminal-border">
+        <Link to="/channels" className="text-xs text-primary dark:text-terminal-orange hover:text-primary-600 dark:hover:text-terminal-orange/80">
           View all channels →
         </Link>
       </div>
@@ -220,16 +218,16 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       {/* Header */}
-      <div className="mb-8">
+      <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
-            <Sparkles className="w-7 h-7 text-white" />
+          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+            <Sparkles className="w-5 sm:w-7 h-5 sm:h-7 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-terminal-text">Yoyo AI Assistant</h1>
-            <p className="text-sm text-terminal-text-secondary">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-terminal-text">Yoyo AI Assistant</h1>
+            <p className="text-xs sm:text-sm text-gray-500 dark:text-terminal-text-secondary">
               Your personal and business AI assistant
             </p>
           </div>
@@ -246,13 +244,13 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatsCard
           icon={Radio}
           label="Channels"
           value={stats?.channelsConnected ?? 0}
           subvalue={`${stats?.channels ?? 0} total`}
-          color="cyan"
+          color="primary"
           to="/channels"
         />
         <StatsCard
@@ -260,7 +258,7 @@ export default function Dashboard() {
           label="Active Sessions"
           value={stats?.activeSessions ?? 0}
           subvalue={`${stats?.sessions ?? 0} total`}
-          color="teal"
+          color="accent"
           to="/sessions"
         />
         <StatsCard
@@ -268,7 +266,7 @@ export default function Dashboard() {
           label="Cron Jobs"
           value={stats?.cronJobsEnabled ?? 0}
           subvalue={`${stats?.cronJobs ?? 0} configured`}
-          color="emerald"
+          color="success"
           to="/cron"
         />
         <StatsCard
@@ -276,19 +274,19 @@ export default function Dashboard() {
           label="Tokens Used"
           value={stats?.totalTokens ? (stats.totalTokens > 1000 ? `${(stats.totalTokens / 1000).toFixed(1)}K` : stats.totalTokens) : 0}
           subvalue="this month"
-          color="amber"
+          color="warning"
         />
       </div>
 
       {/* Two column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
         {/* Quick Actions - takes 2 columns */}
         <div className="lg:col-span-2">
-          <h2 className="text-lg font-semibold text-terminal-text mb-4 flex items-center gap-2">
-            <Activity className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-terminal-text mb-3 sm:mb-4 flex items-center gap-2">
+            <Activity className="w-5 h-5 text-primary dark:text-terminal-orange" />
             Quick Actions
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <QuickActionButton
               to="/chat"
               icon={MessageSquare}
@@ -318,8 +316,8 @@ export default function Dashboard() {
 
         {/* Channel Health - takes 1 column */}
         <div>
-          <h2 className="text-lg font-semibold text-terminal-text mb-4 flex items-center gap-2">
-            <TrendingUp className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-terminal-text mb-3 sm:mb-4 flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-primary dark:text-terminal-orange" />
             Status
           </h2>
           <ChannelHealthCard channels={stats?.channelList ?? []} />
@@ -328,13 +326,13 @@ export default function Dashboard() {
 
       {/* Recent Activity */}
       <div>
-        <h2 className="text-lg font-semibold text-terminal-text mb-4">Recent Activity</h2>
-        <Card className="p-8 text-center">
-          <div className="text-terminal-text-muted mb-2">
-            <Activity className="w-12 h-12 mx-auto opacity-50" />
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-terminal-text mb-3 sm:mb-4">Recent Activity</h2>
+        <Card className="p-6 sm:p-8 text-center">
+          <div className="text-gray-300 dark:text-terminal-text-muted mb-2">
+            <Activity className="w-10 sm:w-12 h-10 sm:h-12 mx-auto opacity-50" />
           </div>
-          <p className="text-terminal-text-secondary">No recent activity</p>
-          <p className="text-xs text-terminal-text-muted mt-1">
+          <p className="text-gray-600 dark:text-terminal-text-secondary">No recent activity</p>
+          <p className="text-xs text-gray-400 dark:text-terminal-text-muted mt-1">
             Start a conversation to see your activity here
           </p>
           <Link to="/chat">

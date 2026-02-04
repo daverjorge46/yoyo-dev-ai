@@ -1,6 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
 import { PanelLayout } from './components/layout/PanelLayout';
-import { Sidebar } from './components/layout/Sidebar';
 import Dashboard from './pages/Dashboard';
 import Channels from './pages/Channels';
 import Instances from './pages/Instances';
@@ -11,7 +10,7 @@ import Settings from './pages/Settings';
 
 export default function App() {
   return (
-    <PanelLayout sidebar={<Sidebar />}>
+    <PanelLayout>
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/channels" element={<Channels />} />
