@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   DndContext,
   DragEndEvent,
@@ -27,6 +28,7 @@ import {
   AlertCircle,
   MoreVertical,
   Plus,
+  X,
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
@@ -44,6 +46,155 @@ const COLUMNS = [
 ] as const;
 
 type ColumnId = (typeof COLUMNS)[number]['id'];
+
+const TASK_TYPES = [
+  { value: 'manual', label: 'Manual', description: 'One-time task you create' },
+  { value: 'scheduled', label: 'Scheduled', description: 'Runs at a specific time' },
+  { value: 'triggered', label: 'Triggered', description: 'Runs when an event occurs' },
+] as const;
+
+// Add task modal component
+function AddTaskModal({
+  onClose,
+  onAdd,
+  isLoading,
+}: {
+  onClose: () => void;
+  onAdd: (task: { name: string; description?: string; type: string; scheduledAt?: string }) => void;
+  isLoading: boolean;
+}) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [type, setType] = useState<string>('manual');
+  const [scheduledAt, setScheduledAt] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim()) return;
+    onAdd({
+      name: name.trim(),
+      description: description.trim() || undefined,
+      type,
+      scheduledAt: scheduledAt || undefined,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="w-full max-w-md mx-4"
+      >
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-terminal-border">
+            <h3 className="font-semibold text-terminal-text">Create New Task</h3>
+            <button onClick={onClose} className="p-1 hover:bg-terminal-elevated rounded">
+              <X className="w-5 h-5 text-terminal-text-muted" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            {/* Task Name */}
+            <div>
+              <label className="block text-sm font-medium text-terminal-text mb-1">
+                Task Name <span className="text-error">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Enter task name..."
+                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded-md text-terminal-text placeholder:text-terminal-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                autoFocus
+              />
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-terminal-text mb-1">
+                Description
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional description..."
+                rows={3}
+                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded-md text-terminal-text placeholder:text-terminal-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              />
+            </div>
+
+            {/* Task Type */}
+            <div>
+              <label className="block text-sm font-medium text-terminal-text mb-2">
+                Task Type
+              </label>
+              <div className="space-y-2">
+                {TASK_TYPES.map((t) => (
+                  <label
+                    key={t.value}
+                    className={`flex items-center gap-3 p-3 rounded-md cursor-pointer border transition-colors ${
+                      type === t.value
+                        ? 'border-primary-500 bg-primary-500/10'
+                        : 'border-terminal-border hover:bg-terminal-elevated'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="taskType"
+                      value={t.value}
+                      checked={type === t.value}
+                      onChange={(e) => setType(e.target.value)}
+                      className="sr-only"
+                    />
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-terminal-text">{t.label}</p>
+                      <p className="text-xs text-terminal-text-secondary">{t.description}</p>
+                    </div>
+                    {type === t.value && (
+                      <CheckCircle2 className="w-5 h-5 text-primary-500" />
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Scheduled At (only for scheduled type) */}
+            {type === 'scheduled' && (
+              <div>
+                <label className="block text-sm font-medium text-terminal-text mb-1">
+                  Schedule Time
+                </label>
+                <input
+                  type="datetime-local"
+                  value={scheduledAt}
+                  onChange={(e) => setScheduledAt(e.target.value)}
+                  className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded-md text-terminal-text focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              </div>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-2">
+              <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!name.trim()}
+                loading={isLoading}
+                className="flex-1"
+              >
+                Create Task
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}
 
 // Task card component
 function TaskCard({
@@ -223,6 +374,7 @@ function Column({
 export default function Tasks() {
   const queryClient = useQueryClient();
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [showAddModal, setShowAddModal] = useState(false);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -239,6 +391,23 @@ export default function Tasks() {
       if (!res.ok) throw new Error('Failed to fetch tasks');
       const data = await res.json();
       return data.tasks || [];
+    },
+  });
+
+  // Create task mutation
+  const createTask = useMutation({
+    mutationFn: async (task: { name: string; description?: string; type: string; scheduledAt?: string }) => {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(task),
+      });
+      if (!res.ok) throw new Error('Failed to create task');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setShowAddModal(false);
     },
   });
 
@@ -305,7 +474,9 @@ export default function Tasks() {
       {/* Header */}
       <div className="panel-header">
         <h1 className="panel-title">Tasks</h1>
-        <Button icon={<Plus className="w-4 h-4" />}>New Task</Button>
+        <Button icon={<Plus className="w-4 h-4" />} onClick={() => setShowAddModal(true)}>
+          New Task
+        </Button>
       </div>
 
       {/* Task board */}
@@ -315,7 +486,7 @@ export default function Tasks() {
             icon={CheckCircle2}
             title="No tasks yet"
             description="Create a task manually or let automations create them for you."
-            action={{ label: 'Create Task', onClick: () => {} }}
+            action={{ label: 'Create Task', onClick: () => setShowAddModal(true) }}
           />
         ) : (
           <DndContext
@@ -343,6 +514,17 @@ export default function Tasks() {
           </DndContext>
         )}
       </div>
+
+      {/* Add task modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <AddTaskModal
+            onClose={() => setShowAddModal(false)}
+            onAdd={(task) => createTask.mutate(task)}
+            isLoading={createTask.isPending}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

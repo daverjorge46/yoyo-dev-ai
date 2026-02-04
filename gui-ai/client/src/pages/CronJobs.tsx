@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Clock,
   Play,
@@ -12,6 +13,8 @@ import {
   AlertTriangle,
   Calendar,
   Activity,
+  X,
+  HelpCircle,
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
@@ -64,6 +67,172 @@ function formatNextRun(timestamp: number): string {
   if (seconds < 3600) return `in ${Math.floor(seconds / 60)}m`;
   if (seconds < 86400) return `in ${Math.floor(seconds / 3600)}h`;
   return `in ${Math.floor(seconds / 86400)}d`;
+}
+
+const SCHEDULE_PRESETS = [
+  { value: '* * * * *', label: 'Every minute' },
+  { value: '0 * * * *', label: 'Every hour' },
+  { value: '0 0 * * *', label: 'Every day at midnight' },
+  { value: '0 9 * * *', label: 'Every day at 9 AM' },
+  { value: '0 9 * * 1', label: 'Every Monday at 9 AM' },
+  { value: '0 9 * * 1-5', label: 'Every weekday at 9 AM' },
+  { value: '0 0 1 * *', label: 'First day of every month' },
+  { value: 'custom', label: 'Custom cron expression' },
+] as const;
+
+// Add cron job modal component
+function AddCronJobModal({
+  onClose,
+  onAdd,
+  isLoading,
+}: {
+  onClose: () => void;
+  onAdd: (job: { name: string; schedule: string; command: string }) => void;
+  isLoading: boolean;
+}) {
+  const [name, setName] = useState('');
+  const [schedulePreset, setSchedulePreset] = useState('0 9 * * *');
+  const [customSchedule, setCustomSchedule] = useState('');
+  const [command, setCommand] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
+
+  const schedule = schedulePreset === 'custom' ? customSchedule : schedulePreset;
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!name.trim() || !schedule.trim() || !command.trim()) return;
+    onAdd({
+      name: name.trim(),
+      schedule: schedule.trim(),
+      command: command.trim(),
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="w-full max-w-lg mx-4"
+      >
+        <Card className="overflow-hidden">
+          <div className="flex items-center justify-between p-4 border-b border-terminal-border">
+            <h3 className="font-semibold text-terminal-text">Add Cron Job</h3>
+            <button onClick={onClose} className="p-1 hover:bg-terminal-elevated rounded">
+              <X className="w-5 h-5 text-terminal-text-muted" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            {/* Job Name */}
+            <div>
+              <label className="block text-sm font-medium text-terminal-text mb-1">
+                Job Name <span className="text-error">*</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g., Daily Email Digest"
+                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded-md text-terminal-text placeholder:text-terminal-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                autoFocus
+              />
+            </div>
+
+            {/* Schedule */}
+            <div>
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-sm font-medium text-terminal-text">
+                  Schedule <span className="text-error">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowHelp(!showHelp)}
+                  className="text-terminal-text-muted hover:text-terminal-text"
+                >
+                  <HelpCircle className="w-4 h-4" />
+                </button>
+              </div>
+
+              {showHelp && (
+                <div className="mb-3 p-3 bg-terminal-bg rounded-md border border-terminal-border text-xs text-terminal-text-secondary">
+                  <p className="font-medium text-terminal-text mb-2">Cron Expression Format:</p>
+                  <code className="block bg-terminal-elevated px-2 py-1 rounded mb-2">
+                    minute hour day-of-month month day-of-week
+                  </code>
+                  <ul className="space-y-1">
+                    <li><code>*</code> = any value</li>
+                    <li><code>*/5</code> = every 5 units</li>
+                    <li><code>1-5</code> = range (1 to 5)</li>
+                    <li><code>1,3,5</code> = specific values</li>
+                  </ul>
+                </div>
+              )}
+
+              <select
+                value={schedulePreset}
+                onChange={(e) => setSchedulePreset(e.target.value)}
+                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded-md text-terminal-text focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              >
+                {SCHEDULE_PRESETS.map((preset) => (
+                  <option key={preset.value} value={preset.value}>
+                    {preset.label}
+                  </option>
+                ))}
+              </select>
+
+              {schedulePreset === 'custom' && (
+                <input
+                  type="text"
+                  value={customSchedule}
+                  onChange={(e) => setCustomSchedule(e.target.value)}
+                  placeholder="e.g., 0 */2 * * *"
+                  className="w-full mt-2 px-3 py-2 bg-terminal-bg border border-terminal-border rounded-md text-terminal-text font-mono text-sm placeholder:text-terminal-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                />
+              )}
+
+              {schedule && schedulePreset !== 'custom' && (
+                <p className="mt-1 text-xs text-terminal-text-muted font-mono">{schedule}</p>
+              )}
+            </div>
+
+            {/* Command */}
+            <div>
+              <label className="block text-sm font-medium text-terminal-text mb-1">
+                Command <span className="text-error">*</span>
+              </label>
+              <textarea
+                value={command}
+                onChange={(e) => setCommand(e.target.value)}
+                placeholder="e.g., Send daily email summary to user@example.com"
+                rows={3}
+                className="w-full px-3 py-2 bg-terminal-bg border border-terminal-border rounded-md text-terminal-text placeholder:text-terminal-text-muted focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              />
+              <p className="mt-1 text-xs text-terminal-text-muted">
+                Describe the task for the AI to execute on schedule
+              </p>
+            </div>
+
+            {/* Actions */}
+            <div className="flex items-center gap-3 pt-2">
+              <Button type="button" variant="ghost" onClick={onClose} className="flex-1">
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={!name.trim() || !schedule.trim() || !command.trim()}
+                loading={isLoading}
+                className="flex-1"
+              >
+                Add Job
+              </Button>
+            </div>
+          </form>
+        </Card>
+      </motion.div>
+    </div>
+  );
 }
 
 function CronJobCard({ job }: { job: CronJob }) {
@@ -207,6 +376,7 @@ function CronJobCard({ job }: { job: CronJob }) {
 }
 
 export default function CronJobs() {
+  const queryClient = useQueryClient();
   const [showAddModal, setShowAddModal] = useState(false);
 
   const { data: cronJobs, isLoading } = useQuery<CronJob[]>({
@@ -228,6 +398,26 @@ export default function CronJobs() {
       const res = await fetch('/api/status/openclaw');
       if (!res.ok) return { connected: false };
       return res.json();
+    },
+  });
+
+  // Create cron job mutation
+  const createCronJob = useMutation({
+    mutationFn: async (job: { name: string; schedule: string; command: string }) => {
+      const res = await fetch('/api/openclaw/cron', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(job),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Failed to create cron job');
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cron-jobs'] });
+      setShowAddModal(false);
     },
   });
 
@@ -306,6 +496,17 @@ export default function CronJobs() {
           )}
         </Card>
       )}
+
+      {/* Add cron job modal */}
+      <AnimatePresence>
+        {showAddModal && (
+          <AddCronJobModal
+            onClose={() => setShowAddModal(false)}
+            onAdd={(job) => createCronJob.mutate(job)}
+            isLoading={createCronJob.isPending}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

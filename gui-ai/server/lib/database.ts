@@ -106,12 +106,30 @@ export function initDatabase(): Database.Database {
       value TEXT NOT NULL
     );
 
+    -- Cron jobs
+    CREATE TABLE IF NOT EXISTS cron_jobs (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      schedule TEXT NOT NULL,
+      command TEXT NOT NULL,
+      enabled INTEGER DEFAULT 1,
+      last_run INTEGER,
+      last_result TEXT,
+      last_error TEXT,
+      next_run INTEGER,
+      run_count INTEGER DEFAULT 0,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL
+    );
+
     -- Create indexes
     CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
     CREATE INDEX IF NOT EXISTS idx_tasks_scheduled ON tasks(scheduled_at);
     CREATE INDEX IF NOT EXISTS idx_chat_timestamp ON chat_history(timestamp);
     CREATE INDEX IF NOT EXISTS idx_documents_source ON documents(source);
     CREATE INDEX IF NOT EXISTS idx_quick_actions_status ON quick_actions(status);
+    CREATE INDEX IF NOT EXISTS idx_cron_jobs_enabled ON cron_jobs(enabled);
+    CREATE INDEX IF NOT EXISTS idx_cron_jobs_next_run ON cron_jobs(next_run);
   `);
 
   // Insert default settings if not exist

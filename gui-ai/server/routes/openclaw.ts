@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { getDatabase, generateId } from '../lib/database';
+import { CronExpressionParser } from 'cron-parser';
 
 const execAsync = promisify(exec);
 
@@ -232,32 +234,220 @@ openclawRouter.post('/instances/:id/stop', async (c) => {
 
 // ============== CRON JOBS ==============
 
+// Helper to calculate next run time from cron expression
+function getNextRunTime(schedule: string): number | null {
+  try {
+    const expr = CronExpressionParser.parse(schedule);
+    return expr.next().getTime();
+  } catch {
+    return null;
+  }
+}
+
 openclawRouter.get('/cron', async (c) => {
   const connected = await isOpenClawConnected();
   if (!connected) {
     return c.json([], 503);
   }
 
-  // Cron jobs are not yet implemented in OpenClaw CLI
-  return c.json([]);
+  try {
+    const db = getDatabase();
+    const jobs = db.prepare(`
+      SELECT id, name, schedule, command, enabled, last_run, last_result, last_error, next_run, run_count
+      FROM cron_jobs
+      ORDER BY created_at DESC
+    `).all() as any[];
+
+    // Convert to API format
+    const result = jobs.map((job) => ({
+      id: job.id,
+      name: job.name,
+      schedule: job.schedule,
+      command: job.command,
+      enabled: job.enabled === 1,
+      lastRun: job.last_run || undefined,
+      lastResult: job.last_result || undefined,
+      lastError: job.last_error || undefined,
+      nextRun: job.next_run || undefined,
+      runCount: job.run_count || 0,
+    }));
+
+    return c.json(result);
+  } catch (error) {
+    console.error('Error fetching cron jobs:', error);
+    return c.json([]);
+  }
 });
 
 openclawRouter.post('/cron', async (c) => {
-  return c.json({ error: 'Cron jobs not yet implemented' }, 501);
+  const connected = await isOpenClawConnected();
+  if (!connected) {
+    return c.json({ error: 'OpenClaw not connected' }, 503);
+  }
+
+  try {
+    const body = await c.req.json();
+    const { name, schedule, command } = body;
+
+    if (!name || !schedule || !command) {
+      return c.json({ error: 'Missing required fields: name, schedule, command' }, 400);
+    }
+
+    // Validate cron expression
+    const nextRun = getNextRunTime(schedule);
+    if (nextRun === null) {
+      return c.json({ error: 'Invalid cron expression' }, 400);
+    }
+
+    const db = getDatabase();
+    const id = generateId('cron_');
+    const now = Date.now();
+
+    db.prepare(`
+      INSERT INTO cron_jobs (id, name, schedule, command, enabled, next_run, run_count, created_at, updated_at)
+      VALUES (?, ?, ?, ?, 1, ?, 0, ?, ?)
+    `).run(id, name, schedule, command, nextRun, now, now);
+
+    return c.json({
+      id,
+      name,
+      schedule,
+      command,
+      enabled: true,
+      nextRun,
+      runCount: 0,
+    }, 201);
+  } catch (error) {
+    console.error('Error creating cron job:', error);
+    return c.json({ error: 'Failed to create cron job' }, 500);
+  }
 });
 
 openclawRouter.delete('/cron/:id', async (c) => {
-  return c.json({ error: 'Cron jobs not yet implemented' }, 501);
+  const connected = await isOpenClawConnected();
+  if (!connected) {
+    return c.json({ error: 'OpenClaw not connected' }, 503);
+  }
+
+  try {
+    const id = c.req.param('id');
+    const db = getDatabase();
+
+    const result = db.prepare('DELETE FROM cron_jobs WHERE id = ?').run(id);
+
+    if (result.changes === 0) {
+      return c.json({ error: 'Cron job not found' }, 404);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting cron job:', error);
+    return c.json({ error: 'Failed to delete cron job' }, 500);
+  }
 });
 
 openclawRouter.post('/cron/:id/enable', async (c) => {
-  return c.json({ error: 'Cron jobs not yet implemented' }, 501);
+  const connected = await isOpenClawConnected();
+  if (!connected) {
+    return c.json({ error: 'OpenClaw not connected' }, 503);
+  }
+
+  try {
+    const id = c.req.param('id');
+    const db = getDatabase();
+
+    // Get the job to recalculate next run
+    const job = db.prepare('SELECT schedule FROM cron_jobs WHERE id = ?').get(id) as any;
+    if (!job) {
+      return c.json({ error: 'Cron job not found' }, 404);
+    }
+
+    const nextRun = getNextRunTime(job.schedule);
+    const now = Date.now();
+
+    db.prepare('UPDATE cron_jobs SET enabled = 1, next_run = ?, updated_at = ? WHERE id = ?')
+      .run(nextRun, now, id);
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error enabling cron job:', error);
+    return c.json({ error: 'Failed to enable cron job' }, 500);
+  }
 });
 
 openclawRouter.post('/cron/:id/disable', async (c) => {
-  return c.json({ error: 'Cron jobs not yet implemented' }, 501);
+  const connected = await isOpenClawConnected();
+  if (!connected) {
+    return c.json({ error: 'OpenClaw not connected' }, 503);
+  }
+
+  try {
+    const id = c.req.param('id');
+    const db = getDatabase();
+    const now = Date.now();
+
+    const result = db.prepare('UPDATE cron_jobs SET enabled = 0, updated_at = ? WHERE id = ?')
+      .run(now, id);
+
+    if (result.changes === 0) {
+      return c.json({ error: 'Cron job not found' }, 404);
+    }
+
+    return c.json({ success: true });
+  } catch (error) {
+    console.error('Error disabling cron job:', error);
+    return c.json({ error: 'Failed to disable cron job' }, 500);
+  }
 });
 
 openclawRouter.post('/cron/:id/run', async (c) => {
-  return c.json({ error: 'Cron jobs not yet implemented' }, 501);
+  const connected = await isOpenClawConnected();
+  if (!connected) {
+    return c.json({ error: 'OpenClaw not connected' }, 503);
+  }
+
+  try {
+    const id = c.req.param('id');
+    const db = getDatabase();
+
+    const job = db.prepare('SELECT * FROM cron_jobs WHERE id = ?').get(id) as any;
+    if (!job) {
+      return c.json({ error: 'Cron job not found' }, 404);
+    }
+
+    const now = Date.now();
+
+    // Execute the command via OpenClaw
+    try {
+      await execAsync(`openclaw chat "${job.command.replace(/"/g, '\\"')}"`, {
+        timeout: 120000,
+        env: { ...process.env, PATH: process.env.PATH },
+      });
+
+      // Calculate next run time
+      const nextRun = getNextRunTime(job.schedule);
+
+      // Update job status
+      db.prepare(`
+        UPDATE cron_jobs
+        SET last_run = ?, last_result = 'success', last_error = NULL, next_run = ?, run_count = run_count + 1, updated_at = ?
+        WHERE id = ?
+      `).run(now, nextRun, now, id);
+
+      return c.json({ success: true, lastResult: 'success' });
+    } catch (error: any) {
+      // Update job with error
+      const nextRun = getNextRunTime(job.schedule);
+      db.prepare(`
+        UPDATE cron_jobs
+        SET last_run = ?, last_result = 'error', last_error = ?, next_run = ?, run_count = run_count + 1, updated_at = ?
+        WHERE id = ?
+      `).run(now, error.message || 'Execution failed', nextRun, now, id);
+
+      return c.json({ success: false, lastResult: 'error', error: error.message });
+    }
+  } catch (error) {
+    console.error('Error running cron job:', error);
+    return c.json({ error: 'Failed to run cron job' }, 500);
+  }
 });
