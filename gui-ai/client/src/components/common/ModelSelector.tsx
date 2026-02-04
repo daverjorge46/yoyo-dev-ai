@@ -85,16 +85,15 @@ export function ModelSelector({
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`
-          flex items-center gap-1.5 rounded transition-colors
+          flex items-center gap-1.5 rounded-md transition-colors
           ${compact ? 'px-2 py-1.5' : 'px-3 py-2'}
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-          hover:bg-terminal-elevated
-          text-terminal-text-secondary
-          hover:text-terminal-text
-          border border-transparent
-          ${isOpen ? 'bg-terminal-elevated border-terminal-border' : ''}
+          bg-primary-500/10 hover:bg-primary-500/20
+          text-primary-500
+          border border-primary-500/30
+          ${isOpen ? 'bg-primary-500/20 border-primary-500/50' : ''}
         `}
-        title={`Current model: ${currentModel?.name || 'Default'}`}
+        title={`Model: ${currentModel?.name || 'Default'} (click to change)`}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
       >
