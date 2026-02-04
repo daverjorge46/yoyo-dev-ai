@@ -88,11 +88,11 @@ export function ModelSelector({
           flex items-center gap-1.5 rounded transition-colors
           ${compact ? 'px-2 py-1.5' : 'px-3 py-2'}
           ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-          hover:bg-gray-100 dark:hover:bg-gray-700
-          text-gray-600 dark:text-gray-300
-          hover:text-gray-800 dark:hover:text-white
+          hover:bg-terminal-elevated
+          text-terminal-text-secondary
+          hover:text-terminal-text
           border border-transparent
-          ${isOpen ? 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600' : ''}
+          ${isOpen ? 'bg-terminal-elevated border-terminal-border' : ''}
         `}
         title={`Current model: ${currentModel?.name || 'Default'}`}
         aria-haspopup="listbox"
@@ -115,22 +115,22 @@ export function ModelSelector({
           className="
             absolute bottom-full left-0 mb-2
             min-w-[220px] max-h-[320px] overflow-auto
-            bg-white dark:bg-gray-800
-            border border-gray-200 dark:border-gray-700
+            bg-terminal-bg
+            border border-terminal-border
             rounded-lg shadow-lg
-            z-50
+            z-[100]
           "
           role="listbox"
           aria-label="Select model"
         >
           <div className="p-2">
-            <div className="text-xs font-medium text-gray-500 dark:text-gray-400 px-2 py-1 mb-1">
+            <div className="text-xs font-medium text-terminal-text-muted px-2 py-1 mb-1">
               Select Model
             </div>
 
             {Object.entries(groupedModels).map(([provider, providerModels]) => (
               <div key={provider} className="mb-2 last:mb-0">
-                <div className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase px-2 py-1">
+                <div className="text-xs font-semibold text-terminal-text-muted uppercase px-2 py-1">
                   {provider}
                 </div>
                 {providerModels.map((model) => (
@@ -143,8 +143,8 @@ export function ModelSelector({
                       transition-colors
                       ${
                         selectedModel === model.id
-                          ? 'bg-indigo-50 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
-                          : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200'
+                          ? 'bg-primary-500/20 text-primary-400'
+                          : 'hover:bg-terminal-elevated text-terminal-text'
                       }
                     `}
                     role="option"
@@ -153,13 +153,13 @@ export function ModelSelector({
                     <div className="flex-1 min-w-0">
                       <div className="text-sm font-medium truncate">{model.name}</div>
                       {model.description && (
-                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        <div className="text-xs text-terminal-text-muted truncate">
                           {model.description}
                         </div>
                       )}
                     </div>
                     {selectedModel === model.id && (
-                      <Check className="w-4 h-4 flex-shrink-0 text-indigo-600 dark:text-indigo-400" />
+                      <Check className="w-4 h-4 flex-shrink-0 text-primary-500" />
                     )}
                   </button>
                 ))}
