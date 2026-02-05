@@ -50,10 +50,11 @@ async function getOpenClawStatus(): Promise<{
   channelList: Array<{ type: string; status: string; phone?: string }>;
 } | null> {
   try {
-    const { stdout: healthOutput } = await execAsync('openclaw health', {
+    console.log('[DEBUG] getOpenClawStatus: calling openclaw health');
+    const { stdout: healthOutput, stderr } = await execAsync('openclaw health', {
       timeout: 15000,
-      env: { ...process.env, PATH: process.env.PATH },
     });
+    console.log('[DEBUG] getOpenClawStatus: stdout length:', healthOutput.length, 'stderr:', stderr);
 
     // Parse channels from health output
     const channelList: Array<{ type: string; status: string; phone?: string }> = [];
@@ -83,7 +84,8 @@ async function getOpenClawStatus(): Promise<{
       activeSessions,
       channelList: channelList.length > 0 ? channelList : [{ type: 'whatsapp', status: 'disconnected' }],
     };
-  } catch {
+  } catch (error) {
+    console.error('[DEBUG] getOpenClawStatus error:', error);
     return null;
   }
 }

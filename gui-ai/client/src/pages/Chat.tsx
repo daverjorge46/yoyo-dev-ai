@@ -255,6 +255,28 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Fetch current model from OpenClaw
+  const { data: currentModelData } = useQuery<{ model: string }>({
+    queryKey: ['models', 'current'],
+    queryFn: async () => {
+      try {
+        const res = await fetch('/api/models/current');
+        if (!res.ok) return { model: 'default' };
+        return res.json();
+      } catch {
+        return { model: 'default' };
+      }
+    },
+    staleTime: 30 * 1000, // Cache for 30 seconds
+  });
+
+  // Update selectedModel when we get the current model from backend
+  useEffect(() => {
+    if (currentModelData?.model && currentModelData.model !== 'default') {
+      setSelectedModel(currentModelData.model);
+    }
+  }, [currentModelData?.model]);
+
   // Fetch available models
   const { data: models = DEFAULT_MODELS } = useQuery<Model[]>({
     queryKey: ['models'],

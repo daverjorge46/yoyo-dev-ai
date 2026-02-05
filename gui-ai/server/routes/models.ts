@@ -53,9 +53,28 @@ modelsRouter.get('/', async (c) => {
 });
 
 /**
- * Get current model for the GUI session
+ * Get current model from OpenClaw status
  */
-modelsRouter.get('/current', (c) => {
-  // For now, return default. Could be extended to persist selection
+modelsRouter.get('/current', async (c) => {
+  try {
+    const { stdout } = await execAsync('openclaw status --json 2>/dev/null', {
+      timeout: 5000,
+    });
+
+    try {
+      const result = JSON.parse(stdout);
+      // Try to get model from recent session first, then from defaults
+      const model =
+        result.sessions?.recent?.[0]?.model ||
+        result.sessions?.defaults?.model ||
+        'default';
+      return c.json({ model });
+    } catch {
+      // JSON parse failed
+    }
+  } catch {
+    // Command failed
+  }
+
   return c.json({ model: 'default' });
 });
