@@ -2,11 +2,14 @@
  * ModelSelector Component
  *
  * Dropdown selector for choosing AI models in the chat interface.
- * Positioned next to the attachment button in the chat input area.
+ * Fetches available models from OpenClaw gateway via WebSocket RPC.
+ * Falls back to DEFAULT_MODELS if gateway is unavailable.
  */
 
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Cpu, Check } from 'lucide-react';
+import { useGatewayQuery } from '../../hooks/useGatewayRPC';
+import type { ModelsListResponse, Model as GatewayModel } from '../../lib/gateway-types';
 
 export interface Model {
   id: string;
@@ -16,15 +19,31 @@ export interface Model {
 }
 
 interface ModelSelectorProps {
-  models: Model[];
+  models?: Model[];
   selectedModel: string;
   onSelectModel: (modelId: string) => void;
   disabled?: boolean;
   compact?: boolean;
 }
 
+// Fallback models when gateway is unavailable
+export const DEFAULT_MODELS: Model[] = [
+  { id: 'default', name: 'Default', provider: 'OpenClaw', description: 'Default agent model' },
+];
+
+function mapGatewayModels(gatewayModels: GatewayModel[]): Model[] {
+  return gatewayModels.map((m) => ({
+    id: m.id,
+    name: m.name || m.id,
+    provider: m.provider || 'Unknown',
+    description: m.contextWindow
+      ? `${Math.round(m.contextWindow / 1000)}k context`
+      : undefined,
+  }));
+}
+
 export function ModelSelector({
-  models,
+  models: propModels,
   selectedModel,
   onSelectModel,
   disabled = false,
@@ -32,6 +51,20 @@ export function ModelSelector({
 }: ModelSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Auto-fetch from gateway if no models prop provided
+  const { data: gatewayData } = useGatewayQuery<ModelsListResponse>(
+    'models.list',
+    undefined,
+    {
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      enabled: !propModels, // Only fetch if no models provided via props
+    },
+  );
+
+  // Resolve models: props > gateway > fallback
+  const models: Model[] = propModels
+    || (gatewayData?.models ? mapGatewayModels(gatewayData.models) : DEFAULT_MODELS);
 
   const currentModel = models.find((m) => m.id === selectedModel) || models[0];
 
@@ -75,7 +108,7 @@ export function ModelSelector({
       acc[model.provider].push(model);
       return acc;
     },
-    {} as Record<string, Model[]>
+    {} as Record<string, Model[]>,
   );
 
   return (
@@ -171,25 +204,5 @@ export function ModelSelector({
     </div>
   );
 }
-
-// Default models available
-export const DEFAULT_MODELS: Model[] = [
-  // OpenClaw / Local
-  { id: 'default', name: 'Default', provider: 'OpenClaw', description: 'Default agent model' },
-  // Anthropic Claude
-  { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', provider: 'Anthropic', description: 'Latest balanced model' },
-  { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', provider: 'Anthropic', description: 'Fast and capable' },
-  { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', provider: 'Anthropic', description: 'Most powerful' },
-  { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', provider: 'Anthropic', description: 'Fastest responses' },
-  // OpenAI
-  { id: 'gpt-4o', name: 'GPT-4o', provider: 'OpenAI', description: 'Latest multimodal' },
-  { id: 'gpt-4-turbo', name: 'GPT-4 Turbo', provider: 'OpenAI', description: 'Fast GPT-4' },
-  { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', provider: 'OpenAI', description: 'Quick and efficient' },
-  // Google
-  { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', provider: 'Google', description: 'Experimental fast' },
-  { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', provider: 'Google', description: 'Advanced reasoning' },
-  // Moonshot
-  { id: 'kimi-k2.5', name: 'Kimi K2.5', provider: 'Moonshot', description: 'Multilingual model' },
-];
 
 export default ModelSelector;

@@ -6,6 +6,10 @@ import {
   Server,
   History,
   Clock,
+  Bot,
+  Cpu,
+  Wand2,
+  Terminal,
   Settings,
   Sparkles,
 } from 'lucide-react';
@@ -13,11 +17,16 @@ import { useQuery } from '@tanstack/react-query';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Overview' },
-  { to: '/channels', icon: Radio, label: 'Channels' },
-  { to: '/instances', icon: Server, label: 'Instances' },
-  { to: '/sessions', icon: History, label: 'Sessions' },
-  { to: '/cron', icon: Clock, label: 'Cron Jobs' },
   { to: '/chat', icon: MessageSquare, label: 'Chat' },
+  { to: '/agents', icon: Bot, label: 'Agents' },
+  { to: '/sessions', icon: History, label: 'Sessions' },
+  { to: '/channels', icon: Radio, label: 'Channels' },
+  { to: '/models', icon: Cpu, label: 'Models' },
+  { to: '/skills', icon: Wand2, label: 'Skills' },
+  { to: '/cron', icon: Clock, label: 'Cron Jobs' },
+  { to: '/gateway', icon: Server, label: 'Gateway' },
+  { to: '/commands', icon: Terminal, label: 'Commands' },
+  { to: '/instances', icon: Server, label: 'Instances' },
 ];
 
 export function Sidebar() {

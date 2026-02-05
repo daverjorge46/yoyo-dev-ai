@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   MessageSquare,
   Radio,
@@ -11,10 +12,24 @@ import {
   Sparkles,
   TrendingUp,
   Coins,
+  Bot,
+  Cpu,
+  Zap,
+  RefreshCw,
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
-import { PageLoader } from '../components/common/LoadingSpinner';
+import { useGatewayQuery } from '../hooks/useGatewayRPC';
+import { useGatewayStatus } from '../hooks/useGatewayStatus';
+import { useGatewayTick } from '../hooks/useGatewayEvent';
+import type {
+  HealthResponse,
+  SessionsListResponse,
+  ChannelsStatusResponse,
+  CronListResponse,
+  ModelsListResponse,
+  AgentsListResponse,
+} from '../lib/gateway-types';
 
 // Stats card component
 function StatsCard({
@@ -63,8 +78,16 @@ function StatsCard({
   return content;
 }
 
-// OpenClaw status card
-function OpenClawStatusCard({ connected, port, version }: { connected: boolean; port: number; version?: string }) {
+// Gateway connection status card
+function GatewayStatusCard({
+  connected,
+  version,
+  reconnect,
+}: {
+  connected: boolean;
+  version: string | null;
+  reconnect: () => void;
+}) {
   return (
     <Card className="p-4 sm:p-6 border-l-4 border-l-primary dark:border-l-terminal-orange">
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
@@ -81,19 +104,30 @@ function OpenClawStatusCard({ connected, port, version }: { connected: boolean; 
           </h3>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-terminal-text-secondary truncate">
             {connected
-              ? `Connected on port ${port}${version ? ` • v${version}` : ''}`
-              : 'Not running - Start with: yoyo-ai start'}
+              ? `Connected via WebSocket${version ? ` · v${version}` : ''}`
+              : 'Not connected — Start with: yoyo-ai start'}
           </p>
         </div>
-        <div className="flex items-center gap-2 self-start sm:self-center">
-          <div
-            className={`w-3 h-3 rounded-full ${
-              connected ? 'bg-success dark:bg-terminal-green animate-pulse' : 'bg-error dark:bg-terminal-red'
-            }`}
-          />
-          <span className={`text-sm font-medium ${connected ? 'text-success dark:text-terminal-green' : 'text-error dark:text-terminal-red'}`}>
-            {connected ? 'Online' : 'Offline'}
-          </span>
+        <div className="flex items-center gap-3 self-start sm:self-center">
+          {!connected && (
+            <button
+              onClick={reconnect}
+              className="p-1.5 rounded-md hover:bg-terminal-elevated transition-colors"
+              title="Reconnect"
+            >
+              <RefreshCw className="w-4 h-4 text-terminal-text-secondary" />
+            </button>
+          )}
+          <div className="flex items-center gap-2">
+            <div
+              className={`w-3 h-3 rounded-full ${
+                connected ? 'bg-success dark:bg-terminal-green animate-pulse' : 'bg-error dark:bg-terminal-red'
+              }`}
+            />
+            <span className={`text-sm font-medium ${connected ? 'text-success dark:text-terminal-green' : 'text-error dark:text-terminal-red'}`}>
+              {connected ? 'Online' : 'Offline'}
+            </span>
+          </div>
         </div>
       </div>
     </Card>
@@ -131,9 +165,7 @@ function QuickActionButton({
 
 // Channel health card
 function ChannelHealthCard({ channels }: { channels: Array<{ type: string; status: string }> }) {
-  const total = channels.length;
-
-  if (total === 0) {
+  if (!channels || channels.length === 0) {
     return (
       <Card className="p-4">
         <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text mb-3 flex items-center gap-2">
@@ -178,44 +210,65 @@ function ChannelHealthCard({ channels }: { channels: Array<{ type: string; statu
 }
 
 export default function Dashboard() {
-  // Fetch OpenClaw status
-  const { data: openclawStatus, isLoading: loadingStatus } = useQuery({
-    queryKey: ['openclaw-status'],
-    queryFn: async () => {
-      const res = await fetch('/api/status/openclaw');
-      if (!res.ok) return { connected: false, port: 18789 };
-      return res.json();
-    },
-    refetchInterval: 5000,
+  const queryClient = useQueryClient();
+  const { isConnected, gatewayVersion, reconnect } = useGatewayStatus();
+
+  // Fetch data from OpenClaw gateway via WebSocket RPC
+  const { data: health } = useGatewayQuery<HealthResponse>('health', undefined, {
+    staleTime: 15_000,
   });
 
-  // Fetch dashboard stats
-  const { data: stats, isLoading: loadingStats } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: async () => {
-      const res = await fetch('/api/status/stats');
-      if (!res.ok) {
-        return {
-          channels: 0,
-          channelsConnected: 0,
-          sessions: 0,
-          activeSessions: 0,
-          cronJobs: 0,
-          cronJobsEnabled: 0,
-          totalTokens: 0,
-          channelList: [],
-        };
-      }
-      return res.json();
-    },
-    refetchInterval: 10000,
+  const { data: sessions } = useGatewayQuery<SessionsListResponse>(
+    'sessions.list',
+    { limit: 50, includeGlobal: true },
+    { staleTime: 15_000 },
+  );
+
+  const { data: channelsData } = useGatewayQuery<ChannelsStatusResponse>(
+    'channels.status',
+    { probe: false },
+    { staleTime: 15_000 },
+  );
+
+  const { data: cronData } = useGatewayQuery<CronListResponse>('cron.list', undefined, {
+    staleTime: 30_000,
   });
 
-  const isLoading = loadingStatus || loadingStats;
+  const { data: modelsData } = useGatewayQuery<ModelsListResponse>('models.list', undefined, {
+    staleTime: 60_000,
+  });
 
-  if (isLoading) {
-    return <PageLoader />;
-  }
+  const { data: agentsData } = useGatewayQuery<AgentsListResponse>('agents.list', undefined, {
+    staleTime: 30_000,
+  });
+
+  // Auto-refresh on gateway tick events (~30s)
+  const handleTick = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['gateway', 'health'] });
+    queryClient.invalidateQueries({ queryKey: ['gateway', 'sessions.list'] });
+    queryClient.invalidateQueries({ queryKey: ['gateway', 'channels.status'] });
+    queryClient.invalidateQueries({ queryKey: ['gateway', 'cron.list'] });
+  }, [queryClient]);
+
+  useGatewayTick(handleTick);
+
+  // Derive stats from RPC responses
+  const sessionList = sessions?.sessions ?? [];
+  const channelList = channelsData?.channels ?? [];
+  const cronJobs = cronData?.jobs ?? [];
+  const models = modelsData?.models ?? [];
+  const agents = agentsData?.agents ?? [];
+
+  const connectedChannels = channelList.filter((ch) => ch.status === 'connected').length;
+  const activeSessions = sessionList.length;
+  const enabledCronJobs = cronJobs.filter((j) => j.enabled !== false).length;
+  const totalTokens = sessionList.reduce((sum, s) => sum + (s.tokenUsage?.total ?? 0), 0);
+
+  // Map channels to the format ChannelHealthCard expects
+  const channelHealth = channelList.map((ch) => ({
+    type: ch.type || ch.name || 'unknown',
+    status: ch.status === 'connected' ? 'connected' : 'disconnected',
+  }));
 
   return (
     <div className="p-4 sm:p-6">
@@ -234,47 +287,56 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* OpenClaw Status */}
+      {/* Gateway Connection Status */}
       <div className="mb-6">
-        <OpenClawStatusCard
-          connected={openclawStatus?.connected ?? false}
-          port={openclawStatus?.port ?? 18789}
-          version={openclawStatus?.version}
+        <GatewayStatusCard
+          connected={isConnected}
+          version={gatewayVersion || (health as Record<string, unknown>)?.version as string || null}
+          reconnect={reconnect}
         />
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
         <StatsCard
           icon={Radio}
           label="Channels"
-          value={stats?.channelsConnected ?? 0}
-          subvalue={`${stats?.channels ?? 0} total`}
+          value={connectedChannels}
+          subvalue={`${channelList.length} total`}
           color="primary"
           to="/channels"
         />
         <StatsCard
           icon={History}
-          label="Active Sessions"
-          value={stats?.activeSessions ?? 0}
-          subvalue={`${stats?.sessions ?? 0} total`}
+          label="Sessions"
+          value={activeSessions}
+          subvalue="active"
           color="accent"
           to="/sessions"
         />
         <StatsCard
+          icon={Bot}
+          label="Agents"
+          value={agents.length}
+          subvalue={agentsData?.defaultId ? `default: ${agentsData.defaultId}` : undefined}
+          color="info"
+          to="/agents"
+        />
+        <StatsCard
           icon={Clock}
           label="Cron Jobs"
-          value={stats?.cronJobsEnabled ?? 0}
-          subvalue={`${stats?.cronJobs ?? 0} configured`}
+          value={enabledCronJobs}
+          subvalue={`${cronJobs.length} configured`}
           color="success"
           to="/cron"
         />
         <StatsCard
           icon={Coins}
           label="Tokens Used"
-          value={stats?.totalTokens ? (stats.totalTokens > 1000 ? `${(stats.totalTokens / 1000).toFixed(1)}K` : stats.totalTokens) : 0}
-          subvalue="this month"
+          value={totalTokens > 1000 ? `${(totalTokens / 1000).toFixed(1)}K` : totalTokens}
+          subvalue={`${models.length} models available`}
           color="warning"
+          to="/models"
         />
       </div>
 
@@ -294,6 +356,12 @@ export default function Dashboard() {
               description="Begin a conversation with Yoyo AI"
             />
             <QuickActionButton
+              to="/agents"
+              icon={Bot}
+              label="View Agents"
+              description="Monitor and manage AI agents"
+            />
+            <QuickActionButton
               to="/channels"
               icon={Radio}
               label="Manage Channels"
@@ -311,6 +379,12 @@ export default function Dashboard() {
               label="Scheduled Tasks"
               description="Manage automated jobs"
             />
+            <QuickActionButton
+              to="/gateway"
+              icon={Cpu}
+              label="Gateway"
+              description="Gateway status and live logs"
+            />
           </div>
         </div>
 
@@ -320,26 +394,108 @@ export default function Dashboard() {
             <TrendingUp className="w-5 h-5 text-primary dark:text-terminal-orange" />
             Status
           </h2>
-          <ChannelHealthCard channels={stats?.channelList ?? []} />
+          <div className="space-y-4">
+            <ChannelHealthCard channels={channelHealth} />
+
+            {/* Agents summary card */}
+            {agents.length > 0 && (
+              <Card className="p-4">
+                <h3 className="text-sm font-semibold text-gray-900 dark:text-terminal-text mb-3 flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-primary dark:text-terminal-orange" />
+                  Agents
+                </h3>
+                <div className="space-y-2">
+                  {agents.map((agent) => (
+                    <div key={agent.id || agent.key} className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 dark:text-terminal-text-secondary">
+                        {agent.identity?.name || agent.key || agent.id}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        {agent.isDefault && (
+                          <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary dark:text-terminal-orange">
+                            default
+                          </span>
+                        )}
+                        <Zap className="w-3 h-3 text-terminal-green" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 pt-3 border-t border-gray-200 dark:border-terminal-border">
+                  <Link to="/agents" className="text-xs text-primary dark:text-terminal-orange hover:text-primary-600 dark:hover:text-terminal-orange/80">
+                    View all agents →
+                  </Link>
+                </div>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Recent Activity */}
+      {/* Recent Sessions */}
       <div>
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-terminal-text mb-3 sm:mb-4">Recent Activity</h2>
-        <Card className="p-6 sm:p-8 text-center">
-          <div className="text-gray-300 dark:text-terminal-text-muted mb-2">
-            <Activity className="w-10 sm:w-12 h-10 sm:h-12 mx-auto opacity-50" />
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-terminal-text mb-3 sm:mb-4">Recent Sessions</h2>
+        {sessionList.length > 0 ? (
+          <div className="space-y-2">
+            {sessionList.slice(0, 5).map((session) => (
+              <Card key={session.key} className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-terminal-text truncate">
+                      {session.label || session.key}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-terminal-text-muted">
+                      {session.model || 'default model'}
+                      {session.messageCount ? ` · ${session.messageCount} messages` : ''}
+                    </p>
+                  </div>
+                  {session.lastActivity && (
+                    <span className="text-xs text-gray-400 dark:text-terminal-text-muted whitespace-nowrap ml-4">
+                      {formatTimeAgo(session.lastActivity)}
+                    </span>
+                  )}
+                </div>
+              </Card>
+            ))}
+            <div className="text-center pt-2">
+              <Link to="/sessions" className="text-xs text-primary dark:text-terminal-orange hover:text-primary-600">
+                View all sessions →
+              </Link>
+            </div>
           </div>
-          <p className="text-gray-600 dark:text-terminal-text-secondary">No recent activity</p>
-          <p className="text-xs text-gray-400 dark:text-terminal-text-muted mt-1">
-            Start a conversation to see your activity here
-          </p>
-          <Link to="/chat">
-            <Button className="mt-4">Start Chatting</Button>
-          </Link>
-        </Card>
+        ) : (
+          <Card className="p-6 sm:p-8 text-center">
+            <div className="text-gray-300 dark:text-terminal-text-muted mb-2">
+              <Activity className="w-10 sm:w-12 h-10 sm:h-12 mx-auto opacity-50" />
+            </div>
+            <p className="text-gray-600 dark:text-terminal-text-secondary">No active sessions</p>
+            <p className="text-xs text-gray-400 dark:text-terminal-text-muted mt-1">
+              Start a conversation to see your sessions here
+            </p>
+            <Link to="/chat">
+              <Button className="mt-4">Start Chatting</Button>
+            </Link>
+          </Card>
+        )}
       </div>
     </div>
   );
+}
+
+function formatTimeAgo(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    const now = Date.now();
+    const diffMs = now - date.getTime();
+    const diffMin = Math.floor(diffMs / 60_000);
+
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin}m ago`;
+    const diffHr = Math.floor(diffMin / 60);
+    if (diffHr < 24) return `${diffHr}h ago`;
+    const diffDays = Math.floor(diffHr / 24);
+    return `${diffDays}d ago`;
+  } catch {
+    return dateStr;
+  }
 }

@@ -13,6 +13,10 @@ import {
   Server,
   History,
   Clock,
+  Bot,
+  Cpu,
+  Wand2,
+  Terminal,
   Settings,
   Sparkles,
   ChevronLeft,
@@ -52,11 +56,16 @@ export interface CollapsibleSidebarProps {
 
 const navItems: NavItem[] = [
   { path: '/', label: 'Overview', icon: <LayoutDashboard className="h-5 w-5" /> },
-  { path: '/channels', label: 'Channels', icon: <Radio className="h-5 w-5" /> },
-  { path: '/instances', label: 'Instances', icon: <Server className="h-5 w-5" /> },
-  { path: '/sessions', label: 'Sessions', icon: <History className="h-5 w-5" /> },
-  { path: '/cron', label: 'Cron Jobs', icon: <Clock className="h-5 w-5" /> },
   { path: '/chat', label: 'Chat', icon: <MessageSquare className="h-5 w-5" /> },
+  { path: '/agents', label: 'Agents', icon: <Bot className="h-5 w-5" /> },
+  { path: '/sessions', label: 'Sessions', icon: <History className="h-5 w-5" /> },
+  { path: '/channels', label: 'Channels', icon: <Radio className="h-5 w-5" /> },
+  { path: '/models', label: 'Models', icon: <Cpu className="h-5 w-5" /> },
+  { path: '/skills', label: 'Skills', icon: <Wand2 className="h-5 w-5" /> },
+  { path: '/cron', label: 'Cron Jobs', icon: <Clock className="h-5 w-5" /> },
+  { path: '/gateway', label: 'Gateway', icon: <Server className="h-5 w-5" /> },
+  { path: '/commands', label: 'Commands', icon: <Terminal className="h-5 w-5" /> },
+  { path: '/instances', label: 'Instances', icon: <Server className="h-5 w-5" /> },
 ];
 
 // =============================================================================
