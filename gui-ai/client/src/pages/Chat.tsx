@@ -21,6 +21,7 @@ import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
 import { PageLoader } from '../components/common/LoadingSpinner';
 import { ModelSelector, DEFAULT_MODELS, type Model } from '../components/common/ModelSelector';
+import { SlashCommands } from '../components/common/SlashCommands';
 import type { ChatMessage, Attachment } from '../types';
 
 // Voice recorder component
@@ -459,7 +460,14 @@ export default function Chat() {
             onCancel={() => setIsRecording(false)}
           />
         ) : (
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden relative">
+            {/* Slash command autocomplete */}
+            <SlashCommands
+              input={input}
+              visible={input.startsWith('/') && !input.includes(' ')}
+              onSelectCommand={(cmd) => setInput(cmd)}
+            />
+
             <form onSubmit={handleSubmit}>
               <div className="flex items-end gap-2 p-2">
                 <input
@@ -486,10 +494,16 @@ export default function Chat() {
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type your message..."
+                  placeholder="Type a message... (/ for commands)"
                   className="flex-1 bg-transparent border-none resize-none text-terminal-text placeholder-terminal-text-muted focus:outline-none min-h-[40px] max-h-[200px] py-2"
                   rows={1}
                   onKeyDown={(e) => {
+                    // Don't submit if slash commands menu is visible
+                    if (input.startsWith('/') && !input.includes(' ')) {
+                      if (e.key === 'Tab' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                        return; // Let SlashCommands handle these
+                      }
+                    }
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       handleSubmit(e);

@@ -111,11 +111,11 @@ export class OpenClawProxy {
       // --session-id creates a GUI-specific session
       const sessionId = 'yoyo-ai-gui';
 
-      // If model is specified, prepend /modelo command to change model
-      // OpenClaw uses /modelo [model] command to change models
+      // If model is specified, prepend /model command to change model
+      // OpenClaw uses /model [model] command to change models
       let finalMessage = message;
       if (context?.model && context.model !== 'default') {
-        finalMessage = `/modelo ${context.model}\n${message}`;
+        finalMessage = `/model ${context.model}\n${message}`;
       }
 
       const args = [

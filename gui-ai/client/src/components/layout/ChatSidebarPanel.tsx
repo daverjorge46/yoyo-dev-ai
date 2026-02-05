@@ -33,6 +33,7 @@ import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/pris
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
 import { ModelSelector, DEFAULT_MODELS, type Model } from '../common/ModelSelector';
+import { SlashCommands } from '../common/SlashCommands';
 import { useTheme } from '../ThemeToggle';
 import type { ChatMessage } from '../../types';
 
@@ -510,7 +511,14 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
 
         {/* Input area */}
         <div className="border-t border-gray-200 dark:border-gray-700 p-3 pl-5 bg-gray-50 dark:bg-gray-800">
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden relative">
+            {/* Slash command autocomplete */}
+            <SlashCommands
+              input={input}
+              visible={input.startsWith('/') && !input.includes(' ')}
+              onSelectCommand={(cmd) => setInput(cmd)}
+            />
+
             <form onSubmit={handleSubmit}>
               <div className="flex items-end gap-2 p-2">
                 <input
@@ -538,10 +546,16 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type a message..."
+                  placeholder="Type a message... (/ for commands)"
                   className="flex-1 bg-transparent border-none resize-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none min-h-[40px] max-h-[120px] py-2 text-sm"
                   rows={1}
                   onKeyDown={(e) => {
+                    // Don't submit if slash commands menu is visible
+                    if (input.startsWith('/') && !input.includes(' ')) {
+                      if (e.key === 'Tab' || e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                        return; // Let SlashCommands handle these
+                      }
+                    }
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
                       handleSubmit(e);
