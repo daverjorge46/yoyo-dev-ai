@@ -468,8 +468,8 @@ create_comprehensive_backup() {
 UPDATE_ERRORS=0
 
 update_with_progress() {
-    local src_dir="$1"
-    local dest_dir="$2"
+    local src_dir="${1%/}"  # Strip trailing slash to ensure correct path stripping
+    local dest_dir="${2%/}"
     local category="$3"
     local files_copied=0
     local errors=0
