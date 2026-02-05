@@ -41,7 +41,7 @@ interface UseStreamingChatReturn {
 function getOrCreateSessionKey(): string {
   let key = localStorage.getItem(SESSION_KEY_STORAGE);
   if (!key) {
-    key = `gui-${crypto.randomUUID().slice(0, 8)}`;
+    key = `gui-${((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2)).slice(0, 8)}`;
     localStorage.setItem(SESSION_KEY_STORAGE, key);
   }
   return key;
@@ -83,6 +83,7 @@ export function useStreamingChat(options?: UseStreamingChatOptions): UseStreamin
 
     async function loadHistory() {
       try {
+        console.debug('[useStreamingChat] Loading history for session:', sessionKey);
         const res = await client!.request<ChatHistoryResponse>('chat.history', {
           sessionKey,
           limit: 100,
@@ -98,9 +99,11 @@ export function useStreamingChat(options?: UseStreamingChatOptions): UseStreamin
           toolCalls: m.toolCalls,
         }));
 
+        console.debug('[useStreamingChat] Loaded', loaded.length, 'messages from history');
         setMessages(loaded);
-      } catch {
+      } catch (err) {
         // Chat history might not exist for new sessions - that's fine
+        console.debug('[useStreamingChat] Failed to load history (normal for new sessions):', err);
       } finally {
         if (!cancelled) {
           setIsLoading(false);
@@ -120,9 +123,13 @@ export function useStreamingChat(options?: UseStreamingChatOptions): UseStreamin
     'chat.event',
     useCallback((payload: unknown) => {
       const event = payload as ChatEvent;
+      console.debug('[useStreamingChat] chat.event received:', event.state, 'runId:', event.runId, 'activeRunId:', activeRunId.current);
 
       // Only process events for our active run
-      if (!activeRunId.current || event.runId !== activeRunId.current) return;
+      if (!activeRunId.current || event.runId !== activeRunId.current) {
+        console.debug('[useStreamingChat] Ignoring event - runId mismatch');
+        return;
+      }
 
       switch (event.state) {
         case 'delta': {
@@ -283,19 +290,24 @@ export function useStreamingChat(options?: UseStreamingChatOptions): UseStreamin
       setIsStreaming(true);
 
       try {
+        const idempotencyKey = ((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2));
         const params: ChatSendParams = {
           sessionKey,
           message: content.trim(),
+          idempotencyKey,
           deliver: true,
         };
         if (model && model !== 'default') {
           params.model = model;
         }
 
+        console.debug('[useStreamingChat] Sending message:', { sessionKey, model, messageLength: content.trim().length });
         const res = await client.request<ChatSendResponse>('chat.send', params);
+        console.debug('[useStreamingChat] Message sent, runId:', res.runId);
         activeRunId.current = res.runId;
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Failed to send message';
+        console.error('[useStreamingChat] Send failed:', msg, err);
         setError(msg);
         setIsStreaming(false);
         onErrorRef.current?.(msg);
@@ -323,7 +335,7 @@ export function useStreamingChat(options?: UseStreamingChatOptions): UseStreamin
     setIsStreaming(false);
 
     // Generate new session key
-    const newKey = `gui-${crypto.randomUUID().slice(0, 8)}`;
+    const newKey = `gui-${((typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).slice(2)).slice(0, 8)}`;
     localStorage.setItem(SESSION_KEY_STORAGE, newKey);
     setSessionKey(newKey);
 

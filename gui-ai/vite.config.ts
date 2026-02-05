@@ -16,6 +16,10 @@ export default defineConfig({
         target: 'http://localhost:3457',
         changeOrigin: true,
       },
+      '/ws/gateway': {
+        target: 'http://localhost:3457',
+        ws: true,
+      },
     },
   },
 });

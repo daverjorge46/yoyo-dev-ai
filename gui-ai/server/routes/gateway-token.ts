@@ -5,27 +5,41 @@ import { homedir } from 'os';
 
 export const gatewayTokenRouter = new Hono();
 
-const TOKEN_PATH = join(homedir(), '.openclaw', '.gateway-token');
-const DEFAULT_GATEWAY_HOST = '127.0.0.1';
-const DEFAULT_GATEWAY_PORT = 18789;
+const CONFIG_PATH = join(homedir(), '.openclaw', 'openclaw.json');
 
 gatewayTokenRouter.get('/', async (c) => {
   try {
-    const token = (await readFile(TOKEN_PATH, 'utf-8')).trim();
+    // Read the auth token from the OpenClaw config (gateway.auth.token)
+    const raw = await readFile(CONFIG_PATH, 'utf-8');
+    const config = JSON.parse(raw);
 
-    // Build the WebSocket URL
-    // The browser connects directly to the OpenClaw gateway
-    const gatewayUrl = `ws://${DEFAULT_GATEWAY_HOST}:${DEFAULT_GATEWAY_PORT}`;
+    const token = config?.gateway?.auth?.token;
+    if (!token) {
+      return c.json(
+        {
+          error: 'Gateway auth token not configured',
+          detail: 'Set gateway.auth.token in ~/.openclaw/openclaw.json',
+        },
+        500,
+      );
+    }
+
+    // Return the proxy WebSocket URL (same host as the Hono server).
+    // The browser connects to /ws/gateway on the Hono server, which
+    // proxies to the real OpenClaw gateway with proper auth.
+    // In development, Vite proxies this. In production, it's served directly.
+    // We use a relative path so the browser uses the current host.
+    const gatewayUrl = '/ws/gateway';
 
     return c.json({ token, gatewayUrl });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Unknown error';
-    console.error('[gateway-token] Failed to read token:', message);
+    console.error('[gateway-token] Failed to read OpenClaw config:', message);
     return c.json(
       {
-        error: 'Gateway token not found',
-        detail: 'Ensure OpenClaw is installed and the gateway has been started at least once.',
-        path: TOKEN_PATH,
+        error: 'OpenClaw config not found',
+        detail: 'Ensure OpenClaw is installed and configured.',
+        path: CONFIG_PATH,
       },
       500,
     );

@@ -23,8 +23,8 @@ import {
   ChevronRight,
   X,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { useChatPanel } from '../../contexts/ChatPanelContext';
+import { useGatewayStatus } from '../../hooks/useGatewayStatus';
 import { MobileIconStrip } from './MobileIconStrip';
 
 // =============================================================================
@@ -191,18 +191,8 @@ export function CollapsibleSidebar({
   onMobileClose,
   className = '',
 }: CollapsibleSidebarProps) {
-  // Check OpenClaw connection status
-  const { data: statusData } = useQuery({
-    queryKey: ['openclaw-status'],
-    queryFn: async () => {
-      const res = await fetch('/api/status/openclaw');
-      if (!res.ok) return { connected: false };
-      return res.json();
-    },
-    refetchInterval: 10000,
-  });
-
-  const openclawConnected = statusData?.connected ?? false;
+  // Use WebSocket-based gateway status instead of removed HTTP endpoint
+  const { isConnected: openclawConnected } = useGatewayStatus();
 
   const sidebarContent = (
     <div

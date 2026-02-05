@@ -22,6 +22,18 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_RECONNECT_DELAY_MS = 30_000;
 const PROTOCOL_VERSION = 3;
 
+/** crypto.randomUUID fallback for non-secure contexts */
+function uuid(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  // Fallback for non-secure contexts (e.g. HTTP on non-localhost)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
 export class GatewayClient {
   private ws: WebSocket | null = null;
   private pending = new Map<string, PendingRequest>();
@@ -39,7 +51,7 @@ export class GatewayClient {
     private readonly url: string,
     private readonly token: string,
   ) {
-    this._instanceId = crypto.randomUUID();
+    this._instanceId = uuid();
   }
 
   get state(): ConnectionState {
@@ -96,8 +108,11 @@ export class GatewayClient {
         cleanup();
         // Send connect handshake
         this.sendConnect()
-          .then(() => {
+          .then((hello) => {
             this.reconnectAttempt = 0;
+            if (hello.server?.version) {
+              this._gatewayVersion = hello.server.version;
+            }
             this.setState('connected');
             resolve();
           })
@@ -146,7 +161,7 @@ export class GatewayClient {
       throw new Error('Not connected to gateway');
     }
 
-    const id = crypto.randomUUID();
+    const id = uuid();
     const frame: RequestFrame = { type: 'req', id, method };
     if (params !== undefined) {
       frame.params = params;
@@ -190,11 +205,11 @@ export class GatewayClient {
       minProtocol: PROTOCOL_VERSION,
       maxProtocol: PROTOCOL_VERSION,
       client: {
-        id: 'yoyo-ai-gui',
+        id: 'openclaw-control-ui',
         displayName: 'Yoyo AI',
         version: '1.0.0',
         platform: navigator.platform,
-        mode: 'frontend',
+        mode: 'ui',
         instanceId: this._instanceId,
       },
       caps: [],
@@ -254,6 +269,11 @@ export class GatewayClient {
     // Track tick events for heartbeat
     if (frame.event === 'tick' && frame.payload) {
       this._lastTickTs = (frame.payload as { ts: number }).ts;
+    }
+
+    // Debug log for chat events
+    if (frame.event === 'chat.event' || frame.event === 'agent.event') {
+      console.debug('[GatewayClient] Event received:', frame.event, frame.payload);
     }
 
     // Notify listeners for this specific event

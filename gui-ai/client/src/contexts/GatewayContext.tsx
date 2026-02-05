@@ -43,21 +43,34 @@ export function GatewayProvider({ children }: GatewayProviderProps) {
 
     async function init() {
       try {
+        console.log('[GatewayProvider] Fetching gateway token...');
         // Fetch gateway token from our Hono backend
         const res = await fetch('/api/gateway-token');
         if (!res.ok) {
-          throw new Error(`Failed to fetch gateway token: ${res.status}`);
+          const errorText = await res.text();
+          console.error('[GatewayProvider] Token fetch failed:', res.status, errorText);
+          throw new Error(`Failed to fetch gateway token: ${res.status} - ${errorText}`);
         }
         const data: GatewayTokenResponse = await res.json();
+        console.log('[GatewayProvider] Token received, gateway URL:', data.gatewayUrl);
 
         if (cancelled) return;
 
+        // Build full WebSocket URL from the relative path (/ws/gateway)
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = data.gatewayUrl.startsWith('/')
+          ? `${wsProtocol}//${window.location.host}${data.gatewayUrl}`
+          : data.gatewayUrl;
+
+        console.log('[GatewayProvider] Connecting to WebSocket:', wsUrl);
+
         // Create and connect the gateway client
-        const gatewayClient = new GatewayClient(data.gatewayUrl, data.token);
+        const gatewayClient = new GatewayClient(wsUrl, data.token);
 
         // Listen for state changes
         gatewayClient.onStateChange((newState) => {
           if (!cancelled) {
+            console.log('[GatewayProvider] State change:', newState);
             setState(newState);
             if (newState === 'connected') {
               setError(null);
@@ -70,12 +83,13 @@ export function GatewayProvider({ children }: GatewayProviderProps) {
         setState('connecting');
 
         await gatewayClient.connect();
+        console.log('[GatewayProvider] Connected successfully');
       } catch (err) {
         if (!cancelled) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           setError(msg);
           setState('error');
-          console.error('[GatewayProvider] Init failed:', msg);
+          console.error('[GatewayProvider] Init failed:', msg, err);
         }
       }
     }

@@ -9,6 +9,7 @@ import { Card } from '../common/Card';
 import { Badge } from '../common/Badge';
 import { useGatewayQuery } from '../../hooks/useGatewayRPC';
 import type { Agent, ChannelsStatusResponse } from '../../lib/gateway-types';
+import { normalizeChannels } from '../../lib/gateway-types';
 
 interface AgentChannelsProps {
   agent: Agent;
@@ -44,13 +45,18 @@ export function AgentChannels({ agent }: AgentChannelsProps) {
   const channelNames = agent.channels || [];
 
   // Fetch full channel status for enriched data
-  const { data: channelsData } = useGatewayQuery<ChannelsStatusResponse>(
+  const { data: channelsData, error } = useGatewayQuery<ChannelsStatusResponse>(
     'channels.status',
     { probe: false },
-    { staleTime: 30_000 },
+    { staleTime: 30_000, retry: false },
   );
 
-  const allChannels = channelsData?.channels || [];
+  const allChannels = normalizeChannels(channelsData?.channels);
+
+  // Log if there was an error fetching channels
+  if (error) {
+    console.debug('[AgentChannels] Failed to fetch channels.status:', error.message);
+  }
 
   // Match agent channels with full channel data
   const enrichedChannels = channelNames.map((name) => {

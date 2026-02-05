@@ -22,6 +22,7 @@ import { gatewayTokenRouter } from './routes/gateway-token.js';
 
 // Services
 import { WebSocketManager } from './services/websocket.js';
+import { createGatewayProxy } from './services/gatewayProxy.js';
 import { initDatabase } from './lib/database.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -71,6 +72,34 @@ app.get('/ws', upgradeWebSocket((c) => ({
     console.error('WebSocket error:', error);
   },
 })));
+
+// Gateway WebSocket proxy - proxies browser WS to OpenClaw gateway
+app.get('/ws/gateway', upgradeWebSocket(() => {
+  let proxy: ReturnType<typeof createGatewayProxy> | null = null;
+
+  return {
+    onOpen: (_, ws) => {
+      proxy = createGatewayProxy(
+        {
+          send: (data: string) => ws.send(data),
+          close: () => ws.close(),
+        },
+        () => { proxy = null; },
+      );
+    },
+    onMessage: (event) => {
+      proxy?.handleBrowserMessage(event.data.toString());
+    },
+    onClose: () => {
+      proxy?.cleanup();
+      proxy = null;
+    },
+    onError: () => {
+      proxy?.cleanup();
+      proxy = null;
+    },
+  };
+}));
 
 // Health check
 app.get('/api/health', (c) => {

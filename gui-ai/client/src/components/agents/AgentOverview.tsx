@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { Badge } from '../common/Badge';
 import { Card } from '../common/Card';
-import type { Agent } from '../../lib/gateway-types';
+import { useGatewayQuery } from '../../hooks/useGatewayRPC';
+import type { Agent, StatusResponse } from '../../lib/gateway-types';
 
 interface AgentOverviewProps {
   agent: Agent;
@@ -28,6 +29,15 @@ function InfoRow({ icon, label, value }: { icon: React.ReactNode; label: string;
 
 export function AgentOverview({ agent }: AgentOverviewProps) {
   const displayName = agent.identity?.name || agent.name || agent.key;
+
+  // Fetch status to get default model if agent doesn't have one
+  const { data: statusData } = useGatewayQuery<StatusResponse>('status', undefined, {
+    staleTime: 60_000,
+     enabled: !agent.model, // Only fetch if agent has no model
+  });
+
+  // Use agent's model or fall back to default from status
+  const effectiveModel = agent.model || statusData?.agents?.defaults?.model?.primary;
 
   return (
     <div className="space-y-4">
@@ -69,7 +79,18 @@ export function AgentOverview({ agent }: AgentOverviewProps) {
         <InfoRow
           icon={<Cpu className="w-4 h-4" />}
           label="Model"
-          value={agent.model || <span className="text-terminal-text-muted italic">Not configured</span>}
+          value={
+            effectiveModel ? (
+              <span>
+                {effectiveModel}
+                {!agent.model && statusData?.agents?.defaults?.model?.primary && (
+                  <span className="text-terminal-text-muted italic ml-1">(default)</span>
+                )}
+              </span>
+            ) : (
+              <span className="text-terminal-text-muted italic">Not configured</span>
+            )
+          }
         />
 
         <InfoRow

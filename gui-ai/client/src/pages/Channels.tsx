@@ -18,6 +18,7 @@ import { useGatewayQuery, useGatewayMutation } from '../hooks/useGatewayRPC';
 import { useGatewayTick } from '../hooks/useGatewayEvent';
 import { useGatewayStatus } from '../hooks/useGatewayStatus';
 import type { ChannelsStatusResponse, Channel } from '../lib/gateway-types';
+import { normalizeChannels } from '../lib/gateway-types';
 
 const channelIcons: Record<string, React.ElementType> = {
   whatsapp: MessageCircle,
@@ -161,7 +162,7 @@ export default function Channels() {
     refetch();
   });
 
-  const channels = channelsData?.channels || [];
+  const channels = normalizeChannels(channelsData?.channels);
   const connected = channels.filter((c) => c.status === 'connected').length;
   const total = channels.length;
 

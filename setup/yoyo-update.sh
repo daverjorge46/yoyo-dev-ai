@@ -409,6 +409,7 @@ create_comprehensive_backup() {
         while IFS= read -r -d '' file; do
             current=$((current + 1))
             local rel_path="${file#.claude/commands/}"
+            mkdir -p "$backup_dir/commands/$(dirname "$rel_path")"
             cp "$file" "$backup_dir/commands/$rel_path"
             ui_update_progress "Backup" "$current" "$total" "commands/$rel_path" "$VERBOSE" >&2
         done < <(find ".claude/commands" -type f -print0 2>/dev/null)
@@ -423,6 +424,7 @@ create_comprehensive_backup() {
         while IFS= read -r -d '' file; do
             current=$((current + 1))
             local rel_path="${file#.claude/agents/}"
+            mkdir -p "$backup_dir/agents/$(dirname "$rel_path")"
             cp "$file" "$backup_dir/agents/$rel_path"
             ui_update_progress "Backup" "$current" "$total" "agents/$rel_path" "$VERBOSE" >&2
         done < <(find ".claude/agents" -type f -print0 2>/dev/null)
@@ -437,6 +439,7 @@ create_comprehensive_backup() {
         while IFS= read -r -d '' file; do
             current=$((current + 1))
             local rel_path="${file#.claude/hooks/}"
+            mkdir -p "$backup_dir/hooks/$(dirname "$rel_path")"
             cp "$file" "$backup_dir/hooks/$rel_path"
             ui_update_progress "Backup" "$current" "$total" "hooks/$rel_path" "$VERBOSE" >&2
         done < <(find ".claude/hooks" -type f -print0 2>/dev/null)

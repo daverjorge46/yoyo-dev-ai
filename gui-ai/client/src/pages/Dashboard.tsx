@@ -30,6 +30,7 @@ import type {
   ModelsListResponse,
   AgentsListResponse,
 } from '../lib/gateway-types';
+import { normalizeChannels } from '../lib/gateway-types';
 
 // Stats card component
 function StatsCard({
@@ -105,7 +106,7 @@ function GatewayStatusCard({
           <p className="text-xs sm:text-sm text-gray-500 dark:text-terminal-text-secondary truncate">
             {connected
               ? `Connected via WebSocket${version ? ` · v${version}` : ''}`
-              : 'Not connected — Start with: yoyo-ai start'}
+              : 'Not connected — Start with: yoyo-ai --start'}
           </p>
         </div>
         <div className="flex items-center gap-3 self-start sm:self-center">
@@ -254,7 +255,7 @@ export default function Dashboard() {
 
   // Derive stats from RPC responses
   const sessionList = sessions?.sessions ?? [];
-  const channelList = channelsData?.channels ?? [];
+  const channelList = normalizeChannels(channelsData?.channels);
   const cronJobs = cronData?.jobs ?? [];
   const models = modelsData?.models ?? [];
   const agents = agentsData?.agents ?? [];

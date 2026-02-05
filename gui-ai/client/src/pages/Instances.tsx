@@ -21,6 +21,7 @@ import type {
   AgentsListResponse,
   ChannelsStatusResponse,
 } from '../lib/gateway-types';
+import { normalizeChannels } from '../lib/gateway-types';
 
 function formatUptime(seconds?: number): string {
   if (seconds == null) return 'unknown';
@@ -84,7 +85,7 @@ export default function Instances() {
 
   const isLoading = loadingHealth || loadingStatus;
   const agents = agentsData?.agents || [];
-  const channels = channelsData?.channels || [];
+  const channels = normalizeChannels(channelsData?.channels);
   const connectedChannels = channels.filter((c) => c.status === 'connected').length;
 
   const refetchAll = () => {

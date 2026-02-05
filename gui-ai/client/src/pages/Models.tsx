@@ -8,13 +8,15 @@ import {
   Loader2,
   RefreshCw,
   AlertTriangle,
+  Star,
+  ChevronRight,
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
 import { Badge } from '../components/common/Badge';
 import { useGatewayQuery } from '../hooks/useGatewayRPC';
 import { useGatewayStatus } from '../hooks/useGatewayStatus';
-import type { ModelsListResponse, Model } from '../lib/gateway-types';
+import type { ModelsListResponse, Model, StatusResponse } from '../lib/gateway-types';
 
 function formatContextWindow(tokens?: number): string {
   if (!tokens) return '';
@@ -23,18 +25,34 @@ function formatContextWindow(tokens?: number): string {
   return tokens.toString();
 }
 
-function ModelCard({ model }: { model: Model }) {
+function ModelCard({ model, isDefault, isFallback }: { model: Model; isDefault?: boolean; isFallback?: boolean }) {
   return (
-    <Card variant="hover" className="p-4">
+    <Card variant="hover" className={`p-4 ${isDefault ? 'ring-2 ring-primary-400 ring-offset-2 ring-offset-terminal-surface' : ''}`}>
       <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-primary-500/10">
-          <Cpu className="w-5 h-5 text-primary-400" />
+        <div className={`p-2 rounded-lg ${isDefault ? 'bg-primary-500/20' : 'bg-primary-500/10'}`}>
+          {isDefault ? (
+            <Star className="w-5 h-5 text-primary-400" />
+          ) : (
+            <Cpu className="w-5 h-5 text-primary-400" />
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <h3 className="font-medium text-terminal-text truncate">
               {model.name || model.id}
             </h3>
+            {isDefault && (
+              <Badge variant="warning">
+                <Star className="w-3 h-3" />
+                Default
+              </Badge>
+            )}
+            {isFallback && (
+              <Badge variant="muted">
+                <ChevronRight className="w-3 h-3" />
+                Fallback
+              </Badge>
+            )}
             {model.contextWindow && (
               <Badge variant="muted">{formatContextWindow(model.contextWindow)} ctx</Badge>
             )}
@@ -83,7 +101,28 @@ export default function Models() {
     staleTime: 5 * 60 * 1000,
   });
 
+  // Fetch status to get default model configuration
+  const { data: statusData } = useGatewayQuery<StatusResponse>('status', undefined, {
+    staleTime: 30_000,
+  });
+
   const allModels = modelsData?.models || [];
+
+  // Get default model ID from status (e.g., "moonshot/kimi-k2.5")
+  const defaultModelId = statusData?.agents?.defaults?.model?.primary;
+  const fallbackModelIds = statusData?.agents?.defaults?.model?.fallback || [];
+
+  // Helper to check if a model matches the default
+  const isDefaultModel = (modelId: string): boolean => {
+    if (!defaultModelId) return false;
+    // Match full ID or just the model part after provider
+    return modelId === defaultModelId || defaultModelId.endsWith(`/${modelId}`);
+  };
+
+  // Helper to check if a model is a fallback
+  const isFallbackModel = (modelId: string): boolean => {
+    return fallbackModelIds.some((fb) => modelId === fb || fb.endsWith(`/${modelId}`));
+  };
 
   // Filter by search
   const filtered = search
@@ -156,6 +195,32 @@ export default function Models() {
         </Card>
       )}
 
+      {/* Default Model Info */}
+      {defaultModelId && (
+        <Card className="p-4 mb-6 border-l-4 border-l-primary-400">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-lg bg-primary-500/10">
+              <Star className="w-5 h-5 text-primary-400" />
+            </div>
+            <div>
+              <h3 className="font-medium text-terminal-text">Default Model Configuration</h3>
+              <p className="text-sm text-terminal-text-secondary">
+                Primary: <span className="font-mono text-primary-400">{defaultModelId}</span>
+                {fallbackModelIds.length > 0 && (
+                  <>
+                    {' · '}Fallbacks: {fallbackModelIds.map((fb, i) => (
+                      <span key={fb} className="font-mono text-terminal-text-muted">
+                        {fb}{i < fallbackModelIds.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                  </>
+                )}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
       {/* Search */}
       {allModels.length > 0 && (
         <div className="mb-6">
@@ -187,7 +252,12 @@ export default function Models() {
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {models.map((model) => (
-                    <ModelCard key={model.id} model={model} />
+                    <ModelCard
+                      key={model.id}
+                      model={model}
+                      isDefault={isDefaultModel(model.id)}
+                      isFallback={isFallbackModel(model.id)}
+                    />
                   ))}
                 </div>
               </div>

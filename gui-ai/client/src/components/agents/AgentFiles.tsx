@@ -41,13 +41,31 @@ export function AgentFiles({ agent }: AgentFilesProps) {
   const [loadingFile, setLoadingFile] = useState(false);
   const request = useGatewayRequest();
 
-  const { data: filesData, isLoading } = useGatewayQuery<AgentFilesListResponse>(
+  const { data: filesData, isLoading, error } = useGatewayQuery<AgentFilesListResponse>(
     'agents.files.list',
     { agentKey: agent.key },
-    { staleTime: 30_000 },
+    { staleTime: 30_000, retry: false },
   );
 
   const files = filesData?.files || [];
+
+  // Handle RPC not supported error
+  if (error) {
+    return (
+      <Card className="p-8 text-center">
+        <FolderOpen className="w-12 h-12 mx-auto text-terminal-text-muted mb-3 opacity-50" />
+        <h3 className="text-sm font-medium text-terminal-text mb-1">Files not available</h3>
+        <p className="text-xs text-terminal-text-muted">
+          The agent files API is not available.
+          {error.message && (
+            <span className="block mt-1 text-terminal-text-secondary font-mono text-[10px]">
+              {error.message}
+            </span>
+          )}
+        </p>
+      </Card>
+    );
+  }
 
   const handleFileClick = async (path: string) => {
     if (selectedFile === path) {

@@ -15,14 +15,19 @@ interface AgentSkillsProps {
 
 export function AgentSkills({ agent }: AgentSkillsProps) {
   // Fetch full skills status from gateway for enriched data
-  const { data: skillsData } = useGatewayQuery<SkillsStatusResponse>(
+  const { data: skillsData, error } = useGatewayQuery<SkillsStatusResponse>(
     'skills.status',
     undefined,
-    { staleTime: 60_000 },
+    { staleTime: 60_000, retry: false },
   );
 
   const agentSkillNames = agent.skills || [];
   const allSkills = skillsData?.skills || [];
+
+  // Log if there was an error fetching skills
+  if (error) {
+    console.debug('[AgentSkills] Failed to fetch skills.status:', error.message);
+  }
 
   // Match agent skills with full skill data
   const enrichedSkills = agentSkillNames.map((name) => {

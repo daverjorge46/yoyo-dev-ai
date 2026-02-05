@@ -1,8 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Menu, Wifi, WifiOff } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
 import { CollapsibleSidebar } from './CollapsibleSidebar';
+import { useGatewayStatus } from '../../hooks/useGatewayStatus';
 import { ThemeToggle, useTheme } from '../ThemeToggle';
 
 interface PanelLayoutProps {
@@ -18,18 +18,8 @@ export function PanelLayout({ children, detail, onDetailClose }: PanelLayoutProp
   const [isResizingDetail, setIsResizingDetail] = useState(false);
   const { theme, setTheme } = useTheme();
 
-  // Check OpenClaw connection status for header
-  const { data: statusData } = useQuery({
-    queryKey: ['openclaw-status'],
-    queryFn: async () => {
-      const res = await fetch('/api/status/openclaw');
-      if (!res.ok) return { connected: false };
-      return res.json();
-    },
-    refetchInterval: 10000,
-  });
-
-  const openclawConnected = statusData?.connected ?? false;
+  // Use WebSocket-based gateway status instead of removed HTTP endpoint
+  const { isConnected: openclawConnected } = useGatewayStatus();
 
   const handleDetailResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();

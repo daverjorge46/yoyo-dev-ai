@@ -65,6 +65,11 @@ export interface AuthParams {
 }
 
 export interface HelloPayload {
+  server?: {
+    version?: string;
+    host?: string;
+    connId?: string;
+  };
   policy?: {
     tickIntervalMs: number;
   };
@@ -129,7 +134,20 @@ export interface StatusResponse {
     bindAddress?: string;
     port?: number;
   };
-  agents?: Record<string, unknown>;
+  agents?: {
+    defaults?: {
+      model?: {
+        primary?: string;
+        fallback?: string[];
+      };
+    };
+    list?: Array<{
+      id?: string;
+      key?: string;
+      model?: string;
+    }>;
+    defaultId?: string;
+  };
   [key: string]: unknown;
 }
 
@@ -233,6 +251,10 @@ export interface Channel {
   phone?: string;
   username?: string;
   authAge?: string;
+  configured?: boolean;
+  linked?: boolean;
+  running?: boolean;
+  connected?: boolean;
   [key: string]: unknown;
 }
 
@@ -242,8 +264,23 @@ export interface ChannelsStatusParams {
 }
 
 export interface ChannelsStatusResponse {
-  channels: Channel[];
+  /** Gateway returns channels as an object keyed by channel type, e.g. { whatsapp: { ... } } */
+  channels: Record<string, Omit<Channel, 'type'>> | Channel[];
+  channelMeta?: Array<{ id: string; label: string; [key: string]: unknown }>;
   [key: string]: unknown;
+}
+
+/** Convert the gateway channels response (object or array) into a normalized Channel array */
+export function normalizeChannels(raw: ChannelsStatusResponse['channels'] | undefined): Channel[] {
+  if (!raw) return [];
+  if (Array.isArray(raw)) return raw;
+  return Object.entries(raw).map(([type, data]) => ({
+    ...data,
+    type,
+    status: data.connected ? 'connected' as const
+      : data.running ? 'disconnected' as const
+      : 'unknown' as const,
+  }));
 }
 
 // Models
@@ -288,7 +325,8 @@ export interface SkillsBinsResponse {
 export interface CronJob {
   id?: string;
   name: string;
-  expression: string;
+  expression?: string;
+  schedule?: string;
   enabled?: boolean;
   agentId?: string;
   command?: string;
@@ -351,6 +389,7 @@ export interface LogEntry {
 export interface ChatSendParams {
   sessionKey: string;
   message: string;
+  idempotencyKey: string;
   deliver?: boolean;
   attachments?: unknown[];
   model?: string;

@@ -29,7 +29,22 @@ import type {
   CronJob,
 } from '../lib/gateway-types';
 
-function formatSchedule(cron: string): string {
+function formatSchedule(cron: unknown): string {
+  // Handle null/undefined
+  if (cron == null) return 'No schedule';
+
+  // Handle non-string values (e.g., object)
+  if (typeof cron !== 'string') {
+    // If it's an object with expression property, use that
+    if (typeof cron === 'object' && 'expression' in cron) {
+      return formatSchedule((cron as { expression: unknown }).expression);
+    }
+    return 'Invalid schedule';
+  }
+
+  // Handle empty string
+  if (!cron.trim()) return 'No schedule';
+
   const parts = cron.split(' ');
   if (parts.length !== 5) return cron;
 
@@ -325,7 +340,7 @@ function CronJobCard({
             </div>
             <div>
               <h3 className="font-semibold text-terminal-text">{job.name}</h3>
-              <p className="text-xs text-terminal-text-secondary">{formatSchedule(job.expression)}</p>
+              <p className="text-xs text-terminal-text-secondary">{formatSchedule(job.expression || job.schedule)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -374,7 +389,7 @@ function CronJobCard({
               Next: {formatNextRun(job.nextRun)}
             </span>
           )}
-          <span className="text-xs text-terminal-text-muted font-mono">{job.expression}</span>
+          <span className="text-xs text-terminal-text-muted font-mono">{job.expression || job.schedule}</span>
         </div>
 
         {/* Actions */}

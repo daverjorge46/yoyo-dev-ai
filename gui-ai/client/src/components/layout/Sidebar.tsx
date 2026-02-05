@@ -13,7 +13,7 @@ import {
   Settings,
   Sparkles,
 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useGatewayStatus } from '../../hooks/useGatewayStatus';
 
 const navItems = [
   { to: '/', icon: LayoutDashboard, label: 'Overview' },
@@ -30,18 +30,8 @@ const navItems = [
 ];
 
 export function Sidebar() {
-  // Check OpenClaw connection status
-  const { data: statusData } = useQuery({
-    queryKey: ['openclaw-status'],
-    queryFn: async () => {
-      const res = await fetch('/api/status/openclaw');
-      if (!res.ok) return { connected: false };
-      return res.json();
-    },
-    refetchInterval: 10000, // Check every 10 seconds
-  });
-
-  const openclawConnected = statusData?.connected ?? false;
+  // Use WebSocket-based gateway status instead of removed HTTP endpoint
+  const { isConnected: openclawConnected } = useGatewayStatus();
 
   return (
     <div className="flex flex-col h-full">
