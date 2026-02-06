@@ -703,53 +703,124 @@ _repo_url() {
     fi
 }
 
+# Detect if the script is being run from within the yoyo-dev-ai source repo
+# Returns the repo root path on stdout, or empty if not in a source repo
+_detect_local_source() {
+    # Resolve the directory containing this script
+    local script_dir=""
+    if [ -n "${BASH_SOURCE[0]:-}" ]; then
+        script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    elif [ -f "$0" ]; then
+        script_dir="$(cd "$(dirname "$0")" && pwd)"
+    fi
+
+    # Check if script_dir/.. looks like the yoyo-dev-ai repo
+    if [ -n "$script_dir" ]; then
+        local candidate
+        candidate="$(cd "$script_dir/.." 2>/dev/null && pwd)"
+        if [ -f "$candidate/setup/install.sh" ] && [ -d "$candidate/instructions" ] && [ -d "$candidate/setup" ]; then
+            # Confirm it's not already the BASE_DIR itself
+            if [ "$candidate" != "$BASE_DIR" ]; then
+                echo "$candidate"
+                return 0
+            fi
+        fi
+    fi
+    return 1
+}
+
 clone_or_update_base() {
     detect_existing
+
+    # First check: are we running from within the source repo?
+    local local_source=""
+    local_source="$(_detect_local_source)" || true
 
     case "$EXISTING_BASE" in
         valid)
             _info "Existing BASE installation found at ${BASE_DIR}"
-            _info "Updating via git pull..."
-            if [ "$FLAG_DRY_RUN" = true ]; then
-                _detail "[dry-run] Would run: git -C ${BASE_DIR} pull origin ${FLAG_BRANCH}"
-                return 0
-            fi
-            if git -C "$BASE_DIR" pull origin "$FLAG_BRANCH" --ff-only 2>/dev/null; then
-                _ok "BASE updated"
+            if [ -n "$local_source" ]; then
+                _info "Updating from local source: ${local_source}"
+                if [ "$FLAG_DRY_RUN" = true ]; then
+                    _detail "[dry-run] Would rsync from ${local_source}/ to ${BASE_DIR}/"
+                    return 0
+                fi
+                _copy_from_local "$local_source"
             else
-                _warn "git pull failed (possibly diverged). Performing backup and re-clone..."
-                local backup="${BASE_DIR}.backup.$(date +%s)"
-                mv "$BASE_DIR" "$backup"
-                _detail "Backup saved to: $backup"
-                _clone_base
+                _info "Updating via git pull..."
+                if [ "$FLAG_DRY_RUN" = true ]; then
+                    _detail "[dry-run] Would run: git -C ${BASE_DIR} pull origin ${FLAG_BRANCH}"
+                    return 0
+                fi
+                if git -C "$BASE_DIR" pull origin "$FLAG_BRANCH" --ff-only 2>/dev/null; then
+                    _ok "BASE updated"
+                else
+                    _warn "git pull failed (possibly diverged). Performing backup and re-clone..."
+                    local backup="${BASE_DIR}.backup.$(date +%s)"
+                    mv "$BASE_DIR" "$backup"
+                    _detail "Backup saved to: $backup"
+                    _clone_base
+                fi
             fi
             ;;
         broken)
             _warn "Broken BASE installation detected at ${BASE_DIR}"
             if [ "$FLAG_DRY_RUN" = true ]; then
-                _detail "[dry-run] Would backup broken install and re-clone"
+                _detail "[dry-run] Would backup broken install and re-install"
                 return 0
             fi
             local backup="${BASE_DIR}.backup.$(date +%s)"
             mv "$BASE_DIR" "$backup"
             _detail "Backup saved to: $backup"
-            _clone_base
+            if [ -n "$local_source" ]; then
+                _copy_from_local "$local_source"
+            else
+                _clone_base
+            fi
             ;;
         none)
             _info "No existing installation found"
             if [ "$FLAG_DRY_RUN" = true ]; then
-                _detail "[dry-run] Would clone $(_repo_url) to ${BASE_DIR}"
+                if [ -n "$local_source" ]; then
+                    _detail "[dry-run] Would copy from local source: ${local_source}"
+                else
+                    _detail "[dry-run] Would clone $(_repo_url) to ${BASE_DIR}"
+                fi
                 return 0
             fi
-            _clone_base
+            if [ -n "$local_source" ]; then
+                _copy_from_local "$local_source"
+            else
+                _clone_base
+            fi
             ;;
     esac
 }
 
+# Copy from local source repo to BASE_DIR
+_copy_from_local() {
+    local source="$1"
+    _info "Installing from local source: ${source}"
+
+    if command -v rsync >/dev/null 2>&1; then
+        rsync -a --exclude='.git' --exclude='node_modules' --exclude='.yoyo-dev' \
+            "$source/" "$BASE_DIR/"
+    else
+        mkdir -p "$BASE_DIR"
+        # Copy key directories, skip .git and node_modules
+        for item in setup instructions standards .claude src gui gui-ai tests package.json; do
+            if [ -e "$source/$item" ]; then
+                cp -a "$source/$item" "$BASE_DIR/" 2>/dev/null || true
+            fi
+        done
+    fi
+    _ok "BASE installed from local source"
+}
+
 _clone_base() {
-    _info "Cloning yoyo-dev-ai to ${BASE_DIR}..."
     local repo_url
     repo_url="$(_repo_url)"
+    _info "Cloning yoyo-dev-ai to ${BASE_DIR}..."
     _info "Cloning from: ${repo_url}"
     if _retry 5 git clone --branch "$FLAG_BRANCH" --single-branch "$repo_url" "$BASE_DIR"; then
         _ok "BASE cloned successfully"
