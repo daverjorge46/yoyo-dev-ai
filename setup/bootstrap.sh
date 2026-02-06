@@ -25,7 +25,8 @@ set -eu
 
 readonly BOOTSTRAP_VERSION="1.0.0"
 readonly YOYO_VERSION="7.0.0"
-readonly REPO_URL="https://github.com/daverjorge46/yoyo-dev-ai.git"
+readonly REPO_HTTPS_URL="https://github.com/daverjorge46/yoyo-dev-ai.git"
+readonly REPO_SSH_URL="git@github.com:daverjorge46/yoyo-dev-ai.git"
 readonly REPO_RAW_URL="https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai"
 readonly BASE_DIR="$HOME/.yoyo-dev"
 readonly AI_DIR="$HOME/.yoyo-ai"
@@ -74,6 +75,7 @@ FLAG_BRANCH="main"
 FLAG_VERBOSE=false
 FLAG_DRY_RUN=false
 FLAG_UNINSTALL=false
+FLAG_SSH=false
 FLAG_HELP=false
 
 # =============================================================================
@@ -119,6 +121,9 @@ parse_flags() {
                 ;;
             --branch=*)
                 FLAG_BRANCH="${1#--branch=}"
+                ;;
+            --ssh)
+                FLAG_SSH=true
                 ;;
             --verbose)
                 FLAG_VERBOSE=true
@@ -167,6 +172,7 @@ OPTIONS:
   --yoyo-ai-only        Install only yoyo-ai/OpenClaw (skip dev tools)
   --no-deps             Skip dependency installation (assume pre-installed)
   --no-claude-code      Skip Claude Code CLI installation
+  --ssh                 Clone via SSH (git@github.com:) instead of HTTPS (for private repos)
   --prefix <path>       Custom install prefix for commands (default: auto-detect)
   --branch <name>       Clone specific branch (default: main)
   --verbose             Show detailed output for debugging
@@ -689,6 +695,14 @@ install_claude_code() {
 # BASE Installation (Clone/Update)
 # =============================================================================
 
+_repo_url() {
+    if [ "$FLAG_SSH" = true ]; then
+        echo "$REPO_SSH_URL"
+    else
+        echo "$REPO_HTTPS_URL"
+    fi
+}
+
 clone_or_update_base() {
     detect_existing
 
@@ -724,7 +738,7 @@ clone_or_update_base() {
         none)
             _info "No existing installation found"
             if [ "$FLAG_DRY_RUN" = true ]; then
-                _detail "[dry-run] Would clone ${REPO_URL} to ${BASE_DIR}"
+                _detail "[dry-run] Would clone $(_repo_url) to ${BASE_DIR}"
                 return 0
             fi
             _clone_base
@@ -734,11 +748,14 @@ clone_or_update_base() {
 
 _clone_base() {
     _info "Cloning yoyo-dev-ai to ${BASE_DIR}..."
-    if _retry 5 git clone --branch "$FLAG_BRANCH" --single-branch "$REPO_URL" "$BASE_DIR"; then
+    local repo_url
+    repo_url="$(_repo_url)"
+    _info "Cloning from: ${repo_url}"
+    if _retry 5 git clone --branch "$FLAG_BRANCH" --single-branch "$repo_url" "$BASE_DIR"; then
         _ok "BASE cloned successfully"
     else
         _error "Failed to clone repository"
-        _detail "URL: ${REPO_URL}"
+        _detail "URL: ${repo_url}"
         _detail "Branch: ${FLAG_BRANCH}"
         _detail "Please check your internet connection and try again"
         exit 1
@@ -1125,6 +1142,7 @@ run_interactive() {
     printf "\n${_C_BOLD}Installation Summary:${_C_RESET}\n"
     _detail "Components: $([ "$FLAG_YOYO_DEV_ONLY" = true ] && echo "yoyo-dev only" || ([ "$FLAG_YOYO_AI_ONLY" = true ] && echo "yoyo-ai only" || echo "yoyo-dev + yoyo-ai"))"
     _detail "Claude Code: $([ "$FLAG_NO_CLAUDE_CODE" = true ] && echo "skip" || echo "install")"
+    _detail "Clone via: $([ "$FLAG_SSH" = true ] && echo "SSH" || echo "HTTPS")"
     _detail "Branch: ${FLAG_BRANCH}"
     printf "\n"
     printf "Proceed with installation? [Y/n]: "
