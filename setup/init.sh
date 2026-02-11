@@ -13,13 +13,13 @@ set -e  # Exit on error
 
 VERSION="7.0.0"
 
-# Load shared base detection (sets DEFAULT_BASE_DIR, YOYO_BASE_DIR, detect_base_installation)
-source "$SCRIPT_DIR/lib/detect-base.sh"
-
 # Resolve script location (for when running from cloned repo before BASE install)
 SCRIPT_PATH="$(readlink -f "$0" 2>/dev/null || realpath "$0" 2>/dev/null || echo "$0")"
 SCRIPT_DIR="$(cd "$(dirname "$SCRIPT_PATH")" && pwd)"
 SCRIPT_PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Load shared base detection (sets DEFAULT_BASE_DIR, YOYO_BASE_DIR, detect_base_installation)
+source "$SCRIPT_DIR/lib/detect-base.sh"
 
 # Flags
 OVERWRITE_INSTRUCTIONS=false
