@@ -756,22 +756,11 @@ if [ "$INSTALL_COMPONENTS" != "yoyo-dev" ]; then
 ((++CURRENT_STEP))
 ui_step $CURRENT_STEP $TOTAL_STEPS "Installing YoYo AI Dashboard GUI..."
 
-GUI_AI_DIR="$HOME/.yoyo-ai/gui-ai"
-GUI_SOURCE="$BASE_YOYO_DEV/gui-ai"
+# GUI lives in the BASE installation and is served directly from there by yoyo-gui.sh.
+# No need to copy — just build dependencies in place.
+GUI_AI_DIR="$BASE_YOYO_DEV/gui-ai"
 
-if [ "$IS_FROM_BASE" = true ] && [ -d "$GUI_SOURCE" ]; then
-    # Create yoyo-ai home directory
-    mkdir -p "$HOME/.yoyo-ai"
-
-    # Copy gui-ai from base installation
-    if [ -d "$GUI_AI_DIR" ]; then
-        echo -e "  ${UI_DIM}Removing existing GUI installation...${UI_RESET}"
-        rm -rf "$GUI_AI_DIR"
-    fi
-
-    echo -e "  ${UI_DIM}Copying GUI files...${UI_RESET}"
-    cp -r "$GUI_SOURCE" "$GUI_AI_DIR"
-
+if [ "$IS_FROM_BASE" = true ] && [ -d "$GUI_AI_DIR" ]; then
     # Install dependencies and build
     if command -v npm &>/dev/null; then
         echo -e "  ${UI_DIM}Installing GUI dependencies...${UI_RESET}"
@@ -795,7 +784,7 @@ else
     if [ "$IS_FROM_BASE" = false ]; then
         ui_warning "GUI installation requires base installation"
     else
-        ui_warning "GUI source not found at $GUI_SOURCE"
+        ui_warning "GUI source not found at $GUI_AI_DIR"
     fi
 fi
 
