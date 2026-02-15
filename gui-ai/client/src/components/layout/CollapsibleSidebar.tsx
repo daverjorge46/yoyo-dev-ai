@@ -212,11 +212,8 @@ export function CollapsibleSidebar({
       `.trim()}
       >
         <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-          {/* Logo with subtle glow in dark mode */}
           <div className="flex-shrink-0 relative">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <span className="text-white text-xs font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
-            </div>
+            <img src="/yoyo.svg" alt="Yoyo AI" className="w-10 h-10 rounded-lg" />
           </div>
           {!collapsed && (
             <div>

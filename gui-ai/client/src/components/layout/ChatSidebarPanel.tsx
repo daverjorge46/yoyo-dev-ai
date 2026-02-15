@@ -30,7 +30,6 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
-import { ModelSelector } from '../common/ModelSelector';
 import { useTheme } from '../ThemeToggle';
 import { useStreamingChat, type StreamingMessage } from '../../hooks/useStreamingChat';
 import { useGatewayStatus } from '../../hooks/useGatewayStatus';
@@ -204,8 +203,6 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
   const [input, setInput] = useState('');
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('default');
-
   const { isConnected } = useGatewayStatus();
 
   const {
@@ -293,10 +290,10 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
       e.preventDefault();
       if (!input.trim()) return;
 
-      sendMessage(input.trim(), selectedModel);
+      sendMessage(input.trim());
       setInput('');
     },
-    [input, sendMessage, selectedModel],
+    [input, sendMessage],
   );
 
   return (
@@ -367,7 +364,7 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
           "
         >
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-amber-500 dark:text-amber-400 select-none">{`¯\\_(ツ)_/¯`}</span>
+            <img src="/yoyo.svg" alt="Yoyo AI" className="w-6 h-6 rounded" />
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               YoYo AI Chat
             </span>
@@ -410,9 +407,7 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
         <div className="flex-1 overflow-auto pl-2 bg-white dark:bg-gray-900">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-amber-500 flex items-center justify-center mb-4">
-                <span className="text-white text-sm font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
-              </div>
+              <img src="/yoyo.svg" alt="Yoyo AI" className="w-16 h-16 rounded-full mb-4" />
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 YoYo AI Chat
               </h2>
@@ -471,12 +466,6 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
           <Card className="overflow-hidden">
             <form onSubmit={handleSubmit}>
               <div className="flex items-end gap-2 p-2">
-                <ModelSelector
-                  selectedModel={selectedModel}
-                  onSelectModel={setSelectedModel}
-                  disabled={isStreaming}
-                  compact
-                />
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}

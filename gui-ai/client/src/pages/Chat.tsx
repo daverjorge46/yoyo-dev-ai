@@ -19,7 +19,6 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
-import { ModelSelector } from '../components/common/ModelSelector';
 import { useStreamingChat, type StreamingMessage } from '../hooks/useStreamingChat';
 import { useGatewayQuery } from '../hooks/useGatewayRPC';
 import { useGatewayStatus } from '../hooks/useGatewayStatus';
@@ -166,7 +165,6 @@ function formatTimeAgo(dateStr?: string): string {
 
 export default function Chat() {
   const [input, setInput] = useState('');
-  const [selectedModel, setSelectedModel] = useState('default');
   const [activeSessionKey, setActiveSessionKey] = useState<string | undefined>(undefined);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -204,10 +202,10 @@ export default function Chat() {
       e.preventDefault();
       if (!input.trim()) return;
 
-      sendMessage(input.trim(), selectedModel);
+      sendMessage(input.trim());
       setInput('');
     },
-    [input, sendMessage, selectedModel],
+    [input, sendMessage],
   );
 
   return (
@@ -316,9 +314,7 @@ export default function Chat() {
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
-                <span className="text-white text-sm font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
-              </div>
+              <img src="/yoyo.svg" alt="Yoyo AI" className="w-16 h-16 rounded-full mb-4" />
               <h2 className="text-xl font-semibold text-terminal-text mb-2">
                 Welcome to YoYo AI Chat
               </h2>
@@ -376,11 +372,6 @@ export default function Chat() {
           <Card className="overflow-hidden">
             <form onSubmit={handleSubmit}>
               <div className="flex items-end gap-2 p-2">
-                <ModelSelector
-                  selectedModel={selectedModel}
-                  onSelectModel={setSelectedModel}
-                  disabled={isStreaming}
-                />
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}

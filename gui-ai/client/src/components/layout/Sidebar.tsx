@@ -37,9 +37,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="p-4 border-b border-terminal-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
-            <span className="text-white text-xs font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
-          </div>
+          <img src="/yoyo.svg" alt="Yoyo AI" className="w-10 h-10 rounded-lg" />
           <div>
             <h1 className="font-semibold text-terminal-text">Yoyo AI</h1>
             <p className="text-xs text-terminal-text-secondary">Assistant</p>

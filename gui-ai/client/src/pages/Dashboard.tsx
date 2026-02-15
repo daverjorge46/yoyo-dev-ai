@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Card } from '../components/common/Card';
 import { Button } from '../components/common/Button';
+import { GatewayConfigCard } from '../components/dashboard/GatewayConfigCard';
 import { useGatewayQuery } from '../hooks/useGatewayRPC';
 import { useGatewayStatus } from '../hooks/useGatewayStatus';
 import { useGatewayTick } from '../hooks/useGatewayEvent';
@@ -275,9 +276,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <span className="text-white text-xs sm:text-sm font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
-          </div>
+          <img src="/yoyo.svg" alt="Yoyo AI" className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl" />
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-terminal-text">Yoyo AI Assistant</h1>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-terminal-text-secondary">
@@ -338,6 +337,11 @@ export default function Dashboard() {
           color="warning"
           to="/models"
         />
+      </div>
+
+      {/* Gateway Configuration */}
+      <div className="mb-6 sm:mb-8">
+        <GatewayConfigCard />
       </div>
 
       {/* Two column layout */}

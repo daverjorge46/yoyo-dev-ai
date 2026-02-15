@@ -29,7 +29,7 @@ interface UseStreamingChatOptions {
 
 interface UseStreamingChatReturn {
   messages: StreamingMessage[];
-  sendMessage: (content: string, model?: string) => void;
+  sendMessage: (content: string) => void;
   abort: () => void;
   isStreaming: boolean;
   isLoading: boolean;
@@ -270,7 +270,7 @@ export function useStreamingChat(options?: UseStreamingChatOptions): UseStreamin
   );
 
   const sendMessage = useCallback(
-    async (content: string, model?: string) => {
+    async (content: string) => {
       if (!client?.isConnected || !content.trim()) return;
 
       setError(null);
@@ -297,11 +297,8 @@ export function useStreamingChat(options?: UseStreamingChatOptions): UseStreamin
           idempotencyKey,
           deliver: true,
         };
-        if (model && model !== 'default') {
-          params.model = model;
-        }
 
-        console.debug('[useStreamingChat] Sending message:', { sessionKey, model, messageLength: content.trim().length });
+        console.debug('[useStreamingChat] Sending message:', { sessionKey, messageLength: content.trim().length });
         const res = await client.request<ChatSendResponse>('chat.send', params);
         console.debug('[useStreamingChat] Message sent, runId:', res.runId);
         activeRunId.current = res.runId;
