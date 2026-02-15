@@ -238,7 +238,12 @@ daemon_start() {
     fi
 
     # Fallback: start gateway directly in background
-    yoyo_claw gateway --port "$YOYO_CLAW_PORT" &>/dev/null &
+    local gateway_log="/tmp/yoyo-claw-gateway.log"
+    yoyo_claw gateway \
+        --port "$YOYO_CLAW_PORT" \
+        --token "${YOYO_CLAW_GATEWAY_TOKEN:-}" \
+        --allow-unconfigured \
+        >> "$gateway_log" 2>&1 &
     disown
     sleep 6
 
@@ -247,6 +252,7 @@ daemon_start() {
         show_yoyo_claw_dashboard_info
     else
         ui_warning "Gateway may not have started correctly"
+        echo -e "  Check log:    ${UI_PRIMARY}/tmp/yoyo-claw-gateway.log${UI_RESET}"
         echo -e "  Try manually: ${UI_PRIMARY}yoyo-ai --start${UI_RESET}"
         echo -e "  Or diagnose:  ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET}"
     fi

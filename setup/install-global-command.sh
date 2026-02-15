@@ -7,6 +7,7 @@
 #   - yoyo-update  : Update Yoyo Dev installation
 #   - yoyo-gui     : Browser-based GUI dashboard
 #   - yoyo-doctor  : Diagnose installation issues
+#   - yoyoclaw     : YoyoClaw CLI (OpenClaw pass-through)
 
 set -euo pipefail
 
@@ -40,6 +41,7 @@ declare -A COMMANDS=(
     ["yoyo-update"]="yoyo-update.sh"
     ["yoyo-gui"]="yoyo-gui.sh"
     ["yoyo-doctor"]="yoyo-doctor.sh"
+    ["yoyoclaw"]="yoyoclaw.sh"
 )
 
 # Legacy aliases (kept for backwards compatibility)
@@ -191,7 +193,7 @@ fi
 echo -e "${BOLD}Testing commands:${RESET}"
 echo ""
 
-for cmd in yoyo-dev yoyo-ai yoyo-cli yoyo-init yoyo-update yoyo-gui yoyo-doctor yoyo; do
+for cmd in yoyo-dev yoyo-ai yoyo-cli yoyo-init yoyo-update yoyo-gui yoyo-doctor yoyoclaw yoyo; do
     if command -v $cmd &> /dev/null; then
         echo -e "  ${GREEN}✓${RESET} ${CYAN}$cmd${RESET} is available"
     else
@@ -226,6 +228,10 @@ echo -e "  ${GREEN}yoyo-gui${RESET}          Launch browser-based GUI standalone
 echo -e "  ${GREEN}yoyo-gui --dev${RESET}    Development mode with hot reload"
 echo ""
 echo -e "  ${GREEN}yoyo-doctor${RESET}       Diagnose installation issues"
+echo ""
+echo -e "  ${GREEN}yoyoclaw${RESET}          YoyoClaw CLI (OpenClaw pass-through)"
+echo -e "  ${GREEN}yoyoclaw doctor${RESET}   Health checks + quick fixes"
+echo -e "  ${GREEN}yoyoclaw --help${RESET}   Show all available commands"
 echo ""
 echo -e "${DIM}BASE Installation:${RESET} ~/.yoyo-dev"
 echo -e "${DIM}Project Installation:${RESET} .yoyo-dev/"

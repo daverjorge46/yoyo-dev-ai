@@ -396,17 +396,45 @@ migrate_yoyo_claw_home() {
 }
 
 # Generate or load a persistent gateway token
+# Prefers token from openclaw.json config (set by onboarding), syncs to .gateway-token file.
 # Exports YOYO_CLAW_GATEWAY_TOKEN (and OPENCLAW_GATEWAY_TOKEN for compat)
 ensure_yoyo_claw_token() {
-    if [ -f "$YOYO_CLAW_TOKEN_FILE" ]; then
+    local config_token=""
+
+    # Prefer token from config (source of truth, set during onboarding/doctor)
+    if [ -f "$YOYO_CLAW_CONFIG_PATH" ]; then
+        config_token="$(yoyo_claw config get gateway.auth.token 2>/dev/null || echo "")"
+        # Filter out "undefined" or empty responses
+        if [ "$config_token" = "undefined" ] || [ -z "$config_token" ]; then
+            config_token=""
+        fi
+    fi
+
+    if [ -n "$config_token" ]; then
+        # Use config token and sync to .gateway-token file
+        YOYO_CLAW_GATEWAY_TOKEN="$config_token"
+        mkdir -p "$(dirname "$YOYO_CLAW_TOKEN_FILE")"
+        echo "$config_token" > "$YOYO_CLAW_TOKEN_FILE"
+        chmod 600 "$YOYO_CLAW_TOKEN_FILE"
+    elif [ -f "$YOYO_CLAW_TOKEN_FILE" ]; then
+        # Fall back to .gateway-token file
         YOYO_CLAW_GATEWAY_TOKEN="$(cat "$YOYO_CLAW_TOKEN_FILE")"
+        # Sync token back to config if config exists but token is missing
+        if [ -f "$YOYO_CLAW_CONFIG_PATH" ]; then
+            yoyo_claw config set gateway.auth.token "$YOYO_CLAW_GATEWAY_TOKEN" 2>/dev/null || true
+        fi
     else
+        # Generate a new token
         local token
         token="yoyo-$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
         mkdir -p "$(dirname "$YOYO_CLAW_TOKEN_FILE")"
         echo "$token" > "$YOYO_CLAW_TOKEN_FILE"
         chmod 600 "$YOYO_CLAW_TOKEN_FILE"
         YOYO_CLAW_GATEWAY_TOKEN="$token"
+        # Also set in config
+        if [ -f "$YOYO_CLAW_CONFIG_PATH" ]; then
+            yoyo_claw config set gateway.auth.token "$token" 2>/dev/null || true
+        fi
     fi
     export YOYO_CLAW_GATEWAY_TOKEN
     # Export under legacy name for backwards compatibility
@@ -440,7 +468,10 @@ patch_yoyo_claw_systemd_service() {
 # Ensure gateway.mode=local is set in openclaw.json
 set_yoyo_claw_gateway_mode() {
     if [ -f "$YOYO_CLAW_CONFIG_PATH" ]; then
-        if ! grep -q '"mode"' "$YOYO_CLAW_CONFIG_PATH" 2>/dev/null; then
+        # Check for gateway.mode specifically (not auth.mode which is a different field)
+        local current_mode
+        current_mode="$(yoyo_claw config get gateway.mode 2>/dev/null || echo "")"
+        if [ -z "$current_mode" ] || [ "$current_mode" = "undefined" ]; then
             yoyo_claw config set gateway.mode local 2>/dev/null || true
         fi
     fi

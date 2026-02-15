@@ -567,7 +567,7 @@ ui_step $CURRENT_STEP $TOTAL_STEPS "Verifying global commands (yoyo-dev, yoyo-ai
 if [ -f "$BASE_YOYO_DEV/setup/install-global-command.sh" ]; then
     # Check all critical commands (yoyo-dev, yoyo-ai, yoyo-cli)
     NEED_REINSTALL=false
-    for critical_cmd in yoyo-dev yoyo-ai yoyo-cli; do
+    for critical_cmd in yoyo-dev yoyo-ai yoyo-cli yoyoclaw; do
         if ! command -v "$critical_cmd" &>/dev/null; then
             show_progress "$critical_cmd not found"
             NEED_REINSTALL=true
