@@ -174,11 +174,11 @@ export function createGatewayProxy(
             const token = config?.gateway?.auth?.token;
             if (token) {
               frame.params.client = {
-                id: 'yoyo-ai-gui',
+                id: 'openclaw-control-ui',
                 displayName: frame.params.client?.displayName || 'Yoyo AI Dashboard',
                 version: frame.params.client?.version || '2.0.0',
                 platform: frame.params.client?.platform || 'linux',
-                mode: 'node',
+                mode: 'ui',
                 instanceId: frame.params.client?.instanceId || randomUUID(),
               };
               frame.params.auth = { token };
