@@ -70,7 +70,7 @@ yoyo-dev-ai/                      # Framework root (this repository)
 | Yoyo Dev GUI | React + Vite | Development environment dashboard (`gui/`) |
 | Yoyo AI GUI | React + Vite | AI assistant dashboard (`gui-ai/`) |
 | Memory System | SQLite + JSON | Persistent context storage |
-| Business & Personal AI | OpenClaw (npm) | Business and Personal AI Assistant on port 18789 |
+| Business and Personal AI | OpenClaw (npm) | Business and Personal AI Assistant on port 18789 |
 
 ### GUI Architecture
 

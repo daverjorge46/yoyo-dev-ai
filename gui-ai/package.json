@@ -1,7 +1,7 @@
 {
   "name": "yoyo-ai-gui",
   "version": "1.0.0",
-  "description": "Yoyo AI - Business & Personal AI Assistant Dashboard",
+  "description": "Yoyo AI - Business and Personal AI Assistant Dashboard",
   "type": "module",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",

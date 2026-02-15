@@ -282,7 +282,7 @@ export default function Dashboard() {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-terminal-text">Yoyo AI Assistant</h1>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-terminal-text-secondary">
-              Your personal and business AI assistant
+              Your Business and Personal AI Assistant
             </p>
           </div>
         </div>

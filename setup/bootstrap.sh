@@ -195,7 +195,7 @@ EXAMPLES:
 
 COMPONENTS:
   yoyo-dev      Development environment (Claude Code, specs, orchestration)
-  yoyo-ai       Business & Personal AI Assistant (OpenClaw daemon)
+  yoyo-ai       Business and Personal AI Assistant (OpenClaw daemon)
 
 DIRECTORIES:
   ~/.yoyo-dev   BASE installation (framework source, shared across projects)
