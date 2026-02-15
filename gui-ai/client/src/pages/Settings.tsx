@@ -17,6 +17,8 @@ import { Card } from '../components/common/Card';
 import { Badge } from '../components/common/Badge';
 import { Button } from '../components/common/Button';
 import { PageLoader } from '../components/common/LoadingSpinner';
+import { useGatewayQuery } from '../hooks/useGatewayRPC';
+import type { StatusResponse } from '../lib/gateway-types';
 
 interface SettingsData {
   notifications: {
@@ -140,6 +142,7 @@ function SelectSetting({
 
 export default function Settings() {
   const queryClient = useQueryClient();
+  const { data: gatewayStatus } = useGatewayQuery<StatusResponse>('status', undefined, { staleTime: 30_000 });
 
   // Fetch settings
   const { data: settings, isLoading } = useQuery<SettingsData>({
@@ -362,7 +365,7 @@ export default function Settings() {
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-terminal-text">YoYo AI Workspace</h3>
-                <p className="text-xs text-terminal-text-secondary">Version 1.0.0</p>
+                <p className="text-xs text-terminal-text-secondary">Version {gatewayStatus?.version || '...'}</p>
               </div>
               <Badge variant="accent">Beta</Badge>
             </div>

@@ -206,14 +206,24 @@ export default function Documents() {
   });
 
   // Summarize mutation
+  const [notice, setNotice] = useState<string | null>(null);
   const summarizeDocument = useMutation({
     mutationFn: async (id: string) => {
       const res = await fetch(`/api/documents/${id}/summarize`, { method: 'POST' });
+      if (res.status === 501) {
+        const data = await res.json();
+        throw new Error(data.error || 'AI summarization is not available');
+      }
       if (!res.ok) throw new Error('Failed to summarize document');
       return res.json();
     },
     onSuccess: () => {
+      setNotice(null);
       queryClient.invalidateQueries({ queryKey: ['documents'] });
+    },
+    onError: (err: Error) => {
+      setNotice(err.message);
+      setTimeout(() => setNotice(null), 5000);
     },
   });
 
@@ -295,6 +305,13 @@ export default function Documents() {
             })}
           </div>
         </div>
+
+        {/* Notice banner */}
+        {notice && (
+          <div className="mb-4 px-4 py-3 rounded-md bg-terminal-elevated border border-terminal-border text-sm text-terminal-text-secondary">
+            {notice}
+          </div>
+        )}
 
         {/* Documents grid */}
         {filteredDocuments.length === 0 ? (

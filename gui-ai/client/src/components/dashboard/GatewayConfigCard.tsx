@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Eye,
   EyeOff,
@@ -24,6 +25,7 @@ function maskToken(token: string): string {
 // --- Token Section ---
 
 function TokenSection() {
+  const queryClient = useQueryClient();
   const [token, setToken] = useState<string | null>(null);
   const [revealed, setRevealed] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -79,6 +81,7 @@ function TokenSection() {
         setEditing(false);
         setEditValue('');
         setSuccess(true);
+        queryClient.invalidateQueries({ queryKey: ['gateway', 'status'] });
         setTimeout(() => setSuccess(false), 3000);
       } else {
         setError(data.error || 'Failed to update token');
@@ -174,8 +177,8 @@ function TokenSection() {
 // --- Model Configuration Section ---
 
 function ModelConfigSection() {
+  const queryClient = useQueryClient();
   const [selectedModel, setSelectedModel] = useState<string>('');
-  const [saveAsDefault, setSaveAsDefault] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -198,10 +201,10 @@ function ModelConfigSection() {
 
   // Initialize selected model from active model
   useEffect(() => {
-    if (activeModel && activeModel !== 'unknown' && !selectedModel) {
+    if (activeModel && activeModel !== 'unknown') {
       setSelectedModel(activeModel);
     }
-  }, [activeModel, selectedModel]);
+  }, [activeModel]);
 
   // Group models by provider
   const groupedModels = models.reduce<Record<string, Model[]>>((acc, model) => {
@@ -211,25 +214,26 @@ function ModelConfigSection() {
     return acc;
   }, {});
 
-  const handleModelChange = async (newModel: string) => {
-    setSelectedModel(newModel);
+  const hasChanged = selectedModel !== activeModel && selectedModel !== '';
+
+  const handleSave = async () => {
+    if (!hasChanged) return;
     setSaveError(null);
     setSaveSuccess(false);
     setSaving(true);
 
     try {
-      if (saveAsDefault) {
-        const res = await fetch('/api/gateway-config', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ defaultModel: newModel }),
-        });
-        const data = await res.json();
-        if (!data.success) {
-          setSaveError(data.error || 'Failed to persist model');
-          return;
-        }
+      const res = await fetch('/api/gateway-config', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ defaultModel: selectedModel }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setSaveError(data.error || 'Failed to persist model');
+        return;
       }
+      queryClient.invalidateQueries({ queryKey: ['gateway', 'status'] });
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch {
@@ -237,6 +241,12 @@ function ModelConfigSection() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleCancel = () => {
+    setSelectedModel(activeModel);
+    setSaveError(null);
+    setSaveSuccess(false);
   };
 
   return (
@@ -281,7 +291,11 @@ function ModelConfigSection() {
           ) : (
             <select
               value={selectedModel}
-              onChange={(e) => handleModelChange(e.target.value)}
+              onChange={(e) => {
+                setSelectedModel(e.target.value);
+                setSaveError(null);
+                setSaveSuccess(false);
+              }}
               disabled={saving}
               className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-terminal-surface border border-gray-300 dark:border-terminal-border rounded-md text-gray-900 dark:text-terminal-text focus:outline-none focus:ring-1 focus:ring-primary dark:focus:ring-terminal-orange disabled:opacity-50"
             >
@@ -303,18 +317,27 @@ function ModelConfigSection() {
         </div>
       </div>
 
-      {/* Save as default checkbox */}
-      <label className="flex items-center gap-2 mb-3 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={saveAsDefault}
-          onChange={(e) => setSaveAsDefault(e.target.checked)}
-          className="rounded border-gray-300 dark:border-terminal-border text-primary dark:text-terminal-orange focus:ring-primary dark:focus:ring-terminal-orange"
-        />
-        <span className="text-xs text-gray-600 dark:text-terminal-text-secondary">
-          Save as default (persist to config)
-        </span>
-      </label>
+      {/* Save & Cancel buttons */}
+      {hasChanged && (
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md bg-primary-500 text-white hover:bg-primary-600 dark:bg-terminal-orange dark:text-terminal-bg dark:hover:bg-terminal-orange/90 transition-colors disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+            Save & Apply
+          </button>
+          <button
+            onClick={handleCancel}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-gray-600 dark:text-terminal-text-secondary hover:bg-gray-100 dark:hover:bg-terminal-elevated transition-colors disabled:opacity-50"
+          >
+            <X className="w-3 h-3" />
+            Cancel
+          </button>
+        </div>
+      )}
 
       {/* Fallback Models */}
       {fallbackModels.length > 0 && (

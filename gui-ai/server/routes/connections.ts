@@ -7,46 +7,6 @@ connectionsRouter.get('/', (c) => {
   const db = getDatabase();
   const connections = db.prepare('SELECT * FROM connections ORDER BY created_at DESC').all();
 
-  // If no connections, return some demo ones
-  if (connections.length === 0) {
-    return c.json({
-      connections: [
-        {
-          id: 'conn_gmail',
-          type: 'email',
-          provider: 'gmail',
-          name: 'Gmail',
-          account: 'user@gmail.com',
-          connected: true,
-          permissions: ['Read emails', 'Send emails', 'Manage labels'],
-          lastSync: new Date(Date.now() - 120000).toISOString(),
-          stats: { itemsProcessed: 142, actionsToday: 5 },
-        },
-        {
-          id: 'conn_gdrive',
-          type: 'storage',
-          provider: 'gdrive',
-          name: 'Google Drive',
-          account: 'user@gmail.com',
-          connected: true,
-          permissions: ['Read files', 'Write files'],
-          lastSync: new Date(Date.now() - 300000).toISOString(),
-          stats: { itemsProcessed: 45, actionsToday: 2 },
-        },
-        {
-          id: 'conn_gcalendar',
-          type: 'calendar',
-          provider: 'gcalendar',
-          name: 'Google Calendar',
-          account: 'user@gmail.com',
-          connected: false,
-          permissions: [],
-          stats: {},
-        },
-      ],
-    });
-  }
-
   return c.json({
     connections: connections.map((conn: any) => ({
       id: conn.id,
@@ -91,7 +51,6 @@ connectionsRouter.post('/', async (c) => {
   const id = generateId('conn_');
   const now = Date.now();
 
-  // Provider to name/type mapping
   const providerInfo: Record<string, { type: string; name: string }> = {
     gmail: { type: 'email', name: 'Gmail' },
     outlook: { type: 'email', name: 'Outlook' },
@@ -109,7 +68,6 @@ connectionsRouter.post('/', async (c) => {
     VALUES (?, ?, ?, ?, ?, ?)
   `).run(id, info.type, body.provider, info.name, 0, now);
 
-  // In a real implementation, this would initiate OAuth flow
   return c.json({
     connection: {
       id,
@@ -139,14 +97,5 @@ connectionsRouter.delete('/:id', (c) => {
 });
 
 connectionsRouter.get('/:id/activity', (c) => {
-  const id = c.req.param('id');
-
-  // Mock activity data
-  const activities = [
-    { id: 'act_1', action: 'Synced', count: 25, timestamp: new Date(Date.now() - 300000).toISOString() },
-    { id: 'act_2', action: 'Processed emails', count: 12, timestamp: new Date(Date.now() - 3600000).toISOString() },
-    { id: 'act_3', action: 'Sent auto-reply', count: 3, timestamp: new Date(Date.now() - 7200000).toISOString() },
-  ];
-
-  return c.json({ activities });
+  return c.json({ activities: [] });
 });

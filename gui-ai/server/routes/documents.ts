@@ -95,29 +95,11 @@ documentsRouter.post('/upload', async (c) => {
 });
 
 documentsRouter.post('/:id/summarize', async (c) => {
-  const db = getDatabase();
-  const id = c.req.param('id');
-
-  // In a real implementation, this would use AI to summarize
-  const mockSummary = 'This document contains important information about the topic. Key points include: 1) Overview of the subject matter, 2) Detailed analysis of findings, 3) Recommendations for next steps.';
-
-  db.prepare('UPDATE documents SET summary = ?, modified_at = ? WHERE id = ?').run(
-    mockSummary,
-    Date.now(),
-    id
-  );
-
-  return c.json({ summary: mockSummary });
+  return c.json({ error: 'AI summarization is not available. Connect an AI provider to enable this feature.' }, 501);
 });
 
 documentsRouter.post('/:id/ask', async (c) => {
-  const body = await c.req.json();
-  const question = body.question;
-
-  // In a real implementation, this would query the document with AI
-  const mockAnswer = `Based on the document, the answer to "${question}" is: The document discusses this topic in detail, providing comprehensive coverage of the subject matter.`;
-
-  return c.json({ answer: mockAnswer });
+  return c.json({ error: 'Document Q&A is not available. Connect an AI provider to enable this feature.' }, 501);
 });
 
 documentsRouter.delete('/:id', (c) => {
