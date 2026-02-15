@@ -48,7 +48,7 @@
 <tr>
 <td width="50%">
 
-### Yoyo AI (Business and Personal AI Assistant)
+### `¯\_(ツ)_/¯` Yoyo AI (Business and Personal AI Assistant)
 
 - **OpenClaw integration** -- always-on AI daemon
 - Messaging channels (CLI, API, webhooks)
@@ -346,9 +346,9 @@ Open PR link -> Review code -> Merge
 
 ---
 
-## Yoyo AI (Business and Personal AI Assistant)
+## `¯\_(ツ)_/¯` Yoyo AI (Business and Personal AI Assistant)
 
-**Yoyo AI** is a Business and Personal AI Assistant powered by [OpenClaw](https://github.com/openclaw). It runs as a background daemon alongside your development environment.
+**Yoyo AI** `¯\_(ツ)_/¯` is a Business and Personal AI Assistant powered by [OpenClaw](https://github.com/openclaw). It runs as a background daemon alongside your development environment.
 
 ### Commands
 

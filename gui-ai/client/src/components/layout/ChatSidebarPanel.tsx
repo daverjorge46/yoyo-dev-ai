@@ -367,7 +367,7 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
           "
         >
           <div className="flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-amber-500 dark:text-amber-400" />
+            <span className="text-xs font-bold text-amber-500 dark:text-amber-400 select-none">{`¯\\_(ツ)_/¯`}</span>
             <span className="text-sm font-medium text-gray-900 dark:text-white">
               YoYo AI Chat
             </span>
@@ -411,7 +411,7 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-amber-500 flex items-center justify-center mb-4">
-                <Sparkles className="w-8 h-8 text-white" />
+                <span className="text-white text-sm font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
               </div>
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
                 YoYo AI Chat

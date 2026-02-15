@@ -9,7 +9,6 @@ import {
   Activity,
   CheckCircle2,
   XCircle,
-  Sparkles,
   TrendingUp,
   Coins,
   Bot,
@@ -277,7 +276,7 @@ export default function Dashboard() {
       <div className="mb-6 sm:mb-8">
         <div className="flex items-center gap-3 mb-2">
           <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-            <Sparkles className="w-5 sm:w-7 h-5 sm:h-7 text-white" />
+            <span className="text-white text-xs sm:text-sm font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
           </div>
           <div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-terminal-text">Yoyo AI Assistant</h1>

@@ -11,7 +11,6 @@ import {
   Wand2,
   Terminal,
   Settings,
-  Sparkles,
 } from 'lucide-react';
 import { useGatewayStatus } from '../../hooks/useGatewayStatus';
 
@@ -39,7 +38,7 @@ export function Sidebar() {
       <div className="p-4 border-b border-terminal-border">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500 to-teal-600 flex items-center justify-center">
-            <Sparkles className="w-6 h-6 text-white" />
+            <span className="text-white text-xs font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
           </div>
           <div>
             <h1 className="font-semibold text-terminal-text">Yoyo AI</h1>

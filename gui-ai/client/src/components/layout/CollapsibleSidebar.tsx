@@ -18,7 +18,6 @@ import {
   Wand2,
   Terminal,
   Settings,
-  Sparkles,
   ChevronLeft,
   ChevronRight,
   X,
@@ -216,7 +215,7 @@ export function CollapsibleSidebar({
           {/* Logo with subtle glow in dark mode */}
           <div className="flex-shrink-0 relative">
             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-              <Sparkles className="w-6 h-6 text-white" />
+              <span className="text-white text-xs font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
             </div>
           </div>
           {!collapsed && (

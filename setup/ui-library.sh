@@ -188,7 +188,7 @@ export ICON_CLIPBOARD='📋'
 export ICON_BRANCH='🌿'
 
 # YoyoClaw / Yoyo AI icon
-export ICON_OPENCLAW='🐾'
+export ICON_OPENCLAW='¯\_(ツ)_/¯'
 
 # Agent-specific icons
 export ICON_AGENT_YOYO_AI='🤖'

@@ -317,7 +317,7 @@ export default function Chat() {
           ) : messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
               <div className="w-16 h-16 rounded-full bg-gradient-primary flex items-center justify-center mb-4">
-                <Sparkles className="w-8 h-8 text-white" />
+                <span className="text-white text-sm font-bold leading-none select-none" aria-label="Yoyo AI">{`¯\\_(ツ)_/¯`}</span>
               </div>
               <h2 className="text-xl font-semibold text-terminal-text mb-2">
                 Welcome to YoYo AI Chat
