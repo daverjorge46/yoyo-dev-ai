@@ -110,7 +110,7 @@ Options:
   ${UI_PRIMARY}--project-type=TYPE${UI_RESET}         Use specific project type
   ${UI_PRIMARY}--no-auto-mcp${UI_RESET}               Skip automatic MCP server installation
   ${UI_PRIMARY}--no-claude-md${UI_RESET}              Skip project CLAUDE.md generation
-  ${UI_PRIMARY}--yoyo-ai-only${UI_RESET}              Install only yoyo-ai (OpenClaw)
+  ${UI_PRIMARY}--yoyo-ai-only${UI_RESET}              Install only yoyo-ai (YoyoClaw)
   ${UI_PRIMARY}--yoyo-dev-only${UI_RESET}             Install only yoyo-dev (dev environment)
   ${UI_PRIMARY}--non-interactive${UI_RESET}           Run without prompts (use defaults)
   ${UI_PRIMARY}-h, --help${UI_RESET}                  Show this help message
@@ -228,7 +228,7 @@ if [ "$INTERACTIVE" = true ]; then
     echo -e "${UI_BOLD}What would you like to install?${UI_RESET}"
     echo ""
     ui_option "1" "Both (recommended)" "yoyo-dev (Dev Environment) + yoyo-ai (AI Assistant)" true
-    ui_option "2" "yoyo-ai only" "Business and Personal AI Assistant (OpenClaw)"
+    ui_option "2" "yoyo-ai only" "Business and Personal AI Assistant (YoyoClaw)"
     ui_option "3" "yoyo-dev only" "Development environment (Claude Code, Wave, GUI)"
 
     echo -n "  Choice [1]: "

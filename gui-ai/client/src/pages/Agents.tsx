@@ -54,7 +54,7 @@ export default function Agents() {
               Agents
             </h1>
             <p className="text-sm text-terminal-text-secondary mt-1">
-              Manage OpenClaw agents, tools, skills, and channels
+              Manage YoyoClaw agents, tools, skills, and channels
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -80,7 +80,7 @@ export default function Agents() {
             <div>
               <h3 className="font-medium text-terminal-text">Gateway disconnected</h3>
               <p className="text-sm text-terminal-text-secondary">
-                Connect to the OpenClaw gateway to view agents.
+                Connect to the YoyoClaw gateway to view agents.
               </p>
             </div>
           </div>
@@ -95,8 +95,8 @@ export default function Agents() {
           </h3>
           <p className="text-sm text-terminal-text-secondary max-w-md mx-auto">
             {isConnected
-              ? 'No agents are configured in OpenClaw.'
-              : 'Start the OpenClaw gateway to view agents.'}
+              ? 'No agents are configured in YoyoClaw.'
+              : 'Start the YoyoClaw gateway to view agents.'}
           </p>
         </Card>
       ) : (

@@ -212,7 +212,7 @@ export default function Channels() {
             <div>
               <h3 className="font-medium text-terminal-text">Gateway disconnected</h3>
               <p className="text-sm text-terminal-text-secondary">
-                Connect to the OpenClaw gateway to manage channels.
+                Connect to the YoyoClaw gateway to manage channels.
               </p>
             </div>
           </div>
@@ -238,7 +238,7 @@ export default function Channels() {
           </h3>
           <p className="text-sm text-terminal-text-secondary max-w-md mx-auto">
             {isConnected
-              ? 'No channels are configured in OpenClaw.'
+              ? 'No channels are configured in YoyoClaw.'
               : 'Connect to the gateway to view channels.'}
           </p>
         </Card>

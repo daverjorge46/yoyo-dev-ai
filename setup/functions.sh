@@ -356,29 +356,40 @@ is_yoyo_claw_built() {
     [ -d "$claw_dir/dist" ]
 }
 
-# Migrate ~/.yoyo-ai or ~/.openclaw -> ~/.yoyo-claw (one-time)
+# Migrate ~/.yoyo-ai or ~/.openclaw -> ~/.yoyo-claw
 migrate_yoyo_claw_home() {
-    # Migrate ~/.yoyo-ai -> ~/.yoyo-claw
+    # Step 1: Move ~/.yoyo-ai -> ~/.yoyo-claw (if real dir and target missing)
     if [ -d "$HOME/.yoyo-ai" ] && [ ! -L "$HOME/.yoyo-ai" ] && [ ! -d "$YOYO_CLAW_HOME" ]; then
         mv "$HOME/.yoyo-ai" "$YOYO_CLAW_HOME" 2>/dev/null && \
             echo "[migrate] Moved ~/.yoyo-ai -> $YOYO_CLAW_HOME" >&2
     fi
-    # Migrate ~/.openclaw -> ~/.yoyo-claw (if real dir, not symlink)
+    # Step 2: Move ~/.openclaw -> ~/.yoyo-claw (if real dir and target missing)
     if [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ] && [ ! -d "$YOYO_CLAW_HOME" ]; then
         mv "$HOME/.openclaw" "$YOYO_CLAW_HOME" 2>/dev/null && \
             echo "[migrate] Moved ~/.openclaw -> $YOYO_CLAW_HOME" >&2
     fi
-    # Ensure ~/.yoyo-claw exists
+    # Step 3: Ensure ~/.yoyo-claw exists
     mkdir -p "$YOYO_CLAW_HOME"
-    # Create ~/.openclaw symlink (OpenClaw internals expect it)
-    if [ ! -e "$HOME/.openclaw" ]; then
+    # Step 4: Fallback - if config missing in ~/.yoyo-claw, copy from ~/.openclaw
+    if [ ! -f "$YOYO_CLAW_CONFIG_PATH" ] && [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ]; then
+        if [ -f "$HOME/.openclaw/openclaw.json" ]; then
+            cp -a "$HOME/.openclaw/." "$YOYO_CLAW_HOME/" 2>/dev/null && \
+                echo "[migrate] Copied ~/.openclaw contents -> $YOYO_CLAW_HOME" >&2
+        fi
+    fi
+    # Step 5: Replace real ~/.openclaw dir with symlink (after migration)
+    if [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ]; then
+        # Config is now in ~/.yoyo-claw, replace real dir with symlink
+        rm -rf "$HOME/.openclaw"
+        ln -sf "$YOYO_CLAW_HOME" "$HOME/.openclaw"
+    elif [ ! -e "$HOME/.openclaw" ]; then
         ln -sf "$YOYO_CLAW_HOME" "$HOME/.openclaw"
     fi
-    # Create ~/.yoyo-ai symlink for backwards compat
+    # Step 6: Create ~/.yoyo-ai symlink for backwards compat
     if [ ! -e "$HOME/.yoyo-ai" ]; then
         ln -sf "$YOYO_CLAW_HOME" "$HOME/.yoyo-ai"
     fi
-    # Set file permissions
+    # Step 7: Set file permissions
     chmod 700 "$YOYO_CLAW_HOME" 2>/dev/null || true
     [ -f "$YOYO_CLAW_CONFIG_PATH" ] && chmod 600 "$YOYO_CLAW_CONFIG_PATH" 2>/dev/null || true
     [ -f "$YOYO_CLAW_TOKEN_FILE" ] && chmod 600 "$YOYO_CLAW_TOKEN_FILE" 2>/dev/null || true

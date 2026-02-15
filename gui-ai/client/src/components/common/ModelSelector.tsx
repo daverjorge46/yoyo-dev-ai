@@ -28,7 +28,7 @@ interface ModelSelectorProps {
 
 // Fallback models when gateway is unavailable
 export const DEFAULT_MODELS: Model[] = [
-  { id: 'default', name: 'Default', provider: 'OpenClaw', description: 'Default agent model' },
+  { id: 'default', name: 'Default', provider: 'YoyoClaw', description: 'Default agent model' },
 ];
 
 function mapGatewayModels(gatewayModels: GatewayModel[]): Model[] {

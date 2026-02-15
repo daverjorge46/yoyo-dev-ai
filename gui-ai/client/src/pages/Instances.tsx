@@ -114,7 +114,7 @@ export default function Instances() {
               Instances
             </h1>
             <p className="text-sm text-terminal-text-secondary mt-1">
-              OpenClaw gateway instance overview
+              YoyoClaw gateway instance overview
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -141,7 +141,7 @@ export default function Instances() {
             <div>
               <h3 className="font-medium text-terminal-text">Gateway disconnected</h3>
               <p className="text-sm text-terminal-text-secondary">
-                Connect to the OpenClaw gateway to view instance details.
+                Connect to the YoyoClaw gateway to view instance details.
               </p>
             </div>
           </div>

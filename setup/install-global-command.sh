@@ -208,7 +208,7 @@ echo -e "  ${GREEN}yoyo-dev${RESET}          Launch Wave Terminal with yoyo-dev-
 echo -e "  ${GREEN}yoyo-dev --no-wave${RESET}  Launch Claude Code without Wave Terminal"
 echo -e "  ${GREEN}yoyo-dev --help${RESET}   Show dev environment reference"
 echo ""
-echo -e "  ${GREEN}yoyo-ai${RESET}           Business and Personal AI Assistant (OpenClaw)"
+echo -e "  ${GREEN}yoyo-ai${RESET}           Business and Personal AI Assistant (YoyoClaw)"
 echo -e "  ${GREEN}yoyo-ai --start${RESET}   Start AI daemon"
 echo -e "  ${GREEN}yoyo-ai --stop${RESET}    Stop AI daemon"
 echo -e "  ${GREEN}yoyo-ai --help${RESET}    Show AI Assistant reference"

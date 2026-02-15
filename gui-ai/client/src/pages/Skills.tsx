@@ -184,7 +184,7 @@ export default function Skills() {
             <div>
               <h3 className="font-medium text-terminal-text">Gateway disconnected</h3>
               <p className="text-sm text-terminal-text-secondary">
-                Connect to the OpenClaw gateway to view skills.
+                Connect to the YoyoClaw gateway to view skills.
               </p>
             </div>
           </div>
@@ -230,7 +230,7 @@ export default function Skills() {
             {search
               ? 'Try a different search term.'
               : isConnected
-                ? 'No skills are installed in OpenClaw.'
+                ? 'No skills are installed in YoyoClaw.'
                 : 'Connect to the gateway to view skills.'}
           </p>
         </Card>

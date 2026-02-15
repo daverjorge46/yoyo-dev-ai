@@ -187,7 +187,7 @@ export ICON_CIRCLE='◉'
 export ICON_CLIPBOARD='📋'
 export ICON_BRANCH='🌿'
 
-# OpenClaw / Yoyo AI icon
+# YoyoClaw / Yoyo AI icon
 export ICON_OPENCLAW='🐾'
 
 # Agent-specific icons
@@ -1875,14 +1875,14 @@ ui_update_summary_panel() {
 }
 
 # ============================================================================
-# Yoyo AI (OpenClaw) Branded Banner
+# Yoyo AI (YoyoClaw) Branded Banner
 # ============================================================================
 
 # Print the branded YOYO AI Assistant banner
 # Usage: ui_yoyo_ai_banner [version]
 ui_yoyo_ai_banner() {
     local version="${1:-v1.0.0}"
-    local tagline="Your Business and Personal AI Assistant - powered by DAVECORPORATE and OpenClaw"
+    local tagline="Your Business and Personal AI Assistant - powered by YoyoClaw"
     local term_width
     term_width=$(_get_terminal_width)
 

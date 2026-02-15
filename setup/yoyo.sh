@@ -854,7 +854,7 @@ show_help() {
     echo -e "  ${UI_SUCCESS}YOYO AI (Business and Personal AI Assistant)${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
     echo ""
-    echo -e "  ${UI_PRIMARY}yoyo-ai --start${UI_RESET}    ${UI_DIM}Start AI daemon (OpenClaw)${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --start${UI_RESET}    ${UI_DIM}Start AI daemon (YoyoClaw)${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --stop${UI_RESET}     ${UI_DIM}Stop AI daemon${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --status${UI_RESET}   ${UI_DIM}Check daemon status${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --help${UI_RESET}     ${UI_DIM}Full AI Assistant reference${UI_RESET}"

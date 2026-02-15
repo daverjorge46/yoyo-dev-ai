@@ -188,7 +188,7 @@ export default function Models() {
             <div>
               <h3 className="font-medium text-terminal-text">Gateway disconnected</h3>
               <p className="text-sm text-terminal-text-secondary">
-                Connect to the OpenClaw gateway to view models.
+                Connect to the YoyoClaw gateway to view models.
               </p>
             </div>
           </div>

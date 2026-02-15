@@ -140,7 +140,7 @@ export default function Commands() {
             <div>
               <h3 className="font-medium text-terminal-text">Gateway disconnected</h3>
               <p className="text-sm text-terminal-text-secondary">
-                Connect to the OpenClaw gateway to view commands.
+                Connect to the YoyoClaw gateway to view commands.
               </p>
             </div>
           </div>

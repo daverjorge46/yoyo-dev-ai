@@ -70,7 +70,7 @@ export function Sidebar() {
 
       {/* Bottom section */}
       <div className="p-3 border-t border-terminal-border space-y-2">
-        {/* OpenClaw connection status */}
+        {/* YoyoClaw connection status */}
         <div className="flex items-center gap-2 px-3 py-2 text-xs bg-terminal-elevated/50 rounded-md">
           <div
             className={`w-2 h-2 rounded-full ${
@@ -80,7 +80,7 @@ export function Sidebar() {
             }`}
           />
           <span className="text-terminal-text-muted">
-            OpenClaw {openclawConnected ? 'Connected' : 'Disconnected'}
+            YoyoClaw {openclawConnected ? 'Connected' : 'Disconnected'}
           </span>
         </div>
 

@@ -263,7 +263,7 @@ export function CollapsibleSidebar({
 
       {/* Bottom section */}
       <div className="px-2 py-3 border-t border-gray-200 dark:border-terminal-border space-y-2">
-        {/* OpenClaw connection status */}
+        {/* YoyoClaw connection status */}
         {!collapsed && (
           <div className="flex items-center gap-2 px-3 py-2 text-xs bg-gray-50 dark:bg-terminal-elevated/50 rounded-md">
             <div
@@ -274,7 +274,7 @@ export function CollapsibleSidebar({
               }`}
             />
             <span className="text-gray-500 dark:text-terminal-text-muted">
-              OpenClaw {openclawConnected ? 'Connected' : 'Disconnected'}
+              YoyoClaw {openclawConnected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
         )}

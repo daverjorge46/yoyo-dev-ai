@@ -101,7 +101,7 @@ function GatewayStatusCard({
         </div>
         <div className="flex-1 min-w-0">
           <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-terminal-text">
-            OpenClaw Gateway
+            YoyoClaw Gateway
           </h3>
           <p className="text-xs sm:text-sm text-gray-500 dark:text-terminal-text-secondary truncate">
             {connected
