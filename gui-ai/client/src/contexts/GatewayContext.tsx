@@ -7,6 +7,10 @@ interface GatewayContextValue {
   state: ConnectionState;
   error: string | null;
   reconnect: () => void;
+  /** True when waiting for manual token input */
+  needsToken: boolean;
+  /** Submit a token manually (when auto-load failed) */
+  submitToken: (token: string) => void;
 }
 
 const GatewayContext = createContext<GatewayContextValue>({
@@ -14,6 +18,8 @@ const GatewayContext = createContext<GatewayContextValue>({
   state: 'disconnected',
   error: null,
   reconnect: () => {},
+  needsToken: false,
+  submitToken: () => {},
 });
 
 export function useGateway(): GatewayContextValue {
@@ -36,7 +42,37 @@ export function GatewayProvider({ children }: GatewayProviderProps) {
   const [state, setState] = useState<ConnectionState>('disconnected');
   const [error, setError] = useState<string | null>(null);
   const [client, setClient] = useState<GatewayClient | null>(null);
+  const [needsToken, setNeedsToken] = useState(false);
   const clientRef = useRef<GatewayClient | null>(null);
+
+  const connectWithToken = useCallback(async (token: string, gatewayUrl: string) => {
+    // Build full WebSocket URL from the relative path (/ws/gateway)
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const wsUrl = gatewayUrl.startsWith('/')
+      ? `${wsProtocol}//${window.location.host}${gatewayUrl}`
+      : gatewayUrl;
+
+    console.log('[GatewayProvider] Connecting to WebSocket:', wsUrl);
+
+    const gatewayClient = new GatewayClient(wsUrl, token);
+
+    gatewayClient.onStateChange((newState) => {
+      console.log('[GatewayProvider] State change:', newState);
+      setState(newState);
+      if (newState === 'connected') {
+        setError(null);
+        setNeedsToken(false);
+      }
+    });
+
+    clientRef.current = gatewayClient;
+    setClient(gatewayClient);
+    setState('connecting');
+    setNeedsToken(false);
+
+    await gatewayClient.connect();
+    console.log('[GatewayProvider] Connected successfully');
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -44,50 +80,29 @@ export function GatewayProvider({ children }: GatewayProviderProps) {
     async function init() {
       try {
         console.log('[GatewayProvider] Fetching gateway token...');
-        // Fetch gateway token from our Hono backend
         const res = await fetch('/api/gateway-token');
         if (!res.ok) {
-          const errorText = await res.text();
-          console.error('[GatewayProvider] Token fetch failed:', res.status, errorText);
-          throw new Error(`Failed to fetch gateway token: ${res.status} - ${errorText}`);
+          const body = await res.json().catch(() => ({}));
+          const detail = (body as Record<string, string>).error || `HTTP ${res.status}`;
+          console.warn('[GatewayProvider] Token auto-load failed:', detail);
+          if (!cancelled) {
+            setError(detail);
+            setNeedsToken(true);
+            setState('error');
+          }
+          return;
         }
         const data: GatewayTokenResponse = await res.json();
         console.log('[GatewayProvider] Token received, gateway URL:', data.gatewayUrl);
 
         if (cancelled) return;
 
-        // Build full WebSocket URL from the relative path (/ws/gateway)
-        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-        const wsUrl = data.gatewayUrl.startsWith('/')
-          ? `${wsProtocol}//${window.location.host}${data.gatewayUrl}`
-          : data.gatewayUrl;
-
-        console.log('[GatewayProvider] Connecting to WebSocket:', wsUrl);
-
-        // Create and connect the gateway client
-        const gatewayClient = new GatewayClient(wsUrl, data.token);
-
-        // Listen for state changes
-        gatewayClient.onStateChange((newState) => {
-          if (!cancelled) {
-            console.log('[GatewayProvider] State change:', newState);
-            setState(newState);
-            if (newState === 'connected') {
-              setError(null);
-            }
-          }
-        });
-
-        clientRef.current = gatewayClient;
-        setClient(gatewayClient);
-        setState('connecting');
-
-        await gatewayClient.connect();
-        console.log('[GatewayProvider] Connected successfully');
+        await connectWithToken(data.token, data.gatewayUrl);
       } catch (err) {
         if (!cancelled) {
           const msg = err instanceof Error ? err.message : 'Unknown error';
           setError(msg);
+          setNeedsToken(true);
           setState('error');
           console.error('[GatewayProvider] Init failed:', msg, err);
         }
@@ -101,7 +116,7 @@ export function GatewayProvider({ children }: GatewayProviderProps) {
       clientRef.current?.disconnect();
       clientRef.current = null;
     };
-  }, []);
+  }, [connectWithToken]);
 
   const reconnect = useCallback(() => {
     const c = clientRef.current;
@@ -115,8 +130,27 @@ export function GatewayProvider({ children }: GatewayProviderProps) {
     }
   }, []);
 
+  const submitToken = useCallback(async (token: string) => {
+    try {
+      // Disconnect existing client if any
+      clientRef.current?.disconnect();
+      clientRef.current = null;
+      setClient(null);
+      setError(null);
+
+      // Use the proxy WebSocket URL
+      await connectWithToken(token, '/ws/gateway');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Connection failed';
+      setError(msg);
+      setState('error');
+      // Keep needsToken true so the input stays visible
+      setNeedsToken(true);
+    }
+  }, [connectWithToken]);
+
   return (
-    <GatewayContext.Provider value={{ client, state, error, reconnect }}>
+    <GatewayContext.Provider value={{ client, state, error, reconnect, needsToken, submitToken }}>
       {children}
     </GatewayContext.Provider>
   );

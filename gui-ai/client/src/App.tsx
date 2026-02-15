@@ -1,5 +1,6 @@
 import { Routes, Route } from 'react-router-dom';
 import { PanelLayout } from './components/layout/PanelLayout';
+import { TokenGate } from './components/TokenGate';
 import Dashboard from './pages/Dashboard';
 import Agents from './pages/Agents';
 import Channels from './pages/Channels';
@@ -13,9 +14,16 @@ import Commands from './pages/Commands';
 import Settings from './pages/Settings';
 import { ChatPanelProvider, useChatPanel } from './contexts/ChatPanelContext';
 import { ChatSidebarPanel } from './components/layout/ChatSidebarPanel';
+import { useGateway } from './contexts/GatewayContext';
 
 function AppContent() {
   const { isChatOpen, closeChat } = useChatPanel();
+  const { needsToken } = useGateway();
+
+  // Show token input gate when auto-load failed
+  if (needsToken) {
+    return <TokenGate />;
+  }
 
   return (
     <>

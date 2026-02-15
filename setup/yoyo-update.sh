@@ -942,88 +942,122 @@ else
     echo ""
 fi
 
-# Step 13: Update OpenClaw (yoyo-ai) — mandatory in V7
+# Step 13: Update Yoyo Claw (yoyo-ai) — local OpenClaw fork
 CURRENT_STEP=$((CURRENT_STEP + 1))
-ui_step $CURRENT_STEP $TOTAL_STEPS "Updating OpenClaw (yoyo-ai)..."
+ui_step $CURRENT_STEP $TOTAL_STEPS "Updating Yoyo Claw (yoyo-ai)..."
 
 YOYO_AI_STATUS="failed:unknown"
 
-# Source functions.sh for check_node_version
+# Source functions.sh for yoyo-claw helpers
 if [ -f "$SCRIPT_DIR/functions.sh" ]; then
     source "$SCRIPT_DIR/functions.sh"
 fi
 
-# Add yoyo_ai config section if missing (migration for existing installs)
-if [ -f ".yoyo-dev/config.yml" ] && ! grep -q "^yoyo_ai:" .yoyo-dev/config.yml 2>/dev/null; then
-    show_progress "Adding yoyo_ai config section"
-    cat >> .yoyo-dev/config.yml << 'YOYO_AI_EOF'
+# Migrate ~/.openclaw or ~/.yoyo-ai → ~/.yoyo-claw (one-time, preserves all data)
+show_progress "Checking home directory migration..."
+migrate_yoyo_claw_home
 
-# Yoyo AI (OpenClaw Business and Personal AI Assistant)
+# Config YAML migration: openclaw: → yoyo_claw:
+if [ -f ".yoyo-dev/config.yml" ]; then
+    if grep -q "^yoyo_ai:" .yoyo-dev/config.yml 2>/dev/null; then
+        if grep -q "  openclaw:" .yoyo-dev/config.yml 2>/dev/null; then
+            # Old format detected — replace entire yoyo_ai: block with new format
+            show_progress "Migrating config: openclaw → yoyo_claw"
+            # Remove old yoyo_ai block (indented lines + header comment)
+            awk '
+                /^# Yoyo AI/ { next }
+                /^yoyo_ai:/ { in_block=1; next }
+                in_block && /^[a-zA-Z]/ { in_block=0 }
+                in_block { next }
+                { print }
+            ' .yoyo-dev/config.yml > .yoyo-dev/config.yml.tmp 2>/dev/null && \
+                mv .yoyo-dev/config.yml.tmp .yoyo-dev/config.yml
+            # Append new block
+            cat >> .yoyo-dev/config.yml << 'YOYO_AI_EOF'
+
+# Yoyo AI (Yoyo Claw - local OpenClaw fork)
 yoyo_ai:
   enabled: true
-  openclaw:
-    installed: false
+  yoyo_claw:
+    source: "local"
+    build_dir: "yoyo-claw/"
     port: 18789
-    config_path: "~/.openclaw/openclaw.json"
+    config_path: "~/.yoyo-claw/openclaw.json"
+    security:
+      localhost_only: true
+      credential_encryption: true
+      command_allowlist: true
+      audit_logging: true
     daemon:
       auto_start: false
       service_type: "auto"
-    update:
-      auto_check: true
 YOYO_AI_EOF
-    track_file_change ".yoyo-dev/config.yml (yoyo_ai section added)"
+            track_file_change ".yoyo-dev/config.yml (yoyo_ai: openclaw → yoyo_claw)"
+        fi
+        # else: yoyo_claw: already present — already migrated, nothing to do
+    else
+        # No yoyo_ai section at all — add it fresh
+        show_progress "Adding yoyo_ai config section"
+        cat >> .yoyo-dev/config.yml << 'YOYO_AI_EOF'
+
+# Yoyo AI (Yoyo Claw - local OpenClaw fork)
+yoyo_ai:
+  enabled: true
+  yoyo_claw:
+    source: "local"
+    build_dir: "yoyo-claw/"
+    port: 18789
+    config_path: "~/.yoyo-claw/openclaw.json"
+    security:
+      localhost_only: true
+      credential_encryption: true
+      command_allowlist: true
+      audit_logging: true
+    daemon:
+      auto_start: false
+      service_type: "auto"
+YOYO_AI_EOF
+        track_file_change ".yoyo-dev/config.yml (yoyo_ai section added)"
+    fi
 fi
 
-if command -v openclaw &>/dev/null; then
-    current_oc_ver=$(openclaw --version 2>/dev/null || echo "unknown")
-    show_progress "Current OpenClaw version" "$current_oc_ver"
-    show_progress "Updating OpenClaw..."
+# Build yoyo-claw from source
+if is_yoyo_claw_built; then
+    # Already built — rebuild to pick up updates from git pull
+    current_claw_ver=$(yoyo_claw --version 2>/dev/null || echo "unknown")
+    show_progress "Current Yoyo Claw version" "$current_claw_ver"
+    show_progress "Rebuilding from source..."
 
-    if npm update -g openclaw@latest 2>&1 | tail -1; then
-        new_oc_ver=$(openclaw --version 2>/dev/null || echo "unknown")
-        ui_success "OpenClaw updated to ${new_oc_ver}"
-        track_file_change "OpenClaw (${current_oc_ver} → ${new_oc_ver})"
-        if [ "$current_oc_ver" = "$new_oc_ver" ]; then
+    if build_yoyo_claw 2>&1 | tail -3; then
+        new_claw_ver=$(yoyo_claw --version 2>/dev/null || echo "unknown")
+        ui_success "Yoyo Claw rebuilt (${new_claw_ver})"
+        track_file_change "Yoyo Claw (${current_claw_ver} → ${new_claw_ver})"
+        if [ "$current_claw_ver" = "$new_claw_ver" ]; then
             YOYO_AI_STATUS="already-up-to-date"
         else
-            YOYO_AI_STATUS="updated"
+            YOYO_AI_STATUS="rebuilt"
         fi
     else
-        ui_warning "OpenClaw update failed — continuing"
-        YOYO_AI_STATUS="failed:npm update failed"
+        ui_warning "Yoyo Claw rebuild failed — continuing with existing build"
+        YOYO_AI_STATUS="failed:build"
     fi
-
-    # Token migration: ensure gateway token exists for existing installs
-    if [ ! -f "${YOYO_AI_HOME:-$HOME/.yoyo-ai}/.gateway-token" ]; then
-        show_progress "Generating gateway token for existing install..."
-        ensure_openclaw_token
-        patch_openclaw_systemd_service
-        show_progress "Gateway token created"
-    fi
-
-    # Ensure gateway mode is set
-    set_openclaw_gateway_mode
 else
-    # Not installed — auto-install (mandatory in V7)
+    # First build — check Node.js and build from source
     if node_ver=$(check_node_version 22 2>/dev/null); then
-        show_progress "OpenClaw not installed — installing (mandatory in yoyo-dev-ai V7)"
-        ui_info "Installing OpenClaw (yoyo-ai)..."
-        if npm install -g openclaw@latest 2>&1 | tail -1; then
-            ui_success "OpenClaw installed"
-            ensure_openclaw_token
-            run_openclaw_onboard
-            apply_yoyo_theme
-            show_openclaw_dashboard_info
-            # Update config
-            if [ -f ".yoyo-dev/config.yml" ]; then
-                sed -i.bak 's/installed: false/installed: true/' .yoyo-dev/config.yml 2>/dev/null
-                rm -f .yoyo-dev/config.yml.bak
+        show_progress "Building Yoyo Claw from source (first build)..."
+        ui_info "Building Yoyo Claw (yoyo-ai)..."
+        if build_yoyo_claw 2>&1 | tail -3; then
+            ui_success "Yoyo Claw built successfully"
+            ensure_yoyo_claw_token
+            if ! is_yoyo_onboarded; then
+                run_yoyo_claw_onboard
             fi
-            track_file_change "OpenClaw (freshly installed)"
-            YOYO_AI_STATUS="installed"
+            show_yoyo_claw_dashboard_info
+            track_file_change "Yoyo Claw (first build from source)"
+            YOYO_AI_STATUS="built"
         else
-            ui_warning "OpenClaw installation failed — run 'npm install -g openclaw@latest' manually"
-            YOYO_AI_STATUS="failed:npm install failed"
+            ui_warning "Yoyo Claw build failed — check pnpm/node setup"
+            YOYO_AI_STATUS="failed:build"
         fi
     else
         if [ "$node_ver" = "not_installed" ]; then
@@ -1035,6 +1069,13 @@ else
         fi
         echo -e "  ${UI_DIM}Install Node.js >= 22 and re-run to enable yoyo-ai${UI_RESET}"
     fi
+fi
+
+# Post-build setup (token, systemd, gateway mode)
+if is_yoyo_claw_built; then
+    ensure_yoyo_claw_token
+    patch_yoyo_claw_systemd_service
+    set_yoyo_claw_gateway_mode
 fi
 echo ""
 
