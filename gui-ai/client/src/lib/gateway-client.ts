@@ -205,7 +205,7 @@ export class GatewayClient {
       minProtocol: PROTOCOL_VERSION,
       maxProtocol: PROTOCOL_VERSION,
       client: {
-        id: 'yoyo-ai-gui',
+        id: 'openclaw-control-ui',
         displayName: 'Yoyo AI Dashboard',
         version: '2.0.0',
         platform: navigator.platform,
