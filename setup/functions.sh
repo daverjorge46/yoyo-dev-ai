@@ -269,111 +269,205 @@ install_from_github() {
 }
 
 # ============================================================================
-# OpenClaw (yoyo-ai) Shared Helpers
+# Yoyo Claw (yoyo-ai) Shared Helpers
 # ============================================================================
 
-# Default OpenClaw configuration (canonical home: ~/.yoyo-ai, ~/.openclaw is symlink)
-YOYO_AI_HOME="${YOYO_AI_HOME:-$HOME/.yoyo-ai}"
-OPENCLAW_PORT="${OPENCLAW_PORT:-18789}"
-OPENCLAW_TOKEN_FILE="${OPENCLAW_TOKEN_FILE:-$YOYO_AI_HOME/.gateway-token}"
-OPENCLAW_CONFIG_PATH="${OPENCLAW_CONFIG_PATH:-$YOYO_AI_HOME/openclaw.json}"
-OPENCLAW_ONBOARD_MARKER="${OPENCLAW_ONBOARD_MARKER:-$YOYO_AI_HOME/.yoyo-onboarded}"
+# Yoyo Claw configuration (canonical home: ~/.yoyo-claw, ~/.openclaw is symlink)
+YOYO_CLAW_HOME="${YOYO_CLAW_HOME:-$HOME/.yoyo-claw}"
+YOYO_CLAW_PORT="${YOYO_CLAW_PORT:-18789}"
+YOYO_CLAW_TOKEN_FILE="$YOYO_CLAW_HOME/.gateway-token"
+YOYO_CLAW_CONFIG_PATH="$YOYO_CLAW_HOME/openclaw.json"
+YOYO_CLAW_ONBOARD_MARKER="$YOYO_CLAW_HOME/.yoyo-onboarded"
+
+# Resolve the yoyo-claw source directory
+# Prefers YOYO_CLAW_DIR env, then looks relative to this script
+_resolve_yoyo_claw_dir() {
+    if [ -n "${YOYO_CLAW_DIR:-}" ]; then
+        echo "$YOYO_CLAW_DIR"
+        return 0
+    fi
+    # Determine script directory if not set
+    local sdir
+    if [ -n "${SCRIPT_DIR:-}" ]; then
+        sdir="$SCRIPT_DIR"
+    elif [ -n "${BASH_SOURCE[0]:-}" ]; then
+        local spath="${BASH_SOURCE[0]}"
+        [ -L "$spath" ] && spath="$(readlink -f "$spath")"
+        sdir="$(cd "$(dirname "$spath")" && pwd)"
+    else
+        sdir="$(pwd)"
+    fi
+    # yoyo-claw lives next to setup/ in the repo root
+    local candidate="$(cd "$sdir/.." && pwd)/yoyo-claw"
+    if [ -d "$candidate" ]; then
+        echo "$candidate"
+        return 0
+    fi
+    # Also check base installation dir
+    local base="${YOYO_BASE_DIR:-$HOME/.yoyo-dev}"
+    if [ -d "$base/yoyo-claw" ]; then
+        echo "$base/yoyo-claw"
+        return 0
+    fi
+    return 1
+}
+
+# Resolve the yoyo-claw binary (node entry point)
+_resolve_yoyo_claw_bin() {
+    local claw_dir
+    claw_dir="$(_resolve_yoyo_claw_dir)" || return 1
+    echo "$claw_dir/openclaw.mjs"
+}
+
+# Run yoyo-claw CLI command (replaces global `openclaw` binary)
+yoyo_claw() {
+    local bin
+    bin="$(_resolve_yoyo_claw_bin)" || {
+        echo "ERROR: yoyo-claw source not found" >&2
+        return 1
+    }
+    node "$bin" "$@"
+}
+
+# Build yoyo-claw from source
+build_yoyo_claw() {
+    local claw_dir
+    claw_dir="$(_resolve_yoyo_claw_dir)" || {
+        echo "ERROR: yoyo-claw source not found" >&2
+        return 1
+    }
+
+    # Ensure pnpm via corepack
+    if ! command -v pnpm &>/dev/null; then
+        corepack enable pnpm 2>/dev/null || {
+            echo "ERROR: corepack not available — install pnpm manually" >&2
+            return 1
+        }
+    fi
+
+    # Build from source
+    (cd "$claw_dir" && pnpm install --frozen-lockfile && pnpm build)
+}
+
+# Check if yoyo-claw is built (dist/ exists)
+is_yoyo_claw_built() {
+    local claw_dir
+    claw_dir="$(_resolve_yoyo_claw_dir)" || return 1
+    [ -d "$claw_dir/dist" ]
+}
+
+# Migrate ~/.yoyo-ai or ~/.openclaw -> ~/.yoyo-claw (one-time)
+migrate_yoyo_claw_home() {
+    # Migrate ~/.yoyo-ai -> ~/.yoyo-claw
+    if [ -d "$HOME/.yoyo-ai" ] && [ ! -L "$HOME/.yoyo-ai" ] && [ ! -d "$YOYO_CLAW_HOME" ]; then
+        mv "$HOME/.yoyo-ai" "$YOYO_CLAW_HOME" 2>/dev/null && \
+            echo "[migrate] Moved ~/.yoyo-ai -> $YOYO_CLAW_HOME" >&2
+    fi
+    # Migrate ~/.openclaw -> ~/.yoyo-claw (if real dir, not symlink)
+    if [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ] && [ ! -d "$YOYO_CLAW_HOME" ]; then
+        mv "$HOME/.openclaw" "$YOYO_CLAW_HOME" 2>/dev/null && \
+            echo "[migrate] Moved ~/.openclaw -> $YOYO_CLAW_HOME" >&2
+    fi
+    # Ensure ~/.yoyo-claw exists
+    mkdir -p "$YOYO_CLAW_HOME"
+    # Create ~/.openclaw symlink (OpenClaw internals expect it)
+    if [ ! -e "$HOME/.openclaw" ]; then
+        ln -sf "$YOYO_CLAW_HOME" "$HOME/.openclaw"
+    fi
+    # Create ~/.yoyo-ai symlink for backwards compat
+    if [ ! -e "$HOME/.yoyo-ai" ]; then
+        ln -sf "$YOYO_CLAW_HOME" "$HOME/.yoyo-ai"
+    fi
+    # Set file permissions
+    chmod 700 "$YOYO_CLAW_HOME" 2>/dev/null || true
+    [ -f "$YOYO_CLAW_CONFIG_PATH" ] && chmod 600 "$YOYO_CLAW_CONFIG_PATH" 2>/dev/null || true
+    [ -f "$YOYO_CLAW_TOKEN_FILE" ] && chmod 600 "$YOYO_CLAW_TOKEN_FILE" 2>/dev/null || true
+}
 
 # Generate or load a persistent gateway token
-# Exports OPENCLAW_GATEWAY_TOKEN
-ensure_openclaw_token() {
-    if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
-        OPENCLAW_GATEWAY_TOKEN="$(cat "$OPENCLAW_TOKEN_FILE")"
-        export OPENCLAW_GATEWAY_TOKEN
+# Exports YOYO_CLAW_GATEWAY_TOKEN (and OPENCLAW_GATEWAY_TOKEN for compat)
+ensure_yoyo_claw_token() {
+    if [ -f "$YOYO_CLAW_TOKEN_FILE" ]; then
+        YOYO_CLAW_GATEWAY_TOKEN="$(cat "$YOYO_CLAW_TOKEN_FILE")"
     else
         local token
         token="yoyo-$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
-        mkdir -p "$(dirname "$OPENCLAW_TOKEN_FILE")"
-        echo "$token" > "$OPENCLAW_TOKEN_FILE"
-        chmod 600 "$OPENCLAW_TOKEN_FILE"
-        export OPENCLAW_GATEWAY_TOKEN="$token"
+        mkdir -p "$(dirname "$YOYO_CLAW_TOKEN_FILE")"
+        echo "$token" > "$YOYO_CLAW_TOKEN_FILE"
+        chmod 600 "$YOYO_CLAW_TOKEN_FILE"
+        YOYO_CLAW_GATEWAY_TOKEN="$token"
     fi
+    export YOYO_CLAW_GATEWAY_TOKEN
+    # Export under legacy name for backwards compatibility
+    export OPENCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
 }
 
-# Inject OPENCLAW_GATEWAY_TOKEN into systemd service file if missing, then daemon-reload
-patch_openclaw_systemd_service() {
+# Inject gateway token into systemd service file if missing, then daemon-reload
+patch_yoyo_claw_systemd_service() {
     # Skip if systemd is not available (e.g., WSL without systemd)
     if ! has_systemd; then
         return 0
     fi
-    local service_file="$HOME/.config/systemd/user/openclaw-gateway.service"
-    if [ -f "$service_file" ]; then
+    # Check both new and legacy service names
+    local service_file=""
+    for candidate in \
+        "$HOME/.config/systemd/user/yoyo-claw-gateway.service" \
+        "$HOME/.config/systemd/user/openclaw-gateway.service"; do
+        if [ -f "$candidate" ]; then
+            service_file="$candidate"
+            break
+        fi
+    done
+    if [ -n "$service_file" ]; then
         if ! grep -q "OPENCLAW_GATEWAY_TOKEN" "$service_file" 2>/dev/null; then
-            sed -i "/^\[Service\]/a Environment=OPENCLAW_GATEWAY_TOKEN=${OPENCLAW_GATEWAY_TOKEN}" "$service_file"
+            sed -i "/^\[Service\]/a Environment=OPENCLAW_GATEWAY_TOKEN=${YOYO_CLAW_GATEWAY_TOKEN}" "$service_file"
             systemctl --user daemon-reload 2>/dev/null || true
         fi
     fi
 }
 
 # Ensure gateway.mode=local is set in openclaw.json
-set_openclaw_gateway_mode() {
-    if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
-        if ! grep -q '"mode"' "$OPENCLAW_CONFIG_PATH" 2>/dev/null; then
-            openclaw config set gateway.mode local 2>/dev/null || true
+set_yoyo_claw_gateway_mode() {
+    if [ -f "$YOYO_CLAW_CONFIG_PATH" ]; then
+        if ! grep -q '"mode"' "$YOYO_CLAW_CONFIG_PATH" 2>/dev/null; then
+            yoyo_claw config set gateway.mode local 2>/dev/null || true
         fi
     fi
 }
 
 # Check if yoyo-ai onboarding has been completed
 is_yoyo_onboarded() {
-    [ -f "$OPENCLAW_ONBOARD_MARKER" ]
+    [ -f "$YOYO_CLAW_ONBOARD_MARKER" ]
 }
 
-# Back up existing openclaw config from external/old installation
-backup_openclaw_config() {
-    if [ -f "$OPENCLAW_CONFIG_PATH" ]; then
-        local backup="${OPENCLAW_CONFIG_PATH}.backup.$(date +%Y%m%d%H%M%S)"
-        cp "$OPENCLAW_CONFIG_PATH" "$backup"
+# Back up existing config
+backup_yoyo_claw_config() {
+    if [ -f "$YOYO_CLAW_CONFIG_PATH" ]; then
+        local backup="${YOYO_CLAW_CONFIG_PATH}.backup.$(date +%Y%m%d%H%M%S)"
+        cp "$YOYO_CLAW_CONFIG_PATH" "$backup"
         echo "  Backed up existing config to $(basename "$backup")"
     fi
 }
 
-# Run full openclaw onboarding with token auth and daemon install
-# Requires OPENCLAW_GATEWAY_TOKEN to be set (call ensure_openclaw_token first)
-run_openclaw_onboard() {
-    openclaw onboard \
+# Run full onboarding with token auth and daemon install
+# Requires YOYO_CLAW_GATEWAY_TOKEN to be set (call ensure_yoyo_claw_token first)
+run_yoyo_claw_onboard() {
+    yoyo_claw onboard \
         --non-interactive \
         --accept-risk \
         --flow quickstart \
         --mode local \
-        --gateway-port "${OPENCLAW_PORT}" \
+        --gateway-port "${YOYO_CLAW_PORT}" \
         --gateway-auth token \
-        --gateway-token "${OPENCLAW_GATEWAY_TOKEN}" \
+        --gateway-token "${YOYO_CLAW_GATEWAY_TOKEN}" \
         --install-daemon 2>&1 | tail -3 || true
 
     # Patch systemd service with token if onboard created it
-    patch_openclaw_systemd_service
+    patch_yoyo_claw_systemd_service
 
     # Mark yoyo-ai onboarding as completed
-    mkdir -p "$(dirname "$OPENCLAW_ONBOARD_MARKER")"
-    date -Iseconds > "$OPENCLAW_ONBOARD_MARKER"
-}
-
-# Apply YoYo Dev AI theme to OpenClaw dashboard
-apply_yoyo_theme() {
-    local theme_inject_script="${YOYO_DEV_BASE_DIR}/setup/openclaw-theme/inject.sh"
-
-    if [ ! -f "$theme_inject_script" ]; then
-        echo -e "  \033[1;33m⚠ Theme script not found, skipping customization\033[0m" >&2
-        return 0
-    fi
-
-    # Check if OpenClaw is installed
-    if ! command -v openclaw &> /dev/null; then
-        return 0
-    fi
-
-    # Run theme injection script silently
-    if bash "$theme_inject_script" > /dev/null 2>&1; then
-        echo -e "  \033[0;32m✓ YoYo Dev AI theme applied to dashboard\033[0m"
-    else
-        echo -e "  \033[1;33m⚠ Failed to apply theme (OpenClaw may need update)\033[0m" >&2
-    fi
+    mkdir -p "$(dirname "$YOYO_CLAW_ONBOARD_MARKER")"
+    date -Iseconds > "$YOYO_CLAW_ONBOARD_MARKER"
 }
 
 # Get network IP for LAN access
@@ -399,10 +493,10 @@ get_network_ip() {
 }
 
 # Print dashboard URL (with token) to stdout
-show_openclaw_dashboard_info() {
+show_yoyo_claw_dashboard_info() {
     local token=""
-    if [ -f "$OPENCLAW_TOKEN_FILE" ]; then
-        token="$(cat "$OPENCLAW_TOKEN_FILE")"
+    if [ -f "$YOYO_CLAW_TOKEN_FILE" ]; then
+        token="$(cat "$YOYO_CLAW_TOKEN_FILE")"
     fi
 
     local network_ip
@@ -410,15 +504,24 @@ show_openclaw_dashboard_info() {
 
     echo ""
     if [ -n "$token" ]; then
-        echo -e "  \033[2mLocal:\033[0m   \033[0;36mhttp://localhost:${OPENCLAW_PORT}?token=${token}\033[0m"
+        echo -e "  \033[2mLocal:\033[0m   \033[0;36mhttp://localhost:${YOYO_CLAW_PORT}?token=${token}\033[0m"
         if [ -n "$network_ip" ]; then
-            echo -e "  \033[2mNetwork:\033[0m \033[0;36mhttp://${network_ip}:${OPENCLAW_PORT}?token=${token}\033[0m"
+            echo -e "  \033[2mNetwork:\033[0m \033[0;36mhttp://${network_ip}:${YOYO_CLAW_PORT}?token=${token}\033[0m"
         fi
     else
-        echo -e "  \033[2mLocal:\033[0m   \033[0;36mhttp://localhost:${OPENCLAW_PORT}\033[0m"
+        echo -e "  \033[2mLocal:\033[0m   \033[0;36mhttp://localhost:${YOYO_CLAW_PORT}\033[0m"
         if [ -n "$network_ip" ]; then
-            echo -e "  \033[2mNetwork:\033[0m \033[0;36mhttp://${network_ip}:${OPENCLAW_PORT}\033[0m"
+            echo -e "  \033[2mNetwork:\033[0m \033[0;36mhttp://${network_ip}:${YOYO_CLAW_PORT}\033[0m"
         fi
     fi
     echo ""
+
 }
+
+# Legacy aliases for backwards compatibility
+ensure_openclaw_token() { ensure_yoyo_claw_token; }
+patch_openclaw_systemd_service() { patch_yoyo_claw_systemd_service; }
+set_openclaw_gateway_mode() { set_yoyo_claw_gateway_mode; }
+backup_openclaw_config() { backup_yoyo_claw_config; }
+run_openclaw_onboard() { run_yoyo_claw_onboard; }
+show_openclaw_dashboard_info() { show_yoyo_claw_dashboard_info; }

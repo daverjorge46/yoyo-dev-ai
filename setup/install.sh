@@ -663,8 +663,8 @@ fi
 ui_success "Installation verified"
 echo ""
 
-# Step: Install OpenClaw (yoyo-ai) — unless yoyo-dev only
-OPENCLAW_INSTALLED=false
+# Step: Build Yoyo Claw (yoyo-ai) — unless yoyo-dev only
+YOYO_CLAW_BUILT=false
 YOYO_AI_STATUS="skipped"
 NODE_OK=false
 
@@ -675,7 +675,7 @@ fi
 
 if [ "$INSTALL_COMPONENTS" != "yoyo-dev" ]; then
 ((++CURRENT_STEP))
-ui_step $CURRENT_STEP $TOTAL_STEPS "Installing OpenClaw (yoyo-ai)..."
+ui_step $CURRENT_STEP $TOTAL_STEPS "Building Yoyo Claw from source..."
 
 YOYO_AI_STATUS="failed:unknown"
 
@@ -695,30 +695,32 @@ else
 fi
 
 if [ "$NODE_OK" = true ]; then
-    # Check if already installed
-    if command -v openclaw &>/dev/null; then
-        echo -e "  ${UI_SUCCESS}✓${UI_RESET} OpenClaw already installed ($(openclaw --version 2>/dev/null || echo 'unknown'))"
-        OPENCLAW_INSTALLED=true
-        YOYO_AI_STATUS="already-installed"
+    # Migrate home directory (~/.yoyo-ai or ~/.openclaw -> ~/.yoyo-claw)
+    migrate_yoyo_claw_home
+
+    # Check if already built
+    if is_yoyo_claw_built; then
+        echo -e "  ${UI_SUCCESS}✓${UI_RESET} Yoyo Claw already built ($(get_yoyo_claw_version 2>/dev/null || echo 'unknown'))"
+        YOYO_CLAW_BUILT=true
+        YOYO_AI_STATUS="already-built"
     else
-        echo -e "  ${UI_DIM}Installing openclaw@latest...${UI_RESET}"
-        if npm install -g openclaw@latest 2>&1 | tail -1; then
-            OPENCLAW_INSTALLED=true
+        echo -e "  ${UI_DIM}Building yoyo-claw from source...${UI_RESET}"
+        if build_yoyo_claw 2>&1 | tail -3; then
+            YOYO_CLAW_BUILT=true
             YOYO_AI_STATUS="installed"
-            ui_success "OpenClaw installed"
+            ui_success "Yoyo Claw built"
         else
-            ui_warning "OpenClaw installation failed — you can install later with: npm install -g openclaw@latest"
-            YOYO_AI_STATUS="failed:npm install failed"
+            ui_warning "Yoyo Claw build failed — you can build later with: yoyo-ai --start"
+            YOYO_AI_STATUS="failed:build failed"
         fi
     fi
 
-    # Run onboarding if installed
-    if [ "$OPENCLAW_INSTALLED" = true ]; then
-        echo -e "  ${UI_DIM}Running OpenClaw onboarding...${UI_RESET}"
-        ensure_openclaw_token
-        run_openclaw_onboard
-        apply_yoyo_theme
-        show_openclaw_dashboard_info
+    # Run onboarding if built
+    if [ "$YOYO_CLAW_BUILT" = true ]; then
+        echo -e "  ${UI_DIM}Running Yoyo Claw onboarding...${UI_RESET}"
+        ensure_yoyo_claw_token
+        run_yoyo_claw_onboard
+        show_yoyo_claw_dashboard_info
     fi
 fi
 
@@ -726,28 +728,32 @@ fi
 if [ -f "$INSTALL_DIR/config.yml" ] && ! grep -q "^yoyo_ai:" "$INSTALL_DIR/config.yml" 2>/dev/null; then
     cat >> "$INSTALL_DIR/config.yml" << 'YOYO_AI_EOF'
 
-# Yoyo AI (OpenClaw Business and Personal AI Assistant)
+# Yoyo AI (Yoyo Claw - local OpenClaw fork)
 yoyo_ai:
   enabled: true
-  openclaw:
-    installed: false
+  yoyo_claw:
+    source: "local"
+    build_dir: "yoyo-claw/"
     port: 18789
-    config_path: "~/.openclaw/openclaw.json"
+    config_path: "~/.yoyo-claw/openclaw.json"
+    security:
+      localhost_only: true
+      credential_encryption: true
+      command_allowlist: true
+      audit_logging: true
     daemon:
       auto_start: false
       service_type: "auto"
-    update:
-      auto_check: true
 YOYO_AI_EOF
 fi
 
 # Update installed flag
-if [ "$OPENCLAW_INSTALLED" = true ] && [ -f "$INSTALL_DIR/config.yml" ]; then
-    sed -i.bak 's/installed: false/installed: true/' "$INSTALL_DIR/config.yml" 2>/dev/null
+if [ "$YOYO_CLAW_BUILT" = true ] && [ -f "$INSTALL_DIR/config.yml" ]; then
+    sed -i.bak 's/source: "local"/source: "local"  # built/' "$INSTALL_DIR/config.yml" 2>/dev/null
     rm -f "$INSTALL_DIR/config.yml.bak"
 fi
 
-fi  # end INSTALL_COMPONENTS != yoyo-dev (OpenClaw)
+fi  # end INSTALL_COMPONENTS != yoyo-dev (Yoyo Claw)
 
 echo ""
 

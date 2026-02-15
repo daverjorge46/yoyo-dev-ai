@@ -10,12 +10,14 @@
  */
 
 import WebSocket from 'ws';
-import { readFile } from 'fs/promises';
+import { readFile, access } from 'fs/promises';
 import { join } from 'path';
 import { homedir } from 'os';
 import { randomUUID } from 'crypto';
 
-const CONFIG_PATH = join(homedir(), '.openclaw', 'openclaw.json');
+// Prefer ~/.yoyo-claw, fall back to ~/.openclaw for backwards compat
+const YOYO_CLAW_CONFIG = join(homedir(), '.yoyo-claw', 'openclaw.json');
+const LEGACY_CONFIG = join(homedir(), '.openclaw', 'openclaw.json');
 const DEFAULT_GATEWAY_HOST = '127.0.0.1';
 const DEFAULT_GATEWAY_PORT = 18789;
 
@@ -28,8 +30,21 @@ interface OpenClawConfig {
   };
 }
 
+async function resolveConfigPath(): Promise<string> {
+  // Check env override first
+  const envPath = process.env.YOYO_CLAW_CONFIG_PATH;
+  if (envPath) {
+    try { await access(envPath); return envPath; } catch { /* fall through */ }
+  }
+  // Prefer yoyo-claw path
+  try { await access(YOYO_CLAW_CONFIG); return YOYO_CLAW_CONFIG; } catch { /* fall through */ }
+  // Fall back to legacy
+  return LEGACY_CONFIG;
+}
+
 async function readConfig(): Promise<OpenClawConfig> {
-  const raw = await readFile(CONFIG_PATH, 'utf-8');
+  const configPath = await resolveConfigPath();
+  const raw = await readFile(configPath, 'utf-8');
   return JSON.parse(raw);
 }
 
@@ -159,9 +174,9 @@ export function createGatewayProxy(
             const token = config?.gateway?.auth?.token;
             if (token) {
               frame.params.client = {
-                id: 'node-host',
-                displayName: frame.params.client?.displayName || 'Yoyo AI',
-                version: frame.params.client?.version || '1.0.0',
+                id: 'yoyo-ai-gui',
+                displayName: frame.params.client?.displayName || 'Yoyo AI Dashboard',
+                version: frame.params.client?.version || '2.0.0',
                 platform: frame.params.client?.platform || 'linux',
                 mode: 'node',
                 instanceId: frame.params.client?.instanceId || randomUUID(),

@@ -67,7 +67,7 @@ Always prefix responses with the agent name when delegating:
 - `/yoyo-review --performance` - Performance analysis
 
 **Business and Personal AI Assistant (yoyo-ai):**
-- `yoyo-ai --start` - Start OpenClaw daemon
+- `yoyo-ai --start` - Start Yoyo Claw gateway
 - `yoyo-ai --stop` - Stop daemon
 - `yoyo-ai --status` - Check daemon health
 

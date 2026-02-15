@@ -110,6 +110,52 @@ app.get('/api/health', (c) => {
   });
 });
 
+// Gateway health check — verifies connectivity to the Yoyo Claw gateway
+app.get('/api/gateway/health', async (c) => {
+  const { readFile, access } = await import('fs/promises');
+  const { join } = await import('path');
+  const { homedir } = await import('os');
+  const WebSocket = (await import('ws')).default;
+
+  const configPaths = [
+    join(homedir(), '.yoyo-claw', 'openclaw.json'),
+    join(homedir(), '.openclaw', 'openclaw.json'),
+  ];
+
+  let config: { gateway?: { port?: number; auth?: { token?: string } } } | null = null;
+  for (const p of configPaths) {
+    try {
+      await access(p);
+      config = JSON.parse(await readFile(p, 'utf-8'));
+      break;
+    } catch { /* try next */ }
+  }
+
+  if (!config) {
+    return c.json({ connected: false, error: 'Config not found' }, 503);
+  }
+
+  const port = config.gateway?.port || 18789;
+  const start = Date.now();
+
+  try {
+    const connected = await new Promise<boolean>((resolve) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}`, { timeout: 3000 });
+      const timer = setTimeout(() => { ws.close(); resolve(false); }, 3000);
+      ws.on('open', () => { clearTimeout(timer); ws.close(); resolve(true); });
+      ws.on('error', () => { clearTimeout(timer); resolve(false); });
+    });
+
+    return c.json({
+      connected,
+      latency: Date.now() - start,
+      port,
+    });
+  } catch {
+    return c.json({ connected: false, latency: Date.now() - start, port }, 503);
+  }
+});
+
 // API Routes
 app.route('/api/status', statusRouter);
 app.route('/api/chat', chatRouter);
