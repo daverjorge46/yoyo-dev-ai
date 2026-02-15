@@ -205,16 +205,14 @@ export class GatewayClient {
       minProtocol: PROTOCOL_VERSION,
       maxProtocol: PROTOCOL_VERSION,
       client: {
-        id: 'openclaw-control-ui',
+        id: 'gateway-client',
         displayName: 'Yoyo AI Dashboard',
         version: '2.0.0',
         platform: navigator.platform,
-        mode: 'ui',
+        mode: 'backend',
         instanceId: this._instanceId,
       },
       caps: [],
-      role: 'operator',
-      scopes: ['operator.admin', 'operator.approvals', 'operator.pairing'],
       auth: { token: this.token },
     };
 

@@ -174,14 +174,17 @@ export function createGatewayProxy(
             const token = config?.gateway?.auth?.token;
             if (token) {
               frame.params.client = {
-                id: 'openclaw-control-ui',
+                id: 'gateway-client',
                 displayName: frame.params.client?.displayName || 'Yoyo AI Dashboard',
                 version: frame.params.client?.version || '2.0.0',
                 platform: frame.params.client?.platform || 'linux',
-                mode: 'ui',
+                mode: 'backend',
                 instanceId: frame.params.client?.instanceId || randomUUID(),
               };
               frame.params.auth = { token };
+              // Remove control-ui specific fields not needed for backend client
+              delete frame.params.role;
+              delete frame.params.scopes;
             }
             const rewritten = JSON.stringify(frame);
             if (gatewayConnected && gatewayWs) {
