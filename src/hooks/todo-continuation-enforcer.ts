@@ -95,42 +95,6 @@ async function injectContinuationMessage(
   sessionId: string,
   todos: Todo[]
 ): Promise<void> {
-  const incompleteTodos = todos.filter(
-    (todo) => todo.status === "pending" || todo.status === "in_progress"
-  );
-
-  const pendingCount = incompleteTodos.filter(
-    (t) => t.status === "pending"
-  ).length;
-  const inProgressCount = incompleteTodos.filter(
-    (t) => t.status === "in_progress"
-  ).length;
-
-  const firstTodo = incompleteTodos[0];
-  const message = `
-[SYSTEM REMINDER - TODO CONTINUATION]
-
-Incomplete tasks remain in your todo list:
-- ${inProgressCount} in progress
-- ${pendingCount} pending
-
-Next incomplete task:
-${firstTodo?.content ?? "No task content"}
-
-**Action Required:**
-1. Continue working on the next pending task
-2. Mark each task complete when finished
-3. Do not stop until all tasks are done
-
-**Rules:**
-- Proceed without asking for permission
-- Mark todos complete IMMEDIATELY after finishing (not batched)
-- Only ONE todo should be in_progress at a time
-- If you encounter failures, apply failure recovery protocol
-
-Continue now.
-`.trim();
-
   // Execute via hook registry
   await hookRegistry.execute("sessionEnd", {
     sessionId,
@@ -214,7 +178,7 @@ export async function todoContinuationEnforcer(
   context: LegacyHookContext,
   todoProvider?: (sessionId: string) => Todo[]
 ): Promise<void> {
-  const { sessionId, event, timestamp } = context;
+  const { sessionId, event } = context;
 
   // Only handle idle events
   if (event !== CONFIG.IDLE_EVENT) {

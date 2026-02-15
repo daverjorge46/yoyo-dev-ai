@@ -69,11 +69,11 @@ function parseSimpleYaml(content: string): Record<string, unknown> {
     if (!trimmed) continue;
 
     // Pop stack until we find the right parent
-    while (stack.length > 1 && stack[stack.length - 1].indent >= indent) {
+    while (stack.length > 1 && stack[stack.length - 1]!.indent >= indent) {
       stack.pop();
     }
 
-    const parent = stack[stack.length - 1].obj;
+    const parent = stack[stack.length - 1]!.obj;
 
     // Check if this is a key: value pair or just a key (object start)
     const colonIndex = trimmed.indexOf(':');

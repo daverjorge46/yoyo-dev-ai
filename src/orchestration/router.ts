@@ -8,7 +8,6 @@ import {
   IntentClassification,
   RoutingDecision,
   RouterConfig,
-  AgentName,
 } from './types';
 
 // Default router configuration

@@ -8,7 +8,6 @@ import {
   IntentClassification,
   IntentType,
   ClassifierConfig,
-  AgentName,
   IntentAgentMapping,
 } from './types';
 

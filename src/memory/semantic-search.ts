@@ -322,7 +322,6 @@ export function keywordSearch(
     total: results.length,
     queryTime: Date.now() - startTime,
     searchMethod: 'keyword',
-    length: limitedResults.length,
   };
 }
 
@@ -338,7 +337,7 @@ export function keywordSearch(
 export function hybridSearch(
   store: MemoryStore,
   query: string,
-  embeddingConfig?: EmbeddingConfig,
+  _embeddingConfig?: EmbeddingConfig,
   options: SearchOptions = {}
 ): SearchResponse {
   const startTime = Date.now();
@@ -409,7 +408,6 @@ export function hybridSearch(
     total: results.length,
     queryTime: Date.now() - startTime,
     searchMethod: 'hybrid',
-    length: limitedResults.length,
   };
 }
 
