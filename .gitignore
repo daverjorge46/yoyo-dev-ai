@@ -55,3 +55,6 @@ dist/
 # claude/ contains downloaded Claude Code binaries (large files)
 # These should not be tracked in the repository
 claude/
+
+# Symlink for VS Code TS resolution (yoyo-claw -> yoyoclaw)
+yoyo-claw
