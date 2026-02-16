@@ -390,7 +390,7 @@ detect_existing() {
 
     # Check ~/.yoyo-ai
     if [ -d "$AI_DIR" ]; then
-        if [ -f "$AI_DIR/openclaw.json" ] || [ -f "$AI_DIR/.yoyo-onboarded" ]; then
+        if [ -f "$AI_DIR/yoyoclaw.json" ] || [ -f "$AI_DIR/openclaw.json" ] || [ -f "$AI_DIR/.yoyo-onboarded" ]; then
             EXISTING_AI="valid"
         else
             EXISTING_AI="broken"

@@ -3,7 +3,7 @@ import { useGateway } from '../contexts/GatewayContext';
 import { useCallback } from 'react';
 
 /**
- * Hook for making RPC queries to the OpenClaw gateway via WebSocket.
+ * Hook for making RPC queries to the YoyoClaw gateway via WebSocket.
  * Wraps TanStack Query's useQuery with automatic gateway client integration.
  */
 export function useGatewayQuery<T = unknown>(
@@ -30,7 +30,7 @@ export function useGatewayQuery<T = unknown>(
 }
 
 /**
- * Hook for making RPC mutations (write operations) to the OpenClaw gateway.
+ * Hook for making RPC mutations (write operations) to the YoyoClaw gateway.
  */
 export function useGatewayMutation<TParams = unknown, TResponse = unknown>(
   method: string,

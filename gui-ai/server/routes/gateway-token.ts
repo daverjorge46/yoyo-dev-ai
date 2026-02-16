@@ -6,8 +6,9 @@ import { tmpdir } from 'os';
 
 export const gatewayTokenRouter = new Hono();
 
-// Prefer ~/.yoyo-claw, fall back to ~/.openclaw for backwards compat
-const YOYO_CLAW_CONFIG = join(homedir(), '.yoyo-claw', 'openclaw.json');
+// Prefer ~/.yoyo-claw/yoyoclaw.json, fall back to legacy paths for backwards compat
+const YOYO_CLAW_CONFIG = join(homedir(), '.yoyo-claw', 'yoyoclaw.json');
+const LEGACY_YOYO_CLAW_CONFIG = join(homedir(), '.yoyo-claw', 'openclaw.json');
 const LEGACY_CONFIG = join(homedir(), '.openclaw', 'openclaw.json');
 
 export async function resolveConfigPath(): Promise<string> {
@@ -16,9 +17,11 @@ export async function resolveConfigPath(): Promise<string> {
   if (envPath) {
     try { await access(envPath); return envPath; } catch { /* fall through */ }
   }
-  // Prefer yoyo-claw path
+  // Prefer yoyoclaw.json
   try { await access(YOYO_CLAW_CONFIG); return YOYO_CLAW_CONFIG; } catch { /* fall through */ }
-  // Fall back to legacy
+  // Fall back to legacy openclaw.json in ~/.yoyo-claw
+  try { await access(LEGACY_YOYO_CLAW_CONFIG); return LEGACY_YOYO_CLAW_CONFIG; } catch { /* fall through */ }
+  // Fall back to legacy ~/.openclaw
   return LEGACY_CONFIG;
 }
 
@@ -28,7 +31,7 @@ export async function readConfig(configPath: string): Promise<Record<string, unk
 }
 
 export async function writeConfigAtomic(configPath: string, config: Record<string, unknown>): Promise<void> {
-  const tmpPath = join(tmpdir(), `openclaw-config-${Date.now()}.tmp`);
+  const tmpPath = join(tmpdir(), `yoyoclaw-config-${Date.now()}.tmp`);
   await writeFile(tmpPath, JSON.stringify(config, null, 2), 'utf-8');
   await rename(tmpPath, configPath);
 }
@@ -44,7 +47,7 @@ gatewayTokenRouter.get('/', async (c) => {
       return c.json(
         {
           error: 'Gateway auth token not configured',
-          detail: 'Set gateway.auth.token in ~/.yoyo-claw/openclaw.json',
+          detail: 'Set gateway.auth.token in ~/.yoyo-claw/yoyoclaw.json',
         },
         500,
       );
@@ -62,7 +65,7 @@ gatewayTokenRouter.get('/', async (c) => {
     return c.json(
       {
         error: 'Gateway config not found',
-        detail: 'Ensure yoyo-claw is installed and configured.',
+        detail: 'Ensure YoyoClaw is installed and configured.',
       },
       500,
     );

@@ -119,6 +119,7 @@ app.get('/api/gateway/health', async (c) => {
   const WebSocket = (await import('ws')).default;
 
   const configPaths = [
+    join(homedir(), '.yoyo-claw', 'yoyoclaw.json'),
     join(homedir(), '.yoyo-claw', 'openclaw.json'),
     join(homedir(), '.openclaw', 'openclaw.json'),
   ];

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Yoyo AI Launcher v2.0
-# Yoyo Claw (local OpenClaw fork) - Business and Personal AI Assistant
+# YoyoClaw - Business and Personal AI Assistant
 # Subcommands: --start, --stop, --update, --status, --doctor, --channels, --help
 
 set -euo pipefail
@@ -112,8 +112,8 @@ get_yoyo_claw_version() {
 # ============================================================================
 
 get_daemon_pid() {
-    # Try to find yoyo-claw/openclaw daemon process
-    pgrep -f "openclaw.*daemon\|yoyo-claw.*daemon" 2>/dev/null | head -1 || echo ""
+    # Try to find yoyoclaw daemon process
+    pgrep -f "yoyoclaw.*daemon\|openclaw.*daemon\|yoyo-claw.*daemon" 2>/dev/null | head -1 || echo ""
 }
 
 is_daemon_running() {
@@ -128,6 +128,7 @@ is_gateway_installed() {
     if ! has_systemd; then
         return 1
     fi
+    systemctl --user is-enabled yoyoclaw-gateway.service &>/dev/null 2>&1 || \
     systemctl --user is-enabled yoyo-claw-gateway.service &>/dev/null 2>&1 || \
     systemctl --user is-enabled openclaw-gateway.service &>/dev/null 2>&1
 }
@@ -141,11 +142,12 @@ is_gateway_running() {
     fi
     # Fallback: check systemd service
     if has_systemd; then
+        systemctl --user is-active yoyoclaw-gateway.service &>/dev/null 2>&1 && return 0
         systemctl --user is-active yoyo-claw-gateway.service &>/dev/null 2>&1 && return 0
         systemctl --user is-active openclaw-gateway.service &>/dev/null 2>&1 && return 0
     fi
     # Fallback: check process
-    pgrep -f "openclaw.*gateway\|yoyo-claw.*gateway" &>/dev/null && return 0
+    pgrep -f "yoyoclaw.*gateway\|openclaw.*gateway\|yoyo-claw.*gateway" &>/dev/null && return 0
     return 1
 }
 
@@ -227,6 +229,7 @@ daemon_start() {
     # Try systemd service first (only if systemd is available)
     if has_systemd && is_gateway_installed; then
         # Try new service name first, fall back to legacy
+        systemctl --user start yoyoclaw-gateway.service 2>&1 || \
         systemctl --user start yoyo-claw-gateway.service 2>&1 || \
         systemctl --user start openclaw-gateway.service 2>&1 || true
         sleep 1
@@ -238,7 +241,7 @@ daemon_start() {
     fi
 
     # Fallback: start gateway directly in background
-    local gateway_log="/tmp/yoyo-claw-gateway.log"
+    local gateway_log="/tmp/yoyoclaw-gateway.log"
     yoyo_claw gateway \
         --port "$YOYO_CLAW_PORT" \
         --token "${YOYO_CLAW_GATEWAY_TOKEN:-}" \
@@ -252,7 +255,7 @@ daemon_start() {
         show_yoyo_claw_dashboard_info
     else
         ui_warning "Gateway may not have started correctly"
-        echo -e "  Check log:    ${UI_PRIMARY}/tmp/yoyo-claw-gateway.log${UI_RESET}"
+        echo -e "  Check log:    ${UI_PRIMARY}/tmp/yoyoclaw-gateway.log${UI_RESET}"
         echo -e "  Try manually: ${UI_PRIMARY}yoyo-ai --start${UI_RESET}"
         echo -e "  Or diagnose:  ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET}"
     fi
@@ -268,12 +271,13 @@ daemon_stop() {
 
     # Try systemd service first (only if available)
     if has_systemd; then
+        systemctl --user stop yoyoclaw-gateway.service 2>&1 || true
         systemctl --user stop yoyo-claw-gateway.service 2>&1 || true
         systemctl --user stop openclaw-gateway.service 2>&1 || true
     fi
 
     # Also try killing any direct gateway process
-    pkill -f "openclaw.*gateway" 2>/dev/null || true
+    pkill -f "yoyoclaw.*gateway\|openclaw.*gateway" 2>/dev/null || true
 
     # Fallback: kill by PID
     local pid
@@ -385,7 +389,15 @@ cmd_update() {
     local current_version
     current_version=$(get_yoyo_claw_version)
     ui_info "Current version: ${current_version}"
-    ui_info "Rebuilding yoyo-claw from source..."
+
+    # Pull latest changes from yoyoclaw repo
+    local claw_dir
+    if claw_dir="$(_resolve_yoyo_claw_dir 2>/dev/null)" && [ -d "$claw_dir/.git" ]; then
+        ui_info "Pulling latest yoyoclaw changes..."
+        (cd "$claw_dir" && git pull origin "$(git branch --show-current 2>/dev/null || echo main)" 2>&1 | tail -3) || true
+    fi
+
+    ui_info "Rebuilding yoyoclaw from source..."
 
     if ! build_yoyo_claw 2>&1 | tail -5; then
         ui_error "Build failed"
@@ -570,8 +582,8 @@ show_help() {
     echo -e "  ${UI_BOLD}ABOUT${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
     echo ""
-    echo -e "  Yoyo AI is your Business and Personal AI Assistant powered by Yoyo Claw."
-    echo -e "  Built from a local, security-hardened OpenClaw fork, it runs as a"
+    echo -e "  Yoyo AI is your Business and Personal AI Assistant powered by YoyoClaw."
+    echo -e "  Built from a local, security-hardened fork, it runs as a"
     echo -e "  background daemon providing messaging, skills, and integrations."
     echo ""
     echo -e "  ${UI_DIM}Part of the yoyo-dev-ai platform.${UI_RESET}"
@@ -640,7 +652,7 @@ main() {
             # Show YoYo banner for pass-through commands
             if [[ ! "$1" =~ ^- ]]; then
                 ui_yoyo_ai_banner "v${VERSION}"
-                echo -e "  ${UI_DIM}Running: ${UI_PRIMARY}yoyo-claw $*${UI_RESET}"
+                echo -e "  ${UI_DIM}Running: ${UI_PRIMARY}yoyoclaw $*${UI_RESET}"
                 echo ""
             fi
 

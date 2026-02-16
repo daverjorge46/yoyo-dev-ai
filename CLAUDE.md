@@ -8,14 +8,14 @@ This file provides guidance to Claude Code when working on the **Yoyo Dev framew
 
 **Yoyo Dev AI** is a platform with two subsystems:
 - **yoyo-dev** - Development environment (Wave Terminal, Claude Code, GUI, orchestration)
-- **yoyo-ai** - Business and Personal AI Assistant (OpenClaw daemon, messaging, skills)
+- **yoyo-ai** - Business and Personal AI Assistant (YoyoClaw daemon, messaging, skills)
 
 Providing:
 - Structured workflows for product planning, specification, and task execution
 - Multi-agent orchestration system with specialized agents
 - Claude Code and Cursor IDE integration
 - Persistent memory and skill learning systems
-- Business and Personal AI Assistant via OpenClaw
+- Business and Personal AI Assistant via YoyoClaw
 
 ## Framework Architecture
 
@@ -70,7 +70,7 @@ yoyo-dev-ai/                      # Framework root (this repository)
 | Yoyo Dev GUI | React + Vite | Development environment dashboard (`gui/`) |
 | Yoyo AI GUI | React + Vite | AI assistant dashboard (`gui-ai/`) |
 | Memory System | SQLite + JSON | Persistent context storage |
-| Business and Personal AI | OpenClaw (npm) | Business and Personal AI Assistant on port 18789 |
+| Business and Personal AI | YoyoClaw | Business and Personal AI Assistant on port 18789 |
 
 ### GUI Architecture
 
@@ -245,17 +245,17 @@ tech_stack:
   database: "convex"
   styling: "tailwindcss"
 
-# Yoyo AI (OpenClaw Business and Personal AI Assistant)
+# Yoyo AI (YoyoClaw)
 yoyo_ai:
   enabled: true
-  openclaw:
-    installed: true
+  yoyo_claw:
+    source: "local"
+    build_dir: "yoyoclaw/"
     port: 18789
+    config_path: "~/.yoyo-claw/yoyoclaw.json"
     daemon:
       auto_start: false
       service_type: "auto"
-    update:
-      auto_check: true
 ```
 
 ### Claude Settings (`.claude/settings.json`)

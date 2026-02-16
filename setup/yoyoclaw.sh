@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # YoyoClaw CLI v1.0
-# Standalone command wrapping the local YoyoClaw (OpenClaw) fork
-# Full pass-through to node openclaw.mjs with branded help
+# Standalone command wrapping the local YoyoClaw fork
+# Full pass-through to node yoyoclaw.mjs with branded help
 
 set -euo pipefail
 
@@ -71,10 +71,10 @@ validate_environment() {
     if ! _resolve_yoyo_claw_bin &>/dev/null; then
         ui_error "YoyoClaw binary not found"
         echo ""
-        echo "  Expected: yoyo-claw/openclaw.mjs relative to framework root"
+        echo "  Expected: yoyoclaw/yoyoclaw.mjs relative to framework root"
         echo ""
         echo "  Try building YoyoClaw:"
-        echo -e "  ${UI_PRIMARY}cd yoyo-claw && pnpm install --frozen-lockfile && pnpm build${UI_RESET}"
+        echo -e "  ${UI_PRIMARY}cd yoyoclaw && pnpm install --frozen-lockfile && pnpm build${UI_RESET}"
         echo ""
         exit 1
     fi
@@ -92,7 +92,7 @@ show_version() {
             openclaw_version="$(node -e "console.log(require('$claw_dir/package.json').version)" 2>/dev/null || echo "unknown")"
         fi
     fi
-    echo "YoyoClaw CLI v${YOYOCLAW_VERSION} (OpenClaw ${openclaw_version})"
+    echo "YoyoClaw CLI v${YOYOCLAW_VERSION} (YoyoClaw ${openclaw_version})"
 }
 
 # ============================================================================
@@ -132,7 +132,7 @@ show_help() {
     echo -e "  ${UI_PRIMARY}plugins list|install${UI_RESET}        Plugin management"
     echo -e "  ${UI_PRIMARY}nodes list|status${UI_RESET}           Paired device management"
     echo ""
-    echo -e "${UI_DIM}All OpenClaw commands are supported via pass-through.${UI_RESET}"
+    echo -e "${UI_DIM}All YoyoClaw commands are supported via pass-through.${UI_RESET}"
     echo -e "${UI_DIM}Run 'yoyoclaw <command> --help' for details on any command.${UI_RESET}"
     echo ""
 }

@@ -276,7 +276,7 @@ install_from_github() {
 YOYO_CLAW_HOME="${YOYO_CLAW_HOME:-$HOME/.yoyo-claw}"
 YOYO_CLAW_PORT="${YOYO_CLAW_PORT:-18789}"
 YOYO_CLAW_TOKEN_FILE="$YOYO_CLAW_HOME/.gateway-token"
-YOYO_CLAW_CONFIG_PATH="$YOYO_CLAW_HOME/openclaw.json"
+YOYO_CLAW_CONFIG_PATH="$YOYO_CLAW_HOME/yoyoclaw.json"
 YOYO_CLAW_ONBOARD_MARKER="$YOYO_CLAW_HOME/.yoyo-onboarded"
 
 # Resolve the yoyo-claw source directory
@@ -297,16 +297,16 @@ _resolve_yoyo_claw_dir() {
     else
         sdir="$(pwd)"
     fi
-    # yoyo-claw lives next to setup/ in the repo root
-    local candidate="$(cd "$sdir/.." && pwd)/yoyo-claw"
+    # yoyoclaw lives next to setup/ in the repo root
+    local candidate="$(cd "$sdir/.." && pwd)/yoyoclaw"
     if [ -d "$candidate" ]; then
         echo "$candidate"
         return 0
     fi
     # Also check base installation dir
     local base="${YOYO_BASE_DIR:-$HOME/.yoyo-dev}"
-    if [ -d "$base/yoyo-claw" ]; then
-        echo "$base/yoyo-claw"
+    if [ -d "$base/yoyoclaw" ]; then
+        echo "$base/yoyoclaw"
         return 0
     fi
     return 1
@@ -316,7 +316,7 @@ _resolve_yoyo_claw_dir() {
 _resolve_yoyo_claw_bin() {
     local claw_dir
     claw_dir="$(_resolve_yoyo_claw_dir)" || return 1
-    echo "$claw_dir/openclaw.mjs"
+    echo "$claw_dir/yoyoclaw.mjs"
 }
 
 # Run yoyo-claw CLI command (replaces global `openclaw` binary)
@@ -377,6 +377,11 @@ migrate_yoyo_claw_home() {
                 echo "[migrate] Copied ~/.openclaw contents -> $YOYO_CLAW_HOME" >&2
         fi
     fi
+    # Step 4b: Rename openclaw.json → yoyoclaw.json within ~/.yoyo-claw
+    if [ -f "$YOYO_CLAW_HOME/openclaw.json" ] && [ ! -f "$YOYO_CLAW_HOME/yoyoclaw.json" ]; then
+        mv "$YOYO_CLAW_HOME/openclaw.json" "$YOYO_CLAW_HOME/yoyoclaw.json"
+        echo "[migrate] Renamed openclaw.json -> yoyoclaw.json" >&2
+    fi
     # Step 5: Replace real ~/.openclaw dir with symlink (after migration)
     if [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ]; then
         # Config is now in ~/.yoyo-claw, replace real dir with symlink
@@ -396,8 +401,8 @@ migrate_yoyo_claw_home() {
 }
 
 # Generate or load a persistent gateway token
-# Prefers token from openclaw.json config (set by onboarding), syncs to .gateway-token file.
-# Exports YOYO_CLAW_GATEWAY_TOKEN (and OPENCLAW_GATEWAY_TOKEN for compat)
+# Prefers token from yoyoclaw.json config (set by onboarding), syncs to .gateway-token file.
+# Exports YOYO_CLAW_GATEWAY_TOKEN (and YOYOCLAW_GATEWAY_TOKEN + OPENCLAW_GATEWAY_TOKEN for compat)
 ensure_yoyo_claw_token() {
     local config_token=""
 
@@ -437,7 +442,8 @@ ensure_yoyo_claw_token() {
         fi
     fi
     export YOYO_CLAW_GATEWAY_TOKEN
-    # Export under legacy name for backwards compatibility
+    # Export under branded and legacy names for compatibility
+    export YOYOCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
     export OPENCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
 }
 
@@ -450,6 +456,7 @@ patch_yoyo_claw_systemd_service() {
     # Check both new and legacy service names
     local service_file=""
     for candidate in \
+        "$HOME/.config/systemd/user/yoyoclaw-gateway.service" \
         "$HOME/.config/systemd/user/yoyo-claw-gateway.service" \
         "$HOME/.config/systemd/user/openclaw-gateway.service"; do
         if [ -f "$candidate" ]; then
@@ -458,14 +465,14 @@ patch_yoyo_claw_systemd_service() {
         fi
     done
     if [ -n "$service_file" ]; then
-        if ! grep -q "OPENCLAW_GATEWAY_TOKEN" "$service_file" 2>/dev/null; then
-            sed -i "/^\[Service\]/a Environment=OPENCLAW_GATEWAY_TOKEN=${YOYO_CLAW_GATEWAY_TOKEN}" "$service_file"
+        if ! grep -q "YOYOCLAW_GATEWAY_TOKEN" "$service_file" 2>/dev/null; then
+            sed -i "/^\[Service\]/a Environment=YOYOCLAW_GATEWAY_TOKEN=${YOYO_CLAW_GATEWAY_TOKEN}" "$service_file"
             systemctl --user daemon-reload 2>/dev/null || true
         fi
     fi
 }
 
-# Ensure gateway.mode=local is set in openclaw.json
+# Ensure gateway.mode=local is set in yoyoclaw.json
 set_yoyo_claw_gateway_mode() {
     if [ -f "$YOYO_CLAW_CONFIG_PATH" ]; then
         # Check for gateway.mode specifically (not auth.mode which is a different field)

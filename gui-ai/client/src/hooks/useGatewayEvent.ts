@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useGateway } from '../contexts/GatewayContext';
 
 /**
- * Hook to subscribe to OpenClaw gateway events.
+ * Hook to subscribe to YoyoClaw gateway events.
  * Automatically subscribes on mount and unsubscribes on unmount.
  * Re-subscribes when the client changes (reconnection).
  *

@@ -942,9 +942,9 @@ else
     echo ""
 fi
 
-# Step 13: Update Yoyo Claw (yoyo-ai) — local OpenClaw fork
+# Step 13: Update YoyoClaw (yoyo-ai)
 CURRENT_STEP=$((CURRENT_STEP + 1))
-ui_step $CURRENT_STEP $TOTAL_STEPS "Updating Yoyo Claw (yoyo-ai)..."
+ui_step $CURRENT_STEP $TOTAL_STEPS "Updating YoyoClaw (yoyo-ai)..."
 
 YOYO_AI_STATUS="failed:unknown"
 
@@ -975,14 +975,14 @@ if [ -f ".yoyo-dev/config.yml" ]; then
             # Append new block
             cat >> .yoyo-dev/config.yml << 'YOYO_AI_EOF'
 
-# Yoyo AI (Yoyo Claw - local OpenClaw fork)
+# Yoyo AI (YoyoClaw)
 yoyo_ai:
   enabled: true
   yoyo_claw:
     source: "local"
-    build_dir: "yoyo-claw/"
+    build_dir: "yoyoclaw/"
     port: 18789
-    config_path: "~/.yoyo-claw/openclaw.json"
+    config_path: "~/.yoyo-claw/yoyoclaw.json"
     security:
       localhost_only: true
       credential_encryption: true
@@ -1000,14 +1000,14 @@ YOYO_AI_EOF
         show_progress "Adding yoyo_ai config section"
         cat >> .yoyo-dev/config.yml << 'YOYO_AI_EOF'
 
-# Yoyo AI (Yoyo Claw - local OpenClaw fork)
+# Yoyo AI (YoyoClaw)
 yoyo_ai:
   enabled: true
   yoyo_claw:
     source: "local"
-    build_dir: "yoyo-claw/"
+    build_dir: "yoyoclaw/"
     port: 18789
-    config_path: "~/.yoyo-claw/openclaw.json"
+    config_path: "~/.yoyo-claw/yoyoclaw.json"
     security:
       localhost_only: true
       credential_encryption: true
@@ -1021,42 +1021,49 @@ YOYO_AI_EOF
     fi
 fi
 
-# Build yoyo-claw from source
+# Pull latest yoyoclaw source before building
+CLAW_DIR=""
+if CLAW_DIR="$(_resolve_yoyo_claw_dir 2>/dev/null)" && [ -d "$CLAW_DIR/.git" ]; then
+    show_progress "Pulling latest yoyoclaw changes..."
+    (cd "$CLAW_DIR" && git pull origin "$(git branch --show-current 2>/dev/null || echo main)" 2>&1 | tail -3) || true
+fi
+
+# Build yoyoclaw from source
 if is_yoyo_claw_built; then
     # Already built — rebuild to pick up updates from git pull
     current_claw_ver=$(yoyo_claw --version 2>/dev/null || echo "unknown")
-    show_progress "Current Yoyo Claw version" "$current_claw_ver"
+    show_progress "Current YoyoClaw version" "$current_claw_ver"
     show_progress "Rebuilding from source..."
 
     if build_yoyo_claw 2>&1 | tail -3; then
         new_claw_ver=$(yoyo_claw --version 2>/dev/null || echo "unknown")
-        ui_success "Yoyo Claw rebuilt (${new_claw_ver})"
-        track_file_change "Yoyo Claw (${current_claw_ver} → ${new_claw_ver})"
+        ui_success "YoyoClaw rebuilt (${new_claw_ver})"
+        track_file_change "YoyoClaw (${current_claw_ver} → ${new_claw_ver})"
         if [ "$current_claw_ver" = "$new_claw_ver" ]; then
             YOYO_AI_STATUS="already-up-to-date"
         else
             YOYO_AI_STATUS="rebuilt"
         fi
     else
-        ui_warning "Yoyo Claw rebuild failed — continuing with existing build"
+        ui_warning "YoyoClaw rebuild failed — continuing with existing build"
         YOYO_AI_STATUS="failed:build"
     fi
 else
     # First build — check Node.js and build from source
     if node_ver=$(check_node_version 22 2>/dev/null); then
-        show_progress "Building Yoyo Claw from source (first build)..."
-        ui_info "Building Yoyo Claw (yoyo-ai)..."
+        show_progress "Building YoyoClaw from source (first build)..."
+        ui_info "Building YoyoClaw (yoyo-ai)..."
         if build_yoyo_claw 2>&1 | tail -3; then
-            ui_success "Yoyo Claw built successfully"
+            ui_success "YoyoClaw built successfully"
             ensure_yoyo_claw_token
             if ! is_yoyo_onboarded; then
                 run_yoyo_claw_onboard
             fi
             show_yoyo_claw_dashboard_info
-            track_file_change "Yoyo Claw (first build from source)"
+            track_file_change "YoyoClaw (first build from source)"
             YOYO_AI_STATUS="built"
         else
-            ui_warning "Yoyo Claw build failed — check pnpm/node setup"
+            ui_warning "YoyoClaw build failed — check pnpm/node setup"
             YOYO_AI_STATUS="failed:build"
         fi
     else

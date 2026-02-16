@@ -2,7 +2,7 @@
  * ModelSelector Component
  *
  * Dropdown selector for choosing AI models in the chat interface.
- * Fetches available models from OpenClaw gateway via WebSocket RPC.
+ * Fetches available models from YoyoClaw gateway via WebSocket RPC.
  * Falls back to DEFAULT_MODELS if gateway is unavailable.
  */
 

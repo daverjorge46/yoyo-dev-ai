@@ -1,5 +1,5 @@
-// OpenClaw Gateway WebSocket RPC Protocol Types
-// Reverse-engineered from OpenClaw Control UI source
+// YoyoClaw Gateway WebSocket RPC Protocol Types
+// Reverse-engineered from YoyoClaw Control UI source
 
 // --- Frame Types ---
 

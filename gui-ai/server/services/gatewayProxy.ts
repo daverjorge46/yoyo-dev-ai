@@ -1,7 +1,7 @@
 /**
  * Gateway WebSocket Proxy
  *
- * Proxies WebSocket connections from the browser to the OpenClaw gateway.
+ * Proxies WebSocket connections from the browser to the YoyoClaw gateway.
  * The server connects as `node-host` (no origin/secure-context restrictions),
  * then transparently forwards all frames between browser and gateway.
  *
@@ -15,13 +15,14 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { randomUUID } from 'crypto';
 
-// Prefer ~/.yoyo-claw, fall back to ~/.openclaw for backwards compat
-const YOYO_CLAW_CONFIG = join(homedir(), '.yoyo-claw', 'openclaw.json');
+// Prefer ~/.yoyo-claw/yoyoclaw.json, fall back to legacy paths for backwards compat
+const YOYO_CLAW_CONFIG = join(homedir(), '.yoyo-claw', 'yoyoclaw.json');
+const LEGACY_YOYO_CLAW_CONFIG = join(homedir(), '.yoyo-claw', 'openclaw.json');
 const LEGACY_CONFIG = join(homedir(), '.openclaw', 'openclaw.json');
 const DEFAULT_GATEWAY_HOST = '127.0.0.1';
 const DEFAULT_GATEWAY_PORT = 18789;
 
-interface OpenClawConfig {
+interface YoyoClawConfig {
   gateway?: {
     port?: number;
     auth?: {
@@ -36,13 +37,15 @@ async function resolveConfigPath(): Promise<string> {
   if (envPath) {
     try { await access(envPath); return envPath; } catch { /* fall through */ }
   }
-  // Prefer yoyo-claw path
+  // Prefer yoyoclaw.json
   try { await access(YOYO_CLAW_CONFIG); return YOYO_CLAW_CONFIG; } catch { /* fall through */ }
-  // Fall back to legacy
+  // Fall back to legacy openclaw.json in ~/.yoyo-claw
+  try { await access(LEGACY_YOYO_CLAW_CONFIG); return LEGACY_YOYO_CLAW_CONFIG; } catch { /* fall through */ }
+  // Fall back to legacy ~/.openclaw
   return LEGACY_CONFIG;
 }
 
-async function readConfig(): Promise<OpenClawConfig> {
+async function readConfig(): Promise<YoyoClawConfig> {
   const configPath = await resolveConfigPath();
   const raw = await readFile(configPath, 'utf-8');
   return JSON.parse(raw);
@@ -99,7 +102,7 @@ export function createGatewayProxy(
       gatewayWs = new WebSocket(url);
 
       gatewayWs.on('open', () => {
-        console.log('[gateway-proxy] Connected to OpenClaw gateway');
+        console.log('[gateway-proxy] Connected to YoyoClaw gateway');
         gatewayConnected = true;
         // Flush any messages that arrived while connecting
         for (const msg of pendingMessages) {

@@ -83,7 +83,7 @@ export function TokenGate() {
 
           {/* Help text */}
           <p className="mt-4 text-xs text-gray-400 dark:text-terminal-text-secondary text-center">
-            Token is stored in <code className="px-1 py-0.5 rounded bg-gray-100 dark:bg-terminal-elevated">~/.yoyo-claw/.gateway-token</code>
+            Token is stored in <code className="px-1 py-0.5 rounded bg-gray-100 dark:bg-terminal-elevated">~/.yoyoclaw/.gateway-token</code>
           </p>
         </div>
       </div>

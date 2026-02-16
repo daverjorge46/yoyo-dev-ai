@@ -214,7 +214,7 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const { isConnected, gatewayVersion, reconnect } = useGatewayStatus();
 
-  // Fetch data from OpenClaw gateway via WebSocket RPC
+  // Fetch data from YoyoClaw gateway via WebSocket RPC
   const { data: health } = useGatewayQuery<HealthResponse>('health', undefined, {
     staleTime: 15_000,
   });

@@ -188,7 +188,8 @@ export ICON_CLIPBOARD='📋'
 export ICON_BRANCH='🌿'
 
 # YoyoClaw / Yoyo AI icon
-export ICON_OPENCLAW='¯\_(ツ)_/¯'
+export ICON_YOYOCLAW='¯\_(ツ)_/¯'
+export ICON_OPENCLAW='¯\_(ツ)_/¯'  # legacy alias
 
 # Agent-specific icons
 export ICON_AGENT_YOYO_AI='🤖'
@@ -1896,7 +1897,7 @@ ui_yoyo_ai_banner() {
         echo -e "${BOX_DBL_TR}${UI_RESET}"
 
         echo -ne "${UI_MAUVE}${BOX_DBL_V}${UI_RESET}"
-        echo -ne "  ${UI_MAUVE}${UI_BOLD}${ICON_OPENCLAW} YOYO AI${UI_RESET}  "
+        echo -ne "  ${UI_MAUVE}${UI_BOLD}${ICON_YOYOCLAW} YOYO AI${UI_RESET}  "
         echo -ne "${UI_SUBTEXT0}${version}${UI_RESET}"
         local content_len=$((2 + 10 + 2 + ${#version}))
         local padding=$((border_width - content_len))
@@ -1983,7 +1984,7 @@ ui_yoyo_ai_status_panel() {
 
     # Header
     echo -ne "${UI_MAUVE}${BOX_V}${UI_RESET}"
-    echo -ne "  ${ICON_OPENCLAW} ${UI_MAUVE}${UI_BOLD}YOYO AI STATUS${UI_RESET}"
+    echo -ne "  ${ICON_YOYOCLAW} ${UI_MAUVE}${UI_BOLD}YOYO AI STATUS${UI_RESET}"
     local header_len=$((2 + 2 + 14))
     local header_pad=$((width - header_len))
     printf "%${header_pad}s" ""
@@ -2089,7 +2090,7 @@ ui_component_status_panel() {
     fi
 
     echo -ne "${UI_YOYO_YELLOW_DIM}${BOX_V}${UI_RESET}"
-    echo -ne "  ${ICON_OPENCLAW} ${UI_TEXT}yoyo-ai       ${ai_color}${ai_icon} ${ai_label}${UI_RESET}"
+    echo -ne "  ${ICON_YOYOCLAW} ${UI_TEXT}yoyo-ai       ${ai_color}${ai_icon} ${ai_label}${UI_RESET}"
     local ai_len=$((2 + 2 + 14 + 2 + ${#ai_label}))
     local ai_pad=$((width - ai_len))
     printf "%${ai_pad}s" ""

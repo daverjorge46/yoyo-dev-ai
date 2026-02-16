@@ -191,7 +191,7 @@ export function CollapsibleSidebar({
   className = '',
 }: CollapsibleSidebarProps) {
   // Use WebSocket-based gateway status instead of removed HTTP endpoint
-  const { isConnected: openclawConnected } = useGatewayStatus();
+  const { isConnected: yoyoclawConnected } = useGatewayStatus();
 
   const sidebarContent = (
     <div
@@ -264,13 +264,13 @@ export function CollapsibleSidebar({
           <div className="flex items-center gap-2 px-3 py-2 text-xs bg-gray-50 dark:bg-terminal-elevated/50 rounded-md">
             <div
               className={`w-2 h-2 rounded-full ${
-                openclawConnected
+                yoyoclawConnected
                   ? 'bg-emerald-500 animate-pulse'
                   : 'bg-red-500'
               }`}
             />
             <span className="text-gray-500 dark:text-terminal-text-muted">
-              YoyoClaw {openclawConnected ? 'Connected' : 'Disconnected'}
+              YoyoClaw {yoyoclawConnected ? 'Connected' : 'Disconnected'}
             </span>
           </div>
         )}

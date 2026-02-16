@@ -700,7 +700,7 @@ if [ "$NODE_OK" = true ]; then
 
     # Check if already built
     if is_yoyo_claw_built; then
-        echo -e "  ${UI_SUCCESS}✓${UI_RESET} Yoyo Claw already built ($(get_yoyo_claw_version 2>/dev/null || echo 'unknown'))"
+        echo -e "  ${UI_SUCCESS}✓${UI_RESET} YoyoClaw already built ($(get_yoyo_claw_version 2>/dev/null || echo 'unknown'))"
         YOYO_CLAW_BUILT=true
         YOYO_AI_STATUS="already-built"
     else
@@ -708,9 +708,9 @@ if [ "$NODE_OK" = true ]; then
         if build_yoyo_claw 2>&1 | tail -3; then
             YOYO_CLAW_BUILT=true
             YOYO_AI_STATUS="installed"
-            ui_success "Yoyo Claw built"
+            ui_success "YoyoClaw built"
         else
-            ui_warning "Yoyo Claw build failed — you can build later with: yoyo-ai --start"
+            ui_warning "YoyoClaw build failed — you can build later with: yoyo-ai --start"
             YOYO_AI_STATUS="failed:build failed"
         fi
     fi
@@ -728,14 +728,14 @@ fi
 if [ -f "$INSTALL_DIR/config.yml" ] && ! grep -q "^yoyo_ai:" "$INSTALL_DIR/config.yml" 2>/dev/null; then
     cat >> "$INSTALL_DIR/config.yml" << 'YOYO_AI_EOF'
 
-# Yoyo AI (Yoyo Claw - local OpenClaw fork)
+# Yoyo AI (YoyoClaw)
 yoyo_ai:
   enabled: true
   yoyo_claw:
     source: "local"
-    build_dir: "yoyo-claw/"
+    build_dir: "yoyoclaw/"
     port: 18789
-    config_path: "~/.yoyo-claw/openclaw.json"
+    config_path: "~/.yoyo-claw/yoyoclaw.json"
     security:
       localhost_only: true
       credential_encryption: true

@@ -552,6 +552,7 @@ launch_background() {
         [ ! -f "$token_file" ] && token_file="${HOME}/.openclaw/.gateway-token"
         if [ -f "$token_file" ]; then
             export YOYO_CLAW_GATEWAY_TOKEN="$(cat "$token_file")"
+            export YOYOCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
             export OPENCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
         fi
     fi
@@ -665,6 +666,7 @@ launch_gui() {
         [ ! -f "$token_file" ] && token_file="${HOME}/.openclaw/.gateway-token"
         if [ -f "$token_file" ]; then
             export YOYO_CLAW_GATEWAY_TOKEN="$(cat "$token_file")"
+            export YOYOCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
             export OPENCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
         fi
     fi

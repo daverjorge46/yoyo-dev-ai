@@ -30,7 +30,7 @@ const navItems = [
 
 export function Sidebar() {
   // Use WebSocket-based gateway status instead of removed HTTP endpoint
-  const { isConnected: openclawConnected } = useGatewayStatus();
+  const { isConnected: yoyoclawConnected } = useGatewayStatus();
 
   return (
     <div className="flex flex-col h-full">
@@ -71,13 +71,13 @@ export function Sidebar() {
         <div className="flex items-center gap-2 px-3 py-2 text-xs bg-terminal-elevated/50 rounded-md">
           <div
             className={`w-2 h-2 rounded-full ${
-              openclawConnected
+              yoyoclawConnected
                 ? 'bg-emerald-500 animate-pulse'
                 : 'bg-red-500'
             }`}
           />
           <span className="text-terminal-text-muted">
-            YoyoClaw {openclawConnected ? 'Connected' : 'Disconnected'}
+            YoyoClaw {yoyoclawConnected ? 'Connected' : 'Disconnected'}
           </span>
         </div>
 

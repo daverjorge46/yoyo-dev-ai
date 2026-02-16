@@ -19,7 +19,7 @@ export function PanelLayout({ children, detail, onDetailClose }: PanelLayoutProp
   const { theme, setTheme } = useTheme();
 
   // Use WebSocket-based gateway status instead of removed HTTP endpoint
-  const { isConnected: openclawConnected } = useGatewayStatus();
+  const { isConnected: yoyoclawConnected } = useGatewayStatus();
 
   const handleDetailResize = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -80,18 +80,18 @@ export function PanelLayout({ children, detail, onDetailClose }: PanelLayoutProp
             <div className={`
               flex items-center gap-2 px-3 py-1.5 rounded-md text-sm
               border
-              ${openclawConnected
+              ${yoyoclawConnected
                 ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400'
                 : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400'
               }
             `}>
-              {openclawConnected ? (
+              {yoyoclawConnected ? (
                 <Wifi className="h-4 w-4" />
               ) : (
                 <WifiOff className="h-4 w-4" />
               )}
               <span className="hidden sm:inline">
-                {openclawConnected ? 'Connected' : 'Disconnected'}
+                {yoyoclawConnected ? 'Connected' : 'Disconnected'}
               </span>
             </div>
           </div>
