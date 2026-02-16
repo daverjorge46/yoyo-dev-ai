@@ -252,7 +252,7 @@ yoyo_ai:
     source: "local"
     build_dir: "yoyoclaw/"
     port: 18789
-    config_path: "~/.yoyo-claw/yoyoclaw.json"
+    config_path: "~/.yoyoclaw/yoyoclaw.json"
     daemon:
       auto_start: false
       service_type: "auto"

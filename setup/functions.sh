@@ -272,8 +272,8 @@ install_from_github() {
 # Yoyo Claw (yoyo-ai) Shared Helpers
 # ============================================================================
 
-# Yoyo Claw configuration (canonical home: ~/.yoyo-claw, ~/.openclaw is symlink)
-YOYO_CLAW_HOME="${YOYO_CLAW_HOME:-$HOME/.yoyo-claw}"
+# Yoyo Claw configuration (canonical home: ~/.yoyoclaw, ~/.openclaw is symlink)
+YOYO_CLAW_HOME="${YOYO_CLAW_HOME:-$HOME/.yoyoclaw}"
 YOYO_CLAW_PORT="${YOYO_CLAW_PORT:-18789}"
 YOYO_CLAW_TOKEN_FILE="$YOYO_CLAW_HOME/.gateway-token"
 YOYO_CLAW_CONFIG_PATH="$YOYO_CLAW_HOME/yoyoclaw.json"
@@ -356,39 +356,50 @@ is_yoyo_claw_built() {
     [ -d "$claw_dir/dist" ]
 }
 
-# Migrate ~/.yoyo-ai or ~/.openclaw -> ~/.yoyo-claw
+# Migrate ~/.yoyo-ai, ~/.yoyo-claw, or ~/.openclaw -> ~/.yoyoclaw
 migrate_yoyo_claw_home() {
-    # Step 1: Move ~/.yoyo-ai -> ~/.yoyo-claw (if real dir and target missing)
+    # Step 1: Move ~/.yoyo-ai -> ~/.yoyoclaw (if real dir and target missing)
     if [ -d "$HOME/.yoyo-ai" ] && [ ! -L "$HOME/.yoyo-ai" ] && [ ! -d "$YOYO_CLAW_HOME" ]; then
         mv "$HOME/.yoyo-ai" "$YOYO_CLAW_HOME" 2>/dev/null && \
             echo "[migrate] Moved ~/.yoyo-ai -> $YOYO_CLAW_HOME" >&2
     fi
-    # Step 2: Move ~/.openclaw -> ~/.yoyo-claw (if real dir and target missing)
+    # Step 2: Move ~/.yoyo-claw -> ~/.yoyoclaw (if real dir and target missing)
+    if [ -d "$HOME/.yoyo-claw" ] && [ ! -L "$HOME/.yoyo-claw" ] && [ ! -d "$YOYO_CLAW_HOME" ]; then
+        mv "$HOME/.yoyo-claw" "$YOYO_CLAW_HOME" 2>/dev/null && \
+            echo "[migrate] Moved ~/.yoyo-claw -> $YOYO_CLAW_HOME" >&2
+    fi
+    # Step 3: Move ~/.openclaw -> ~/.yoyoclaw (if real dir and target missing)
     if [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ] && [ ! -d "$YOYO_CLAW_HOME" ]; then
         mv "$HOME/.openclaw" "$YOYO_CLAW_HOME" 2>/dev/null && \
             echo "[migrate] Moved ~/.openclaw -> $YOYO_CLAW_HOME" >&2
     fi
-    # Step 3: Ensure ~/.yoyo-claw exists
+    # Step 4: Ensure ~/.yoyoclaw exists
     mkdir -p "$YOYO_CLAW_HOME"
-    # Step 4: Fallback - if config missing in ~/.yoyo-claw, copy from ~/.openclaw
+    # Step 5: Fallback - if config missing in ~/.yoyoclaw, copy from ~/.openclaw
     if [ ! -f "$YOYO_CLAW_CONFIG_PATH" ] && [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ]; then
         if [ -f "$HOME/.openclaw/openclaw.json" ]; then
             cp -a "$HOME/.openclaw/." "$YOYO_CLAW_HOME/" 2>/dev/null && \
                 echo "[migrate] Copied ~/.openclaw contents -> $YOYO_CLAW_HOME" >&2
         fi
     fi
-    # Step 4b: Rename openclaw.json → yoyoclaw.json within ~/.yoyo-claw
+    # Step 5b: Rename openclaw.json → yoyoclaw.json within ~/.yoyoclaw
     if [ -f "$YOYO_CLAW_HOME/openclaw.json" ] && [ ! -f "$YOYO_CLAW_HOME/yoyoclaw.json" ]; then
         mv "$YOYO_CLAW_HOME/openclaw.json" "$YOYO_CLAW_HOME/yoyoclaw.json"
         echo "[migrate] Renamed openclaw.json -> yoyoclaw.json" >&2
     fi
-    # Step 5: Replace real ~/.openclaw dir with symlink (after migration)
+    # Step 6: Replace real ~/.openclaw dir with symlink (after migration)
     if [ -d "$HOME/.openclaw" ] && [ ! -L "$HOME/.openclaw" ]; then
-        # Config is now in ~/.yoyo-claw, replace real dir with symlink
         rm -rf "$HOME/.openclaw"
         ln -sf "$YOYO_CLAW_HOME" "$HOME/.openclaw"
     elif [ ! -e "$HOME/.openclaw" ]; then
         ln -sf "$YOYO_CLAW_HOME" "$HOME/.openclaw"
+    fi
+    # Step 6b: Replace real ~/.yoyo-claw dir with symlink (after migration)
+    if [ -d "$HOME/.yoyo-claw" ] && [ ! -L "$HOME/.yoyo-claw" ] && [ "$YOYO_CLAW_HOME" != "$HOME/.yoyo-claw" ]; then
+        rm -rf "$HOME/.yoyo-claw"
+        ln -sf "$YOYO_CLAW_HOME" "$HOME/.yoyo-claw"
+    elif [ ! -e "$HOME/.yoyo-claw" ]; then
+        ln -sf "$YOYO_CLAW_HOME" "$HOME/.yoyo-claw"
     fi
     # Step 6: Create ~/.yoyo-ai symlink for backwards compat
     if [ ! -e "$HOME/.yoyo-ai" ]; then

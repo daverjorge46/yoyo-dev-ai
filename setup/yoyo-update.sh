@@ -953,7 +953,7 @@ if [ -f "$SCRIPT_DIR/functions.sh" ]; then
     source "$SCRIPT_DIR/functions.sh"
 fi
 
-# Migrate ~/.openclaw or ~/.yoyo-ai → ~/.yoyo-claw (one-time, preserves all data)
+# Migrate ~/.openclaw, ~/.yoyo-claw, or ~/.yoyo-ai → ~/.yoyoclaw (one-time, preserves all data)
 show_progress "Checking home directory migration..."
 migrate_yoyo_claw_home
 
@@ -982,7 +982,7 @@ yoyo_ai:
     source: "local"
     build_dir: "yoyoclaw/"
     port: 18789
-    config_path: "~/.yoyo-claw/yoyoclaw.json"
+    config_path: "~/.yoyoclaw/yoyoclaw.json"
     security:
       localhost_only: true
       credential_encryption: true
@@ -1007,7 +1007,7 @@ yoyo_ai:
     source: "local"
     build_dir: "yoyoclaw/"
     port: 18789
-    config_path: "~/.yoyo-claw/yoyoclaw.json"
+    config_path: "~/.yoyoclaw/yoyoclaw.json"
     security:
       localhost_only: true
       credential_encryption: true

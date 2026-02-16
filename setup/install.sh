@@ -695,7 +695,7 @@ else
 fi
 
 if [ "$NODE_OK" = true ]; then
-    # Migrate home directory (~/.yoyo-ai or ~/.openclaw -> ~/.yoyo-claw)
+    # Migrate home directory (~/.yoyo-ai, ~/.yoyo-claw, or ~/.openclaw -> ~/.yoyoclaw)
     migrate_yoyo_claw_home
 
     # Check if already built
@@ -735,7 +735,7 @@ yoyo_ai:
     source: "local"
     build_dir: "yoyoclaw/"
     port: 18789
-    config_path: "~/.yoyo-claw/yoyoclaw.json"
+    config_path: "~/.yoyoclaw/yoyoclaw.json"
     security:
       localhost_only: true
       credential_encryption: true

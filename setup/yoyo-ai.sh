@@ -54,7 +54,7 @@ readonly VERSION="2.0.0"
 readonly YOYO_CLAW_PORT="${YOYO_CLAW_PORT:-18789}"
 readonly WORKSPACE_PORT="${WORKSPACE_PORT:-3457}"
 
-# Migrate and set up ~/.yoyo-claw (handles ~/.yoyo-ai and ~/.openclaw migration)
+# Migrate and set up ~/.yoyoclaw (handles ~/.yoyo-ai, ~/.yoyo-claw, and ~/.openclaw migration)
 migrate_yoyo_claw_home
 
 # ============================================================================
