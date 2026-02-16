@@ -71,7 +71,7 @@ validate_environment() {
     if ! _resolve_yoyo_claw_bin &>/dev/null; then
         ui_error "YoyoClaw binary not found"
         echo ""
-        echo "  Expected: yoyoclaw/yoyoclaw.mjs relative to framework root"
+        echo "  Expected: yoyoclaw/openclaw.mjs relative to framework root"
         echo ""
         echo "  Try building YoyoClaw:"
         echo -e "  ${UI_PRIMARY}cd yoyoclaw && pnpm install --frozen-lockfile && pnpm build${UI_RESET}"
