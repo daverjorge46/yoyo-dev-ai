@@ -320,6 +320,22 @@ cmd_start() {
 
 cmd_stop() {
     ui_yoyo_ai_banner "v${VERSION}"
+
+    # Stop the GUI
+    local gui_pid
+    gui_pid=$(pgrep -f "yoyo-gui.sh.*--ai" 2>/dev/null || true)
+    if [ -n "$gui_pid" ]; then
+        ui_info "Stopping Yoyo AI GUI..."
+        kill "$gui_pid" 2>/dev/null || true
+        ui_success "GUI stopped"
+    fi
+    # Also stop the vite dev server for gui-ai
+    local vite_pid
+    vite_pid=$(pgrep -f "vite.*gui-ai\|gui-ai.*vite\|node.*gui-ai" 2>/dev/null | head -1 || true)
+    if [ -n "$vite_pid" ]; then
+        kill "$vite_pid" 2>/dev/null || true
+    fi
+
     daemon_stop
 }
 
@@ -513,7 +529,7 @@ show_help() {
     echo -e "  ${UI_BOLD}USAGE${UI_RESET}"
     echo -e "  ─────────────────────────────────────────────────────────────────"
     echo ""
-    echo -e "  ${UI_PRIMARY}yoyo-ai${UI_RESET}                  ${UI_DIM}Show status (start if stopped)${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai${UI_RESET}                  ${UI_DIM}Start gateway + GUI (same as --start)${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --gui${UI_RESET}            ${UI_DIM}Launch Yoyo AI GUI (port 5174)${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai <command>${UI_RESET}        ${UI_DIM}Run any Yoyo Claw command${UI_RESET}"
     echo ""
@@ -575,39 +591,9 @@ show_version() {
 # ============================================================================
 
 main() {
-    # No arguments: ensure initialized, start if stopped, show status
+    # No arguments: ensure initialized, start gateway + GUI, show status
     if [ $# -eq 0 ]; then
-        if ! check_prerequisites; then
-            exit 1
-        fi
-
-        ui_yoyo_ai_banner "v${VERSION}"
-
-        ensure_initialized || true
-
-        if ! is_gateway_running; then
-            daemon_start
-        fi
-
-        # Show status
-        local status="stopped"
-        local pid=""
-        if is_gateway_running; then
-            status="running"
-            pid=$(get_daemon_pid)
-        fi
-        ui_yoyo_ai_status_panel "$status" "$YOYO_CLAW_PORT" "$pid"
-
-        echo -e "  ${UI_DIM}Yoyo Claw:${UI_RESET} $(get_yoyo_claw_version)"
-        local node_ver
-        node_ver=$(node --version 2>/dev/null || echo "not found")
-        echo -e "  ${UI_DIM}Node.js:${UI_RESET}   ${node_ver}"
-        if [ -f "$YOYO_CLAW_CONFIG_PATH" ]; then
-            echo -e "  ${UI_DIM}Config:${UI_RESET}    ${YOYO_CLAW_CONFIG_PATH}"
-        else
-            echo -e "  ${UI_DIM}Config:${UI_RESET}    ${UI_WARNING}not found${UI_RESET}"
-        fi
-        echo ""
+        cmd_start
         exit 0
     fi
 

@@ -373,7 +373,29 @@ is_gui_running() {
         local pid
         pid=$(cat "$pid_file" 2>/dev/null)
         if [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null; then
-            return 0
+            # PID is alive, but also verify the dev port is actually listening
+            # (the Vite client can die while the parent process stays alive)
+            local dev_port
+            dev_port=$(get_dev_port)
+            if command -v ss &>/dev/null; then
+                if ss -tlnH "sport = :${dev_port}" 2>/dev/null | grep -q "${dev_port}"; then
+                    return 0
+                fi
+            elif command -v lsof &>/dev/null; then
+                if lsof -ti ":${dev_port}" &>/dev/null; then
+                    return 0
+                fi
+            else
+                # Can't verify port, trust the PID
+                return 0
+            fi
+            # PID alive but port not listening - stale/broken state
+            # Kill the orphaned process tree and clean up
+            kill "$pid" 2>/dev/null || true
+            sleep 1
+            kill -9 "$pid" 2>/dev/null || true
+            rm -f "$pid_file"
+            return 1
         else
             rm -f "$pid_file"
         fi
