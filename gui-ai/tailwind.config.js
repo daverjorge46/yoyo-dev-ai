@@ -210,6 +210,10 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' },
         },
+        'kaomoji-shimmer': {
+          '0%': { backgroundPosition: '-200% center' },
+          '100%': { backgroundPosition: '200% center' },
+        },
       },
       animation: {
         'cursor-blink': 'cursor-blink 1s step-end infinite',
@@ -221,6 +225,7 @@ export default {
         'slide-up': 'slide-up 150ms ease-out',
         'slide-down': 'slide-down 150ms ease-out',
         'pulse-subtle': 'pulse-subtle 2s ease-in-out infinite',
+        'kaomoji-shimmer': 'kaomoji-shimmer 2.5s ease-in-out infinite',
       },
     },
   },

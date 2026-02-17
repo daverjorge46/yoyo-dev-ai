@@ -120,8 +120,6 @@ app.get('/api/gateway/health', async (c) => {
 
   const configPaths = [
     join(homedir(), '.yoyoclaw', 'yoyoclaw.json'),
-    join(homedir(), '.yoyo-claw', 'yoyoclaw.json'),
-    join(homedir(), '.yoyo-claw', 'openclaw.json'),
     join(homedir(), '.openclaw', 'openclaw.json'),
   ];
 

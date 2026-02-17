@@ -15,10 +15,8 @@ import { join } from 'path';
 import { homedir } from 'os';
 import { randomUUID } from 'crypto';
 
-// Prefer ~/.yoyoclaw/yoyoclaw.json, fall back to legacy paths for backwards compat
-const YOYO_CLAW_CONFIG = join(homedir(), '.yoyoclaw', 'yoyoclaw.json');
-const LEGACY_YOYO_CLAW_DIR_CONFIG = join(homedir(), '.yoyo-claw', 'yoyoclaw.json');
-const LEGACY_YOYO_CLAW_CONFIG = join(homedir(), '.yoyo-claw', 'openclaw.json');
+// Prefer ~/.yoyoclaw/yoyoclaw.json, fall back to legacy ~/.openclaw path
+const YOYOCLAW_CONFIG = join(homedir(), '.yoyoclaw', 'yoyoclaw.json');
 const LEGACY_CONFIG = join(homedir(), '.openclaw', 'openclaw.json');
 const DEFAULT_GATEWAY_HOST = '127.0.0.1';
 const DEFAULT_GATEWAY_PORT = 18789;
@@ -39,11 +37,7 @@ async function resolveConfigPath(): Promise<string> {
     try { await access(envPath); return envPath; } catch { /* fall through */ }
   }
   // Prefer ~/.yoyoclaw/yoyoclaw.json
-  try { await access(YOYO_CLAW_CONFIG); return YOYO_CLAW_CONFIG; } catch { /* fall through */ }
-  // Fall back to ~/.yoyo-claw/yoyoclaw.json
-  try { await access(LEGACY_YOYO_CLAW_DIR_CONFIG); return LEGACY_YOYO_CLAW_DIR_CONFIG; } catch { /* fall through */ }
-  // Fall back to legacy openclaw.json in ~/.yoyo-claw
-  try { await access(LEGACY_YOYO_CLAW_CONFIG); return LEGACY_YOYO_CLAW_CONFIG; } catch { /* fall through */ }
+  try { await access(YOYOCLAW_CONFIG); return YOYOCLAW_CONFIG; } catch { /* fall through */ }
   // Fall back to legacy ~/.openclaw
   return LEGACY_CONFIG;
 }

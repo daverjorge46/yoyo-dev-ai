@@ -21,7 +21,6 @@ import {
   Sparkles,
   Copy,
   Check,
-  Loader2,
   AlertCircle,
   Wrench,
 } from 'lucide-react';
@@ -30,6 +29,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark, oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button } from '../common/Button';
 import { Card } from '../common/Card';
+import { KaomojiThinking } from '../common/KaomojiThinking';
 import { useTheme } from '../ThemeToggle';
 import { useStreamingChat, type StreamingMessage } from '../../hooks/useStreamingChat';
 import { useGatewayStatus } from '../../hooks/useGatewayStatus';
@@ -428,7 +428,7 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
                 !messages[messages.length - 1]?.isStreaming && (
                   <div className="flex gap-3 p-4">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400">
-                      <Sparkles className="w-4 h-4 animate-pulse" />
+                      <Sparkles className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -436,12 +436,7 @@ export function ChatSidebarPanel({ isOpen, onClose }: ChatSidebarPanelProps) {
                           YoYo AI
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-amber-500" />
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          Thinking...
-                        </span>
-                      </div>
+                      <KaomojiThinking size="sm" />
                     </div>
                   </div>
                 )}

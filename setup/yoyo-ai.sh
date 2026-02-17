@@ -113,7 +113,7 @@ get_yoyo_claw_version() {
 
 get_daemon_pid() {
     # Try to find yoyoclaw daemon process
-    pgrep -f "yoyoclaw.*daemon\|openclaw.*daemon\|yoyo-claw.*daemon" 2>/dev/null | head -1 || echo ""
+    pgrep -f "yoyoclaw.*daemon\|openclaw.*daemon" 2>/dev/null | head -1 || echo ""
 }
 
 is_daemon_running() {
@@ -129,7 +129,6 @@ is_gateway_installed() {
         return 1
     fi
     systemctl --user is-enabled yoyoclaw-gateway.service &>/dev/null 2>&1 || \
-    systemctl --user is-enabled yoyo-claw-gateway.service &>/dev/null 2>&1 || \
     systemctl --user is-enabled openclaw-gateway.service &>/dev/null 2>&1
 }
 
@@ -143,11 +142,10 @@ is_gateway_running() {
     # Fallback: check systemd service
     if has_systemd; then
         systemctl --user is-active yoyoclaw-gateway.service &>/dev/null 2>&1 && return 0
-        systemctl --user is-active yoyo-claw-gateway.service &>/dev/null 2>&1 && return 0
         systemctl --user is-active openclaw-gateway.service &>/dev/null 2>&1 && return 0
     fi
     # Fallback: check process
-    pgrep -f "yoyoclaw.*gateway\|openclaw.*gateway\|yoyo-claw.*gateway" &>/dev/null && return 0
+    pgrep -f "yoyoclaw.*gateway\|openclaw.*gateway" &>/dev/null && return 0
     return 1
 }
 
@@ -161,11 +159,11 @@ ensure_gateway_mode() {
 }
 
 ensure_initialized() {
-    # Step 1: Ensure yoyo-claw is built
+    # Step 1: Ensure yoyoclaw is built
     if ! is_yoyo_claw_built; then
-        ui_info "Building yoyo-claw from source..."
+        ui_info "Building yoyoclaw from source..."
         if ! build_yoyo_claw 2>&1 | tail -5; then
-            ui_error "Failed to build yoyo-claw"
+            ui_error "Failed to build yoyoclaw"
             return 1
         fi
         ui_success "Yoyo Claw built"
@@ -230,7 +228,6 @@ daemon_start() {
     if has_systemd && is_gateway_installed; then
         # Try new service name first, fall back to legacy
         systemctl --user start yoyoclaw-gateway.service 2>&1 || \
-        systemctl --user start yoyo-claw-gateway.service 2>&1 || \
         systemctl --user start openclaw-gateway.service 2>&1 || true
         sleep 1
         if is_gateway_running; then
@@ -272,7 +269,6 @@ daemon_stop() {
     # Try systemd service first (only if available)
     if has_systemd; then
         systemctl --user stop yoyoclaw-gateway.service 2>&1 || true
-        systemctl --user stop yoyo-claw-gateway.service 2>&1 || true
         systemctl --user stop openclaw-gateway.service 2>&1 || true
     fi
 
@@ -551,7 +547,7 @@ show_help() {
     echo -e "  ${UI_PRIMARY}yoyo-ai --stop${UI_RESET}           ${UI_DIM}Stop the AI daemon${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --status${UI_RESET}         ${UI_DIM}Show daemon status${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --gui${UI_RESET}            ${UI_DIM}Launch Yoyo AI GUI${UI_RESET}"
-    echo -e "  ${UI_PRIMARY}yoyo-ai --update${UI_RESET}         ${UI_DIM}Rebuild yoyo-claw from source${UI_RESET}"
+    echo -e "  ${UI_PRIMARY}yoyo-ai --update${UI_RESET}         ${UI_DIM}Rebuild yoyoclaw from source${UI_RESET}"
     echo -e "  ${UI_PRIMARY}yoyo-ai --doctor${UI_RESET}         ${UI_DIM}Run diagnostics${UI_RESET}"
     echo ""
     echo -e "  ${UI_BOLD}YOYO CLAW COMMANDS${UI_RESET} ${UI_DIM}(Pass-through to Yoyo Claw)${UI_RESET}"

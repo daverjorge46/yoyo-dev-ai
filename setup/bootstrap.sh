@@ -927,12 +927,9 @@ install_openclaw() {
         fi
     fi
 
-    # Create backwards compat symlinks
+    # Create backwards compat symlink for ~/.openclaw
     if [ ! -e "$HOME/.openclaw" ]; then
         ln -sf "$AI_DIR" "$HOME/.openclaw" 2>/dev/null || true
-    fi
-    if [ ! -e "$HOME/.yoyo-claw" ]; then
-        ln -sf "$AI_DIR" "$HOME/.yoyo-claw" 2>/dev/null || true
     fi
 }
 
@@ -1099,7 +1096,6 @@ run_uninstall() {
     _detail "  - ${BASE_DIR} (BASE installation)"
     _detail "  - ${AI_DIR} (OpenClaw data)"
     _detail "  - ${HOME}/.openclaw (legacy symlink)"
-    _detail "  - ${HOME}/.yoyo-claw (legacy symlink)"
     _detail "  - Global command symlinks (yoyo-dev, yoyo-ai, etc.)"
     _detail "  - Shell profile PATH entries"
 
@@ -1139,10 +1135,6 @@ run_uninstall() {
     if [ -L "$HOME/.openclaw" ]; then
         rm -f "$HOME/.openclaw"
         _ok "Removed: ${HOME}/.openclaw symlink"
-    fi
-    if [ -L "$HOME/.yoyo-claw" ]; then
-        rm -f "$HOME/.yoyo-claw"
-        _ok "Removed: ${HOME}/.yoyo-claw symlink"
     fi
 
     # Remove shell profile entries

@@ -948,7 +948,7 @@ ui_step $CURRENT_STEP $TOTAL_STEPS "Updating YoyoClaw (yoyo-ai)..."
 
 YOYO_AI_STATUS="failed:unknown"
 
-# Source functions.sh for yoyo-claw helpers
+# Source functions.sh for yoyoclaw helpers
 if [ -f "$SCRIPT_DIR/functions.sh" ]; then
     source "$SCRIPT_DIR/functions.sh"
 fi

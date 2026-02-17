@@ -704,7 +704,7 @@ if [ "$NODE_OK" = true ]; then
         YOYO_CLAW_BUILT=true
         YOYO_AI_STATUS="already-built"
     else
-        echo -e "  ${UI_DIM}Building yoyo-claw from source...${UI_RESET}"
+        echo -e "  ${UI_DIM}Building yoyoclaw from source...${UI_RESET}"
         if build_yoyo_claw 2>&1 | tail -3; then
             YOYO_CLAW_BUILT=true
             YOYO_AI_STATUS="installed"

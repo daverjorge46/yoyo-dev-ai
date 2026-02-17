@@ -19,6 +19,7 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Button } from '../components/common/Button';
 import { Card } from '../components/common/Card';
+import { KaomojiThinking } from '../components/common/KaomojiThinking';
 import { useStreamingChat, type StreamingMessage } from '../hooks/useStreamingChat';
 import { useGatewayQuery } from '../hooks/useGatewayRPC';
 import { useGatewayStatus } from '../hooks/useGatewayStatus';
@@ -334,7 +335,7 @@ export default function Chat() {
                 !messages[messages.length - 1]?.isStreaming && (
                   <div className="flex gap-3 p-4">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 bg-accent-500/20 text-accent-400">
-                      <Sparkles className="w-4 h-4 animate-pulse" />
+                      <Sparkles className="w-4 h-4" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
@@ -342,12 +343,7 @@ export default function Chat() {
                           YoYo AI
                         </span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Loader2 className="w-4 h-4 animate-spin text-accent-400" />
-                        <span className="text-sm text-terminal-text-muted">
-                          Thinking...
-                        </span>
-                      </div>
+                      <KaomojiThinking />
                     </div>
                   </div>
                 )}

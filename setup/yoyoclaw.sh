@@ -67,7 +67,7 @@ validate_environment() {
         exit 1
     fi
 
-    # Check yoyo-claw binary
+    # Check yoyoclaw binary
     if ! _resolve_yoyo_claw_bin &>/dev/null; then
         ui_error "YoyoClaw binary not found"
         echo ""

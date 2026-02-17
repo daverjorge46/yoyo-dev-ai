@@ -547,14 +547,11 @@ launch_background() {
     # Export gateway token for gui-ai server (reads from ~/.yoyoclaw)
     if [ "$AI_MODE" = true ]; then
         local token_file="${HOME}/.yoyoclaw/.gateway-token"
-        # Fall back to legacy paths
-        [ ! -f "$token_file" ] && token_file="${HOME}/.yoyo-claw/.gateway-token"
-        [ ! -f "$token_file" ] && token_file="${HOME}/.yoyo-ai/.gateway-token"
+        # Fall back to legacy ~/.openclaw path
         [ ! -f "$token_file" ] && token_file="${HOME}/.openclaw/.gateway-token"
         if [ -f "$token_file" ]; then
-            export YOYO_CLAW_GATEWAY_TOKEN="$(cat "$token_file")"
-            export YOYOCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
-            export OPENCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
+            export YOYOCLAW_GATEWAY_TOKEN="$(cat "$token_file")"
+            export OPENCLAW_GATEWAY_TOKEN="$YOYOCLAW_GATEWAY_TOKEN"
         fi
     fi
 
@@ -663,14 +660,11 @@ launch_gui() {
     # Export gateway token for gui-ai server (reads from ~/.yoyoclaw)
     if [ "$AI_MODE" = true ]; then
         local token_file="${HOME}/.yoyoclaw/.gateway-token"
-        # Fall back to legacy paths
-        [ ! -f "$token_file" ] && token_file="${HOME}/.yoyo-claw/.gateway-token"
-        [ ! -f "$token_file" ] && token_file="${HOME}/.yoyo-ai/.gateway-token"
+        # Fall back to legacy ~/.openclaw path
         [ ! -f "$token_file" ] && token_file="${HOME}/.openclaw/.gateway-token"
         if [ -f "$token_file" ]; then
-            export YOYO_CLAW_GATEWAY_TOKEN="$(cat "$token_file")"
-            export YOYOCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
-            export OPENCLAW_GATEWAY_TOKEN="$YOYO_CLAW_GATEWAY_TOKEN"
+            export YOYOCLAW_GATEWAY_TOKEN="$(cat "$token_file")"
+            export OPENCLAW_GATEWAY_TOKEN="$YOYOCLAW_GATEWAY_TOKEN"
         fi
     fi
 

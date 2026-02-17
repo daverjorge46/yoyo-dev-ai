@@ -279,7 +279,7 @@ YOYO_CLAW_TOKEN_FILE="$YOYO_CLAW_HOME/.gateway-token"
 YOYO_CLAW_CONFIG_PATH="$YOYO_CLAW_HOME/yoyoclaw.json"
 YOYO_CLAW_ONBOARD_MARKER="$YOYO_CLAW_HOME/.yoyo-onboarded"
 
-# Resolve the yoyo-claw source directory
+# Resolve the yoyoclaw source directory
 # Prefers YOYO_CLAW_DIR env, then looks relative to this script
 _resolve_yoyo_claw_dir() {
     if [ -n "${YOYO_CLAW_DIR:-}" ]; then
@@ -312,28 +312,28 @@ _resolve_yoyo_claw_dir() {
     return 1
 }
 
-# Resolve the yoyo-claw binary (node entry point)
+# Resolve the yoyoclaw binary (node entry point)
 _resolve_yoyo_claw_bin() {
     local claw_dir
     claw_dir="$(_resolve_yoyo_claw_dir)" || return 1
     echo "$claw_dir/openclaw.mjs"
 }
 
-# Run yoyo-claw CLI command (replaces global `openclaw` binary)
+# Run yoyoclaw CLI command (replaces global `openclaw` binary)
 yoyo_claw() {
     local bin
     bin="$(_resolve_yoyo_claw_bin)" || {
-        echo "ERROR: yoyo-claw source not found" >&2
+        echo "ERROR: yoyoclaw source not found" >&2
         return 1
     }
     node "$bin" "$@"
 }
 
-# Build yoyo-claw from source
+# Build yoyoclaw from source
 build_yoyo_claw() {
     local claw_dir
     claw_dir="$(_resolve_yoyo_claw_dir)" || {
-        echo "ERROR: yoyo-claw source not found" >&2
+        echo "ERROR: yoyoclaw source not found" >&2
         return 1
     }
 
@@ -349,7 +349,7 @@ build_yoyo_claw() {
     (cd "$claw_dir" && pnpm install --frozen-lockfile && pnpm build)
 }
 
-# Check if yoyo-claw is built (dist/ exists)
+# Check if yoyoclaw is built (dist/ exists)
 is_yoyo_claw_built() {
     local claw_dir
     claw_dir="$(_resolve_yoyo_claw_dir)" || return 1
