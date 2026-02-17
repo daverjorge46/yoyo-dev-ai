@@ -30,7 +30,7 @@
 | Subsystem | Command | Description |
 |-----------|---------|-------------|
 | **yoyo-dev** | `yoyo-dev` | Development environment -- Wave Terminal, Claude Code, multi-agent orchestration, GUI dashboard |
-| **yoyo-ai** | `yoyo-ai` | Business and Personal AI Assistant -- OpenClaw daemon, messaging, skills, always-on intelligence |
+| **yoyo-ai** | `yoyo-ai` | Business and Personal AI Assistant -- YoyoClaw daemon, messaging, skills, always-on intelligence |
 
 | Feature | Description |
 |---------|-------------|
@@ -38,7 +38,7 @@
 | **Structured Workflows** | Consistent processes for planning, specification, and execution |
 | **Persistent Memory** | Context preservation across sessions |
 | **Browser GUI** | Real-time dashboard at `localhost:5173` |
-| **Business and Personal AI Assistant** | OpenClaw-powered daemon with messaging channels and learned skills |
+| **Business and Personal AI Assistant** | YoyoClaw-powered daemon with messaging channels and learned skills |
 
 ---
 
@@ -50,7 +50,7 @@
 
 ### `¯\_(ツ)_/¯` Yoyo AI (Business and Personal AI Assistant)
 
-- **OpenClaw integration** -- always-on AI daemon
+- **YoyoClaw integration** -- always-on AI daemon
 - Messaging channels (CLI, API, webhooks)
 - Learned skills and persistent memory
 - Managed via `yoyo-ai` command
@@ -65,7 +65,7 @@
 - **`yoyo-ai`** -- Business and Personal AI Assistant daemon
 - **`yoyo`** -- deprecated alias for `yoyo-dev`
 - Multi-agent orchestration (Oracle, Librarian, Explore, Frontend, Writer)
-- Mandatory yoyo-ai (OpenClaw) in all installations
+- Mandatory yoyo-ai (YoyoClaw) in all installations
 
 </td>
 </tr>
@@ -79,7 +79,7 @@
 
 | Requirement | Details |
 |-------------|---------|
-| **Node.js 22 LTS** | Required for Claude Code CLI and OpenClaw |
+| **Node.js 22 LTS** | Required for Claude Code CLI and YoyoClaw |
 | **Git** | For cloning the repository |
 | **Docker Desktop 4.32+** | Optional, for MCP Toolkit servers |
 
@@ -90,7 +90,7 @@ During installation you choose what to install:
 | Option | What You Get |
 |--------|-------------|
 | **Both (recommended)** | yoyo-dev (dev environment) + yoyo-ai (AI assistant) |
-| **yoyo-ai only** | Business and Personal AI Assistant (OpenClaw) |
+| **yoyo-ai only** | Business and Personal AI Assistant (YoyoClaw) |
 | **yoyo-dev only** | Development environment (Claude Code, Wave Terminal, GUI) |
 
 ---
@@ -148,7 +148,7 @@ The Windows installer will:
 3. Ask you to choose components: **Both** / **yoyo-ai only** / **yoyo-dev only**
 4. Clone Yoyo Dev AI into WSL (`~/.yoyo-dev`)
 5. Install **Claude Code CLI** (if yoyo-dev selected)
-6. Install **OpenClaw** (if yoyo-ai selected)
+6. Install **YoyoClaw** (if yoyo-ai selected)
 7. Install global `yoyo-dev` and `yoyo-ai` commands
 
 **After installation, open WSL and initialize your project:**
@@ -348,23 +348,23 @@ Open PR link -> Review code -> Merge
 
 ## `¯\_(ツ)_/¯` Yoyo AI (Business and Personal AI Assistant)
 
-**Yoyo AI** `¯\_(ツ)_/¯` is a Business and Personal AI Assistant powered by [OpenClaw](https://github.com/openclaw). It runs as a background daemon alongside your development environment.
+**Yoyo AI** `¯\_(ツ)_/¯` is a Business and Personal AI Assistant powered by [YoyoClaw](https://github.com/daverjorge46/yoyoclaw). It runs as a background daemon alongside your development environment.
 
 ### Commands
 
 **YoYo Commands** (Custom functionality):
 ```bash
-yoyo-ai --start         # Start the OpenClaw daemon
+yoyo-ai --start         # Start the YoyoClaw daemon
 yoyo-ai --stop          # Stop the daemon
 yoyo-ai --status        # Check daemon health and port
-yoyo-ai --update        # Update OpenClaw to latest version
-yoyo-ai --doctor        # Diagnose OpenClaw issues
+yoyo-ai --update        # Update YoyoClaw to latest version
+yoyo-ai --doctor        # Diagnose YoyoClaw issues
 yoyo-ai --theme-apply   # Apply YoYo branding to dashboard
-yoyo-ai --theme-remove  # Restore OpenClaw defaults
+yoyo-ai --theme-remove  # Restore YoyoClaw defaults
 yoyo-ai --help          # Show all available commands
 ```
 
-**OpenClaw Commands** (Pass-through to OpenClaw):
+**YoyoClaw Commands** (Pass-through to YoyoClaw):
 ```bash
 yoyo-ai onboard         # Interactive setup wizard
 yoyo-ai config          # Configure credentials & settings
@@ -376,7 +376,7 @@ yoyo-ai dashboard       # Open web control panel
 yoyo-ai logs            # View gateway logs
 yoyo-ai agent           # Run agent commands
 
-# All OpenClaw commands work with yoyo-ai
+# All YoyoClaw commands work with yoyo-ai
 # Run 'yoyo-ai --help' for full list
 ```
 
@@ -402,7 +402,7 @@ Yoyo AI config is stored in `.yoyo-dev/config.yml` under the `yoyo_ai` key:
 ```yaml
 yoyo_ai:
   enabled: true
-  openclaw:
+  yoyoclaw:
     installed: true
     port: 18789
     daemon:
@@ -414,24 +414,23 @@ yoyo_ai:
 
 ### Installation
 
-OpenClaw is installed automatically during `yoyo-init` (step 9) as a mandatory component. If installation fails (e.g., Node.js < 22), install manually:
+YoyoClaw is built locally during `yoyo-init` as a mandatory component. If the build fails (e.g., Node.js < 22), build manually:
 
 ```bash
-npm install -g openclaw@latest
-openclaw onboard --install-daemon
+cd yoyoclaw && pnpm install --frozen-lockfile && pnpm build
 ```
 
 ### Dashboard Customization
 
-The YoYo Dev AI theme is automatically applied to the OpenClaw dashboard during installation, giving it an orange/gold color scheme and YoYo branding to match the rest of the platform.
+The YoYo Dev AI theme is automatically applied to the YoyoClaw dashboard during installation, giving it an orange/gold color scheme and YoYo branding to match the rest of the platform.
 
 **Theme Management:**
 
 ```bash
-# Re-apply YoYo theme (after OpenClaw updates)
+# Re-apply YoYo theme (after YoyoClaw updates)
 yoyo-ai --theme-apply
 
-# Restore original OpenClaw branding
+# Restore original YoyoClaw branding
 yoyo-ai --theme-remove
 
 # Check theme status
@@ -443,13 +442,13 @@ The theme customization:
 - Applies JetBrains Mono typography
 - Changes page title to "YoYo Dev AI"
 - Replaces favicon with YoYo logo
-- Persists across OpenClaw updates (auto-reapplied)
-- Non-invasive (doesn't modify OpenClaw source)
+- Persists across YoyoClaw updates (auto-reapplied)
+- Non-invasive (doesn't modify YoyoClaw source)
 - Fully reversible
 
 **Technical Details:**
 
-The theme works by injecting a custom CSS file (`yoyo-theme.css`) into OpenClaw's control panel HTML. The original `index.html` is backed up before modification. Theme files are located in `setup/openclaw-theme/`.
+The theme works by injecting a custom CSS file (`yoyo-theme.css`) into YoyoClaw's control panel HTML. The original `index.html` is backed up before modification.
 
 ---
 
@@ -615,10 +614,10 @@ workflows:
     frontend_delegation:
       enabled: true
 
-# Yoyo AI (OpenClaw Business and Personal AI Assistant)
+# Yoyo AI (YoyoClaw Business and Personal AI Assistant)
 yoyo_ai:
   enabled: true
-  openclaw:
+  yoyoclaw:
     installed: true
     port: 18789
     daemon:
@@ -851,7 +850,7 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 ---
 
-**Version:** 7.0.0 · **Status:** Production Ready · **Last Updated:** 2026-02-02
+**Version:** 7.0.0 · **Status:** Production Ready · **Last Updated:** 2026-02-17
 
 *Your AI learns. Your AI remembers. Your AI evolves.*
 

@@ -316,7 +316,7 @@ _resolve_yoyo_claw_dir() {
 _resolve_yoyo_claw_bin() {
     local claw_dir
     claw_dir="$(_resolve_yoyo_claw_dir)" || return 1
-    echo "$claw_dir/openclaw.mjs"
+    echo "$claw_dir/yoyoclaw.mjs"
 }
 
 # Run yoyoclaw CLI command (replaces global `openclaw` binary)
