@@ -298,14 +298,15 @@ _resolve_yoyo_claw_dir() {
         sdir="$(pwd)"
     fi
     # yoyoclaw lives next to setup/ in the repo root
+    # Validate it has actual content (package.json), not just an empty submodule dir
     local candidate="$(cd "$sdir/.." && pwd)/yoyoclaw"
-    if [ -d "$candidate" ]; then
+    if [ -d "$candidate" ] && [ -f "$candidate/package.json" ]; then
         echo "$candidate"
         return 0
     fi
     # Also check base installation dir
     local base="${YOYO_BASE_DIR:-$HOME/.yoyo-dev}"
-    if [ -d "$base/yoyoclaw" ]; then
+    if [ -d "$base/yoyoclaw" ] && [ -f "$base/yoyoclaw/package.json" ]; then
         echo "$base/yoyoclaw"
         return 0
     fi
@@ -316,7 +317,11 @@ _resolve_yoyo_claw_dir() {
 _resolve_yoyo_claw_bin() {
     local claw_dir
     claw_dir="$(_resolve_yoyo_claw_dir)" || return 1
-    echo "$claw_dir/yoyoclaw.mjs"
+    local bin="$claw_dir/yoyoclaw.mjs"
+    if [ ! -f "$bin" ]; then
+        return 1
+    fi
+    echo "$bin"
 }
 
 # Run yoyoclaw CLI command (replaces global `openclaw` binary)
@@ -337,6 +342,13 @@ build_yoyo_claw() {
         return 1
     }
 
+    # Validate that the yoyoclaw dir has actual source (not an empty submodule)
+    if [ ! -f "$claw_dir/package.json" ]; then
+        echo "ERROR: yoyoclaw/package.json not found — submodule may not be initialized" >&2
+        echo "  Try: git -C \"$(dirname "$claw_dir")\" submodule update --init yoyoclaw" >&2
+        return 1
+    fi
+
     # Ensure pnpm via corepack
     if ! command -v pnpm &>/dev/null; then
         corepack enable pnpm 2>/dev/null || {
@@ -349,11 +361,11 @@ build_yoyo_claw() {
     (cd "$claw_dir" && pnpm install --frozen-lockfile && pnpm build)
 }
 
-# Check if yoyoclaw is built (dist/ exists)
+# Check if yoyoclaw is built (dist/ exists and yoyoclaw.mjs entry point present)
 is_yoyo_claw_built() {
     local claw_dir
     claw_dir="$(_resolve_yoyo_claw_dir)" || return 1
-    [ -d "$claw_dir/dist" ]
+    [ -f "$claw_dir/yoyoclaw.mjs" ] && [ -d "$claw_dir/dist" ]
 }
 
 # Migrate ~/.yoyo-ai, ~/.yoyo-claw, or ~/.openclaw -> ~/.yoyoclaw

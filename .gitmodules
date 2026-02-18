@@ -1,0 +1,3 @@
+[submodule "yoyoclaw"]
+	path = yoyoclaw
+	url = https://github.com/daverjorge46/yoyoclaw.git

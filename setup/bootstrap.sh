@@ -653,8 +653,25 @@ _clone_base() {
 
     # Init yoyoclaw submodule
     _info "Initializing yoyoclaw submodule..."
-    git -C "$BASE_DIR" submodule update --init yoyoclaw 2>/dev/null || true
-    _ok "Submodule initialized"
+    if git -C "$BASE_DIR" submodule update --init yoyoclaw 2>/dev/null; then
+        if [ -f "$BASE_DIR/yoyoclaw/package.json" ]; then
+            _ok "Submodule initialized"
+        else
+            _warn "Submodule init returned OK but yoyoclaw is empty, cloning directly..."
+            rm -rf "$BASE_DIR/yoyoclaw"
+            git clone --depth 1 https://github.com/daverjorge46/yoyoclaw.git "$BASE_DIR/yoyoclaw" 2>/dev/null || {
+                _error "Failed to clone yoyoclaw"; exit 1
+            }
+            _ok "YoyoClaw cloned directly"
+        fi
+    else
+        _warn "Submodule init failed, cloning yoyoclaw directly..."
+        rm -rf "$BASE_DIR/yoyoclaw"
+        git clone --depth 1 https://github.com/daverjorge46/yoyoclaw.git "$BASE_DIR/yoyoclaw" 2>/dev/null || {
+            _error "Failed to clone yoyoclaw"; exit 1
+        }
+        _ok "YoyoClaw cloned directly"
+    fi
 }
 
 clone_or_update_base() {
@@ -676,7 +693,16 @@ clone_or_update_base() {
                 _clone_base
             else
                 _ok "BASE updated"
-                git -C "$BASE_DIR" submodule update --init yoyoclaw 2>/dev/null || true
+                # Ensure yoyoclaw submodule is populated
+                if [ ! -f "$BASE_DIR/yoyoclaw/package.json" ]; then
+                    _info "Initializing yoyoclaw submodule..."
+                    git -C "$BASE_DIR" submodule update --init yoyoclaw 2>/dev/null || true
+                    if [ ! -f "$BASE_DIR/yoyoclaw/package.json" ]; then
+                        _warn "Submodule init failed, cloning yoyoclaw directly..."
+                        rm -rf "$BASE_DIR/yoyoclaw"
+                        git clone --depth 1 https://github.com/daverjorge46/yoyoclaw.git "$BASE_DIR/yoyoclaw" 2>/dev/null || true
+                    fi
+                fi
             fi
         fi
     elif [ -d "$BASE_DIR" ]; then
@@ -751,24 +777,28 @@ build_yoyoclaw() {
     _info "Building YoyoClaw from source..."
     if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would build YoyoClaw"; return 0; fi
 
+    local claw_dir="$BASE_DIR/yoyoclaw"
+
+    # Validate yoyoclaw has actual source code (not an empty submodule dir)
+    if [ ! -f "$claw_dir/package.json" ]; then
+        _error "yoyoclaw/package.json not found — submodule may not be initialized"
+        _detail "Try: git -C $BASE_DIR submodule update --init yoyoclaw"
+        _detail "Or:  git clone https://github.com/daverjorge46/yoyoclaw.git $claw_dir"
+        return 1
+    fi
+
     if type build_yoyo_claw >/dev/null 2>&1; then
         if build_yoyo_claw 2>&1 | tail -5; then
             _ok "YoyoClaw built successfully"
         else
             _error "YoyoClaw build failed"
-            _detail "Try: cd $BASE_DIR/yoyoclaw && pnpm install --frozen-lockfile && pnpm build"
+            _detail "Try: cd $claw_dir && pnpm install --frozen-lockfile && pnpm build"
             return 1
         fi
     else
         # Direct build if helper not available
-        local claw_dir="$BASE_DIR/yoyoclaw"
-        if [ -d "$claw_dir" ]; then
-            (cd "$claw_dir" && pnpm install --frozen-lockfile && pnpm build) 2>&1 | tail -5
-            _ok "YoyoClaw built successfully"
-        else
-            _error "yoyoclaw/ directory not found in BASE"
-            return 1
-        fi
+        (cd "$claw_dir" && pnpm install --frozen-lockfile && pnpm build) 2>&1 | tail -5
+        _ok "YoyoClaw built successfully"
     fi
 }
 
