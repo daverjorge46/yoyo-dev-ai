@@ -505,7 +505,7 @@ install_system_deps() {
 
 install_homebrew() {
     _info "Installing Homebrew..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would install Homebrew"; return 0; fi
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null
     if [ -f /opt/homebrew/bin/brew ]; then
         eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -533,7 +533,7 @@ install_nodejs() {
     fi
 
     _info "Installing Node.js v${NODE_REQUIRED_MAJOR}..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would install Node.js >= ${NODE_REQUIRED_MAJOR}"; return 0; fi
 
     local install_success=false
 
@@ -578,7 +578,7 @@ install_nodejs() {
 
 install_nodejs_via_nvm() {
     _info "Installing Node.js via nvm..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would install nvm + Node.js ${NODE_REQUIRED_MAJOR}"; return 0; fi
 
     local nvm_dir="${NVM_DIR:-$HOME/.nvm}"
     if [ ! -d "$nvm_dir" ]; then
@@ -681,12 +681,12 @@ clone_or_update_base() {
         fi
     elif [ -d "$BASE_DIR" ]; then
         _warn "Broken BASE detected, re-installing..."
-        if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+        if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would backup + re-install"; return 0; fi
         local backup="${BASE_DIR}.backup.$(date +%s)"
         mv "$BASE_DIR" "$backup"
         [ -n "$local_source" ] && _copy_from_local "$local_source" || _clone_base
     else
-        if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+        if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would clone to ${BASE_DIR}"; return 0; fi
         [ -n "$local_source" ] && _copy_from_local "$local_source" || _clone_base
     fi
 }
@@ -715,14 +715,30 @@ install_pnpm() {
         return 0
     fi
     _info "Installing pnpm..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would install pnpm"; return 0; fi
 
     if command -v corepack >/dev/null 2>&1; then
-        corepack enable pnpm 2>/dev/null && { _ok "pnpm enabled via corepack"; return 0; }
+        if corepack enable pnpm 2>/dev/null; then
+            _ok "pnpm enabled via corepack"
+            return 0
+        fi
+        # corepack failed (EACCES) - retry with sudo
+        if _maybe_sudo corepack enable pnpm 2>/dev/null; then
+            _ok "pnpm enabled via corepack (sudo)"
+            return 0
+        fi
     fi
 
-    # Fallback
-    npm install -g pnpm 2>/dev/null && { _ok "pnpm installed via npm"; return 0; }
+    # Fallback: npm install -g (may also need sudo)
+    if npm install -g pnpm 2>/dev/null; then
+        _ok "pnpm installed via npm"
+        return 0
+    fi
+    if _maybe_sudo npm install -g pnpm 2>/dev/null; then
+        _ok "pnpm installed via npm (sudo)"
+        return 0
+    fi
+
     _error "Failed to install pnpm"
     return 1
 }
@@ -733,7 +749,7 @@ install_pnpm() {
 
 build_yoyoclaw() {
     _info "Building YoyoClaw from source..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would build YoyoClaw"; return 0; fi
 
     if type build_yoyo_claw >/dev/null 2>&1; then
         if build_yoyo_claw 2>&1 | tail -5; then
@@ -762,7 +778,7 @@ build_yoyoclaw() {
 
 onboard_yoyoclaw() {
     _info "Running YoyoClaw onboarding..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would run onboarding"; return 0; fi
 
     # Migrate legacy directories
     if type migrate_yoyo_claw_home >/dev/null 2>&1; then
@@ -799,7 +815,7 @@ onboard_yoyoclaw() {
 
 start_gateway() {
     _info "Starting YoyoClaw gateway..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would start gateway"; return 0; fi
 
     # Check if already running
     if type is_gateway_running >/dev/null 2>&1 && is_gateway_running; then
@@ -854,7 +870,7 @@ start_gateway() {
 # =============================================================================
 
 open_browser() {
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would open browser"; return 0; fi
 
     local token=""
     if [ -f "$YOYOCLAW_HOME/.gateway-token" ]; then
@@ -892,7 +908,7 @@ open_browser() {
 
 install_yoyoclaw_commands() {
     _info "Installing yoyo-ai and yoyoclaw commands..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would install commands"; return 0; fi
 
     local install_dir=""
     if [ -n "$FLAG_PREFIX" ]; then
@@ -939,7 +955,7 @@ install_claude_code() {
         return 0
     fi
     _info "Installing Claude Code CLI..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would install Claude Code CLI"; return 0; fi
 
     if npm install -g @anthropic-ai/claude-code 2>/dev/null; then
         _ok "Claude Code CLI installed"
@@ -955,7 +971,7 @@ install_claude_code() {
 
 setup_global_commands() {
     _info "Installing global commands..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would install global commands"; return 0; fi
 
     if [ -f "$BASE_DIR/setup/install-global-command.sh" ]; then
         chmod +x "$BASE_DIR/setup/install-global-command.sh"
@@ -987,7 +1003,7 @@ setup_shell_profile() {
     esac
 
     _info "Adding $install_dir to PATH..."
-    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would update shell profile"; return 0; fi
 
     local marker_start="# >>> yoyo-dev-ai >>>"
     local marker_end="# <<< yoyo-dev-ai <<<"
