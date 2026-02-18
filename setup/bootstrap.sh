@@ -642,6 +642,13 @@ _copy_from_local() {
 _clone_base() {
     local repo_url
     repo_url="$(_repo_url)"
+
+    # Pre-accept GitHub SSH host key (needed for submodule init and git deps)
+    if [ ! -f "$HOME/.ssh/known_hosts" ] || ! grep -q "^github.com " "$HOME/.ssh/known_hosts" 2>/dev/null; then
+        mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+        ssh-keyscan -t ed25519,rsa github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+    fi
+
     _info "Cloning yoyo-dev-ai to ${BASE_DIR}..."
     if _retry 5 git clone --branch "$FLAG_BRANCH" --single-branch "$repo_url" "$BASE_DIR"; then
         _ok "Repository cloned"
@@ -778,6 +785,17 @@ build_yoyoclaw() {
     if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would build YoyoClaw"; return 0; fi
 
     local claw_dir="$BASE_DIR/yoyoclaw"
+
+    # Pre-accept GitHub SSH host key (pnpm lockfile has git+ssh deps)
+    if type _ensure_github_ssh_host_key >/dev/null 2>&1; then
+        _ensure_github_ssh_host_key
+    else
+        # Inline fallback if functions.sh helper not loaded
+        if [ ! -f "$HOME/.ssh/known_hosts" ] || ! grep -q "^github.com " "$HOME/.ssh/known_hosts" 2>/dev/null; then
+            mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
+            ssh-keyscan -t ed25519,rsa github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
+        fi
+    fi
 
     # Validate yoyoclaw has actual source code (not an empty submodule dir)
     if [ ! -f "$claw_dir/package.json" ]; then

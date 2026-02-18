@@ -279,6 +279,19 @@ YOYO_CLAW_TOKEN_FILE="$YOYO_CLAW_HOME/.gateway-token"
 YOYO_CLAW_CONFIG_PATH="$YOYO_CLAW_HOME/yoyoclaw.json"
 YOYO_CLAW_ONBOARD_MARKER="$YOYO_CLAW_HOME/.yoyo-onboarded"
 
+# Ensure GitHub SSH host key is in known_hosts
+# Needed because pnpm lockfile has git+ssh dependencies (e.g. @whiskeysockets/libsignal-node)
+_ensure_github_ssh_host_key() {
+    local known_hosts="$HOME/.ssh/known_hosts"
+    if [ -f "$known_hosts" ] && grep -q "^github.com " "$known_hosts" 2>/dev/null; then
+        return 0
+    fi
+    mkdir -p "$HOME/.ssh"
+    chmod 700 "$HOME/.ssh"
+    ssh-keyscan -t ed25519,rsa github.com >> "$known_hosts" 2>/dev/null || true
+    chmod 644 "$known_hosts" 2>/dev/null || true
+}
+
 # Resolve the yoyoclaw source directory
 # Prefers YOYO_CLAW_DIR env, then looks relative to this script
 _resolve_yoyo_claw_dir() {
@@ -356,6 +369,9 @@ build_yoyo_claw() {
             return 1
         }
     fi
+
+    # Pre-accept GitHub SSH host key (pnpm lockfile has git+ssh deps)
+    _ensure_github_ssh_host_key
 
     # Build from source
     (cd "$claw_dir" && pnpm install --frozen-lockfile && pnpm build)
