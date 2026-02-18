@@ -942,6 +942,12 @@ install_yoyoclaw_commands() {
         fi
     done
 
+    # Add install_dir to PATH for the current session so commands work immediately
+    case ":$PATH:" in
+        *":$install_dir:"*) ;;
+        *) export PATH="$install_dir:$PATH" ;;
+    esac
+
     _ok "$count commands installed to $install_dir"
 }
 
@@ -1090,20 +1096,16 @@ show_yoyoclaw_complete() {
     fi
 
     printf "\n"
-    printf "${_C_MAUVE}${_C_BOLD}"
-    printf "  ╔══════════════════════════════════════════════════════════════╗\n"
-    printf "  ║  YoyoClaw is running!  ¯\\_(ツ)_/¯                          ║\n"
-    printf "  ╠══════════════════════════════════════════════════════════════╣\n"
-    printf "  ║${_C_RESET}                                                              ${_C_MAUVE}${_C_BOLD}║\n"
-    printf "  ║${_C_RESET}  ${_C_DIM}Dashboard:${_C_RESET}  ${_C_CYAN}%-48s${_C_RESET}${_C_MAUVE}${_C_BOLD}║\n" "$local_url"
+    printf "${_C_MAUVE}${_C_BOLD}  ╔══════════════════════════════════════════════════════════════╗${_C_RESET}\n"
+    printf "${_C_MAUVE}${_C_BOLD}  ║${_C_RESET}  ${_C_BOLD}YoyoClaw is running!${_C_RESET}  ¯\\_(ツ)_/¯                          ${_C_MAUVE}${_C_BOLD}║${_C_RESET}\n"
+    printf "${_C_MAUVE}${_C_BOLD}  ╚══════════════════════════════════════════════════════════════╝${_C_RESET}\n"
+    printf "\n"
+    printf "  ${_C_DIM}Dashboard:${_C_RESET}  ${_C_CYAN}%s${_C_RESET}\n" "$local_url"
     if [ -n "$network_url" ]; then
-        printf "  ║${_C_RESET}  ${_C_DIM}Network:${_C_RESET}    ${_C_CYAN}%-48s${_C_RESET}${_C_MAUVE}${_C_BOLD}║\n" "$network_url"
+        printf "  ${_C_DIM}Network:${_C_RESET}    ${_C_CYAN}%s${_C_RESET}\n" "$network_url"
     fi
-    printf "  ║${_C_RESET}                                                              ${_C_MAUVE}${_C_BOLD}║\n"
-    printf "  ║${_C_RESET}  ${_C_DIM}Command:${_C_RESET}    ${_C_BOLD}yoyo-ai${_C_RESET}                                       ${_C_MAUVE}${_C_BOLD}║\n"
-    printf "  ║${_C_RESET}                                                              ${_C_MAUVE}${_C_BOLD}║\n"
-    printf "  ╚══════════════════════════════════════════════════════════════╝\n"
-    printf "${_C_RESET}"
+    printf "  ${_C_DIM}Command:${_C_RESET}    ${_C_BOLD}yoyo-ai${_C_RESET}\n"
+    printf "\n"
     printf "${_C_DIM}  \"Your AI learns. Your AI remembers. Your AI evolves.\"${_C_RESET}\n"
     printf "\n"
 }
