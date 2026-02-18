@@ -19,6 +19,9 @@
 
 set -eu
 
+# Error trap for debugging silent failures
+trap '_error "Failed at line $LINENO (exit code $?)"; exit 1' ERR
+
 readonly BOOTSTRAP_VERSION="2.0.0"
 readonly YOYO_VERSION="7.0.0"
 readonly REPO_HTTPS_URL="https://github.com/daverjorge46/yoyo-dev-ai.git"
@@ -145,14 +148,17 @@ EOF
 # =============================================================================
 # TTY Handling (for curl | bash)
 # =============================================================================
+# IMPORTANT: Do NOT use `exec < /dev/tty` -- it breaks `curl | bash` because
+# bash reads the script from stdin. Instead, redirect individual `read` calls.
 
-ensure_tty() {
-    if [ ! -t 0 ]; then
-        exec < /dev/tty || {
-            _error "Cannot open terminal for interactive input"
-            _detail "Run: bash <(curl -sSL https://raw.githubusercontent.com/daverjorge46/yoyo-dev-ai/main/setup/bootstrap.sh)"
-            exit 1
-        }
+_tty_read() {
+    # Wrapper for read that always reads from /dev/tty when stdin is piped.
+    # read -n1 returns 1 on Enter (empty input) which trips set -e, so we
+    # suppress that with || true.
+    if [ -t 0 ]; then
+        read "$@" || true
+    else
+        read "$@" < /dev/tty || true
     fi
 }
 
@@ -193,8 +199,6 @@ show_banner() {
 # =============================================================================
 
 show_toggle_menu() {
-    ensure_tty
-
     while true; do
         # Clear menu area (move up and clear if redrawing)
         printf "\n"
@@ -222,10 +226,10 @@ show_toggle_menu() {
         printf "${_C_DIM}  Press 1/2 to toggle, Enter to install, q to exit${_C_RESET}\n"
         printf "  > "
 
-        local key
-        read -r -n1 -s key
+        local key=""
+        _tty_read -r -n1 -s key
 
-        case "$key" in
+        case "${key:-}" in
             1)
                 if [ "$INSTALL_YOYOCLAW" = true ]; then
                     INSTALL_YOYOCLAW=false
@@ -282,9 +286,9 @@ show_toggle_menu() {
     printf "\n"
     printf "${_C_BOLD}  Installing:${_C_RESET} "
     local parts=""
-    [ "$INSTALL_YOYOCLAW" = true ] && parts="${_C_MAUVE}YoyoClaw${_C_RESET}"
+    [ "$INSTALL_YOYOCLAW" = true ] && parts="${_C_MAUVE}YoyoClaw${_C_RESET}" || true
     if [ "$INSTALL_YOYODEV" = true ]; then
-        [ -n "$parts" ] && parts="$parts + "
+        [ -n "$parts" ] && parts="$parts + " || true
         parts="${parts}${_C_YELLOW}YoyoDev${_C_RESET}"
     fi
     printf "%b\n\n" "$parts"
@@ -416,7 +420,7 @@ preflight_checks() {
         _ok "Internet connectivity OK"
     fi
 
-    [ "$failed" = true ] && exit 1
+    if [ "$failed" = true ]; then exit 1; fi
 }
 
 # =============================================================================
@@ -460,8 +464,8 @@ install_system_deps() {
     _info "Installing system dependencies..."
 
     local pkgs=""
-    [ "$need_git" = true ] && pkgs="$pkgs git"
-    [ "$need_curl" = true ] && pkgs="$pkgs curl"
+    [ "$need_git" = true ] && pkgs="$pkgs git" || true
+    [ "$need_curl" = true ] && pkgs="$pkgs curl" || true
 
     case "$DETECTED_PKG_MGR" in
         apt-get)
@@ -490,14 +494,18 @@ install_system_deps() {
             ;;
     esac
 
-    [ "$need_git" = true ] && ! command -v git >/dev/null 2>&1 && { _error "Failed to install git"; return 1; }
-    [ "$need_curl" = true ] && ! command -v curl >/dev/null 2>&1 && { _error "Failed to install curl"; return 1; }
+    if [ "$need_git" = true ] && ! command -v git >/dev/null 2>&1; then
+        _error "Failed to install git"; return 1
+    fi
+    if [ "$need_curl" = true ] && ! command -v curl >/dev/null 2>&1; then
+        _error "Failed to install curl"; return 1
+    fi
     _ok "System dependencies installed"
 }
 
 install_homebrew() {
     _info "Installing Homebrew..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would install Homebrew"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
     /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)" </dev/null
     if [ -f /opt/homebrew/bin/brew ]; then
         eval "$(/opt/homebrew/bin/brew shellenv)"
@@ -525,7 +533,7 @@ install_nodejs() {
     fi
 
     _info "Installing Node.js v${NODE_REQUIRED_MAJOR}..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would install Node.js >= ${NODE_REQUIRED_MAJOR}"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     local install_success=false
 
@@ -570,7 +578,7 @@ install_nodejs() {
 
 install_nodejs_via_nvm() {
     _info "Installing Node.js via nvm..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would install nvm + Node.js ${NODE_REQUIRED_MAJOR}"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     local nvm_dir="${NVM_DIR:-$HOME/.nvm}"
     if [ ! -d "$nvm_dir" ]; then
@@ -673,12 +681,12 @@ clone_or_update_base() {
         fi
     elif [ -d "$BASE_DIR" ]; then
         _warn "Broken BASE detected, re-installing..."
-        [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would backup + re-install"; return 0; }
+        if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
         local backup="${BASE_DIR}.backup.$(date +%s)"
         mv "$BASE_DIR" "$backup"
         [ -n "$local_source" ] && _copy_from_local "$local_source" || _clone_base
     else
-        [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would clone to ${BASE_DIR}"; return 0; }
+        if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
         [ -n "$local_source" ] && _copy_from_local "$local_source" || _clone_base
     fi
 }
@@ -707,7 +715,7 @@ install_pnpm() {
         return 0
     fi
     _info "Installing pnpm..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would install pnpm"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     if command -v corepack >/dev/null 2>&1; then
         corepack enable pnpm 2>/dev/null && { _ok "pnpm enabled via corepack"; return 0; }
@@ -725,7 +733,7 @@ install_pnpm() {
 
 build_yoyoclaw() {
     _info "Building YoyoClaw from source..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would build YoyoClaw"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     if type build_yoyo_claw >/dev/null 2>&1; then
         if build_yoyo_claw 2>&1 | tail -5; then
@@ -754,7 +762,7 @@ build_yoyoclaw() {
 
 onboard_yoyoclaw() {
     _info "Running YoyoClaw onboarding..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would run onboarding"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     # Migrate legacy directories
     if type migrate_yoyo_claw_home >/dev/null 2>&1; then
@@ -791,7 +799,7 @@ onboard_yoyoclaw() {
 
 start_gateway() {
     _info "Starting YoyoClaw gateway..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would start gateway"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     # Check if already running
     if type is_gateway_running >/dev/null 2>&1 && is_gateway_running; then
@@ -846,7 +854,7 @@ start_gateway() {
 # =============================================================================
 
 open_browser() {
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would open browser"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     local token=""
     if [ -f "$YOYOCLAW_HOME/.gateway-token" ]; then
@@ -854,7 +862,7 @@ open_browser() {
     fi
 
     local url="http://localhost:18789"
-    [ -n "$token" ] && url="${url}?token=${token}"
+    [ -n "$token" ] && url="${url}?token=${token}" || true
 
     _info "Opening browser: ${url}"
 
@@ -884,7 +892,7 @@ open_browser() {
 
 install_yoyoclaw_commands() {
     _info "Installing yoyo-ai and yoyoclaw commands..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would install commands"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     local install_dir=""
     if [ -n "$FLAG_PREFIX" ]; then
@@ -931,7 +939,7 @@ install_claude_code() {
         return 0
     fi
     _info "Installing Claude Code CLI..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would install Claude Code CLI"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     if npm install -g @anthropic-ai/claude-code 2>/dev/null; then
         _ok "Claude Code CLI installed"
@@ -947,7 +955,7 @@ install_claude_code() {
 
 setup_global_commands() {
     _info "Installing global commands..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would install global commands"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     if [ -f "$BASE_DIR/setup/install-global-command.sh" ]; then
         chmod +x "$BASE_DIR/setup/install-global-command.sh"
@@ -979,7 +987,7 @@ setup_shell_profile() {
     esac
 
     _info "Adding $install_dir to PATH..."
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would update shell profile"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then \1; return 0; fi
 
     local marker_start="# >>> yoyo-dev-ai >>>"
     local marker_end="# <<< yoyo-dev-ai <<<"
@@ -1022,21 +1030,25 @@ setup_shell_profile() {
 verify_installation() {
     _info "Verifying installation..."
 
-    [ -d "$BASE_DIR" ] && [ -f "$BASE_DIR/setup/install.sh" ] && _ok "BASE: ${BASE_DIR}" || _error "BASE missing"
+    if [ -d "$BASE_DIR" ] && [ -f "$BASE_DIR/setup/install.sh" ]; then
+        _ok "BASE: ${BASE_DIR}"
+    else
+        _error "BASE missing"
+    fi
 
     if [ "$INSTALL_YOYOCLAW" = true ]; then
-        [ -d "$YOYOCLAW_HOME" ] && _ok "YoyoClaw home: ${YOYOCLAW_HOME}" || _warn "YoyoClaw home missing"
-        command -v yoyo-ai >/dev/null 2>&1 && _ok "yoyo-ai command" || _warn "yoyo-ai not in PATH (restart terminal)"
+        if [ -d "$YOYOCLAW_HOME" ]; then _ok "YoyoClaw home: ${YOYOCLAW_HOME}"; else _warn "YoyoClaw home missing"; fi
+        if command -v yoyo-ai >/dev/null 2>&1; then _ok "yoyo-ai command"; else _warn "yoyo-ai not in PATH (restart terminal)"; fi
     fi
 
     if [ "$INSTALL_YOYODEV" = true ]; then
         for cmd in yoyo-dev yoyo-init yoyo-update; do
-            command -v "$cmd" >/dev/null 2>&1 && _ok "$cmd command" || _warn "$cmd not in PATH (restart terminal)"
+            if command -v "$cmd" >/dev/null 2>&1; then _ok "$cmd command"; else _warn "$cmd not in PATH (restart terminal)"; fi
         done
-        command -v claude >/dev/null 2>&1 && _ok "Claude Code CLI" || _warn "Claude Code CLI not found"
+        if command -v claude >/dev/null 2>&1; then _ok "Claude Code CLI"; else _warn "Claude Code CLI not found"; fi
     fi
 
-    command -v node >/dev/null 2>&1 && _ok "Node.js: $(node --version)"
+    if command -v node >/dev/null 2>&1; then _ok "Node.js: $(node --version)"; fi
 }
 
 # =============================================================================
@@ -1045,10 +1057,10 @@ verify_installation() {
 
 show_yoyoclaw_complete() {
     local token=""
-    [ -f "$YOYOCLAW_HOME/.gateway-token" ] && token="$(cat "$YOYOCLAW_HOME/.gateway-token")"
+    [ -f "$YOYOCLAW_HOME/.gateway-token" ] && token="$(cat "$YOYOCLAW_HOME/.gateway-token")" || true
 
     local local_url="http://localhost:18789"
-    [ -n "$token" ] && local_url="${local_url}?token=${token}"
+    [ -n "$token" ] && local_url="${local_url}?token=${token}" || true
 
     local network_ip=""
     if type get_network_ip >/dev/null 2>&1; then
@@ -1101,7 +1113,6 @@ show_yoyodev_complete() {
 # =============================================================================
 
 run_uninstall() {
-    ensure_tty
     printf "\n${_C_BOLD}${_C_RED}Yoyo AI Uninstaller${_C_RESET}\n\n"
     _warn "This will remove:"
     _detail "  ${BASE_DIR} (BASE installation)"
@@ -1110,12 +1121,12 @@ run_uninstall() {
     _detail "  Global command symlinks"
     _detail "  Shell profile PATH entries"
 
-    [ "$FLAG_DRY_RUN" = true ] && { _detail "[dry-run] Would remove all above"; return 0; }
+    if [ "$FLAG_DRY_RUN" = true ]; then _detail "[dry-run] Would remove all above"; return 0; fi
 
     printf "\nType 'yes' to confirm: "
     local confirm
-    read -r confirm
-    [ "$confirm" != "yes" ] && { _info "Uninstall cancelled"; return 0; }
+    _tty_read -r confirm
+    if [ "$confirm" != "yes" ]; then _info "Uninstall cancelled"; return 0; fi
 
     # Remove global commands
     for cmd in yoyo-dev yoyo-ai yoyo-cli yoyo-init yoyo-update yoyo-gui yoyo-doctor yoyo yoyo-install yoyoclaw; do
@@ -1128,12 +1139,12 @@ run_uninstall() {
     done
 
     # Remove directories
-    [ -d "$BASE_DIR" ] && { rm -rf "$BASE_DIR"; _ok "Removed: ${BASE_DIR}"; }
-    [ -d "$YOYOCLAW_HOME" ] && { rm -rf "$YOYOCLAW_HOME"; _ok "Removed: ${YOYOCLAW_HOME}"; }
+    if [ -d "$BASE_DIR" ]; then rm -rf "$BASE_DIR"; _ok "Removed: ${BASE_DIR}"; fi
+    if [ -d "$YOYOCLAW_HOME" ]; then rm -rf "$YOYOCLAW_HOME"; _ok "Removed: ${YOYOCLAW_HOME}"; fi
 
     # Remove symlinks
     for link in "$HOME/.openclaw" "$HOME/.yoyo-claw" "$HOME/.yoyo-ai"; do
-        [ -L "$link" ] && { rm -f "$link"; _ok "Removed: $link"; }
+        if [ -L "$link" ]; then rm -f "$link"; _ok "Removed: $link"; fi
     done
 
     # Clean shell profiles
@@ -1164,8 +1175,8 @@ run_uninstall() {
 main() {
     parse_flags "$@"
 
-    [ "$FLAG_HELP" = true ] && { show_help; exit 0; }
-    [ "$FLAG_UNINSTALL" = true ] && { run_uninstall; exit 0; }
+    if [ "$FLAG_HELP" = true ]; then show_help; exit 0; fi
+    if [ "$FLAG_UNINSTALL" = true ]; then run_uninstall; exit 0; fi
 
     # === 1. Welcome Banner ===
     show_banner
@@ -1177,7 +1188,7 @@ main() {
     compute_steps
 
     # Dry-run notice
-    [ "$FLAG_DRY_RUN" = true ] && { _warn "DRY RUN MODE - no changes will be made"; printf "\n"; }
+    if [ "$FLAG_DRY_RUN" = true ]; then _warn "DRY RUN MODE - no changes will be made"; printf "\n"; fi
 
     # Track current step
     local S=0
@@ -1245,8 +1256,8 @@ main() {
         printf "\n"
         _ok "Dry run complete. No changes were made."
     else
-        [ "$INSTALL_YOYOCLAW" = true ] && show_yoyoclaw_complete
-        [ "$INSTALL_YOYODEV" = true ] && show_yoyodev_complete
+        if [ "$INSTALL_YOYOCLAW" = true ]; then show_yoyoclaw_complete; fi
+        if [ "$INSTALL_YOYODEV" = true ]; then show_yoyodev_complete; fi
     fi
 }
 
