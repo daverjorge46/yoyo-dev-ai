@@ -925,7 +925,7 @@ install_yoyoclaw_commands() {
     local setup_dir="$BASE_DIR/setup"
     local count=0
 
-    for cmd_pair in "yoyo-ai:yoyo-ai.sh" "yoyoclaw:yoyoclaw.sh"; do
+    for cmd_pair in "yoyo-ai:yoyo-ai.sh" "yoyoclaw:yoyoclaw.sh" "yoyo-gui:yoyo-gui.sh" "yoyo-doctor:yoyo-doctor.sh"; do
         local cmd="${cmd_pair%%:*}"
         local script="${cmd_pair##*:}"
         local script_path="$setup_dir/$script"
@@ -1104,7 +1104,7 @@ show_yoyoclaw_complete() {
     if [ -n "$network_url" ]; then
         printf "  ${_C_DIM}Network:${_C_RESET}    ${_C_CYAN}%s${_C_RESET}\n" "$network_url"
     fi
-    printf "  ${_C_DIM}Command:${_C_RESET}    ${_C_BOLD}yoyo-ai${_C_RESET}\n"
+    printf "  ${_C_DIM}Commands:${_C_RESET}   ${_C_BOLD}yoyo-ai${_C_RESET}  ${_C_DIM}|${_C_RESET}  ${_C_BOLD}yoyoclaw${_C_RESET}  ${_C_DIM}|${_C_RESET}  ${_C_BOLD}yoyo-gui --ai${_C_RESET}  ${_C_DIM}|${_C_RESET}  ${_C_BOLD}yoyo-doctor${_C_RESET}\n"
     printf "\n"
     printf "${_C_DIM}  \"Your AI learns. Your AI remembers. Your AI evolves.\"${_C_RESET}\n"
     printf "\n"
