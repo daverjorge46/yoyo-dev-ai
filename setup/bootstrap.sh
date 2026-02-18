@@ -786,16 +786,11 @@ build_yoyoclaw() {
 
     local claw_dir="$BASE_DIR/yoyoclaw"
 
-    # Pre-accept GitHub SSH host key (pnpm lockfile has git+ssh deps)
-    if type _ensure_github_ssh_host_key >/dev/null 2>&1; then
-        _ensure_github_ssh_host_key
-    else
-        # Inline fallback if functions.sh helper not loaded
-        if [ ! -f "$HOME/.ssh/known_hosts" ] || ! grep -q "^github.com " "$HOME/.ssh/known_hosts" 2>/dev/null; then
-            mkdir -p "$HOME/.ssh" && chmod 700 "$HOME/.ssh"
-            ssh-keyscan -t ed25519,rsa github.com >> "$HOME/.ssh/known_hosts" 2>/dev/null || true
-        fi
-    fi
+    # Rewrite git@github.com: SSH URLs to HTTPS (pnpm lockfile has git+ssh deps
+    # like @whiskeysockets/libsignal-node that fail on servers without SSH keys)
+    export GIT_CONFIG_COUNT=1
+    export GIT_CONFIG_KEY_0="url.https://github.com/.insteadOf"
+    export GIT_CONFIG_VALUE_0="git@github.com:"
 
     # Validate yoyoclaw has actual source code (not an empty submodule dir)
     if [ ! -f "$claw_dir/package.json" ]; then
